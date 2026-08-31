@@ -1,0 +1,103 @@
+# NeuroAdaptive VR — Backend (Fase 1)
+
+FastAPI async + SQLAlchemy 2.0 + PostgreSQL + WebSocket. Este es el
+"FastAPI skeleton" que pide el milestone M1 (Technical Feasibility, 28
+ago 2026): health checks, CRUD mínimo de participantes/sesiones, y el
+endpoint WebSocket que Unity usará para mandar telemetría.
+
+## 1. Levantar todo con Docker (recomendado)
+
+```bash
+cd NeuroAdaptativeVR
+cp backend/.env.example backend/.env
+docker compose up -d --build
+docker compose exec backend alembic upgrade head
+```
+
+Verificar:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/health/db
+```
+
+Ambos deberían devolver `{"status": "ok", ...}`.
+
+## 2. Alternativa sin Docker (Python local)
+
+Requiere PostgreSQL 16 corriendo localmente.
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env       # ajustar POSTGRES_HOST=localhost si aplica
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+## 3. Probar el walking skeleton completo (objetivo de M1)
+
+Con el backend corriendo:
+
+```bash
+python scripts/ws_smoke_test.py
+```
+
+Esto crea un participante y una sesión vía REST, se conecta al
+WebSocket de esa sesión, manda `PING` / `SESSION_EVENT` /
+`VALIDATION_EVENT`, y confirma que el backend responde `PONG`/`ACK` —
+exactamente la prueba "Test Unity with backend WebSocket
+communication" de las acciones inmediatas de Fase 1. Cuando Unity esté
+conectado, `unity-client/README.md` explica cómo hacer lo mismo desde
+`SessionCommunicationClient`.
+
+## 4. Tests automatizados
+
+```bash
+pytest
+```
+
+Corre contra la base de datos configurada en `.env` — asegurate de
+haber corrido `alembic upgrade head` antes.
+
+## 5. Nota sobre cómo se verificó este esqueleto
+
+Este backend se escribió y revisó en un entorno sin salida a internet
+para instalar dependencias de PyPI, así que **no se pudo correr
+`pytest`/`uvicorn` de punta a punta ahí**. Lo que sí se verificó en ese
+entorno, con una instancia real de PostgreSQL 16:
+
+- El DDL completo (`../database/schema.sql`, equivalente a la
+  migración `0001_initial_schema.py`) se aplica sin errores.
+- Inserts con foreign keys, un `JOIN` de las 5 tablas, y `DELETE
+  ... CASCADE` funcionan como se espera.
+- Los ~20 archivos `.py` del backend pasan `python3 -m py_compile`
+  (sin errores de sintaxis).
+
+Lo que falta confirmar en tu máquina (con red real) como primer paso:
+que `pip install -r requirements.txt` resuelve limpio, que `alembic
+upgrade head` reproduce el mismo esquema ya verificado, y que
+`pytest` / `scripts/ws_smoke_test.py` pasan de punta a punta. Si algo
+no calza, avisame y lo ajustamos.
+
+## 6. Estructura
+
+```
+app/
+├── main.py              # App FastAPI, routers, CORS
+├── config.py             # Settings (pydantic-settings, lee .env)
+├── db/                    # Engine async, sesión por request
+├── models/                # ORM (participants, sessions, events...)
+├── schemas/               # Pydantic (request/response)
+├── api/routes/            # health, participants, sessions, websocket
+├── services/session_clock.py  # Referencia temporal común (anteproyecto 5.3)
+└── core/logging.py
+alembic/                  # Migraciones
+scripts/ws_smoke_test.py  # Smoke test manual del WebSocket
+tests/                    # pytest
+```
+
+Ver `../database/ERD.md` para qué cubre el esquema en esta fase y qué
+llega en fases posteriores.

@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16
+    container_name: neuroadaptive_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: neuroadaptive
+      POSTGRES_PASSWORD: neuroadaptive_dev_password
+      POSTGRES_DB: neuroadaptive_vr
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neuroadaptive -d neuroadaptive_vr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: neuroadaptive_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+volumes:
+  pgdata:
