@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "NeuroAdaptive VR (docker)",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "neuroadaptive_vr",
+      "Username": "neuroadaptive",
+      "SSLMode": "prefer"
+    }
+  }
+}

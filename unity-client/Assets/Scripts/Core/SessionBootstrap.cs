@@ -41,6 +41,10 @@ namespace NeuroAdaptiveVR.Core
         [Tooltip("Manda un VALIDATION_EVENT en cuanto conecta, util para verificar el round trip completo.")]
         [SerializeField] private bool sendValidationEventOnConnect = true;
 
+        [Tooltip("Avanza S0 -> S1 en cuanto conecta, produciendo el primer STATE_ENTERED. " +
+                 "Es el evento que cierra el criterio de salida de M1.")]
+        [SerializeField] private bool advanceToFirstStateOnConnect = true;
+
         private SessionCommunicationClient _client;
         private GameFlowController _flow;
 
@@ -97,10 +101,7 @@ namespace NeuroAdaptiveVR.Core
                 yield break;
             }
 
-            if (sendValidationEventOnConnect)
-            {
-                _client.OnConnected += HandleConnected;
-            }
+            _client.OnConnected += HandleConnected;
 
             _client.Configure(sessionId);
             _client.Connect();
@@ -110,21 +111,31 @@ namespace NeuroAdaptiveVR.Core
         {
             _client.OnConnected -= HandleConnected;
 
-            _client.SendValidationEvent(
-                component: "UNITY_BACKEND_WS",
-                status: "OK",
-                payload: new Dictionary<string, object>
-                {
-                    { "note", "round trip M1 desde Unity" },
-                    { "unity_version", Application.unityVersion },
-                    { "platform", Application.platform.ToString() },
-                });
+            if (sendValidationEventOnConnect)
+            {
+                _client.SendValidationEvent(
+                    component: "UNITY_BACKEND_WS",
+                    status: "OK",
+                    payload: new Dictionary<string, object>
+                    {
+                        { "note", "round trip M1 desde Unity" },
+                        { "unity_version", Application.unityVersion },
+                        { "platform", Application.platform.ToString() },
+                    });
+            }
+
+            if (!advanceToFirstStateOnConnect) return;
+
+            if (_flow == null)
+            {
+                Debug.LogWarning("[SessionBootstrap] No hay GameFlowController en este GameObject, " +
+                                 "asi que no se enviara el primer STATE_ENTERED. Agregalo si quieres " +
+                                 "cerrar el criterio de salida de M1.");
+                return;
+            }
 
             // Primer STATE_ENTERED: S0 -> S1.
-            if (_flow != null)
-            {
-                _flow.AdvanceToNextState();
-            }
+            _flow.AdvanceToNextState();
         }
 
         /// <summary>

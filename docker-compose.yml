@@ -34,5 +34,39 @@ services:
     volumes:
       - ./backend:/app
 
+  # Portal web para inspeccionar la base de datos y lanzar queries.
+  #
+  # Abrir http://localhost:8081 y loguear con las credenciales de
+  # PGADMIN_DEFAULT_* de abajo. La conexion a "NeuroAdaptive VR
+  # (docker)" ya queda pre-cargada (./pgadmin/servers.json) -- solo
+  # pide la contrasena de Postgres (POSTGRES_PASSWORD) la primera vez
+  # que se expande el server, no bien entrando.
+  #
+  # Solo herramienta de desarrollo. Se publica en 127.0.0.1 a proposito
+  # para que no sea alcanzable desde la red local.
+  #
+  # NOTA DE SEGURIDAD: las contrasenas van en claro aqui, igual que en
+  # el servicio db de arriba. Es aceptable para una base de desarrollo
+  # local sin datos reales. Antes de que entren datos de participantes
+  # o EEG, las credenciales deben salir del archivo y venir de
+  # variables de entorno o un gestor de secretos.
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: neuroadaptive_pgadmin
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@neuroadaptive.example.com
+      PGADMIN_DEFAULT_PASSWORD: neuroadaptive_dev_password
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - pgadmin_data:/var/lib/pgadmin
+
 volumes:
   pgdata:
+  pgadmin_data:

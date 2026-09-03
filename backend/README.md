@@ -62,25 +62,25 @@ pytest
 Corre contra la base de datos configurada en `.env` — asegurate de
 haber corrido `alembic upgrade head` antes.
 
-## 5. Nota sobre cómo se verificó este esqueleto
+## 5. Estado de verificación
 
-Este backend se escribió y revisó en un entorno sin salida a internet
-para instalar dependencias de PyPI, así que **no se pudo correr
-`pytest`/`uvicorn` de punta a punta ahí**. Lo que sí se verificó en ese
-entorno, con una instancia real de PostgreSQL 16:
+**Verificado de punta a punta el 25 de agosto de 2026** en la máquina de
+desarrollo, con Python 3.12 y una base PostgreSQL real. Los cuatro tests
+pasan:
 
-- El DDL completo (`../database/schema.sql`, equivalente a la
-  migración `0001_initial_schema.py`) se aplica sin errores.
-- Inserts con foreign keys, un `JOIN` de las 5 tablas, y `DELETE
-  ... CASCADE` funcionan como se espera.
-- Los ~20 archivos `.py` del backend pasan `python3 -m py_compile`
-  (sin errores de sintaxis).
+- `tests/test_health.py::test_health`
+- `tests/test_health.py::test_health_db`
+- `tests/test_session_lifecycle.py::test_full_session_walking_skeleton`
+- `tests/test_session_lifecycle.py::test_websocket_ping_and_events`
 
-Lo que falta confirmar en tu máquina (con red real) como primer paso:
-que `pip install -r requirements.txt` resuelve limpio, que `alembic
-upgrade head` reproduce el mismo esquema ya verificado, y que
-`pytest` / `scripts/ws_smoke_test.py` pasan de punta a punta. Si algo
-no calza, avisame y lo ajustamos.
+Con eso, los entregables **"FastAPI skeleton"** y **"WebSocket probado"**
+de M1 están cumplidos.
+
+Nota histórica: este backend se escribió originalmente en un entorno sin
+salida a internet para instalar dependencias de PyPI, así que la primera
+versión de este README listaba `pip install`, `alembic upgrade head` y
+`pytest` como pendientes de confirmar. Ya no lo están. Si vuelves a
+levantar el entorno desde cero, el camino corto es la sección 1 (Docker).
 
 ## 6. Estructura
 

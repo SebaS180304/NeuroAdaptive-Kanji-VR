@@ -52,8 +52,15 @@ namespace NeuroAdaptiveVR.Networking
         [JsonProperty("server_time")]
         public string ServerTime;
 
+        /// <summary>
+        /// Nullable a proposito: el backend (`session_clock.offset_ms`)
+        /// devuelve None cuando el mensaje no traia `client_timestamp`, y
+        /// eso viaja como `null` en el JSON. Con un double no-nullable,
+        /// Newtonsoft lanza excepcion al deserializar y el PONG se pierde
+        /// en silencio.
+        /// </summary>
         [JsonProperty("offset_ms")]
-        public double OffsetMs;
+        public double? OffsetMs;
 
         /// <summary>Solo ACK: "SESSION_EVENT" | "VALIDATION_EVENT".</summary>
         [JsonProperty("of")]
