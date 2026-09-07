@@ -1,119 +1,156 @@
-# NeuroAdaptive VR — Unity Client (Fase 1)
+# NeuroAdaptive VR — Unity Client
 
-Esqueleto tecnico del cliente Unity/Quest. Esta carpeta **no** es un
-proyecto Unity completo exportado desde el Editor (no hay `Library/`,
-`ProjectSettings/*.asset` ni GUIDs generados) — es la estructura de
-scripts y la configuracion de paquetes que arma sobre un proyecto Unity
-nuevo, siguiendo la especificacion de `Game Flow v1 / Unity Design
-Specification` del proyecto.
+The Unity/Quest client for the prototype. **This is a real, complete Unity
+project**, not a skeleton to copy over another one: it has
+`ProjectSettings/`, a resolved `Packages/manifest.json` and generated
+GUIDs. Open it directly from Unity Hub by pointing at this folder.
 
-## 1. Crear el proyecto Unity real
+> Previous version of this README: it described an `Assets/_Project/`
+> folder that no longer exists, claimed this was not a real Unity project,
+> and asked the reader to "uncomment the WebSocket implementation". None of
+> that has been true since 28 August 2026. Corrected in Phase 2's step 0.
 
-1. Instalar **Unity 6.1 o superior** (minimo recomendado por Meta:
-   `6000.0.66f2`) via Unity Hub. Fuente: [Meta Horizon — Unity project
-   setup](https://developers.meta.com/horizon/documentation/unity/unity-project-setup/).
-2. Unity Hub → New Project → template **3D (Core)** o **VR Core**.
-   Nombrarlo, por ejemplo, `NeuroAdaptiveVR`.
-3. Cerrar Unity. Copiar el contenido de esta carpeta (`Assets/_Project/`
-   y `Packages/manifest.json`) sobre el proyecto recien creado,
-   fusionando `Packages/manifest.json` si Unity ya genero uno (agregar
-   las dependencias listadas aca, no pisar las que Unity puso por
-   default).
-4. Reabrir el proyecto en Unity Hub. Unity va a importar los assets y
-   resolver los paquetes del manifest.
+## 1. Opening the project
 
-## 2. Paquetes / SDKs requeridos
+Unity **6000.5.10f1** (the exact version lives in
+`ProjectSettings/ProjectVersion.txt`). Unity Hub → Add → select this
+folder. The first open regenerates `Library/`, which git ignores.
 
-> ⚠️ **NO fusiones versiones fijadas a mano en `Packages/manifest.json`.**
-> La version original de este README pedia copiar un manifest con
-> versiones pineadas (`com.unity.xr.management: 4.5.1`,
-> `com.unity.xr.openxr: 1.15.1`, `com.unity.nuget.newtonsoft-json: 3.2.1`,
-> `com.unity.textmeshpro: 3.2.0-pre.10`). Eso **rompe la resolucion de
-> paquetes** en Unity 6000.5+: esas versiones son de 2024 y el Editor
-> nuevo exige minimos mas altos, con lo que el grafo de dependencias
-> queda insatisfacible y el proyecto no abre.
->
-> El `manifest.json` de esta carpeta ahora solo declara modulos
-> integrados de Unity (siempre resolubles). **Todo lo demas se instala
-> desde el Editor**, dejando que Package Manager elija la version
-> compatible con tu Editor.
+## 2. Packages already installed
 
-Instalar asi:
+Nothing needs installing by hand to work in the Editor. `manifest.json`
+already resolves:
 
-- **XR Plugin Management + OpenXR Plugin** — *no* los agregues a mano.
-  Ve a **Edit → Project Settings → XR Plug-in Management** y marca
-  **OpenXR**; Unity instala `com.unity.xr.management` y
-  `com.unity.xr.openxr` con las versiones correctas automaticamente.
-  (El Oculus XR Plugin viejo esta deprecado; el path actual es OpenXR.)
-- **Newtonsoft JSON** — Package Manager → **+ → Add package by name** →
-  `com.unity.nuget.newtonsoft-json`, **sin escribir version**. Se usa
-  para serializacion robusta de los mensajes WebSocket (mas flexible que
-  `JsonUtility` para el `payload` libre de
-  `SessionEvent`/`SystemValidationEvent`).
-- **Input System** — Package Manager → `com.unity.inputsystem`, sin
-  version. La plantilla Universal 3D suele traerlo ya.
-- **TextMeshPro** — **no lo instales**. En Unity 6 viene dentro de
-  `com.unity.ugui` y el paquete suelto esta descontinuado.
+| Package | Version | Why |
+|---|---|---|
+| `com.endel.nativewebsocket` | git `#upm` | WebSocket client that works in IL2CPP builds for Quest. `System.Net.WebSockets` is not reliable there. |
+| `com.unity.nuget.newtonsoft-json` | 3.2.2 | Serialization of the WS messages. `JsonUtility` cannot handle the free-form `payload`. |
+| `com.unity.xr.openxr` | 1.17.1 | XR. OpenXR is the current path; the old Oculus XR Plugin is deprecated. |
+| `com.unity.xr.management` | 4.7.0 | XR loader. |
+| `com.unity.render-pipelines.universal` | 17.5.0 | URP (Universal 3D template). |
+| `com.unity.inputsystem` | 1.20.0 | Input. |
 
-**Instalar manualmente desde Package Manager (no estan en el registry
-publico de Unity, se instalan via su propio instalador o Asset Store):**
+> **Do not pin versions by hand in `manifest.json`.** Installing from
+> Package Manager without typing a version lets the Editor pick a
+> compatible one. Pinning 2024-era versions into a 6000.5+ Editor makes the
+> dependency graph unsatisfiable and the project will not open. TextMeshPro
+> in particular **is not installed separately**: in Unity 6 it ships inside
+> `com.unity.ugui`.
 
-- **Meta XR Core SDK** — componentes esenciales para Quest.
-- **Meta XR Platform SDK** — identidad, entitlements, cloud storage
-  (se usa mas adelante, no bloquea Fase 1).
-- **NativeWebSocket** (`https://github.com/endel/NativeWebSocket`,
-  instalar via Package Manager → Add package from git URL) — cliente
-  WebSocket compatible con builds IL2CPP de Quest.
-  `SessionCommunicationClient.cs` esta escrito para este paquete
-  (implementacion comentada, lista para descomentar tras instalarlo).
-
-Despues de instalar Meta XR: Project Settings → XR Plug-in Management →
-habilitar OpenXR para Android, y activar los OpenXR Feature Groups
-**Meta XR Feature**, **Meta XR Foveation** y **Meta XR Subsampled
-Layout** (requeridos por Meta para acceso completo al headset).
-
-## 3. Estructura de carpetas
+## 3. Layout
 
 ```
-Assets/_Project/
-├── Scenes/                 # JapaneseLearningStudio.unity va aca (Fase 2)
+Assets/
+├── Scenes/
+│   ├── M1_RoundTrip.unity              # M1 round trip scene
+│   └── JapaneseLearningStudio.unity    # main scene (Phase 2)
 ├── Scripts/
-│   ├── Core/                GameFlowController, SessionClock
-│   ├── Controllers/         Los 14 controladores de la spec seccion 14
-│   ├── Data/                KanjiLearningItem, enums (GameFlowState, ESL/LAL, trial types)
-│   └── Networking/          SessionCommunicationClient, contratos de mensajes WS
-├── ScriptableObjects/       # Assets KanjiLearningItem (Fase 2)
-└── Prefabs/                 # Prefabs de zonas funcionales (Fase 2)
+│   ├── Core/          GameFlowController, SessionBootstrap, SessionClock
+│   ├── Controllers/   The 14 controllers from spec section 14
+│   ├── Data/          KanjiLearningItem, GameFlowState, ExperimentalCondition,
+│   │                  RetrievalTrialType
+│   └── Networking/    SessionCommunicationClient, WebSocketMessages
+├── ScriptableObjects/  KanjiLearningItem assets (Phase 2)
+├── Prefabs/            Prefabs for the functional zones (Phase 2)
+├── Settings/           URP renderers and volume profiles
+└── XR/                 OpenXR loader and settings
 ```
 
-Cada script tiene un docstring citando la seccion de la spec que
-implementa y la fase del cronograma donde se completa su logica real.
-En Fase 1 son deliberadamente **esqueletos**: la maquina de estados y
-el cliente WebSocket son funcionales (una vez instalado NativeWebSocket
-y armada la escena minima), pero el contenido pedagogico llega en
-Fase 2.
+The layout is **flat**, not nested under `_Project/`. That folder was an
+exact duplicate of `Assets/Scripts/` and was removed before the repository
+was consolidated.
 
-## 4. Probar el walking skeleton (objetivo de M1)
+Every script cites, in its docstring, the spec section it implements and
+the phase in which its real logic lands.
 
-1. Levantar el backend (ver `../backend/README.md`).
-2. En Unity, crear un GameObject vacio con `GameFlowController` +
-   `SessionCommunicationClient` (el `[RequireComponent]` los liga).
-3. Configurar `backendBaseUrl` = `ws://<IP-de-tu-PC>:8000` (usar la IP
-   de red local si vas a probar desde el Quest físico; `localhost`
-   solo sirve corriendo en el Editor).
-4. Instalar NativeWebSocket y descomentar la implementacion en
-   `SessionCommunicationClient.Connect()`.
-5. Crear una sesion vía REST (`POST /sessions`, ver README del
-   backend o `scripts/ws_smoke_test.py`) y pasar ese `session_id` a
-   `GameFlowController`/`Configure()`.
-6. Play: deberías ver en consola el `PING`/`PONG` cada
-   `pingIntervalSeconds`, y `STATE_ENTERED` al llamar
-   `AdvanceToNextState()`.
+## 4. What works today
 
-## 5. Que NO esta en Fase 1
+The three walking-skeleton components are real, tested code:
 
-Contenido kanji real, escena `JapaneseLearningStudio` armada,
-mecanicas de aprendizaje (discovery, assembly, trials), ESL/LAL
-aplicando cambios visuales reales, EEG/WAVEX. Todo eso es Fase 2 en
-adelante — ver `Sintesis_Analisis_Comprension_Proyecto.md` en el
-Project de Claude para el cronograma completo.
+- **`SessionCommunicationClient`** — WebSocket over NativeWebSocket, with a
+  configurable PING/PONG heartbeat, error handling, and message-queue
+  pumping in `Update()` (without that pump, `OnMessage` never runs).
+- **`GameFlowController`** — the S0–S9 state machine, emitting
+  `STATE_ENTERED` and guarding against advancing past S9. It exposes
+  `IsAdaptationAllowed()`, which returns true only in S7 and only under
+  adaptive conditions.
+- **`SessionBootstrap`** — creates a participant and a session over REST and
+  hands the `session_id` to the client before opening the socket, so you
+  never copy UUIDs by hand between curl and the Inspector.
+
+**That last one is Phase 1 only.** From Phase 2 onward the researcher
+creates the session and Unity merely consumes it; `createNewSessionOnPlay`
+stops being the normal path. Note that while it is on, every Play creates a
+new participant and session, and a failed run leaves orphaned participants
+in the database.
+
+The other fourteen controllers from spec section 14 are present: ten are
+stubs with TODOs, while `EnvironmentalStimulationController`,
+`LearningAssistanceController` and `PronunciationAudioController` carry only
+their guard clauses (adaptation timing, and the ban on pre-response audio in
+Kanji → Reading trials). `BehaviorTelemetryController` is functional: its
+`Emit()` is the single exit point for events.
+
+## 5. Running the round trip
+
+1. Start the backend: see `../backend/README.md`, section 1 (Docker).
+2. Open `Assets/Scenes/M1_RoundTrip.unity`.
+3. On the session GameObject, check `SessionBootstrap.backendHttpUrl`
+   (`http://localhost:8000`) and `SessionCommunicationClient.backendBaseUrl`
+   (`ws://localhost:8000`). Mind the scheme: one is `http://`, the other
+   `ws://`. To test from a physical Quest, use the PC's LAN IP in both;
+   `localhost` only works when running in the Editor.
+4. Press Play. The console should show, in order: participant created,
+   session created, `WS abierto`, the `VALIDATION_EVENT` ACK, the S0→S1
+   `STATE_ENTERED` with its ACK, and then `PING`/`PONG` every
+   `pingIntervalSeconds`.
+5. To advance states manually: right-click the `SessionBootstrap` header
+   during Play → **Advance To Next State**.
+6. Check the database: `docker compose exec -T db psql -U neuroadaptive
+   -d neuroadaptive_vr < ../database/verify_m1.sql`. Query 3 must return
+   `payload_ok = true`.
+
+## 6. The wire contract
+
+Two rules that Unity code must respect, because both were bugs before
+Phase 2 and neither fails loudly on its own:
+
+- **The event payload is an object, not a serialized string.** The backend
+  reads `payload` expecting an object; sending a JSON string stores an
+  empty payload without raising. This is why `SendSessionEvent` takes a
+  `Dictionary<string, object>` and the project uses Newtonsoft rather than
+  `JsonUtility`.
+- **Game flow states travel as the backend's enum value, not as the C#
+  member name.** Always use `GameFlowState.ToWireValue()`, never
+  `.ToString()`: the former yields `S1_WELCOME_ORIENTATION`, the latter
+  `S1_WelcomeOrientation`, and only the first one validates against the
+  Pydantic model and the `game_flow_state` PostgreSQL type. Each enum
+  member carries its wire value in an `[EnumMember]` attribute, which is
+  the single source of truth; a member added without one throws on first
+  use rather than sending wrong strings silently.
+
+## 7. XR status
+
+OpenXR is enabled with its loader for **Standalone** (`buildTarget: 1`),
+which is enough for Quest Link — the target for Phase 2.
+
+Outstanding, and needed only once an APK build comes into scope:
+
+- Android Build Support + OpenJDK + Android SDK & NDK in the Editor.
+- Meta XR Core SDK with its three feature groups (**Meta XR Feature**,
+  **Meta XR Foveation**, **Meta XR Subsampled Layout**).
+- At least one enabled **interaction profile**. All 18 currently sit at
+  `m_enabled: 0`, and with none of them OpenXR may fail to initialize
+  without a clear error. The relevant one is **Oculus Touch Controller
+  Profile**.
+- OpenXR enabled for the Android build target as well.
+
+## 8. What Phase 2 brings
+
+The `JapaneseLearningStudio` scene with its five functional zones, the 25
+`KanjiLearningItem` assets (15 experimental + 5 reserve + 5 tutorial), the
+response system shared by S5/S6/S7/S8, the S5 mechanics (discovery,
+standardized audio, guided assembly, guided association) and the flow
+chained end to end without adaptation.
+
+Detailed plan: `claude/Planteamiento_Fase2_M2.md` in the Claude Project.
