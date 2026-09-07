@@ -16,6 +16,20 @@
 -- neuroadaptive_vr y pegar SOLO las sentencias SELECT. Las lineas que
 -- empiezan con \echo son meta-comandos de psql; pgAdmin no las entiende
 -- y va a marcar error de sintaxis.
+--
+-- NOTA (7 sep 2026, paso 0 de Fase 2): las consultas 2 y 3 referenciaban
+-- una columna `server_timestamp` que nunca existio. La columna real de
+-- session_events se llama `server_received_at` -- asi esta en
+-- app/models/system_event.py, en database/schema.sql y en la migracion
+-- alembic 0001_initial_schema. Con el nombre viejo, este script fallaba
+-- con "column does not exist" justo en la consulta 3, que es la evidencia
+-- de cierre de M1.
+--
+-- En la misma pasada se corrigio el calculo del offset. Decia
+-- EXTRACT(MILLISECOND FROM (server - client)), que en Postgres devuelve
+-- solo el campo de segundos+milisegundos del intervalo: descarta minutos
+-- y horas sin avisar. Un desfase de 1 min 200 ms se reportaba como 200.
+-- EXTRACT(EPOCH FROM ...) * 1000 si da el total real en milisegundos.
 
 \echo '=== 1. Ultimas sesiones creadas ==='
 SELECT id, condition, status, current_state, visit_number, created_at
@@ -25,7 +39,7 @@ LIMIT 5;
 
 \echo ''
 \echo '=== 2. Eventos de sesion recientes ==='
-SELECT id, event_type, payload, client_timestamp, server_timestamp
+SELECT id, event_type, payload, client_timestamp, server_received_at
 FROM session_events
 ORDER BY id DESC
 LIMIT 10;
@@ -42,8 +56,8 @@ SELECT
     (payload ? 'state')                    AS payload_ok,
     payload ->> 'state'                    AS estado_reportado,
     client_timestamp,
-    server_timestamp,
-    EXTRACT(MILLISECOND FROM (server_timestamp - client_timestamp))
+    server_received_at,
+    EXTRACT(EPOCH FROM (server_received_at - client_timestamp)) * 1000
         AS offset_aprox_ms
 FROM session_events
 WHERE event_type = 'STATE_ENTERED'

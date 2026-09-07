@@ -60,13 +60,20 @@ namespace NeuroAdaptiveVR.Core
         public void EnterState(GameFlowState newState)
         {
             currentState = newState;
-            Debug.Log($"[GameFlowController] STATE_ENTERED: {newState}");
+
+            // ToWireValue(), no ToString(): el backend valida contra el valor
+            // del enum (SCREAMING_SNAKE_CASE), no contra el nombre del miembro
+            // de C#. Ver GameFlowState.cs. En el log se muestran los dos para
+            // que la consola siga siendo legible y a la vez se vea que sale
+            // por el cable.
+            string wireState = newState.ToWireValue();
+            Debug.Log($"[GameFlowController] STATE_ENTERED: {newState} (wire: {wireState})");
 
             communicationClient.SendSessionEvent(
                 eventType: "STATE_ENTERED",
                 payload: new Dictionary<string, object>
                 {
-                    { "state", newState.ToString() },
+                    { "state", wireState },
                 });
 
             OnStateEntered?.Invoke(newState);

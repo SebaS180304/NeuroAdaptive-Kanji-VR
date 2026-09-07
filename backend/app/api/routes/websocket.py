@@ -22,8 +22,16 @@ Cliente -> Servidor, mensaje JSON con forma:
 
 Servidor -> Cliente:
     {"type": "PONG", "server_time": "...", "offset_ms": 12.3}
-    {"type": "ACK", "of": "SESSION_EVENT", "id": 123}
+    {"type": "ACK", "of": "SESSION_EVENT", "id": "123"}
     {"type": "ERROR", "detail": "..."}
+
+El `id` de un ACK viaja SIEMPRE como string, para los dos tipos de
+evento. Hasta el cierre de Fase 1 el de SESSION_EVENT salia como entero
+(su PK es BIGINT) y el de VALIDATION_EVENT como string (su PK es UUID),
+lo que obligaba al cliente Unity a deserializarlo como `object` para
+tolerar ambos. Normalizado en el paso 0 de Fase 2: el contrato del
+protocolo queda con un solo tipo por campo, y quien necesite el valor
+numerico lo convierte donde lo necesita.
 """
 
 import json
@@ -35,7 +43,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
 from app.db.base import AsyncSessionLocal
-from app.models.session import ExperimentSession
+from app.models.session import ExperimentSession, GameFlowState
 from app.models.system_event import SystemValidationEvent
 from app.models.system_event import SessionEvent as SessionEventModel
 from app.schemas.event import SessionEventCreate, SystemValidationEventCreate
@@ -114,10 +122,63 @@ async def _handle_session_event(websocket: WebSocket, session_id: uuid.UUID, mes
     async with AsyncSessionLocal() as db:
         event = SessionEventModel(**parsed.model_dump())
         db.add(event)
+        await _sync_current_state(db, session_id, parsed)
         await db.commit()
         await db.refresh(event)
 
-    await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": event.id})
+    await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": str(event.id)})
+
+
+async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCreate) -> None:
+    """
+    Mantiene `experiment_sessions.current_state` al dia con los
+    STATE_ENTERED que llegan por el WebSocket.
+
+    Por que existe (7 sep 2026): hasta el paso 0 de Fase 2, Unity emitia
+    STATE_ENTERED y el backend lo guardaba en `session_events`, pero nadie
+    tocaba la fila de la sesion. El resultado eran sesiones que decian
+    `current_state = S0_SESSION_INITIALIZATION` teniendo eventos hasta S9.
+    Para M1 daba igual (el criterio era el event log), pero es metadata que
+    miente y es justo la que va a leer el Research Dashboard.
+
+    El event log sigue siendo la fuente de verdad historica; esta columna es
+    una proyeccion de conveniencia -- el ultimo estado conocido. Por eso un
+    payload que no se pueda interpretar se registra como warning y no aborta
+    el evento: perder la telemetria por no poder actualizar una proyeccion
+    seria el intercambio equivocado.
+
+    `PATCH /sessions/{id}/state` sigue existiendo como herramienta manual del
+    investigador; deja de ser la unica via de actualizacion.
+    """
+    if parsed.event_type != "STATE_ENTERED":
+        return
+
+    raw_state = parsed.payload.get("state")
+    if not raw_state:
+        logger.warning(
+            "STATE_ENTERED sin 'state' en el payload (session=%s); "
+            "current_state no se actualiza",
+            session_id,
+        )
+        return
+
+    try:
+        new_state = GameFlowState(raw_state)
+    except ValueError:
+        logger.warning(
+            "STATE_ENTERED con estado desconocido %r (session=%s). "
+            "Los valores validos son los del enum game_flow_state, en "
+            "SCREAMING_SNAKE_CASE; revisa que el cliente serialice el enum "
+            "por su valor de cable y no por el nombre del miembro.",
+            raw_state,
+            session_id,
+        )
+        return
+
+    session = await db.get(ExperimentSession, session_id)
+    if session is None:  # pragma: no cover - validado al abrir el socket
+        return
+    session.current_state = new_state
 
 
 async def _handle_validation_event(
