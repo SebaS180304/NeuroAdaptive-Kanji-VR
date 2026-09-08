@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Data;
 using NeuroAdaptiveVR.Networking;
 using UnityEngine;
@@ -12,16 +12,17 @@ namespace NeuroAdaptiveVR.Core
     /// transiciones entre fases estandarizadas/calibracion/adaptativa/
     /// assessment.
     ///
-    /// FASE 1: implementa solo la maquina de estados y la notificacion
-    /// de STATE_ENTERED al backend via SessionCommunicationClient. Cada
-    /// controlador especifico (LearningBoardController, TrialController,
-    /// etc.) se conecta en las fases donde su contenido se construye
-    /// (ver README de este proyecto y Sintesis_Analisis_Comprension_Proyecto).
+    /// FASE 2: emite STATE_ENTERED a traves de BehaviorTelemetryController,
+    /// no directamente por el cliente WebSocket, para que el evento lleve el
+    /// bloque de contexto del contrato de payload
+    /// (database/EVENT_CONTRACT.md). El campo `state` del payload lo pone
+    /// ahora el contexto, no este controlador.
     /// </summary>
     [RequireComponent(typeof(SessionCommunicationClient))]
+    [RequireComponent(typeof(BehaviorTelemetryController))]
     public class GameFlowController : MonoBehaviour
     {
-        [SerializeField] private SessionCommunicationClient communicationClient;
+        [SerializeField] private BehaviorTelemetryController telemetry;
 
         [Header("Session context (asignado en S0)")]
         [SerializeField] private ExperimentalCondition condition;
@@ -35,7 +36,7 @@ namespace NeuroAdaptiveVR.Core
         /// <summary>
         /// Orden canonico de estados (spec 14.1). No incluye transiciones
         /// condicionales (p.ej. S2 solo en la primera visita); esa logica
-        /// se agrega en Fase 2 cuando el contenido real exista.
+        /// se agrega al encadenar el flujo (plan de Fase 2, 4.5).
         /// </summary>
         private static readonly GameFlowState[] StateOrder =
         {
@@ -53,28 +54,30 @@ namespace NeuroAdaptiveVR.Core
 
         private void Awake()
         {
-            if (communicationClient == null)
-                communicationClient = GetComponent<SessionCommunicationClient>();
+            if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
+
+            if (telemetry == null)
+            {
+                Debug.LogError("[GameFlowController] Falta BehaviorTelemetryController en este " +
+                               "GameObject. Sin el no se emite telemetria con el bloque de contexto.");
+                return;
+            }
+
+            telemetry.SetState(currentState);
         }
 
         public void EnterState(GameFlowState newState)
         {
             currentState = newState;
 
-            // ToWireValue(), no ToString(): el backend valida contra el valor
-            // del enum (SCREAMING_SNAKE_CASE), no contra el nombre del miembro
-            // de C#. Ver GameFlowState.cs. En el log se muestran los dos para
-            // que la consola siga siendo legible y a la vez se vea que sale
-            // por el cable.
-            string wireState = newState.ToWireValue();
-            Debug.Log($"[GameFlowController] STATE_ENTERED: {newState} (wire: {wireState})");
+            // El orden importa: el contexto se actualiza ANTES de emitir, de
+            // modo que el `state` del payload sea el estado al que se entra.
+            telemetry.SetState(newState);
 
-            communicationClient.SendSessionEvent(
-                eventType: "STATE_ENTERED",
-                payload: new Dictionary<string, object>
-                {
-                    { "state", wireState },
-                });
+            Debug.Log($"[GameFlowController] STATE_ENTERED: {newState} (wire: {newState.ToWireValue()})");
+
+            // Sin campos propios: `state` viaja en el bloque de contexto.
+            telemetry.Emit(TelemetryEvents.StateEntered);
 
             OnStateEntered?.Invoke(newState);
         }

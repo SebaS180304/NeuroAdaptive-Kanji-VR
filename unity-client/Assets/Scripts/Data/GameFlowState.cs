@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.Serialization;
 
 namespace NeuroAdaptiveVR.Data
@@ -14,7 +11,7 @@ namespace NeuroAdaptiveVR.Data
     /// backend (backend/app/models/session.py) y con el tipo
     /// `game_flow_state` de PostgreSQL.
     ///
-    /// CORRECCION (7 sep 2026, paso 0 de Fase 2): hasta hoy
+    /// CORRECCION (7 sep 2026, paso 0 de Fase 2): hasta entonces
     /// GameFlowController serializaba con `.ToString()`, que devuelve el
     /// nombre del miembro -- "S1_WelcomeOrientation" en vez de
     /// "S1_WELCOME_ORIENTATION". El docstring de este archivo ya afirmaba
@@ -64,70 +61,30 @@ namespace NeuroAdaptiveVR.Data
         S10_HCISelfReport,
     }
 
-    /// <summary>
-    /// Traduccion entre los miembros del enum y los strings que viajan por
-    /// el protocolo. El atributo de cada miembro es la unica fuente de
-    /// verdad: no hay una segunda lista que se pueda desincronizar.
-    /// </summary>
     public static class GameFlowStateExtensions
     {
-        private static readonly Dictionary<GameFlowState, string> ToWire = BuildToWire();
-        private static readonly Dictionary<string, GameFlowState> FromWire = BuildFromWire();
-
         /// <summary>
         /// String que el backend espera para este estado. Es lo que se manda
         /// en el payload de STATE_ENTERED y en PATCH /sessions/{id}/state.
         /// </summary>
-        public static string ToWireValue(this GameFlowState state) => ToWire[state];
+        public static string ToWireValue(this GameFlowState state)
+            => EnumWire<GameFlowState>.Value(state);
+
+        /// <summary>Inverso, para mensajes que vengan del backend.</summary>
+        public static bool TryFromWireValue(string wireValue, out GameFlowState state)
+            => EnumWire<GameFlowState>.TryParse(wireValue, out state);
 
         /// <summary>
-        /// Inverso de <see cref="ToWireValue"/>, para mensajes que vengan del
-        /// backend. Devuelve false si el string no corresponde a ningun
-        /// estado conocido, en vez de lanzar: un backend mas nuevo que este
-        /// cliente no deberia tumbar la sesion.
+        /// Prefijo corto del estado para componer identificadores legibles
+        /// (`trial_id` = "S7-007", ver database/EVENT_CONTRACT.md seccion 4.1).
+        /// Es la parte anterior al primer guion bajo del nombre del miembro:
+        /// S0..S10.
         /// </summary>
-        public static bool TryFromWireValue(string wireValue, out GameFlowState state)
+        public static string ShortCode(this GameFlowState state)
         {
-            if (wireValue != null && FromWire.TryGetValue(wireValue, out state)) return true;
-            state = default;
-            return false;
-        }
-
-        private static Dictionary<GameFlowState, string> BuildToWire()
-        {
-            var map = new Dictionary<GameFlowState, string>();
-            var type = typeof(GameFlowState);
-
-            foreach (GameFlowState state in Enum.GetValues(type))
-            {
-                var field = type.GetField(state.ToString());
-                var attribute = field?.GetCustomAttribute<EnumMemberAttribute>();
-
-                // Fallo ruidoso y temprano, a proposito. Si el atributo falta
-                // -- porque se agrego un estado sin el, o porque el stripping
-                // de IL2CPP lo elimino en un build -- lo que queremos es una
-                // excepcion en el primer uso, no que la sesion entera mande
-                // silenciosamente strings que el backend rechaza. Ese fue
-                // exactamente el modo de falla del bug de payload_json.
-                if (attribute == null || string.IsNullOrEmpty(attribute.Value))
-                {
-                    throw new InvalidOperationException(
-                        $"GameFlowState.{state} no tiene [EnumMember(Value = ...)]. " +
-                        "Cada estado necesita su valor de cable explicito para " +
-                        "coincidir con el enum game_flow_state del backend.");
-                }
-
-                map[state] = attribute.Value;
-            }
-
-            return map;
-        }
-
-        private static Dictionary<string, GameFlowState> BuildFromWire()
-        {
-            var map = new Dictionary<string, GameFlowState>();
-            foreach (var pair in ToWire) map[pair.Value] = pair.Key;
-            return map;
+            string name = state.ToString();
+            int underscore = name.IndexOf('_');
+            return underscore > 0 ? name.Substring(0, underscore) : name;
         }
     }
 }
