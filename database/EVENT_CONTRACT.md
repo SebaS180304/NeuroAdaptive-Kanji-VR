@@ -106,16 +106,60 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | Event | Additional payload fields |
 |---|---|
 | `STATE_ENTERED` | — (context block only) |
-| `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option` |
+| `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option`, `hint_available` |
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
-| `HINT_REQUESTED` | `hint_type`, `time_since_trial_start_ms` |
-| `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` |
+| `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
+| `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names) |
 | `KANJI_EXPOSED` | `kanji_char`, `discovery_type`, `exposure_ms` — S5 discovery sequence, spec §7.6 |
 | `ASSEMBLY_COMPLETED` | `duration_ms`, `incorrect_attempts`, `segment_count` — spec §5.3 |
 
 `options` and `correct_option` on `TRIAL_STARTED` are what make a trial
 reconstructable without re-running the generator: they record what the
 participant actually saw, in the order they saw it.
+
+`hint_available` records whether assistance existed to be asked for, separately
+from whether it was asked. Spec §11 lists "hint requested" and "hint available"
+as two fields, and the distinction is the whole point of the on-request model in
+§5.5: a participant who asks for help at LAL LOW and gets nothing is a different
+observation from one who never asks.
+
+Cue arrays (`hint_type`, `cues_presented`) carry cue names, not a flags integer:
+`TARGET_READING_AUDIO`, `VISUAL_ASSOCIATION`, `REVERSE_SEMANTIC_ASSOCIATION`,
+`VISUAL_TRANSFORMATION`. A bitmask in JSONB has to be decoded in every query and
+cannot be filtered with `payload -> 'cues_presented' ? 'X'`.
+
+### 5.5 Trial-cycle decisions this contract assumes
+
+Four choices settled on 9 September that the payload shape depends on. Recorded
+here because the shape does not explain them on its own.
+
+- **Assistance is granted on request, not automatically.** LAL determines what is
+  *available* for a given trial type (spec §9.1); the participant invokes it.
+  This is the only reading that makes §11's "hint requested / hint available"
+  pair meaningful and that justifies S2 teaching "Request Hint". `HINT_REQUESTED`
+  is emitted even when nothing is available — asking and getting nothing is a
+  behavioral observation, not a non-event.
+- **Selection is commitment.** One step: choosing an option commits it, and the
+  response clock stops there and nowhere else (spec §11.1, "participant commits
+  to an answer"). A confirm step would put a second decision inside the response
+  time.
+- **Four options, always.** Chance level 25 %, and one set member is left out of
+  each trial so the participant does not answer against a memorized grid of five.
+  The count is fixed by the experiment and LAL may never change it (spec §9.3);
+  the response system aborts a trial that arrives with a different count.
+- **Meanings are shown in English.** They are the T1 prompt and the T2 options,
+  so this is the content variable with the largest surface in the study.
+
+### 5.6 A note on not bumping `schema_version`
+
+`hint_available` was added on 9 September, after v1 was already in the database.
+The version stays at 1 deliberately: it was added to `TRIAL_STARTED` and
+`HINT_REQUESTED`, two events that had never been emitted before that day, so no
+existing row's shape changed and no migration can be ambiguous about it.
+
+The rule this sets: bump when an event that already exists in the database
+changes shape, not when a new event is defined. Stated so the next person adding
+a field does not have to guess which case they are in.
 
 ### 5.2 Reserved for Phase 3
 
@@ -225,8 +269,52 @@ is kept at all, is a Phase 3–4 decision alongside the EEG stream — both are
 continuous, both need the Session Clock, and they should be solved once rather
 than twice.
 
-## 10 · Change log
+## 10 · Where the context block comes from
+
+The five context fields have exactly one owner each, and the telemetry
+controller **reads** them rather than keeping copies:
+
+| Field | Owner |
+|---|---|
+| `state` | `GameFlowController` |
+| `esl` | `EnvironmentalStimulationController` |
+| `lal` | `LearningAssistanceController` |
+| `session_elapsed_ms` | `SessionClock` (static, zero installed from the backend) |
+| `schema_version` | constant in `TelemetryContract` |
+
+This is not a style preference; it is the fix for two bugs found on 9 September,
+both the same shape. `TrialRequest` originally carried its own `state` and its
+own `lal`. Those drove behavior — the `trial_id` prefix, and which cue LAL
+granted — while the context block stamped separate copies that nothing kept up
+to date. The result was payloads contradicting themselves: `state` reading
+`S1_WELCOME_ORIENTATION` next to a `trial_id` of `S7-001`, and 19 trials
+recorded as `lal: OFF` while the granted cues were the MEDIUM and HIGH rows of
+§9.1.
+
+Neither failed. Both would have corrupted the analysis silently — an assistance
+study whose recorded assistance level is wrong for every trial. The second one
+survived the fix for the first, because that fix only addressed the field that
+had been pointed at.
+
+**A value that exists in one place cannot desynchronize.** That is a stronger
+guarantee than remembering to synchronize two, and it is why neither field
+belongs in `TrialRequest`.
+
+## 11 · Change log
 
 **v1 — 8 September 2026.** First version. Context block, trial block,
 deterministic `trial_id`, the seven Phase 2 events, and the two deviations from
 spec §11 recorded in §5.3 and §5.4.
+
+**9 September 2026 — response system.** No version bump; see §5.6.
+
+- `hint_available` added to `TRIAL_STARTED` and `HINT_REQUESTED`.
+- Cue arrays documented, with their four names.
+- §5.5: the four trial-cycle decisions the payload shape assumes.
+- §10: the context block's ownership rule, and the two bugs that produced it.
+- `database/verify_trials.sql` added. It checks behavior where
+  `verify_events.sql` checks shape: trial completeness, internal coherence
+  between `ANSWER_SELECTED` and `TRIAL_COMPLETED`, option well-formedness, the
+  T3 audio prohibition, and the granted cues against §9.1 — with the spec table
+  transcribed independently of the C# so the check does not share its author's
+  reading of the spec.

@@ -60,19 +60,16 @@ namespace NeuroAdaptiveVR.Core
             {
                 Debug.LogError("[GameFlowController] Falta BehaviorTelemetryController en este " +
                                "GameObject. Sin el no se emite telemetria con el bloque de contexto.");
-                return;
             }
-
-            telemetry.SetState(currentState);
         }
 
         public void EnterState(GameFlowState newState)
         {
+            // Este controlador es el unico dueño del estado. La telemetria lo
+            // LEE de aqui al emitir, en vez de guardar una copia que alguien
+            // tenga que mantener al dia -- por eso basta con asignarlo antes
+            // de emitir y no hay ningun SetState que se pueda olvidar.
             currentState = newState;
-
-            // El orden importa: el contexto se actualiza ANTES de emitir, de
-            // modo que el `state` del payload sea el estado al que se entra.
-            telemetry.SetState(newState);
 
             Debug.Log($"[GameFlowController] STATE_ENTERED: {newState} (wire: {newState.ToWireValue()})");
 

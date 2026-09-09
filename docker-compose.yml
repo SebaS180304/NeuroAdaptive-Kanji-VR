@@ -67,6 +67,29 @@ services:
       - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
       - pgadmin_data:/var/lib/pgadmin
 
+  # Herramientas de contenido kanji. Perfil "tools": `docker compose up` NO la
+  # levanta, es un contenedor de un solo disparo.
+  #
+  #   docker compose run --rm kanji-tools python tools/kanji_metrics.py
+  #   docker compose run --rm kanji-tools python tools/kanji_metrics.py --export
+  #
+  # Existe porque las metricas dependen de la tipografia (ver tools/Dockerfile)
+  # y porque la maquina de desarrollo no tiene ni las dependencias ni la fuente.
+  # Sin esto, "regenerar en el mismo commit que cambia un kanji" seria una regla
+  # que nadie del equipo puede cumplir.
+  kanji-tools:
+    build:
+      context: ./tools
+    container_name: neuroadaptive_kanji_tools
+    profiles: ["tools"]
+    # El repositorio entero, porque el script escribe el contrato de contenido
+    # en unity-client/Assets/Resources/ -- directamente donde Unity lo lee, sin
+    # copias intermedias.
+    volumes:
+      - .:/repo
+    working_dir: /repo
+
+
 volumes:
   pgdata:
   pgadmin_data:
