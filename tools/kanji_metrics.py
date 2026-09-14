@@ -14,7 +14,7 @@ set cae dentro de las bandas de tolerancia acordadas. Devuelve código de salida
 
     python3 kanji_metrics.py            # tabla + veredicto
     python3 kanji_metrics.py --pool     # además, matriz de colisiones del pool
-    python3 kanji_metrics.py --font RUTA.ttc
+    python3 kanji_metrics.py --font RUTA.otf   # solo para comparar tipografías
 
 Métricas
 --------
@@ -25,8 +25,11 @@ Métricas
 5. Nº de lecturas comunes  — dato de contenido
 6. Confusabilidad gráfica  — correlación de Pearson entre mapas suavizados
 
-Las métricas 2 y 6 dependen de la tipografía. Usar la fuente definitiva del
-Learning Board antes de congelar los sets.
+Las métricas 2 y 6 dependen de la tipografía. Por eso se calculan sobre
+`unity-client/Assets/Fonts/NotoSansCJKjp-Regular.otf` — el mismo archivo del que
+Unity genera el TMP_FontAsset del Learning Board, extraído por
+`tools/extract_board_font.py`. La forma medida y la forma que ve el participante
+son el mismo glifo por construcción, no por coincidencia.
 
 Requisitos: pillow, numpy. Sin red.
 """
@@ -38,7 +41,10 @@ from dataclasses import dataclass
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-DEFAULT_FONT = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+# El .ttc del paquete Debian que fija tools/Dockerfile. Ya NO se usa para
+# calcular: es unicamente el origen del que tools/extract_board_font.py saca la
+# cara japonesa. Ver DEFAULT_FONT mas abajo.
+SYSTEM_TTC = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
 
 # Raiz del repositorio. KANJI_REPO_ROOT gana si esta definida; si no, se deduce
 # de la ubicacion de este script, que vive en tools/.
@@ -60,6 +66,20 @@ REPO_ROOT = pathlib.Path(
 # StreamingAssets el archivo vive dentro del APK y hay que leerlo con
 # UnityWebRequest, con codigo distinto segun plataforma.
 DEFAULT_EXPORT = REPO_ROOT / "unity-client" / "Assets" / "Resources" / "kanji_content.json"
+
+# La fuente con la que se calcula. Es un archivo DEL REPOSITORIO, no del sistema,
+# y es el mismo del que Unity genera su TMP_FontAsset.
+#
+# Antes esto apuntaba al .ttc del sistema. El problema no era que estuviera mal
+# --las metricas salian bien-- sino que Unity no podia alcanzarlo y, aunque
+# pudiera, un .ttc es una coleccion de varias caras: PIL abre el indice 0 y TMP
+# elige por su cuenta. Que coincidieran era una suposicion. Y una metrica de
+# complejidad calculada sobre una cara distinta de la que ve el participante es
+# un numero que no describe el experimento.
+#
+# tools/extract_board_font.py saca la cara japonesa por indice explicito,
+# comprobando su nombre, y la escribe aqui. Un archivo, dos consumidores.
+DEFAULT_FONT = REPO_ROOT / "unity-client" / "Assets" / "Fonts" / "NotoSansCJKjp-Regular.otf"
 
 
 # --------------------------------------------------------------------------- #
@@ -163,6 +183,43 @@ RESTRICTED = {
     "日": {"火"},   # colisión de lectura (ひ) — rompe T3
 }
 
+# ── Imageabilidad · DOS EVALUADORES, DOS CONSTRUCTOS ────────────────────────
+# Escala 1-5, puntuada por los dos revisores de MIRAI (10 y 11 de septiembre).
+# Correlacion entre ambos r = -0.04, acuerdo exacto en 6 de 15: la pregunta era
+# ambigua y cada uno respondio a una cosa distinta.
+#
+#   R1 puntuo TRANSPARENCIA DEL GLIFO - el caracter moderno todavia se parece
+#      al dibujo del que salio?   火 5, 雨 5, 車 2, 花 2
+#   R2 puntuo CONCRECION DEL OBJETO - el significado se puede mostrar como un
+#      objeto que se coge con la mano?   火 2, 雨 2, 車 5, 花 5
+#
+# Los dos hacen falta: la mecanica muestra un objeto 3D Y lo transforma en el
+# caracter, asi que un item falla si cualquiera de las dos se rompe. NO se
+# promedian: promediar dos constructos distintos da 3.5 para 火 y 3.5 para 車,
+# que no significa nada y ademas aprueba a los dos.
+#
+# Ver claude/Metricas_Dificultad_Kanji_Fase2.md §12, D10. R2 solo puntuo los 15.
+IMAGEABILITY_R1: dict[str, int] = {   # transparencia del glifo, los 35
+    "月": 3, "車": 2, "火": 5, "竹": 5, "石": 5,
+    "山": 5, "門": 5, "女": 4, "手": 2, "雨": 5,
+    "人": 5, "足": 3, "牛": 4, "肉": 3, "花": 2,
+    "日": 5, "木": 5, "川": 4, "田": 5, "口": 5,
+    "土": 5, "子": 3, "水": 4, "目": 5, "米": 3,
+    "糸": 5, "耳": 4, "貝": 5, "学": 3, "物": 1,
+    "金": 3, "茶": 1, "馬": 1, "魚": 1, "鳥": 1,
+}
+IMAGEABILITY_R2: dict[str, int] = {   # concrecion del objeto, solo los 15
+    "月": 5, "車": 5, "火": 2, "竹": 5, "石": 5,
+    "山": 5, "門": 5, "女": 3, "手": 3, "雨": 2,
+    "人": 5, "足": 3, "牛": 5, "肉": 4, "花": 5,
+}
+
+# Se REPORTA, no se exige. Congelar el contenido el 14 de septiembre fue una
+# decision consciente sobre una metrica que todavia no esta bien medida; hacer
+# fallar el build con ella seria fingir una certeza que no hay.
+MIN_IMAGEABILITY = 3
+
+
 # Bandas de tolerancia (§5 del documento de métricas)
 BANDS = {
     "strokes":   (25, 2),      # centro, tolerancia
@@ -189,14 +246,19 @@ SIM_MEAN_MAX = 0.12            # similitud gráfica media dentro de un set
 #      nominal, o sus datos no son comparables con los del resto.
 SUBST_DELTA_STROKES = 2        # |trazos(r) − trazos(e)| máximo
 SUBST_DELTA_MORAE = 1          # |moras(r) − moras(e)| máximo
-SUBST_READINGS_TOL = 3         # banda de lecturas relajada SOLO al sustituir
-# Por qué 3 y no 2: con la banda nominal (13±2) el kanji 女 se queda sin ningún
-# sustituto válido, porque aporta 4 lecturas y ningún candidato de trazos
-# parecidos las compensa. El nº de lecturas es el más débil de los seis
-# indicadores y el único que produce ese agujero; relajarlo a ±3 da entre 3 y 9
-# sustitutos a cada uno de los quince. Es una relajación deliberada y acotada,
-# no un descuido: queda anotada aquí porque afecta a la comparabilidad de los
-# participantes que reciban sustituciones.
+SUBST_APPLY_READINGS_BAND = False
+# La banda de lecturas NO se aplica al sustituir, por principio y no por
+# conveniencia. El estudio ensena y evalua UNA sola lectura por kanji; las demas
+# lecturas del caracter no aparecen en ningun trial. El recuento es un proxy de
+# variabilidad fonetica util al DISENAR los sets, pero no es condicion de
+# validez de una sustitucion: cambiar 女 por 川 no cambia cuantas lecturas se
+# ensenan, que sigue siendo una.
+#
+# Historial, porque importa: esta banda fue el unico obstaculo en los dos
+# repartos evaluados, siempre por un punto y siempre dejando a 女 sin sustituto.
+# Relajarla a ±4 da el mismo resultado que quitarla --79 sustituciones, ningun
+# huerfano--, asi que quitarla es la formulacion honesta de lo mismo. Sigue
+# aplicandose al disenar los sets.
 
 
 # --------------------------------------------------------------------------- #
@@ -216,11 +278,12 @@ def hard_clash(g: "Glyphs", a: str, b: str) -> str | None:
 
 
 def set_in_band(g: "Glyphs", members: list[str], reference_perim: float,
-                readings_tol: int) -> str | None:
+                readings_band: bool = True) -> str | None:
     """Devuelve el nombre de la primera banda incumplida, o None."""
     for name, (centre, tol) in BANDS.items():
-        t = readings_tol if name == "readings" else tol
-        if abs(sum(getattr(KANJI[k], name) for k in members) - centre) > t:
+        if name == "readings" and not readings_band:
+            continue
+        if abs(sum(getattr(KANJI[k], name) for k in members) - centre) > tol:
             return name
     p = sum(g.perimetric_complexity(k) for k in members)
     if abs(100.0 * (p - reference_perim) / reference_perim) > PERIM_TOLERANCE_PCT:
@@ -256,7 +319,7 @@ def substitution_table(g: "Glyphs") -> dict[str, dict[str, list[str]]]:
                     continue
                 if abs(KANJI[r].morae - KANJI[e].morae) > SUBST_DELTA_MORAE:
                     continue
-                if set_in_band(g, rest + [r], ref, SUBST_READINGS_TOL):
+                if set_in_band(g, rest + [r], ref, SUBST_APPLY_READINGS_BAND):
                     continue
                 valid.append(r)
             table[name][e] = valid
@@ -289,12 +352,18 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
             "role": role,
             "experimentalSet": set_name,
             "perimetricComplexity": round(g.perimetric_complexity(ch), 1),
+            "imageabilityGlyph": IMAGEABILITY_R1.get(ch),
+            "imageabilityObject": IMAGEABILITY_R2.get(ch),
         }
 
     blob = {
         "schemaVersion": 1,
         "generatedBy": "kanji_metrics.py --export",
-        "font": g.font_path if hasattr(g, "font_path") else None,
+        # Ruta relativa a la raiz del repo: el JSON se versiona, y una ruta
+        # absoluta cambia segun quien lo genere (Windows, Docker, contenedor).
+        "font": str(pathlib.Path(g.font_path).resolve().relative_to(REPO_ROOT).as_posix())
+                if str(pathlib.Path(g.font_path).resolve()).startswith(str(REPO_ROOT))
+                else str(g.font_path),
         "note": ("Generado, no escrito a mano. Regenerar tras cualquier cambio "
                  "en KANJI, SETS o RESERVE."),
         "rules": {
@@ -306,7 +375,7 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
             "substitution": {
                 "deltaStrokes": SUBST_DELTA_STROKES,
                 "deltaMorae": SUBST_DELTA_MORAE,
-                "readingsTolerance": SUBST_READINGS_TOL,
+                "applyReadingsBand": SUBST_APPLY_READINGS_BAND,
             },
             "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)",
         },
@@ -560,9 +629,16 @@ def main() -> int:
         sys.stdout = sys.stderr
 
     try:
-        g = Glyphs(args.font)
+        g = Glyphs(str(args.font))
     except OSError:
         print(f"No se pudo abrir la fuente: {args.font}", file=sys.stderr)
+        if str(args.font) == str(DEFAULT_FONT):
+            print("\nEsa es la fuente del Learning Board, y se genera. Extraerla:\n"
+                  "    docker compose run --rm kanji-tools "
+                  "python tools/extract_board_font.py\n"
+                  "Se calcula sobre ella --y no sobre el .ttc del sistema-- para que "
+                  "el glifo medido y el glifo que ve el participante sean el mismo.",
+                  file=sys.stderr)
         return 2
 
     results = {name: evaluate_set(g, ks) for name, ks in SETS.items()}
@@ -621,6 +697,27 @@ def main() -> int:
             print(f"Contrato de contenido escrito en {args.export}\n")
 
     orphans = [e for rows in table.values() for e, v in rows.items() if not v]
+
+    print("Imageabilidad - se reporta, no se exige (ver §12, D10):")
+    for tag, tbl in (("R1 glifo ", IMAGEABILITY_R1),
+                     ("R2 objeto", IMAGEABILITY_R2)):
+        if not all(k in tbl for v in SETS.values() for k in v):
+            continue
+        t = {n: sum(tbl[k] for k in v) for n, v in SETS.items()}
+        detail = "  ".join(f"{n} {v}" for n, v in t.items())
+        print(f"  {tag}:  {detail}   rango {max(t.values()) - min(t.values())}"
+              f"   set mas bajo: {min(t, key=t.get)}")
+    disputed = [k for v in SETS.values() for k in v if k in IMAGEABILITY_R2
+                and abs(IMAGEABILITY_R1[k] - IMAGEABILITY_R2[k]) >= 3]
+    if disputed:
+        print(f"  en disputa (>=3 puntos entre evaluadores): {''.join(disputed)}")
+    low = [k for v in SETS.values() for k in v
+           if min(IMAGEABILITY_R1.get(k, 9), IMAGEABILITY_R2.get(k, 9))
+           < MIN_IMAGEABILITY]
+    if low:
+        print(f"  por debajo de {MIN_IMAGEABILITY} para alguno de los dos: "
+              f"{''.join(low)}")
+    print()
 
     failures = check_bands(results)
     unrestricted = [c for c in collisions if "SIN RESTRICCIÓN" in c]
