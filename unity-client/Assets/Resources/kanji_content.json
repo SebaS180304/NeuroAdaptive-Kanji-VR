@@ -218,6 +218,7 @@
   ],
   "kanji": [
     {
+      "id": "KANJI_TSUKI",
       "kanji": "月",
       "meaning": "moon",
       "targetReading": "つき",
@@ -234,6 +235,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_KURUMA",
       "kanji": "車",
       "meaning": "car",
       "targetReading": "くるま",
@@ -250,6 +252,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_HI",
       "kanji": "火",
       "meaning": "fire",
       "targetReading": "ひ",
@@ -266,6 +269,7 @@
       "imageabilityObject": 2
     },
     {
+      "id": "KANJI_TAKE",
       "kanji": "竹",
       "meaning": "bamboo",
       "targetReading": "たけ",
@@ -282,6 +286,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_ISHI",
       "kanji": "石",
       "meaning": "stone",
       "targetReading": "いし",
@@ -298,6 +303,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_YAMA",
       "kanji": "山",
       "meaning": "mountain",
       "targetReading": "やま",
@@ -314,6 +320,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_MON",
       "kanji": "門",
       "meaning": "gate",
       "targetReading": "もん",
@@ -330,6 +337,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_ONNA",
       "kanji": "女",
       "meaning": "woman",
       "targetReading": "おんな",
@@ -346,6 +354,7 @@
       "imageabilityObject": 3
     },
     {
+      "id": "KANJI_TE",
       "kanji": "手",
       "meaning": "hand",
       "targetReading": "て",
@@ -362,6 +371,7 @@
       "imageabilityObject": 3
     },
     {
+      "id": "KANJI_AME",
       "kanji": "雨",
       "meaning": "rain",
       "targetReading": "あめ",
@@ -378,6 +388,7 @@
       "imageabilityObject": 2
     },
     {
+      "id": "KANJI_HITO",
       "kanji": "人",
       "meaning": "person",
       "targetReading": "ひと",
@@ -394,6 +405,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_ASHI",
       "kanji": "足",
       "meaning": "leg, foot",
       "targetReading": "あし",
@@ -410,6 +422,7 @@
       "imageabilityObject": 3
     },
     {
+      "id": "KANJI_USHI",
       "kanji": "牛",
       "meaning": "cow",
       "targetReading": "うし",
@@ -426,6 +439,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_NIKU",
       "kanji": "肉",
       "meaning": "meat",
       "targetReading": "にく",
@@ -442,6 +456,7 @@
       "imageabilityObject": 4
     },
     {
+      "id": "KANJI_HANA",
       "kanji": "花",
       "meaning": "flower",
       "targetReading": "はな",
@@ -458,6 +473,7 @@
       "imageabilityObject": 5
     },
     {
+      "id": "KANJI_NICHI",
       "kanji": "日",
       "meaning": "sun",
       "targetReading": "ひ",
@@ -474,6 +490,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_KI",
       "kanji": "木",
       "meaning": "tree",
       "targetReading": "き",
@@ -490,6 +507,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_KAWA",
       "kanji": "川",
       "meaning": "river",
       "targetReading": "かわ",
@@ -506,6 +524,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_TA",
       "kanji": "田",
       "meaning": "rice field",
       "targetReading": "た",
@@ -522,6 +541,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_KUCHI",
       "kanji": "口",
       "meaning": "mouth",
       "targetReading": "くち",
@@ -538,6 +558,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_TSUCHI",
       "kanji": "土",
       "meaning": "ground",
       "targetReading": "つち",
@@ -554,6 +575,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_KO",
       "kanji": "子",
       "meaning": "child",
       "targetReading": "こ",
@@ -570,6 +592,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_MIZU",
       "kanji": "水",
       "meaning": "water",
       "targetReading": "みず",
@@ -586,6 +609,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_ME",
       "kanji": "目",
       "meaning": "eye",
       "targetReading": "め",
@@ -602,6 +626,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_KOME",
       "kanji": "米",
       "meaning": "rice",
       "targetReading": "こめ",
@@ -618,6 +643,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_ITO",
       "kanji": "糸",
       "meaning": "thread",
       "targetReading": "いと",
@@ -634,6 +660,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_MIMI",
       "kanji": "耳",
       "meaning": "ear",
       "targetReading": "みみ",
@@ -650,6 +677,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_KAI",
       "kanji": "貝",
       "meaning": "shellfish",
       "targetReading": "かい",
@@ -666,6 +694,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_GAKU",
       "kanji": "学",
       "meaning": "study",
       "targetReading": "ガク",
@@ -682,6 +711,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_MONO",
       "kanji": "物",
       "meaning": "thing",
       "targetReading": "もの",
@@ -698,6 +728,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_KIN",
       "kanji": "金",
       "meaning": "gold",
       "targetReading": "きん",
@@ -714,6 +745,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_CHA",
       "kanji": "茶",
       "meaning": "tea",
       "targetReading": "ちゃ",
@@ -730,6 +762,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_UMA",
       "kanji": "馬",
       "meaning": "horse",
       "targetReading": "うま",
@@ -746,6 +779,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_SAKANA",
       "kanji": "魚",
       "meaning": "fish",
       "targetReading": "さかな",
@@ -762,6 +796,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_TORI",
       "kanji": "鳥",
       "meaning": "bird",
       "targetReading": "とり",
@@ -778,6 +813,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_ICHI",
       "kanji": "一",
       "meaning": "one",
       "targetReading": "いち",
@@ -794,6 +830,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_NI",
       "kanji": "二",
       "meaning": "two",
       "targetReading": "に",
@@ -810,6 +847,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_SAN",
       "kanji": "三",
       "meaning": "three",
       "targetReading": "さん",
@@ -826,6 +864,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_YON",
       "kanji": "四",
       "meaning": "four",
       "targetReading": "よん",
@@ -842,6 +881,7 @@
       "imageabilityObject": null
     },
     {
+      "id": "KANJI_GO",
       "kanji": "五",
       "meaning": "five",
       "targetReading": "ご",

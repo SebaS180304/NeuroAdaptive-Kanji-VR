@@ -69,7 +69,14 @@ namespace NeuroAdaptiveVR.Data
         // que no pueden discrepar.
 
         public int Sequence { get; }
-        public KanjiLearningItem Target { get; }
+
+        /// <summary>
+        /// El kanji del trial, ya unido: fila del contrato mas assets. El sistema
+        /// de respuesta no sabe --ni tiene por que saber-- que esos dos lados son
+        /// dos archivos distintos en disco.
+        /// </summary>
+        public KanjiItem Target { get; }
+
         public RetrievalTrialType TrialType { get; }
         public IReadOnlyList<TrialOption> Options { get; }
 
@@ -87,7 +94,7 @@ namespace NeuroAdaptiveVR.Data
 
         public TrialRequest(
             int sequence,
-            KanjiLearningItem target,
+            KanjiItem target,
             RetrievalTrialType trialType,
             IReadOnlyList<TrialOption> options,
             bool immediateFeedback = true)
@@ -105,7 +112,11 @@ namespace NeuroAdaptiveVR.Data
         /// que ese prefijo coincida con el `state` del bloque de contexto.
         /// </param>
         public TrialContext ToTrialContext(GameFlowState state)
-            => new TrialContext(state, Sequence, TrialType, Target.name);
+            // Target.KanjiId y no Target.name: hasta hoy el kanji_id era el NOMBRE
+            // del asset, asi que renombrar un archivo en el Editor cambiaba una
+            // llave foranea de Postgres sin que nada lo dijera. Ahora el id es un
+            // campo del contrato y el nombre del archivo solo es el nombre.
+            => new TrialContext(state, Sequence, TrialType, Target.KanjiId);
     }
 
     /// <summary>

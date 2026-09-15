@@ -137,7 +137,7 @@ namespace NeuroAdaptiveVR.Controllers
 
             telemetry.Emit(TelemetryEvents.TrialStarted, new Dictionary<string, object>
             {
-                { "kanji_char", request.Target.character },
+                { "kanji_char", request.Target.Character },
                 { "options", optionIds },          // en el orden presentado
                 { "correct_option", correctOptionId },
                 { "hint_available", available != LalCue.None },
@@ -159,10 +159,10 @@ namespace NeuroAdaptiveVR.Controllers
         /// </summary>
         private static string BuildPromptText(TrialRequest r) => r.TrialType switch
         {
-            RetrievalTrialType.MeaningToKanji => r.Target.targetMeaning,   // T1: significado
-            RetrievalTrialType.KanjiToMeaning => r.Target.character,       // T2: kanji
-            RetrievalTrialType.KanjiToReading => r.Target.character,       // T3: kanji
-            _ => r.Target.character,
+            RetrievalTrialType.MeaningToKanji => r.Target.Meaning,     // T1: significado
+            RetrievalTrialType.KanjiToMeaning => r.Target.Character,   // T2: kanji
+            RetrievalTrialType.KanjiToReading => r.Target.Character,   // T3: kanji
+            _ => r.Target.Character,
         };
 
         /// <summary>
@@ -302,7 +302,7 @@ namespace NeuroAdaptiveVR.Controllers
 
             telemetry.Emit(TelemetryEvents.AnswerSelected, new Dictionary<string, object>
             {
-                { "kanji_char", _request.Target.character },
+                { "kanji_char", _request.Target.Character },
                 { "selected_option", optionId },
                 { "is_correct", isCorrect },
                 { "response_time_ms", responseTimeMs },

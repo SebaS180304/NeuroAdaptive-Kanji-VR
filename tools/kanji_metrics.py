@@ -194,6 +194,72 @@ RESERVE = ["日", "木", "川", "田", "口", "土", "子", "水", "目", "米",
 # participante ya conoce no es un problema que haya que resolver, es el punto.
 TUTORIAL = ["一", "二", "三", "四", "五"]
 
+# ── IDENTIDAD ESTABLE ───────────────────────────────────────────────────────
+# El `kanji_id` que viaja en cada evento de telemetria y que en Fase 3 pasa a
+# ser llave foranea en Postgres.
+#
+# POR QUE ES UNA TABLA EXPLICITA Y NO SE DERIVA
+# ---------------------------------------------
+# Lo natural seria construirlo de la lectura objetivo: ひ -> KANJI_HI. No
+# funciona. 日 y 火 se leen las dos ひ, asi que el id derivado seria el mismo
+# para los dos. Y no es un caso hipotetico que nunca vaya a darse: la unica
+# sustitucion restringida del pool (RESTRICTED, justo debajo) es literalmente
+# "日 solo puede reemplazar a 火", asi que hay estudios en los que los dos
+# aparecen. Dos filas de trials distintas acabarian con el mismo kanji_id y
+# nada fallaria en el momento -- el error saldria al analizar.
+#
+# 火 se queda con KANJI_HI porque ese valor ya esta escrito en la base desde
+# las corridas de TrialDebugRunner; 日 toma su lectura on'yomi, ニチ.
+#
+# El caracter no sirve como id: acaba en nombres de asset, en URLs y en
+# logs de consola, y no todo lo que hay entre Unity, Docker y psql trata UTF-8
+# fuera de ASCII igual de bien.
+KANJI_IDS: dict[str, str] = {
+    # set A
+    "月": "KANJI_TSUKI", "車": "KANJI_KURUMA", "火": "KANJI_HI",
+    "竹": "KANJI_TAKE",  "石": "KANJI_ISHI",
+    # set B
+    "山": "KANJI_YAMA",  "門": "KANJI_MON",    "女": "KANJI_ONNA",
+    "手": "KANJI_TE",    "雨": "KANJI_AME",
+    # set C
+    "人": "KANJI_HITO",  "足": "KANJI_ASHI",   "牛": "KANJI_USHI",
+    "肉": "KANJI_NIKU",  "花": "KANJI_HANA",
+    # reserva
+    "日": "KANJI_NICHI", "木": "KANJI_KI",     "川": "KANJI_KAWA",
+    "田": "KANJI_TA",    "口": "KANJI_KUCHI",  "土": "KANJI_TSUCHI",
+    "子": "KANJI_KO",    "水": "KANJI_MIZU",   "目": "KANJI_ME",
+    "米": "KANJI_KOME",  "糸": "KANJI_ITO",    "耳": "KANJI_MIMI",
+    "貝": "KANJI_KAI",   "学": "KANJI_GAKU",   "物": "KANJI_MONO",
+    "金": "KANJI_KIN",   "茶": "KANJI_CHA",    "馬": "KANJI_UMA",
+    "魚": "KANJI_SAKANA", "鳥": "KANJI_TORI",
+    # tutorial
+    "一": "KANJI_ICHI",  "二": "KANJI_NI",     "三": "KANJI_SAN",
+    "四": "KANJI_YON",   "五": "KANJI_GO",
+    # fuera del pool, modelados para poder evaluar repartos alternativos
+    "私": "KANJI_WATASHI", "先": "KANJI_SAKI", "中": "KANJI_NAKA",
+    "本": "KANJI_HON",   "上": "KANJI_UE",     "下": "KANJI_SHITA",
+    "力": "KANJI_CHIKARA", "男": "KANJI_OTOKO", "体": "KANJI_KARADA",
+    "林": "KANJI_HAYASHI", "畑": "KANJI_HATAKE", "岩": "KANJI_IWA",
+    "森": "KANJI_MORI",  "間": "KANJI_AIDA",
+}
+
+# Estas dos comprobaciones corren al importar el modulo, no en un test que
+# alguien tiene que acordarse de lanzar. Anadir un kanji a KANJI sin darle id,
+# o darle uno repetido, tiene que romper el export -- no producir un JSON que
+# parece bueno.
+if set(KANJI_IDS) != set(KANJI):
+    _falta = sorted(set(KANJI) - set(KANJI_IDS))
+    _sobra = sorted(set(KANJI_IDS) - set(KANJI))
+    raise AssertionError(
+        f"KANJI_IDS y KANJI no coinciden. Sin id: {_falta}. Id sin kanji: {_sobra}.")
+if len(set(KANJI_IDS.values())) != len(KANJI_IDS):
+    _por_id: dict[str, list[str]] = {}
+    for _ch, _id in KANJI_IDS.items():
+        _por_id.setdefault(_id, []).append(_ch)
+    _dup = {i: cs for i, cs in _por_id.items() if len(cs) > 1}
+    raise AssertionError(f"kanji_id repetido: {_dup}")
+
+
 # Pares con sustitución restringida: reserva -> únicos kanji que puede reemplazar.
 # La colisión ひ sigue siendo la única de lectura del pool, pero cambió de lado:
 # ahora 火 es experimental y 日 es reserva, así que la restricción se invierte.
@@ -359,6 +425,9 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
                discovery: str = "Pictographic") -> dict:
         k = KANJI[ch]
         return {
+            # Primero el id: es la llave, y quien abra el JSON a mano tiene que
+            # verla antes que nada.
+            "id": KANJI_IDS[ch],
             "kanji": ch,
             "meaning": k.meaning,
             "targetReading": k.reading,

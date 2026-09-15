@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Data;
 using UnityEngine;
@@ -15,14 +16,18 @@ namespace NeuroAdaptiveVR.Core
     /// (spec 6.1)-- es trabajo del encadenado del flujo. Esto solo produce
     /// trials bien formados para ejercitar el ciclo y su telemetria.
     ///
-    /// Los KanjiLearningItem se crean en memoria a proposito: los assets
-    /// reales llegan el lunes con KanjiContentController y kanji_content.json,
-    /// y no tener que esperarlos es lo que permite verificar el ciclo hoy.
+    /// El contenido sale de KanjiContentController, igual que en la sesion real.
+    /// Este archivo llevaba hasta el 15 de septiembre su propia copia del set A;
+    /// ver el comentario de BuildItems para por que dejo de llevarla.
     /// </summary>
     public class TrialDebugRunner : MonoBehaviour
     {
         [SerializeField] private ResponseSystemController responseSystem;
         [SerializeField] private GameFlowController gameFlow;
+
+        [Tooltip("De donde salen los kanji. Es el mismo componente que usara la " +
+                 "sesion real: el banco de pruebas ya no tiene contenido propio.")]
+        [SerializeField] private KanjiContentController content;
 
         [Header("Sesion simulada")]
         [Tooltip("Estado al que se hace entrar a la sesion antes de correr. " +
@@ -55,18 +60,11 @@ namespace NeuroAdaptiveVR.Core
 
         [SerializeField] private bool startOnPlay = false;
 
-        // Set A oficial (Metricas_Dificultad_Kanji_Fase2, decision D4).
-        // Significados en ingles: es lo que ve el participante.
-        private static readonly (string id, string ch, string meaning, string reading)[] SetA =
-        {
-            ("KANJI_TSUKI",  "月", "moon",   "つき"),
-            ("KANJI_KURUMA", "車", "car",    "くるま"),
-            ("KANJI_HI",     "火", "fire",   "ひ"),
-            ("KANJI_TAKE",   "竹", "bamboo", "たけ"),
-            ("KANJI_ISHI",   "石", "stone",  "いし"),
-        };
+        [Tooltip("Set experimental sobre el que correr. Los kanji salen del contrato, " +
+                 "no de una lista escrita en este archivo.")]
+        [SerializeField] private string setName = "A";
 
-        private readonly List<KanjiLearningItem> _items = new();
+        private readonly List<KanjiItem> _items = new();
         private System.Random _rng;
         private int _sequence;        // numeracion global, no se reinicia entre corridas
         private int _runRemaining;    // trials que faltan en la corrida actual
@@ -75,6 +73,7 @@ namespace NeuroAdaptiveVR.Core
         {
             if (responseSystem == null) responseSystem = GetComponent<ResponseSystemController>();
             if (gameFlow == null) gameFlow = GetComponent<GameFlowController>();
+            if (content == null) content = FindAnyObjectByType<KanjiContentController>();
             BuildItems();
             // Las sondas llaman a BuildOptions sin pasar por StartRun, asi que
             // el generador tiene que existir desde Awake.
@@ -290,7 +289,8 @@ namespace NeuroAdaptiveVR.Core
 
             var options = new List<TrialOption>(chosen.Count);
             foreach (int idx in chosen)
-                options.Add(new TrialOption(SetA[idx].id, OptionText(idx, trialType), idx == targetIndex));
+                options.Add(new TrialOption(_items[idx].KanjiId, OptionText(idx, trialType),
+                                            idx == targetIndex));
 
             return options;
         }
@@ -299,28 +299,49 @@ namespace NeuroAdaptiveVR.Core
         /// Que se muestra en la tarjeta depende del tipo de trial: en T1 la
         /// respuesta es un kanji, en T2 un significado, en T3 una lectura.
         /// </summary>
-        private static string OptionText(int index, RetrievalTrialType trialType) => trialType switch
+        private string OptionText(int index, RetrievalTrialType trialType) => trialType switch
         {
-            RetrievalTrialType.MeaningToKanji => SetA[index].ch,
-            RetrievalTrialType.KanjiToMeaning => SetA[index].meaning,
-            RetrievalTrialType.KanjiToReading => SetA[index].reading,
-            _ => SetA[index].ch,
+            RetrievalTrialType.MeaningToKanji => _items[index].Character,
+            RetrievalTrialType.KanjiToMeaning => _items[index].Meaning,
+            RetrievalTrialType.KanjiToReading => _items[index].TargetReading,
+            _ => _items[index].Character,
         };
 
+        /// <summary>
+        /// Los items salen del contrato, no de una tabla escrita aqui.
+        ///
+        /// Hasta el 15 de septiembre este archivo llevaba su propia copia del set
+        /// A --cinco tuplas con kanji, significado y lectura-- y fabricaba
+        /// ScriptableObjects en memoria para transportarlas. Funcionaba, y era una
+        /// segunda fuente de verdad del contenido del estudio: el dia que
+        /// kanji_metrics.py reasignara un set, las pruebas habrian seguido
+        /// corriendo sobre el reparto viejo y el log habria dicho que todo iba
+        /// bien.
+        ///
+        /// Ahora lee lo mismo que leera la sesion real. Como efecto secundario,
+        /// correr el banco de pruebas verifica de paso que el contrato carga y que
+        /// los ids llegan.
+        /// </summary>
         private void BuildItems()
         {
             _items.Clear();
-            foreach (var (id, ch, meaning, reading) in SetA)
+
+            if (content == null)
             {
-                var item = ScriptableObject.CreateInstance<KanjiLearningItem>();
-                item.name = id;                        // es el kanji_id de la telemetria
-                item.character = ch;
-                item.meaning = meaning;
-                item.targetMeaning = meaning;
-                item.primaryTargetReading = reading;
-                item.experimentalSet = "A";
-                _items.Add(item);
+                Debug.LogError("[TrialDebugRunner] Falta el KanjiContentController. Sin el no hay " +
+                               "contenido que probar: este banco ya no lleva copia propia del set A.");
+                return;
             }
+
+            if (!content.IsLoaded && !content.Load()) return;
+
+            _items.AddRange(content.Set(setName));
+
+            if (_items.Count == 0)
+                Debug.LogError($"[TrialDebugRunner] El set '{setName}' vino vacio del contrato.");
+            else
+                Debug.Log($"[TrialDebugRunner] Set {setName}: " +
+                          string.Join(" ", _items.Select(i => i.ToString())));
         }
     }
 }
