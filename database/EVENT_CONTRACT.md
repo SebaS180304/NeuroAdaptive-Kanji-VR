@@ -112,6 +112,8 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names) |
 | `KANJI_EXPOSED` | `kanji_char`, `discovery_type`, `exposure_ms` — S5 discovery sequence, spec §7.6 |
 | `ASSEMBLY_COMPLETED` | `duration_ms`, `incorrect_attempts`, `segment_count` — spec §5.3 |
+| `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` — spec §8.1 |
+| `PERIPHERAL_EVENT` | `event_index`, `object_name`, `duration_ms` — spec §8.1 |
 
 `options` and `correct_option` on `TRIAL_STARTED` are what make a trial
 reconstructable without re-running the generator: they record what the
@@ -127,6 +129,31 @@ Cue arrays (`hint_type`, `cues_presented`) carry cue names, not a flags integer:
 `TARGET_READING_AUDIO`, `VISUAL_ASSOCIATION`, `REVERSE_SEMANTIC_ASSOCIATION`,
 `VISUAL_TRANSFORMATION`. A bitmask in JSONB has to be decoded in every query and
 cannot be filtered with `payload -> 'cues_presented' ? 'X'`.
+
+### 5.7 The two environmental events
+
+`ENVIRONMENT_APPLIED` is emitted when a profile is **applied**, not when a level
+change is requested. A level with no profile is refused and produces no event, so
+the absence of the event means the scene did not change — rather than meaning it
+might have.
+
+Note what the payload does **not** carry: the level. It already travels in the
+context block as `esl`, stamped by `BehaviorTelemetryController` from the same
+component that owns it. Repeating it in the payload would put two copies of one
+fact in one row, which is the failure this project has now hit five times. The
+counts are in the payload precisely because they are *not* derivable from the
+level: §8.1 gives ranges, and which value inside the range a session got is
+decided by the seed.
+
+`PERIPHERAL_EVENT` records each distraction individually. Phase 5 needs to
+correlate a specific peripheral stimulus with what the participant did
+immediately afterwards; a stimulus that acted on the session and left no trace is
+a variable that cannot be reconstructed. It is deliberately distinct from
+`DISTRACTOR_INTERACTION` (reserved, §5.2): this one is the system showing
+something, that one is the participant reacting to it.
+
+Neither bumps `schema_version`, by the rule in §5.6: both are new events, and no
+existing row's shape changed.
 
 ### 5.5 Trial-cycle decisions this contract assumes
 
@@ -318,3 +345,19 @@ spec §11 recorded in §5.3 and §5.4.
   T3 audio prohibition, and the granted cues against §9.1 — with the spec table
   transcribed independently of the C# so the check does not share its author's
   reading of the spec.
+
+**11 September 2026 — environmental layer.** No version bump; see §5.6 and §5.7.
+
+- `ENVIRONMENT_APPLIED` and `PERIPHERAL_EVENT` added. Both are new events, so no
+  existing row's shape changed.
+- `StimulationOrAssistanceLevel` gained `FOCUS` (S8) and `MINIMAL` (S3), which
+  Appendix A required and the enum never had. This costs no migration: `esl` and
+  `lal` live only in JSONB payloads — there is no Postgres enum for stimulation
+  level, and `session_config_snapshots.config` is JSONB too. Checked before
+  adding, not assumed.
+- `FOCUS` is an **interpretation**, not a fact of the spec. §7.9 describes Focus
+  Mode as "environment darkened/neutralized" while §3.3 keeps lighting stable
+  across ESL levels and §8.3 puts lighting outside ESL. Implemented as zero props
+  and zero peripheral events with lighting untouched, which preserves both
+  invariants. Pending confirmation from the MIRAI reviewer; if the answer differs,
+  it is one field in one asset.

@@ -40,6 +40,27 @@ namespace NeuroAdaptiveVR.Data
         /// <summary>Solo ESL: usado en S4 (spec seccion 7.5).</summary>
         [EnumMember(Value = "BASELINE")]
         Baseline,
+
+        /// <summary>
+        /// Solo ESL: S8, Immediate Assessment (Apendice A y spec 7.9).
+        ///
+        /// 7.9 describe Focus Mode como "environment darkened/neutralized",
+        /// pero 3.3 dice que la iluminacion permanece estable entre niveles de
+        /// ESL y 8.3 la pone explicitamente fuera de ESL. Se contradicen, y S8
+        /// es la medida primaria de aprendizaje inmediato.
+        ///
+        /// INTERPRETACION del 10 de septiembre de 2026, no hecho de la spec:
+        /// "neutralized" = conteo de props 0 y sin eventos perifericos, SIN
+        /// tocar la iluminacion. Preserva las dos invariantes y deja FOCUS como
+        /// caso extremo del mismo mecanismo en vez de una excepcion. Pendiente
+        /// de confirmar con el revisor de MIRAI.
+        /// </summary>
+        [EnumMember(Value = "FOCUS")]
+        Focus,
+
+        /// <summary>Solo ESL: S3, System Validation (Apendice A).</summary>
+        [EnumMember(Value = "MINIMAL")]
+        Minimal,
     }
 
     public static class ExperimentalConditionExtensions

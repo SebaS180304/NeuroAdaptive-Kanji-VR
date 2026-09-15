@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generatedBy": "kanji_metrics.py --export",
-  "font": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+  "font": "unity-client/Assets/Fonts/NotoSansCJKjp-Regular.otf",
   "note": "Generado, no escrito a mano. Regenerar tras cualquier cambio en KANJI, SETS o RESERVE.",
   "rules": {
     "bands": {
@@ -28,7 +28,7 @@
     "substitution": {
       "deltaStrokes": 2,
       "deltaMorae": 1,
-      "readingsTolerance": 3
+      "applyReadingsBand": false
     },
     "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)"
   },
@@ -209,6 +209,13 @@
       ]
     }
   },
+  "tutorial": [
+    "一",
+    "二",
+    "三",
+    "四",
+    "五"
+  ],
   "kanji": [
     {
       "kanji": "月",
@@ -222,7 +229,9 @@
       "textbookLesson": "L1-P",
       "role": "Experimental",
       "experimentalSet": "A",
-      "perimetricComplexity": 151.2
+      "perimetricComplexity": 151.2,
+      "imageabilityGlyph": 3,
+      "imageabilityObject": 5
     },
     {
       "kanji": "車",
@@ -236,7 +245,9 @@
       "textbookLesson": "L1-P",
       "role": "Experimental",
       "experimentalSet": "A",
-      "perimetricComplexity": 245.8
+      "perimetricComplexity": 245.8,
+      "imageabilityGlyph": 2,
+      "imageabilityObject": 5
     },
     {
       "kanji": "火",
@@ -250,7 +261,9 @@
       "textbookLesson": "L2-P",
       "role": "Experimental",
       "experimentalSet": "A",
-      "perimetricComplexity": 196.9
+      "perimetricComplexity": 196.9,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": 2
     },
     {
       "kanji": "竹",
@@ -264,7 +277,9 @@
       "textbookLesson": "L6-P",
       "role": "Experimental",
       "experimentalSet": "A",
-      "perimetricComplexity": 184.1
+      "perimetricComplexity": 184.1,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": 5
     },
     {
       "kanji": "石",
@@ -278,7 +293,9 @@
       "textbookLesson": "L6-P",
       "role": "Experimental",
       "experimentalSet": "A",
-      "perimetricComplexity": 178.9
+      "perimetricComplexity": 178.9,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": 5
     },
     {
       "kanji": "山",
@@ -292,7 +309,9 @@
       "textbookLesson": "L1-P",
       "role": "Experimental",
       "experimentalSet": "B",
-      "perimetricComplexity": 109.1
+      "perimetricComplexity": 109.1,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": 5
     },
     {
       "kanji": "門",
@@ -306,7 +325,9 @@
       "textbookLesson": "L1-P",
       "role": "Experimental",
       "experimentalSet": "B",
-      "perimetricComplexity": 190.3
+      "perimetricComplexity": 190.3,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": 5
     },
     {
       "kanji": "女",
@@ -320,7 +341,9 @@
       "textbookLesson": "L2-P",
       "role": "Experimental",
       "experimentalSet": "B",
-      "perimetricComplexity": 179.3
+      "perimetricComplexity": 179.3,
+      "imageabilityGlyph": 4,
+      "imageabilityObject": 3
     },
     {
       "kanji": "手",
@@ -334,7 +357,9 @@
       "textbookLesson": "L6-P",
       "role": "Experimental",
       "experimentalSet": "B",
-      "perimetricComplexity": 175.0
+      "perimetricComplexity": 175.0,
+      "imageabilityGlyph": 2,
+      "imageabilityObject": 3
     },
     {
       "kanji": "雨",
@@ -348,7 +373,9 @@
       "textbookLesson": "L6-P",
       "role": "Experimental",
       "experimentalSet": "B",
-      "perimetricComplexity": 310.9
+      "perimetricComplexity": 310.9,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": 2
     },
     {
       "kanji": "人",
@@ -362,11 +389,13 @@
       "textbookLesson": "L1-P",
       "role": "Experimental",
       "experimentalSet": "C",
-      "perimetricComplexity": 117.8
+      "perimetricComplexity": 117.8,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": 5
     },
     {
       "kanji": "足",
-      "meaning": "leg",
+      "meaning": "leg, foot",
       "targetReading": "あし",
       "strokes": 7,
       "morae": 2,
@@ -376,7 +405,9 @@
       "textbookLesson": "L6-P",
       "role": "Experimental",
       "experimentalSet": "C",
-      "perimetricComplexity": 180.4
+      "perimetricComplexity": 180.4,
+      "imageabilityGlyph": 3,
+      "imageabilityObject": 3
     },
     {
       "kanji": "牛",
@@ -390,7 +421,9 @@
       "textbookLesson": "L7-P",
       "role": "Experimental",
       "experimentalSet": "C",
-      "perimetricComplexity": 159.1
+      "perimetricComplexity": 159.1,
+      "imageabilityGlyph": 4,
+      "imageabilityObject": 5
     },
     {
       "kanji": "肉",
@@ -404,7 +437,9 @@
       "textbookLesson": "L7-P",
       "role": "Experimental",
       "experimentalSet": "C",
-      "perimetricComplexity": 271.8
+      "perimetricComplexity": 271.8,
+      "imageabilityGlyph": 3,
+      "imageabilityObject": 4
     },
     {
       "kanji": "花",
@@ -418,7 +453,9 @@
       "textbookLesson": "L7-P",
       "role": "Experimental",
       "experimentalSet": "C",
-      "perimetricComplexity": 226.4
+      "perimetricComplexity": 226.4,
+      "imageabilityGlyph": 2,
+      "imageabilityObject": 5
     },
     {
       "kanji": "日",
@@ -432,7 +469,9 @@
       "textbookLesson": "L1-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 131.6
+      "perimetricComplexity": 131.6,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "木",
@@ -446,7 +485,9 @@
       "textbookLesson": "L1-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 195.8
+      "perimetricComplexity": 195.8,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "川",
@@ -460,7 +501,9 @@
       "textbookLesson": "L1-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 133.8
+      "perimetricComplexity": 133.8,
+      "imageabilityGlyph": 4,
+      "imageabilityObject": null
     },
     {
       "kanji": "田",
@@ -474,7 +517,9 @@
       "textbookLesson": "L1-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 173.3
+      "perimetricComplexity": 173.3,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "口",
@@ -488,7 +533,9 @@
       "textbookLesson": "L1-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 100.6
+      "perimetricComplexity": 100.6,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "土",
@@ -502,7 +549,9 @@
       "textbookLesson": "L2-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 130.2
+      "perimetricComplexity": 130.2,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "子",
@@ -516,7 +565,9 @@
       "textbookLesson": "L2-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 143.5
+      "perimetricComplexity": 143.5,
+      "imageabilityGlyph": 3,
+      "imageabilityObject": null
     },
     {
       "kanji": "水",
@@ -530,7 +581,9 @@
       "textbookLesson": "L2-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 214.4
+      "perimetricComplexity": 214.4,
+      "imageabilityGlyph": 4,
+      "imageabilityObject": null
     },
     {
       "kanji": "目",
@@ -544,7 +597,9 @@
       "textbookLesson": "L6-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 162.9
+      "perimetricComplexity": 162.9,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "米",
@@ -558,7 +613,9 @@
       "textbookLesson": "L6-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 247.2
+      "perimetricComplexity": 247.2,
+      "imageabilityGlyph": 3,
+      "imageabilityObject": null
     },
     {
       "kanji": "糸",
@@ -572,7 +629,9 @@
       "textbookLesson": "L6-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 277.6
+      "perimetricComplexity": 277.6,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "耳",
@@ -586,7 +645,9 @@
       "textbookLesson": "L6-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 176.1
+      "perimetricComplexity": 176.1,
+      "imageabilityGlyph": 4,
+      "imageabilityObject": null
     },
     {
       "kanji": "貝",
@@ -600,7 +661,9 @@
       "textbookLesson": "L6-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 210.9
+      "perimetricComplexity": 210.9,
+      "imageabilityGlyph": 5,
+      "imageabilityObject": null
     },
     {
       "kanji": "学",
@@ -614,7 +677,9 @@
       "textbookLesson": "L2-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 261.4
+      "perimetricComplexity": 261.4,
+      "imageabilityGlyph": 3,
+      "imageabilityObject": null
     },
     {
       "kanji": "物",
@@ -628,7 +693,9 @@
       "textbookLesson": "L7-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 343.3
+      "perimetricComplexity": 343.3,
+      "imageabilityGlyph": 1,
+      "imageabilityObject": null
     },
     {
       "kanji": "金",
@@ -642,7 +709,9 @@
       "textbookLesson": "L2-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 285.6
+      "perimetricComplexity": 285.6,
+      "imageabilityGlyph": 3,
+      "imageabilityObject": null
     },
     {
       "kanji": "茶",
@@ -656,7 +725,9 @@
       "textbookLesson": "L7-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 311.7
+      "perimetricComplexity": 311.7,
+      "imageabilityGlyph": 1,
+      "imageabilityObject": null
     },
     {
       "kanji": "馬",
@@ -670,7 +741,9 @@
       "textbookLesson": "L7-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 273.4
+      "perimetricComplexity": 273.4,
+      "imageabilityGlyph": 1,
+      "imageabilityObject": null
     },
     {
       "kanji": "魚",
@@ -684,7 +757,9 @@
       "textbookLesson": "L7-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 260.3
+      "perimetricComplexity": 260.3,
+      "imageabilityGlyph": 1,
+      "imageabilityObject": null
     },
     {
       "kanji": "鳥",
@@ -698,7 +773,89 @@
       "textbookLesson": "L7-P",
       "role": "Reserve",
       "experimentalSet": null,
-      "perimetricComplexity": 327.6
+      "perimetricComplexity": 327.6,
+      "imageabilityGlyph": 1,
+      "imageabilityObject": null
+    },
+    {
+      "kanji": "一",
+      "meaning": "one",
+      "targetReading": "いち",
+      "strokes": 1,
+      "morae": 2,
+      "assemblyGroups": 1,
+      "commonReadings": 3,
+      "discoveryType": "None",
+      "textbookLesson": "L3",
+      "role": "Tutorial",
+      "experimentalSet": "Tutorial",
+      "perimetricComplexity": 52.9,
+      "imageabilityGlyph": null,
+      "imageabilityObject": null
+    },
+    {
+      "kanji": "二",
+      "meaning": "two",
+      "targetReading": "に",
+      "strokes": 2,
+      "morae": 1,
+      "assemblyGroups": 2,
+      "commonReadings": 2,
+      "discoveryType": "None",
+      "textbookLesson": "L3",
+      "role": "Tutorial",
+      "experimentalSet": "Tutorial",
+      "perimetricComplexity": 58.2,
+      "imageabilityGlyph": null,
+      "imageabilityObject": null
+    },
+    {
+      "kanji": "三",
+      "meaning": "three",
+      "targetReading": "さん",
+      "strokes": 3,
+      "morae": 2,
+      "assemblyGroups": 3,
+      "commonReadings": 2,
+      "discoveryType": "None",
+      "textbookLesson": "L3",
+      "role": "Tutorial",
+      "experimentalSet": "Tutorial",
+      "perimetricComplexity": 119.7,
+      "imageabilityGlyph": null,
+      "imageabilityObject": null
+    },
+    {
+      "kanji": "四",
+      "meaning": "four",
+      "targetReading": "よん",
+      "strokes": 5,
+      "morae": 2,
+      "assemblyGroups": 2,
+      "commonReadings": 3,
+      "discoveryType": "None",
+      "textbookLesson": "L3",
+      "role": "Tutorial",
+      "experimentalSet": "Tutorial",
+      "perimetricComplexity": 200.1,
+      "imageabilityGlyph": null,
+      "imageabilityObject": null
+    },
+    {
+      "kanji": "五",
+      "meaning": "five",
+      "targetReading": "ご",
+      "strokes": 4,
+      "morae": 1,
+      "assemblyGroups": 2,
+      "commonReadings": 2,
+      "discoveryType": "None",
+      "textbookLesson": "L3",
+      "role": "Tutorial",
+      "experimentalSet": "Tutorial",
+      "perimetricComplexity": 162.6,
+      "imageabilityGlyph": null,
+      "imageabilityObject": null
     }
   ]
 }

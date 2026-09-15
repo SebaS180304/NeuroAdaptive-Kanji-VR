@@ -34,6 +34,16 @@ namespace NeuroAdaptiveVR.Core
         [Tooltip("Nivel de LAL fijo. En Fase 2 no lo decide nadie en runtime.")]
         [SerializeField] private StimulationOrAssistanceLevel lal = StimulationOrAssistanceLevel.Medium;
 
+        [Tooltip("Nivel de ESL fijo. Existe por la misma razon que el de LAL, y ademas " +
+                 "por una concreta: hasta el 10 de septiembre no habia " +
+                 "EnvironmentalStimulationController en la escena, asi que " +
+                 "BehaviorTelemetryController caia a su fallback y estampaba esl=OFF. " +
+                 "El valor por omision del enum tambien es OFF, asi que el dato correcto " +
+                 "y el dato por fallback se ven identicos en la base. La unica forma de " +
+                 "demostrar que el cableado quedo bien es fijar un valor que NO sea OFF " +
+                 "y verlo llegar.")]
+        [SerializeField] private StimulationOrAssistanceLevel esl = StimulationOrAssistanceLevel.Off;
+
         [Tooltip("Misma seed = misma secuencia. Es el principio de spec 6.1.")]
         [SerializeField] private int randomSeed = 20260909;
 
@@ -117,6 +127,19 @@ namespace NeuroAdaptiveVR.Core
             }
             assistance.SetLevel(lal, betweenTrials: true);
 
+            // ESL por el mismo camino que LAL: se fija en su dueño y la telemetria
+            // lo lee de ahi. No se pasa en el request ni se copia a ningun sitio --
+            // esa fue exactamente la forma de los dos bugs del 9 de septiembre.
+            var stimulation = GetComponent<EnvironmentalStimulationController>();
+            if (stimulation == null)
+            {
+                Debug.LogError("[TrialDebugRunner] Falta EnvironmentalStimulationController. " +
+                               "La telemetria caeria a su fallback y estamparia esl=OFF, que es " +
+                               "indistinguible de un OFF real en la base de datos.");
+                return;
+            }
+            stimulation.SetLevel(esl, betweenTrials: true);
+
             // El generador vuelve a la seed --misma seed, misma secuencia
             // (spec 6.1)-- pero la numeracion NO se reinicia: varias corridas
             // dentro del mismo Play comparten sesion, y reiniciar la secuencia
@@ -124,7 +147,8 @@ namespace NeuroAdaptiveVR.Core
             _rng = new System.Random(randomSeed);
             _runRemaining = trialCount;
             Debug.Log($"[TrialDebugRunner] Arrancando {trialCount} trials · estado {state} · " +
-                      $"LAL {lal} · feedback {(immediateFeedback ? "inmediato" : "diferido")} · " +
+                      $"LAL {lal} · ESL {esl} · " +
+                      $"feedback {(immediateFeedback ? "inmediato" : "diferido")} · " +
                       $"seed {randomSeed} · numeracion desde {_sequence + 1}");
             NextTrial();
         }

@@ -62,6 +62,20 @@ namespace NeuroAdaptiveVR.Data
         public const string KanjiExposed = "KANJI_EXPOSED";
         public const string AssemblyCompleted = "ASSEMBLY_COMPLETED";
 
+        // Fase 2 -- capa ambiental (ESL)
+        //
+        // ENVIRONMENT_APPLIED se emite cuando un perfil se aplica de verdad, no
+        // cuando alguien pide un cambio de nivel: un nivel sin perfil se rechaza
+        // y no produce evento. Asi, la ausencia del evento significa que la
+        // escena no cambio, en vez de significar que quiza cambio.
+        //
+        // PERIPHERAL_EVENT deja rastro de cada distraccion concreta. Fase 5
+        // necesita poder correlacionarla con lo que hizo el participante
+        // inmediatamente despues; un estimulo que actuo sobre la sesion y no se
+        // registro es una variable que no se puede reconstruir.
+        public const string EnvironmentApplied = "ENVIRONMENT_APPLIED";
+        public const string PeripheralEvent = "PERIPHERAL_EVENT";
+
         // Fase 3 -- reservados. Declarados aca para que Fase 2 no use estos
         // nombres para otra cosa y para que el vocabulario viva en un solo
         // archivo. NO emitir todavia.

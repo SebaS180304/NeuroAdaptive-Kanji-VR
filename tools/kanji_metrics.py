@@ -124,7 +124,7 @@ KANJI: dict[str, Kanji] = {
     "目": Kanji("め",    5, 1, 2, 2, "eye",      "L6-P"),
     "耳": Kanji("みみ",  6, 2, 2, 2, "ear",    "L6-P"),
     "手": Kanji("て",    4, 1, 2, 2, "hand",     "L6-P"),
-    "足": Kanji("あし",  7, 2, 3, 3, "leg",      "L6-P"),
+    "足": Kanji("あし",  7, 2, 3, 3, "leg, foot", "L6-P"),
     "雨": Kanji("あめ",  8, 2, 3, 2, "rain",   "L6-P"),
     "竹": Kanji("たけ",  6, 2, 2, 2, "bamboo",    "L6-P"),
     "米": Kanji("こめ",  6, 2, 3, 3, "rice",    "L6-P"),
@@ -153,6 +153,18 @@ KANJI: dict[str, Kanji] = {
     "岩": Kanji("いわ",  8, 2, 2, 2, "rock",     "L5"),
     "森": Kanji("もり", 12, 2, 3, 2, "forest",   "L5"),
     "間": Kanji("あいだ", 12, 3, 2, 3, "interval", "L5"),
+    # --- tutorial (Leccion 3, numeros) ---
+    # NO son pictograficos y NO entran en ninguna banda, colision ni sustitucion:
+    # nunca estan en SETS ni en RESERVE. Existen porque el tutorial de S2 ensena
+    # la interaccion --agarrar el segmento, soltarlo en el slot, oir la lectura--
+    # con material que el experimento no mide, para no gastar un item
+    # experimental en ensenar a usar los mandos. Los numeros son lo mas barato
+    # que hay: el participante ya sabe lo que significan.
+    "一": Kanji("いち",  1, 2, 1, 3, "one",   "L3"),
+    "二": Kanji("に",    2, 1, 2, 2, "two",   "L3"),
+    "三": Kanji("さん",  3, 2, 3, 2, "three", "L3"),
+    "四": Kanji("よん",  5, 2, 2, 3, "four",  "L3"),
+    "五": Kanji("ご",    4, 1, 2, 2, "five",  "L3"),
     # NO están en Basic Kanji Book Vol.1: 刀 (espada), 虫 (insecto).
     # FUERA DEL POOL OFICIAL (8 de septiembre): 先 y 生. 先 se conserva arriba
     # solo para poder evaluar el reparto vigente; 生 no se modela.
@@ -175,6 +187,12 @@ SETS: dict[str, list[str]] = {
 # Los 20 pictográficos que no entraron. Todos sirven como reserva.
 RESERVE = ["日", "木", "川", "田", "口", "土", "子", "水", "目", "米",
            "糸", "耳", "貝", "学", "物", "金", "茶", "馬", "魚", "鳥"]
+
+# Los cinco del tutorial de S2. Se exportan en el contrato --los
+# ScriptableObjects son 40, no 35-- pero no participan en nada mas: ni bandas,
+# ni colisiones, ni tabla de sustitucion. Un item de tutorial que el
+# participante ya conoce no es un problema que haya que resolver, es el punto.
+TUTORIAL = ["一", "二", "三", "四", "五"]
 
 # Pares con sustitución restringida: reserva -> únicos kanji que puede reemplazar.
 # La colisión ひ sigue siendo la única de lectura del pool, pero cambió de lado:
@@ -337,7 +355,8 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
     import json
     table = substitution_table(g)
 
-    def record(ch: str, role: str, set_name: str | None) -> dict:
+    def record(ch: str, role: str, set_name: str | None,
+               discovery: str = "Pictographic") -> dict:
         k = KANJI[ch]
         return {
             "kanji": ch,
@@ -347,7 +366,7 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
             "morae": k.morae,
             "assemblyGroups": k.groups,
             "commonReadings": k.readings,
-            "discoveryType": "Pictographic",
+            "discoveryType": discovery,
             "textbookLesson": k.lesson,
             "role": role,
             "experimentalSet": set_name,
@@ -382,9 +401,12 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
         "sets": {n: list(v) for n, v in SETS.items()},
         "reserve": list(RESERVE),
         "substitutionTable": table,
+        "tutorial": list(TUTORIAL),
         "kanji": ([record(c, "Experimental", n)
                    for n, v in SETS.items() for c in v]
-                  + [record(c, "Reserve", None) for c in RESERVE]),
+                  + [record(c, "Reserve", None) for c in RESERVE]
+                  + [record(c, "Tutorial", "Tutorial", discovery="None")
+                     for c in TUTORIAL]),
     }
     # "-" escribe a stdout. Es la salida que no depende de ningun montaje:
     # el shell del host redirige, asi que funciona aunque el contenedor no vea

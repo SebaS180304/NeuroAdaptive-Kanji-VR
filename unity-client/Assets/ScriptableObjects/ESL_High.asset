@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa3a4d9f94e95f94984cf05aa54bc566, type: 3}
+  m_Name: ESL_High
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Data.EnvironmentProfile
+  level: 3
+  propCountMin: 7
+  propCountMax: 10
+  maxTier: 3
+  moverCountMin: 2
+  moverCountMax: 3
+  peripheralIntervalMinSeconds: 10
+  peripheralIntervalMaxSeconds: 15
+  sourceNote: 'Spec 8.1 fila HIGH: 7-10 props, 2-3 en movimiento, ~1 evento cada
+    10-15 s. ''to validate'' en 16.'
