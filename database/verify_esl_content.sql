@@ -220,9 +220,98 @@ JOIN esperado x ON x.kanji_id = e.payload ->> 'kanji_id'
 WHERE e.payload ? 'kanji_char'
   AND e.payload ->> 'kanji_char' IS DISTINCT FROM x.kanji_char;
 
+
 \echo ''
 \echo '=============================================================='
-\echo '7. Resumen'
+\echo '7. Matriz del Apendice A: el par estado-nivel que de verdad llego'
+\echo '=============================================================='
+\echo 'Unity ya comprueba esto al entrar a cada estado, pero esa comprobacion'
+\echo 'y el codigo comprobado comparten mi lectura del spec. Esta consulta es'
+\echo 'independiente: la tabla de abajo esta transcrita a mano del spec 7 y se'
+\echo 'contrasta contra los pares que quedaron escritos en la base.'
+\echo ''
+\echo 'S8 es el caso que importa: se define por ser "no-assistance" y es la'
+\echo 'medida primaria de aprendizaje inmediato. Un S8 con LAL distinto de OFF'
+\echo 'no produce un dato malo -- produce un dato que mide otra cosa.'
+
+WITH permitido(state, esl_ok, lal_ok) AS (
+    VALUES
+        ('S1_WELCOME_ORIENTATION',         ARRAY['LOW'],                     ARRAY['OFF']),
+        ('S2_VR_TUTORIAL',                 ARRAY['LOW'],                     ARRAY['OFF']),
+        ('S3_SYSTEM_VALIDATION',           ARRAY['MINIMAL'],                 ARRAY['OFF']),
+        ('S4_EEG_BASELINE',                ARRAY['BASELINE'],                ARRAY['OFF']),
+        ('S5_STANDARDIZED_LEARNING',       ARRAY['LOW'],                     ARRAY['OFF']),
+        ('S6_GUIDED_PRACTICE_CALIBRATION', ARRAY['MEDIUM'],                  ARRAY['MEDIUM']),
+        ('S7_EXPERIMENTAL_RETRIEVAL',      ARRAY['LOW','MEDIUM','HIGH'],     ARRAY['LOW','MEDIUM','HIGH']),
+        ('S8_IMMEDIATE_ASSESSMENT',        ARRAY['FOCUS','LOW'],             ARRAY['OFF']),
+        ('S9_SESSION_SUMMARY',             ARRAY['LOW'],                     ARRAY['OFF'])
+)
+SELECT
+    e.payload ->> 'state'  AS estado,
+    e.payload ->> 'esl'    AS esl,
+    e.payload ->> 'lal'    AS lal,
+    count(*)               AS eventos,
+    CASE
+        WHEN NOT (e.payload ->> 'esl' = ANY(p.esl_ok)) THEN 'ESL fuera de la matriz'
+        WHEN NOT (e.payload ->> 'lal' = ANY(p.lal_ok)) THEN 'LAL fuera de la matriz'
+    END                    AS problema
+FROM session_events e
+JOIN permitido p ON p.state = e.payload ->> 'state'
+WHERE NOT (e.payload ->> 'esl' = ANY(p.esl_ok))
+   OR NOT (e.payload ->> 'lal' = ANY(p.lal_ok))
+GROUP BY 1, 2, 3, 5
+ORDER BY 1;
+
+\echo ''
+\echo 'Cero filas = todos los bloques corrieron con el par que el spec pide.'
+\echo ''
+\echo '=============================================================='
+\echo '8. La secuencia planeada frente a la que ocurrio'
+\echo '=============================================================='
+\echo 'TRIAL_SEQUENCE_GENERATED dice que se planeo; los TRIAL_STARTED dicen'
+\echo 'que paso. Que difieran no es un error: una sesion abortada en el trial'
+\echo '12 de 20 produce exactamente esa diferencia, y es el dato que dice'
+\echo 'donde se corto.'
+
+SELECT
+    e.payload ->> 'block_state'                   AS bloque,
+    e.payload ->> 'kanji_set'                     AS kanji_set,
+    e.payload ->> 'seed_raw'                      AS seed_raw,
+    (e.payload ->> 'trial_count')::int            AS planeados,
+    (e.payload ->> 'distinct_pairs')::int         AS pares_cubiertos,
+    (e.payload ->> 'min_lag_requested')::int      AS separacion_pedida,
+    (e.payload ->> 'min_lag_achieved')::int       AS separacion_lograda,
+    (e.payload ->> 'ordering_attempts')::int      AS intentos,
+    jsonb_array_length(e.payload -> 'sequence')   AS filas_en_la_secuencia
+FROM session_events e
+WHERE e.event_type = 'TRIAL_SEQUENCE_GENERATED'
+ORDER BY e.id;
+
+\echo ''
+\echo '-- Planeados contra arrancados, por bloque.'
+
+WITH plan AS (
+    SELECT e.payload ->> 'block_state' AS bloque,
+           (e.payload ->> 'trial_count')::int AS planeados
+    FROM session_events e WHERE e.event_type = 'TRIAL_SEQUENCE_GENERATED'
+),
+corridos AS (
+    SELECT e.payload ->> 'state' AS bloque, count(*) AS arrancados
+    FROM session_events e WHERE e.event_type = 'TRIAL_STARTED' GROUP BY 1
+)
+SELECT p.bloque, p.planeados, coalesce(c.arrancados, 0) AS arrancados,
+       p.planeados - coalesce(c.arrancados, 0)          AS sin_correr
+FROM plan p LEFT JOIN corridos c ON c.bloque = p.bloque
+ORDER BY p.bloque;
+
+\echo ''
+\echo '-- separacion_lograda menor que separacion_pedida significa que el'
+\echo '-- generador no pudo respetar el espaciado: la secuencia sirve, pero la'
+\echo '-- garantia es mas debil de lo que se pidio.'
+
+\echo ''
+\echo '=============================================================='
+\echo '9. Resumen'
 \echo '=============================================================='
 
 SELECT

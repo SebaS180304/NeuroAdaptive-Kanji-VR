@@ -49,10 +49,18 @@ namespace NeuroAdaptiveVR.Core
                  "y verlo llegar.")]
         [SerializeField] private StimulationOrAssistanceLevel esl = StimulationOrAssistanceLevel.Off;
 
-        [Tooltip("Misma seed = misma secuencia. Es el principio de spec 6.1.")]
+        [Tooltip("Fallback de depuracion. Si la sesion trae random_seed, gana la sesion: " +
+                 "la seed es un dato de experiment_sessions, no una preferencia del Editor.")]
         [SerializeField] private int randomSeed = 20260909;
 
-        [SerializeField] private int trialCount = 3;
+        [Tooltip("Cuantos trials. 15 o mas incluye el cruce completo (5 kanji x 3 tipos) " +
+                 "mas los extras; menos reparte por tipo. S7 usa 20, S6 usa 9, S8 usa 15.")]
+        [SerializeField] private int trialCount = 20;
+
+        [Tooltip("Separacion minima entre dos apariciones del mismo kanji (spec 6.1). " +
+                 "Con cinco kanji, subirla a 4 fuerza la rotacion fija 1-2-3-4-5, que es " +
+                 "justo lo que 6.1 prohibe al pedir una secuencia pseudoaleatoria.")]
+        [SerializeField] private int minLag = 2;
 
         [Tooltip("S8 difiere el feedback: es la medida de aprendizaje primaria " +
                  "y mostrar la respuesta contaminaria los trials siguientes.")]
@@ -60,14 +68,31 @@ namespace NeuroAdaptiveVR.Core
 
         [SerializeField] private bool startOnPlay = false;
 
-        [Tooltip("Set experimental sobre el que correr. Los kanji salen del contrato, " +
-                 "no de una lista escrita en este archivo.")]
+        [Tooltip("Fallback de depuracion. Si la sesion trae assigned_kanji_set, gana la sesion, " +
+                 "y si los dos estan puestos y NO coinciden, la corrida se detiene.")]
         [SerializeField] private string setName = "A";
 
         private readonly List<KanjiItem> _items = new();
-        private System.Random _rng;
+        private TrialPlan _plan;
+        private int _planIndex;       // siguiente trial del plan
         private int _sequence;        // numeracion global, no se reinicia entre corridas
         private int _runRemaining;    // trials que faltan en la corrida actual
+
+        /// <summary>
+        /// El set efectivo: el de la sesion si hay sesion, el del Inspector si no.
+        /// </summary>
+        private string EffectiveSet =>
+            SessionContext.IsInstalled && SessionContext.AssignedKanjiSet != null
+                ? SessionContext.AssignedKanjiSet
+                : setName;
+
+        /// <summary>
+        /// La seed efectiva. Misma regla que el set: manda la sesion.
+        /// </summary>
+        private int EffectiveSeed =>
+            SessionContext.IsInstalled && SessionContext.RandomSeedRaw != null
+                ? SessionContext.Seed
+                : randomSeed;
 
         private void Awake()
         {
@@ -75,9 +100,9 @@ namespace NeuroAdaptiveVR.Core
             if (gameFlow == null) gameFlow = GetComponent<GameFlowController>();
             if (content == null) content = FindAnyObjectByType<KanjiContentController>();
             BuildItems();
-            // Las sondas llaman a BuildOptions sin pasar por StartRun, asi que
-            // el generador tiene que existir desde Awake.
-            _rng = new System.Random(randomSeed);
+            // Las sondas toman sus opciones del plan sin pasar por StartRun, asi
+            // que el plan tiene que existir desde Awake.
+            BuildPlan();
         }
 
         private void OnEnable()
@@ -111,12 +136,17 @@ namespace NeuroAdaptiveVR.Core
                 return;
             }
 
-            if (gameFlow.CurrentState != state) gameFlow.EnterState(state);
-
-            // Igual que el estado: el nivel se fija en su dueño, no se
-            // "declara" en cada trial. betweenTrials va en true porque aqui
-            // no hay ninguno abierto -- si lo hubiera, el guard de spec 10.2
-            // lo rechazaria, que es lo correcto.
+            // Los niveles PRIMERO, el estado despues.
+            //
+            // Al reves --como estaba hasta el 17 de septiembre-- el
+            // STATE_ENTERED salia con el par de niveles del estado anterior, y
+            // la guarda del Apendice A lo cazaba en cada corrida: "S7 no admite
+            // LAL=OFF". Tenia razon.
+            //
+            // Este banco entra con applyNominalLevels: false porque parte de su
+            // trabajo es ejercitar combinaciones que la matriz prohibe --el caso
+            // 6 del protocolo pone S8 con LAL=HIGH a proposito--. Si el estado
+            // le pisara los niveles, esa prueba no podria existir.
             var assistance = GetComponent<LearningAssistanceController>();
             if (assistance == null)
             {
@@ -137,15 +167,27 @@ namespace NeuroAdaptiveVR.Core
                                "indistinguible de un OFF real en la base de datos.");
                 return;
             }
+            // La seed del entorno sale de la misma sesion que la de los trials.
+            // Si el ESL sorteara sus props con otra seed, dos reconstrucciones de
+            // la misma sesion verian salas distintas -- y el entorno es la
+            // manipulacion, no decorado.
+            stimulation.SetSeed(EffectiveSeed);
             stimulation.SetLevel(esl, betweenTrials: true);
 
-            // El generador vuelve a la seed --misma seed, misma secuencia
-            // (spec 6.1)-- pero la numeracion NO se reinicia: varias corridas
-            // dentro del mismo Play comparten sesion, y reiniciar la secuencia
+            // Ahora si: el estado, con los niveles ya puestos.
+            if (gameFlow.CurrentState != state)
+                gameFlow.EnterState(state, applyNominalLevels: false);
+
+            // El plan se reconstruye --misma seed, misma secuencia (spec 6.1)--
+            // pero la numeracion global NO se reinicia: varias corridas dentro
+            // del mismo Play comparten sesion, y reiniciar la secuencia
             // produciria dos trials distintos con el mismo trial_id.
-            _rng = new System.Random(randomSeed);
-            _runRemaining = trialCount;
-            Debug.Log($"[TrialDebugRunner] Arrancando {trialCount} trials · estado {state} · " +
+            if (!BuildPlan()) return;
+            _planIndex = 0;
+            _runRemaining = _plan.Count;
+
+            EmitSequence();
+            Debug.Log($"[TrialDebugRunner] Arrancando {_plan.Count} trials · estado {state} · " +
                       $"LAL {lal} · ESL {esl} · " +
                       $"feedback {(immediateFeedback ? "inmediato" : "diferido")} · " +
                       $"seed {randomSeed} · numeracion desde {_sequence + 1}");
@@ -162,23 +204,66 @@ namespace NeuroAdaptiveVR.Core
 
         private void NextTrial()
         {
-            if (_runRemaining <= 0)
+            if (_plan == null || _runRemaining <= 0 || _planIndex >= _plan.Count)
             {
                 Debug.Log("[TrialDebugRunner] Corrida terminada.");
                 return;
             }
 
-            _sequence++;
+            // El trial sale del plan, no se inventa aqui. El tipo, el kanji
+            // objetivo y el orden de las cuatro opciones ya estaban decididos
+            // antes del primer trial, que es lo que hace reconstruible la
+            // secuencia (spec 6.1).
+            var planeado = _plan.Trials[_planIndex++];
             _runRemaining--;
+            _sequence++;
 
-            // Tipo rotando desde el inicio de ESTA corrida, para que tres
-            // trials cubran T1, T2 y T3 sea cual sea la numeracion global.
-            var trialType = (RetrievalTrialType)((trialCount - _runRemaining - 1) % 3);
-            int targetIndex = _rng.Next(_items.Count);
-
+            // La secuencia del request es la global del banco, no la del plan:
+            // el trial_id tiene que ser unico dentro de la sesion aunque se
+            // corran varios planes seguidos en el mismo Play.
             responseSystem.BeginTrial(new TrialRequest(
-                _sequence, _items[targetIndex], trialType,
-                BuildOptions(targetIndex, trialType), immediateFeedback));
+                _sequence, planeado.Target, planeado.TrialType,
+                planeado.Options, immediateFeedback));
+        }
+
+        /// <summary>
+        /// Construye el plan del bloque con la seed y el set efectivos.
+        /// Devuelve false si algo impide construirlo.
+        /// </summary>
+        private bool BuildPlan()
+        {
+            if (_items.Count == 0) return false;
+
+            _plan = TrialSequenceGenerator.Build(state, _items, trialCount, minLag, EffectiveSeed);
+            _planIndex = 0;
+            return _plan.Count > 0;
+        }
+
+        /// <summary>
+        /// Manda la secuencia planeada a la base antes de correr el primer trial.
+        ///
+        /// Va sin contexto de trial a proposito: no pertenece a ningun trial, es
+        /// el plan de todos. Por eso TRIAL_SEQUENCE_GENERATED no esta en la lista
+        /// de eventos que exigen un trial abierto.
+        /// </summary>
+        private void EmitSequence()
+        {
+            var telemetry = GetComponent<BehaviorTelemetryController>();
+            if (telemetry == null || _plan == null) return;
+
+            telemetry.Emit(TelemetryEvents.TrialSequenceGenerated, new Dictionary<string, object>
+            {
+                { "block_state", state.ToWireValue() },
+                { "kanji_set", EffectiveSet },
+                { "seed", EffectiveSeed },
+                { "seed_raw", SessionContext.IsInstalled ? SessionContext.RandomSeedRaw : null },
+                { "trial_count", _plan.Count },
+                { "min_lag_requested", _plan.MinLag },
+                { "min_lag_achieved", _plan.ShortestLag() == int.MaxValue ? -1 : _plan.ShortestLag() },
+                { "distinct_pairs", _plan.DistinctPairs },
+                { "ordering_attempts", _plan.OrderingAttempts },
+                { "sequence", _plan.ToTelemetryRows() },
+            });
         }
 
         // ------------------------------------------------------------------
@@ -199,7 +284,7 @@ namespace NeuroAdaptiveVR.Core
         private void ProbeWrongOptionCount()
         {
             Debug.Log("[Probe] Esperado: error de numero de opciones, trial abortado.");
-            var opts = BuildOptions(0, RetrievalTrialType.KanjiToMeaning);
+            var opts = OptionsFor(0, RetrievalTrialType.KanjiToMeaning);
             opts.RemoveAt(0);                       // 3 opciones en vez de 4
             SendProbe(opts, RetrievalTrialType.KanjiToMeaning);
         }
@@ -208,7 +293,7 @@ namespace NeuroAdaptiveVR.Core
         private void ProbeTwoCorrect()
         {
             Debug.Log("[Probe] Esperado: error de 2 opciones correctas, trial abortado.");
-            var opts = BuildOptions(0, RetrievalTrialType.KanjiToMeaning);
+            var opts = OptionsFor(0, RetrievalTrialType.KanjiToMeaning);
             for (int i = 0; i < opts.Count; i++)
                 opts[i] = new TrialOption(opts[i].OptionId, opts[i].DisplayText, i < 2);
             SendProbe(opts, RetrievalTrialType.KanjiToMeaning);
@@ -218,7 +303,7 @@ namespace NeuroAdaptiveVR.Core
         private void ProbeDuplicateOption()
         {
             Debug.Log("[Probe] Esperado: error de opcion duplicada, trial abortado.");
-            var opts = BuildOptions(0, RetrievalTrialType.KanjiToMeaning);
+            var opts = OptionsFor(0, RetrievalTrialType.KanjiToMeaning);
             opts[1] = new TrialOption(opts[0].OptionId, opts[1].DisplayText, false);
             SendProbe(opts, RetrievalTrialType.KanjiToMeaning);
         }
@@ -231,10 +316,10 @@ namespace NeuroAdaptiveVR.Core
             _sequence++;
             responseSystem.BeginTrial(new TrialRequest(_sequence, _items[0],
                 RetrievalTrialType.KanjiToMeaning,
-                BuildOptions(0, RetrievalTrialType.KanjiToMeaning), immediateFeedback));
+                OptionsFor(0, RetrievalTrialType.KanjiToMeaning), immediateFeedback));
             responseSystem.BeginTrial(new TrialRequest(_sequence + 1, _items[1],
                 RetrievalTrialType.KanjiToMeaning,
-                BuildOptions(1, RetrievalTrialType.KanjiToMeaning), immediateFeedback));
+                OptionsFor(1, RetrievalTrialType.KanjiToMeaning), immediateFeedback));
         }
 
         [ContextMenu("Probe: cambiar LAL a media respuesta")]
@@ -249,79 +334,23 @@ namespace NeuroAdaptiveVR.Core
 
         private void SendProbe(List<TrialOption> options, RetrievalTrialType trialType)
         {
-            if (_rng == null) _rng = new System.Random(randomSeed);
             _sequence++;
             responseSystem.BeginTrial(new TrialRequest(_sequence, _items[0], trialType,
                                                        options, immediateFeedback));
         }
 
         /// <summary>
-        /// Distractores intra-set: el objetivo mas tres de los otros cuatro
-        /// del mismo set, en orden barajado con la seed.
+        /// Opciones para las sondas, pedidas al mismo generador que usa el plan.
         ///
-        /// La regla es de la tabla de autoria §6, y lo que la hace segura es
-        /// que dentro de cada set las cinco lecturas, los cinco significados
-        /// y las cinco formas son distintos -- verificado por
-        /// kanji_metrics.py. Sin esa garantia, un trial podria presentar dos
-        /// opciones correctas sin que nada lo detecte.
+        /// Las sondas mandan trials deliberadamente mal formados, y para eso
+        /// necesitan un trial BIEN formado del que partir. Pedirselo al generador
+        /// --en vez de tener aqui una segunda implementacion-- es lo que asegura
+        /// que lo que rompen sea exactamente lo que el sistema recibe de verdad.
         /// </summary>
-        private List<TrialOption> BuildOptions(int targetIndex, RetrievalTrialType trialType)
-        {
-            var pool = new List<int>();
-            for (int i = 0; i < _items.Count; i++) if (i != targetIndex) pool.Add(i);
+        private List<TrialOption> OptionsFor(int targetIndex, RetrievalTrialType trialType)
+            => TrialSequenceGenerator.BuildOptions(
+                   _items, _items[targetIndex], trialType, EffectiveSeed + targetIndex);
 
-            // Fisher-Yates con la seed de la sesion: misma seed, mismas opciones
-            // en el mismo orden (spec 6.1).
-            for (int i = pool.Count - 1; i > 0; i--)
-            {
-                int j = _rng.Next(i + 1);
-                (pool[i], pool[j]) = (pool[j], pool[i]);
-            }
-
-            var chosen = new List<int> { targetIndex };
-            for (int i = 0; i < 3 && i < pool.Count; i++) chosen.Add(pool[i]);
-
-            for (int i = chosen.Count - 1; i > 0; i--)
-            {
-                int j = _rng.Next(i + 1);
-                (chosen[i], chosen[j]) = (chosen[j], chosen[i]);
-            }
-
-            var options = new List<TrialOption>(chosen.Count);
-            foreach (int idx in chosen)
-                options.Add(new TrialOption(_items[idx].KanjiId, OptionText(idx, trialType),
-                                            idx == targetIndex));
-
-            return options;
-        }
-
-        /// <summary>
-        /// Que se muestra en la tarjeta depende del tipo de trial: en T1 la
-        /// respuesta es un kanji, en T2 un significado, en T3 una lectura.
-        /// </summary>
-        private string OptionText(int index, RetrievalTrialType trialType) => trialType switch
-        {
-            RetrievalTrialType.MeaningToKanji => _items[index].Character,
-            RetrievalTrialType.KanjiToMeaning => _items[index].Meaning,
-            RetrievalTrialType.KanjiToReading => _items[index].TargetReading,
-            _ => _items[index].Character,
-        };
-
-        /// <summary>
-        /// Los items salen del contrato, no de una tabla escrita aqui.
-        ///
-        /// Hasta el 15 de septiembre este archivo llevaba su propia copia del set
-        /// A --cinco tuplas con kanji, significado y lectura-- y fabricaba
-        /// ScriptableObjects en memoria para transportarlas. Funcionaba, y era una
-        /// segunda fuente de verdad del contenido del estudio: el dia que
-        /// kanji_metrics.py reasignara un set, las pruebas habrian seguido
-        /// corriendo sobre el reparto viejo y el log habria dicho que todo iba
-        /// bien.
-        ///
-        /// Ahora lee lo mismo que leera la sesion real. Como efecto secundario,
-        /// correr el banco de pruebas verifica de paso que el contrato carga y que
-        /// los ids llegan.
-        /// </summary>
         private void BuildItems()
         {
             _items.Clear();
@@ -335,12 +364,19 @@ namespace NeuroAdaptiveVR.Core
 
             if (!content.IsLoaded && !content.Load()) return;
 
-            _items.AddRange(content.Set(setName));
+            // Si la sesion declara un set y el Inspector declara otro, se para.
+            // Correr el B sobre una sesion que dice A produce datos que parecen
+            // validos y no lo son -- y hasta hoy eso no daba ninguna señal.
+            if (!SessionContext.AgreesWithInspector(setName, "TrialDebugRunner")) return;
+
+            _items.AddRange(content.Set(EffectiveSet));
 
             if (_items.Count == 0)
-                Debug.LogError($"[TrialDebugRunner] El set '{setName}' vino vacio del contrato.");
+                Debug.LogError($"[TrialDebugRunner] El set '{EffectiveSet}' vino vacio del contrato.");
             else
-                Debug.Log($"[TrialDebugRunner] Set {setName}: " +
+                Debug.Log($"[TrialDebugRunner] Set {EffectiveSet}" +
+                          (SessionContext.IsInstalled && SessionContext.AssignedKanjiSet != null
+                               ? " (de la sesion)" : " (del Inspector)") + ": " +
                           string.Join(" ", _items.Select(i => i.ToString())));
         }
     }

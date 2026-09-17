@@ -37,7 +37,14 @@ namespace NeuroAdaptiveVR.EditorTools
         // lista del Inspector. Cuarenta assets arrastrados a mano son cuarenta
         // ocasiones de que falte uno y nadie lo note -- y ademas son autoria a mano
         // del dataset, que es justo lo que spec 14 prohibe.
-        private const string ItemFolder = "Assets/Resources/Kanji";
+        // Minuscula, porque asi esta la carpeta en disco Y en git. La version
+        // anterior decia "Kanji" y funcionaba en Windows por casualidad: el
+        // sistema de archivos es insensible a mayusculas, asi que
+        // IsValidFolder devolvia true para las dos grafias. En un clon sobre un
+        // sistema sensible --Linux, CI, macOS con APFS sensible-- esta constante
+        // habria creado una SEGUNDA carpeta junto a la existente, con 40 assets
+        // duplicados y 40 kanji_id repetidos.
+        private const string ItemFolder = "Assets/Resources/kanji";
         private const string Log = "[KanjiItemGenerator]";
 
         [MenuItem("Tools/NeuroAdaptive VR/Regenerar KanjiLearningItems", priority = 100)]

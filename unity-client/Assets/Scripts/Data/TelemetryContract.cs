@@ -53,6 +53,20 @@ namespace NeuroAdaptiveVR.Data
         public const string StateEntered = "STATE_ENTERED";
 
         // Fase 2 -- sistema de respuesta
+        //
+        // TRIAL_SEQUENCE_GENERATED lleva la secuencia COMPLETA de un bloque, tal
+        // como se planeo, antes de correr el primer trial. Spec 6.1 pide guardar
+        // "random seeds and final trial sequence" para poder reconstruir la
+        // sesion, y la seed sola no basta: reconstruir con ella obliga a que el
+        // codigo generador de hoy siga existiendo y comportandose igual dentro de
+        // seis meses.
+        //
+        // Se parece a duplicar lo que luego dira cada TRIAL_STARTED, y no lo es:
+        // esto dice QUE SE PLANEO y aquellos dicen QUE OCURRIO. Si una sesion se
+        // aborta en el trial 12, los dos registros difieren -- y esa diferencia
+        // es justo el dato que dice donde se corto.
+        public const string TrialSequenceGenerated = "TRIAL_SEQUENCE_GENERATED";
+
         public const string TrialStarted = "TRIAL_STARTED";
         public const string AnswerSelected = "ANSWER_SELECTED";
         public const string HintRequested = "HINT_REQUESTED";
@@ -111,7 +125,12 @@ namespace NeuroAdaptiveVR.Data
 
         /// <param name="state">Estado que corre el trial: S5, S6, S7 u S8.</param>
         /// <param name="sequence">Posicion 1-based dentro de la secuencia de ese estado.</param>
-        /// <param name="kanjiId">Nombre del asset KanjiLearningItem, p.ej. "KANJI_YAMA".</param>
+        /// <param name="kanjiId">
+        /// El id estable del kanji, p.ej. "KANJI_YAMA". Sale de KANJI_IDS en
+        /// tools/kanji_metrics.py, NO del nombre del asset: hasta el 15 de
+        /// septiembre se derivaba del nombre de archivo, asi que renombrar un
+        /// asset en el Editor cambiaba una llave foranea de Postgres en silencio.
+        /// </param>
         public TrialContext(GameFlowState state, int sequence, RetrievalTrialType trialType, string kanjiId)
         {
             // Identificador determinista, no UUID: la spec 6.1 pide que la

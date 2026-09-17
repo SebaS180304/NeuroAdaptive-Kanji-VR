@@ -106,6 +106,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | Event | Additional payload fields |
 |---|---|
 | `STATE_ENTERED` | — (context block only) |
+| `TRIAL_SEQUENCE_GENERATED` | `block_state`, `kanji_set`, `seed`, `seed_raw`, `trial_count`, `min_lag_requested`, `min_lag_achieved`, `distinct_pairs`, `ordering_attempts`, `sequence` — spec §6.1. See §5.8 |
 | `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option`, `hint_available` |
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
@@ -129,6 +130,45 @@ Cue arrays (`hint_type`, `cues_presented`) carry cue names, not a flags integer:
 `TARGET_READING_AUDIO`, `VISUAL_ASSOCIATION`, `REVERSE_SEMANTIC_ASSOCIATION`,
 `VISUAL_TRANSFORMATION`. A bitmask in JSONB has to be decoded in every query and
 cannot be filtered with `payload -> 'cues_presented' ? 'X'`.
+
+### 5.8 `TRIAL_SEQUENCE_GENERATED` — the plan, not the outcome
+
+Emitted once per block, **before the first trial of that block runs**, carrying
+the whole planned sequence: for each entry, `trial_sequence`, `kanji_id`,
+`trial_type`, the four `options` in presentation order, and `correct_option`.
+
+Spec §6.1 asks for two things to be stored, not one: *"Random seeds and final
+trial sequence are stored to permit exact session reconstruction."* The seed
+alone would technically suffice — but only for as long as the generator that
+consumed it still exists and still behaves identically. An analysis run six
+months from now would depend on today's code. The expanded sequence does not.
+
+**This is not a duplicate of `TRIAL_STARTED`, and the difference matters.**
+
+| | Says |
+|---|---|
+| `TRIAL_SEQUENCE_GENERATED` | what was **planned** |
+| `TRIAL_STARTED` × n | what actually **happened** |
+
+If a session aborts at trial 12 of 20, the two disagree — and that disagreement
+*is* the datum: it records where the session was cut. A contract that stored only
+one of them could not express it. This is a deliberate exception to the
+one-fact-one-place rule that governs the rest of this document, and it is an
+exception because the two records answer different questions.
+
+`min_lag_requested` versus `min_lag_achieved` is the same idea applied to the
+spacing constraint: the first is policy, the second is what the generator managed
+to produce. When they differ, the sequence is still usable but the spacing
+guarantee is weaker than intended, and the analysis should know without anyone
+having to remember.
+
+`seed_raw` is the seed as `experiment_sessions.random_seed` stores it — a string.
+`seed` is the integer it was folded into, by a stable FNV-1a hash rather than
+`String.GetHashCode()`, which .NET randomizes per process. Both are recorded
+because reconstruction needs to be able to check the folding, not just trust it.
+
+No trial context block: the event belongs to no single trial, it describes all of
+them. It is therefore not in the set of events that require an open trial.
 
 ### 5.7 The two environmental events
 
@@ -328,6 +368,11 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**16 September 2026** — added `TRIAL_SEQUENCE_GENERATED` (§5.8). No
+`schema_version` bump: a new event type, not a change to the shape of existing
+payloads, which is the rule stated in §5.6.
+
 
 **v1 — 8 September 2026.** First version. Context block, trial block,
 deterministic `trial_id`, the seven Phase 2 events, and the two deviations from

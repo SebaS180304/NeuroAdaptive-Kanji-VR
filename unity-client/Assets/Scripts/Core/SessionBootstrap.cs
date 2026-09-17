@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using NeuroAdaptiveVR.Data;
 using NeuroAdaptiveVR.Networking;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -67,6 +68,11 @@ namespace NeuroAdaptiveVR.Core
             // y todos sus session_elapsed_ms saldrian desplazados.
             SessionClock.ResetForNewSession();
 
+            // Lo mismo que el reloj y por lo mismo: el contexto es estatico y
+            // sobrevive entre Plays en el Editor. Sin este reset, la segunda
+            // sesion heredaria el set y la seed de la primera.
+            SessionContext.Reset();
+
             string sessionId = existingSessionId;
 
             if (createNewSessionOnPlay)
@@ -99,7 +105,7 @@ namespace NeuroAdaptiveVR.Core
                     body =>
                     {
                         sessionId = ReadField(body, "id");
-                        InstallSessionClock(body);
+                        InstallSessionData(body);
                     });
 
                 if (string.IsNullOrEmpty(sessionId))
@@ -113,7 +119,7 @@ namespace NeuroAdaptiveVR.Core
             {
                 // Sesion creada por el investigador: hay que ir a buscar su
                 // instante cero, porque no lo tenemos de una respuesta previa.
-                yield return GetJson($"{backendHttpUrl}/sessions/{sessionId}", InstallSessionClock);
+                yield return GetJson($"{backendHttpUrl}/sessions/{sessionId}", InstallSessionData);
             }
 
             if (string.IsNullOrWhiteSpace(sessionId))
@@ -122,13 +128,50 @@ namespace NeuroAdaptiveVR.Core
                 yield break;
             }
 
+            // Una sesion de verdad tiene que traer set y seed. Sin ellos no es
+            // reconstruible (spec 6.1), y eso es un error de configuracion del
+            // investigador, no un caso a resolver en runtime: la sesion se para
+            // antes de producir datos que nadie va a poder reproducir.
+            //
+            // El camino de depuracion --createNewSessionOnPlay, heredado de M1--
+            // crea sesiones sin esos campos a proposito, asi que ahi se avisa y
+            // se sigue.
+            if (!SessionContext.IsComplete)
+            {
+                string falta = (SessionContext.AssignedKanjiSet == null ? "assigned_kanji_set " : "") +
+                               (SessionContext.RandomSeedRaw == null ? "random_seed" : "");
+
+                if (createNewSessionOnPlay)
+                {
+                    Debug.LogWarning($"[SessionBootstrap] Sesion de depuracion sin {falta.Trim()}. " +
+                                     "Se usan los valores del Inspector y la corrida NO es reconstruible. " +
+                                     "Para una sesion real, creala por REST con esos campos.");
+                }
+                else
+                {
+                    Debug.LogError($"[SessionBootstrap] La sesion {sessionId} no trae {falta.Trim()}. " +
+                                   "Sin eso la sesion no es reconstruible (spec 6.1) y no se arranca. " +
+                                   "Recreala por REST con assigned_kanji_set y random_seed.");
+                    yield break;
+                }
+            }
+
             _client.OnConnected += HandleConnected;
 
             _client.Configure(sessionId);
             _client.Connect();
         }
 
-        private static void InstallSessionClock(string jsonBody)
+        /// <summary>
+        /// Instala TODO lo que la sesion declara, no solo el reloj.
+        ///
+        /// Hasta el 16 de septiembre esta respuesta se leia para sacar un campo y
+        /// se tiraban los otros cuatro -- el set asignado, la seed, la condicion y
+        /// el numero de visita--, que mientras tanto vivian a mano en el
+        /// Inspector. La fila podia decir set A con seed 20260909 mientras la
+        /// corrida usaba el set B con otra seed, y nada los comparaba.
+        /// </summary>
+        private static void InstallSessionData(string jsonBody)
         {
             string iso = ReadField(jsonBody, "session_clock_started_at");
             if (!SessionClock.TrySetSessionZeroFromIso(iso))
@@ -136,6 +179,53 @@ namespace NeuroAdaptiveVR.Core
                 Debug.LogWarning("[SessionBootstrap] La sesion no trae session_clock_started_at usable. " +
                                  "Los eventos saldran con session_elapsed_ms = -1.");
             }
+
+            SessionContext.Install(
+                sessionId:         ReadField(jsonBody, "id"),
+                assignedKanjiSet:  ReadField(jsonBody, "assigned_kanji_set"),
+                randomSeedRaw:     ReadField(jsonBody, "random_seed"),
+                conditionWire:     ReadField(jsonBody, "condition"),
+                visitNumberRaw:    ReadField(jsonBody, "visit_number"));
+        }
+
+        private void OnEnable()
+        {
+            // El HTTP vive en este componente, no en GameFlowController: ese
+            // controlador es dueño del estado y no tiene por que saber que hay un
+            // backend. Aqui ya estan la URL base y los helpers.
+            if (_flow == null) _flow = GetComponent<GameFlowController>();
+            if (_flow != null) _flow.OnStateEntered += HandleStateEntered;
+        }
+
+        private void OnDisable()
+        {
+            if (_flow != null) _flow.OnStateEntered -= HandleStateEntered;
+        }
+
+        /// <summary>
+        /// Sube el estado a experiment_sessions.current_state.
+        ///
+        /// Hasta el 16 de septiembre NADIE llamaba a este endpoint: la columna se
+        /// quedaba en el valor con que nacia la fila durante toda la sesion, y
+        /// `status` con ella. Una sesion completa y una abandonada se veian
+        /// exactamente igual en la base.
+        ///
+        /// Es fire-and-forget a proposito: si el PATCH falla, la sesion sigue --
+        /// la fuente de verdad del estado es el STATE_ENTERED del log de eventos,
+        /// que ya viajo por el WebSocket. Esta columna es una comodidad para
+        /// consultar, no el registro primario.
+        /// </summary>
+        private void HandleStateEntered(GameFlowState state)
+        {
+            if (!SessionContext.IsInstalled || string.IsNullOrWhiteSpace(SessionContext.SessionId))
+                return;
+
+            StartCoroutine(PatchJson(
+                $"{backendHttpUrl}/sessions/{SessionContext.SessionId}/state",
+                JsonConvert.SerializeObject(new Dictionary<string, object>
+                {
+                    { "new_state", state.ToWireValue() },
+                })));
         }
 
         private void HandleConnected()
@@ -199,6 +289,24 @@ namespace NeuroAdaptiveVR.Core
             }
 
             onSuccess?.Invoke(request.downloadHandler.text);
+        }
+
+        private IEnumerator PatchJson(string url, string json)
+        {
+            using var request = new UnityWebRequest(url, "PATCH");
+            request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                // Warning y no error: el estado ya quedo registrado en
+                // session_events. Esto solo sincroniza una columna de comodidad.
+                Debug.LogWarning($"[SessionBootstrap] PATCH {url} fallo: {request.error}. " +
+                                 "current_state queda desactualizado; los STATE_ENTERED no.");
+            }
         }
 
         private IEnumerator GetJson(string url, Action<string> onSuccess)

@@ -1986,7 +1986,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &365647647
 Transform:
   m_ObjectHideFlags: 0
@@ -4613,8 +4613,10 @@ Material:
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses:
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -4711,7 +4713,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.5, g: 0.52, b: 0.55, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.5, g: 0.52, b: 0.54999995, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
@@ -5855,8 +5857,10 @@ Material:
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses:
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -5953,7 +5957,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.82, g: 0.8, b: 0.75, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.82, g: 0.8, b: 0.75, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
@@ -7759,10 +7763,6 @@ PrefabInstance:
       value: SessionRoot
       objectReference: {fileID: 0}
     - target: {fileID: 1484434850191034316, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
-      propertyPath: seed
-      value: -1058336171
-      objectReference: {fileID: 0}
-    - target: {fileID: 1484434850191034316, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: telemetry
       value: 
       objectReference: {fileID: 1019401270}
@@ -7804,15 +7804,11 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: f65250ed22bb7f1419f37b86cf91d019, type: 2}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: existingSessionId
-      value: 91fef818-816b-498b-8801-e76438e59b2c
+      value: e93b4c25-cb48-4b0b-a0c1-16cd9a0b6e89
       objectReference: {fileID: 0}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: createNewSessionOnPlay
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2799735312363916827, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
-      propertyPath: pingIntervalSeconds
-      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7812677166495404057, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: esl
@@ -7826,14 +7822,6 @@ PrefabInstance:
       propertyPath: content
       value: 
       objectReference: {fileID: 1019401276}
-    - target: {fileID: 7812677166495404057, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
-      propertyPath: setName
-      value: A
-      objectReference: {fileID: 0}
-    - target: {fileID: 7812677166495404057, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
-      propertyPath: trialCount
-      value: 20
-      objectReference: {fileID: 0}
     - target: {fileID: 7878927178424696329, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: presenterBehaviour
       value: 
@@ -11253,7 +11241,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1936254159
 Transform:
   m_ObjectHideFlags: 0

@@ -88,8 +88,10 @@ namespace NeuroAdaptiveVR.EditorTools
             ContentCases(content);
             SetCases(content);
             SubstitutionCases(content);
+            SequenceCases(content);
             EnvironmentCases();
             AssistanceCases();
+            MatrixCases();
             WiringCases(content);
 
             Report();
@@ -275,6 +277,140 @@ namespace NeuroAdaptiveVR.EditorTools
                           ? "日 no puede reemplazar a nadie en ese set"
                           : $"puede reemplazar a: {Join(huecos)}");
             }
+        }
+
+        // ==================================================================
+        // Generador de secuencia (spec 6.1)
+        // ==================================================================
+
+        private static void SequenceCases(KanjiContentController c)
+        {
+            var set = c.Set("A");
+            if (set.Count < 5) { Check("Q0", "El set A tiene cinco kanji", false, $"{set.Count}"); return; }
+
+            const int seedA = 20260909;
+            const int seedB = 777;
+            const int minLag = 2;
+
+            var p1 = TrialSequenceGenerator.Build(GameFlowState.S7_ExperimentalRetrieval, set, 20, minLag, seedA);
+            var p2 = TrialSequenceGenerator.Build(GameFlowState.S7_ExperimentalRetrieval, set, 20, minLag, seedA);
+            var pB = TrialSequenceGenerator.Build(GameFlowState.S7_ExperimentalRetrieval, set, 20, minLag, seedB);
+
+            Check("Q1", "Misma seed produce la misma secuencia, opciones y orden incluidos",
+                  Fingerprint(p1) == Fingerprint(p2),
+                  $"{p1.Count} trials · huella {Fingerprint(p1).GetHashCode():X8}");
+
+            // Sin este caso, Q1 pasaria igual si el generador ignorara la seed.
+            Check("Q2", "Seeds distintas producen secuencias distintas",
+                  Fingerprint(p1) != Fingerprint(pB),
+                  Fingerprint(p1) == Fingerprint(pB) ? "identicas" : $"seed {seedA} != seed {seedB}");
+
+            Check("Q3", $"Ningun kanji se repite con separacion menor que {minLag}",
+                  p1.ShortestLag() >= minLag,
+                  $"separacion mas corta {p1.ShortestLag()} · {p1.OrderingAttempts} intento(s)");
+
+            // 5 kanji x 3 tipos = 15. Con 20 trials el cruce completo cabe, y que
+            // quepa no basta: hay que comprobar que efectivamente esta.
+            Check("Q4", "Un plan de 20 cubre los 15 pares (kanji, tipo)",
+                  p1.DistinctPairs == 15, $"{p1.DistinctPairs}/15 pares");
+
+            var malFormados = p1.Trials.Where(t =>
+                t.Options.Count != 4 ||
+                t.Options.Count(o => o.IsCorrect) != 1 ||
+                t.Options.Select(o => o.OptionId).Distinct().Count() != 4).ToList();
+
+            Check("Q5", "Todos los trials traen 4 opciones, una correcta, sin ids repetidos",
+                  malFormados.Count == 0,
+                  malFormados.Count == 0 ? $"{p1.Count} trials revisados"
+                                         : $"{malFormados.Count} mal formados");
+
+            var idsDelSet = set.Select(i => i.KanjiId).ToHashSet();
+            var fuera = p1.Trials.SelectMany(t => t.Options.Select(o => o.OptionId))
+                                 .Where(id => !idsDelSet.Contains(id)).Distinct().ToList();
+
+            Check("Q6", "Todos los distractores salen del mismo set que el objetivo",
+                  fuera.Count == 0, fuera.Count == 0 ? "ok" : Join(fuera));
+
+            // S8: spec 7.9 da el numero exacto -- 5 kanji x 3 tipos, sin extras.
+            var s8 = TrialSequenceGenerator.Build(GameFlowState.S8_ImmediateAssessment, set, 15, minLag, seedA);
+            bool cadaParUnaVez = s8.Trials
+                .GroupBy(t => $"{t.Target.KanjiId}|{t.TrialType}")
+                .All(g => g.Count() == 1);
+
+            Check("Q7", "El plan de S8 es el cruce completo exacto: 15 trials, cada par una vez",
+                  s8.Count == 15 && s8.DistinctPairs == 15 && cadaParUnaVez,
+                  $"{s8.Count} trials · {s8.DistinctPairs} pares · sin repetir: {cadaParUnaVez}");
+
+            // S6: 9 trials, tres por tipo (decision del 16 de septiembre, pendiente
+            // de justificar con investigacion).
+            var s6 = TrialSequenceGenerator.Build(GameFlowState.S6_GuidedPracticeCalibration, set, 9, minLag, seedA);
+            var porTipo = s6.Trials.GroupBy(t => t.TrialType).ToDictionary(g => g.Key, g => g.Count());
+            Check("Q8", "El plan de S6 son 9 trials repartidos tres por tipo",
+                  s6.Count == 9 && porTipo.Count == 3 && porTipo.Values.All(v => v == 3),
+                  Join(porTipo.Select(kv => $"{kv.Key}:{kv.Value}")));
+
+            // El hash tiene que ser estable: si no lo fuera, dos corridas de la
+            // misma sesion darian secuencias distintas y la seed no serviria de nada.
+            Check("Q9", "StableHash devuelve el mismo valor para el mismo texto",
+                  StableHash.Of("20260909") == StableHash.Of("20260909") &&
+                  StableHash.Of("piloto-p03") != StableHash.Of("piloto-p04") &&
+                  StableHash.Of("20260909") != 0,
+                  $"\"20260909\" -> {StableHash.Of("20260909")}");
+        }
+
+        /// <summary>
+        /// Huella de un plan: todo lo que tiene que ser identico entre dos
+        /// generaciones con la misma seed. Incluye el ORDEN de las opciones, no
+        /// solo cuales son -- una reconstruccion que baraja distinto no
+        /// reconstruye la misma tarea.
+        /// </summary>
+        private static string Fingerprint(TrialPlan plan)
+            => string.Join(";", plan.Trials.Select(t =>
+                   $"{t.Sequence}:{t.Target.KanjiId}:{t.TrialType}:" +
+                   string.Join(",", t.Options.Select(o => o.OptionId))));
+
+        // ==================================================================
+        // Matriz del Apendice A
+        // ==================================================================
+
+        private static void MatrixCases()
+        {
+            // S8 es la medida primaria de aprendizaje inmediato y se define por
+            // ser "no-assistance" (spec 7.9). Hasta el 16 de septiembre aceptaba
+            // LAL=HIGH sin protestar.
+            string conAyuda = StateLevelMatrix.Violation(
+                GameFlowState.S8_ImmediateAssessment,
+                StimulationOrAssistanceLevel.Focus, StimulationOrAssistanceLevel.High);
+
+            Check("M1", "S8 con LAL=HIGH se reporta como violacion del Apendice A",
+                  conAyuda != null, conAyuda ?? "NO detectada");
+
+            string correcto = StateLevelMatrix.Violation(
+                GameFlowState.S8_ImmediateAssessment,
+                StimulationOrAssistanceLevel.Focus, StimulationOrAssistanceLevel.Off);
+
+            Check("M2", "S8 con FOCUS/OFF es admisible",
+                  correcto == null, correcto ?? "ok");
+
+            // El otro lado: una matriz que dijera que todo esta mal tambien
+            // pasaria M1. Se comprueba que los pares nominales de la tabla de
+            // spec 7 pasen todos.
+            var nominales = new (GameFlowState s, StimulationOrAssistanceLevel esl, StimulationOrAssistanceLevel lal)[]
+            {
+                (GameFlowState.S1_WelcomeOrientation, StimulationOrAssistanceLevel.Low, StimulationOrAssistanceLevel.Off),
+                (GameFlowState.S3_SystemValidation, StimulationOrAssistanceLevel.Minimal, StimulationOrAssistanceLevel.Off),
+                (GameFlowState.S4_EEGBaseline, StimulationOrAssistanceLevel.Baseline, StimulationOrAssistanceLevel.Off),
+                (GameFlowState.S5_StandardizedLearning, StimulationOrAssistanceLevel.Low, StimulationOrAssistanceLevel.Off),
+                (GameFlowState.S6_GuidedPracticeCalibration, StimulationOrAssistanceLevel.Medium, StimulationOrAssistanceLevel.Medium),
+                (GameFlowState.S7_ExperimentalRetrieval, StimulationOrAssistanceLevel.Medium, StimulationOrAssistanceLevel.Medium),
+                (GameFlowState.S9_SessionSummary, StimulationOrAssistanceLevel.Low, StimulationOrAssistanceLevel.Off),
+            };
+            var rechazados = nominales
+                .Where(n => StateLevelMatrix.Violation(n.s, n.esl, n.lal) != null)
+                .Select(n => n.s.ToString()).ToList();
+
+            Check("M3", "Los pares nominales de la tabla de spec 7 son todos admisibles",
+                  rechazados.Count == 0, rechazados.Count == 0 ? $"{nominales.Length} pares" : Join(rechazados));
         }
 
         // ==================================================================

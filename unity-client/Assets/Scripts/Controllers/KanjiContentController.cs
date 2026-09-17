@@ -22,14 +22,19 @@ namespace NeuroAdaptiveVR.Controllers
     /// sitio donde falta uno y nadie lo nota. Los assets se descubren con
     /// Resources.LoadAll y se unen por id.
     ///
-    /// Por eso viven en Assets/Resources/Kanji/, al lado del JSON: es lo que
+    /// Por eso viven en Assets/Resources/kanji/, al lado del JSON: es lo que
     /// hace que la carga sea identica en el Editor, en Quest Link y en un build
     /// de Android, sin codigo por plataforma.
     /// </summary>
     public class KanjiContentController : MonoBehaviour
     {
         private const string ContractResource = "kanji_content";
-        private const string ItemsResourceFolder = "Kanji";
+        // Minuscula: es como esta la carpeta en disco y en git. Con "Kanji"
+        // funcionaba en Windows por la insensibilidad a mayusculas del sistema
+        // de archivos, y en Linux habria devuelto cero assets -- con el sintoma
+        // "40 kanji sin KanjiLearningItem", que apunta a contenido faltante y no
+        // a una ruta mal escrita.
+        private const string ItemsResourceFolder = "kanji";
         private const string Log = "[KanjiContent]";
 
         [Header("Carga")]
