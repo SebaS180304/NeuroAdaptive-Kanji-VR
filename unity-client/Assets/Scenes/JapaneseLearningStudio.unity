@@ -3616,6 +3616,25 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 653273484}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &659848582 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8135023674665499069, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
+  m_PrefabInstance: {fileID: 1435090918}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &659848588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 659848582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6ac9fdc2c99bc54a89f0a8de667d4fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.XRSimulatorGuard
+  simulatorRoot: {fileID: 0}
+  waitSeconds: 12
 --- !u!1 &661885525
 GameObject:
   m_ObjectHideFlags: 0
@@ -3791,6 +3810,18 @@ PrefabInstance:
     - target: {fileID: 1319746308, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1680501587, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.36
+      objectReference: {fileID: 0}
+    - target: {fileID: 1178791450436251564, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_CameraYOffset
+      value: 1.36
+      objectReference: {fileID: 0}
+    - target: {fileID: 1178791450436251564, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_RequestedTrackingOriginMode
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1717954561962503725, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_Name
@@ -5479,6 +5510,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.KanjiContentController
   loadOnAwake: 1
+--- !u!114 &1019401286
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1019401263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6268b3e0a4cf425489038205bb151378, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.XRRuntimeGuard
+  bringUpXrIfDown: 1
+  startupTimeoutSeconds: 10
 --- !u!1 &1023100426
 GameObject:
   m_ObjectHideFlags: 0
@@ -7828,7 +7873,7 @@ PrefabInstance:
       objectReference: {fileID: 1019401276}
     - target: {fileID: 7812677166495404057, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: setName
-      value: A
+      value: B
       objectReference: {fileID: 0}
     - target: {fileID: 7812677166495404057, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: trialCount
@@ -7888,6 +7933,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1125460835585896871, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1019401276}
+    - targetCorrespondingSourceObject: {fileID: 1125460835585896871, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1019401286}
   m_SourcePrefab: {fileID: 100100000, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
 --- !u!1 &1412497258
 GameObject:
@@ -8123,7 +8171,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8135023674665499069, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 659848588}
   m_SourcePrefab: {fileID: 100100000, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
 --- !u!21 &1439392004
 Material:
