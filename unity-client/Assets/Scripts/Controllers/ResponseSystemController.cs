@@ -178,6 +178,12 @@ namespace NeuroAdaptiveVR.Controllers
         {
             switch (state)
             {
+                // S2 runs trials since 24 September: the tutorial's "look &
+                // select" uses this same cycle, so the participant practises
+                // exactly the mechanic S6-S8 measure. Spec 12 lists S2
+                // performance as "tutorial only"; the S2- prefix of trial_id
+                // is what keeps it out of the primary analysis.
+                case GameFlowState.S2_VRTutorial:
                 case GameFlowState.S5_StandardizedLearning:
                 case GameFlowState.S6_GuidedPracticeCalibration:
                 case GameFlowState.S7_ExperimentalRetrieval:

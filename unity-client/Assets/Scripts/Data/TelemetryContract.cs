@@ -72,6 +72,32 @@ namespace NeuroAdaptiveVR.Data
         public const string HintRequested = "HINT_REQUESTED";
         public const string TrialCompleted = "TRIAL_COMPLETED";
 
+        // Phase 2 -- session chain (S1-S4). Names from spec 7.2-7.5.
+        //
+        // START_SELECTED: the participant chose Start in S1; carries the time
+        // from the welcome panel to the choice.
+        // TUTORIAL_STARTED / TUTORIAL_COMPLETED wrap S2. In M2 the tutorial is
+        // "look & select" only, so its selections travel as ordinary TRIAL_*
+        // events with the S2- prefix instead of TUTORIAL_SELECT; the prefix is
+        // what excludes them from the primary analysis. Grab & place and
+        // TUTORIAL_GRAB/PLACE arrive with the assembly mechanic.
+        // SYSTEM_CHECK_COMPLETED closes S3, with what was checked and whether a
+        // researcher forced the advance. A forced S3 is data, not a footnote.
+        // BASELINE_STARTED / BASELINE_COMPLETED wrap S4. COMPLETED carries the
+        // time scale, so a shortened debug baseline can never pass for a real one.
+        public const string StartSelected = "START_SELECTED";
+        public const string TutorialStarted = "TUTORIAL_STARTED";
+        public const string TutorialCompleted = "TUTORIAL_COMPLETED";
+        public const string SystemCheckCompleted = "SYSTEM_CHECK_COMPLETED";
+        public const string BaselineStarted = "BASELINE_STARTED";
+        public const string BaselineCompleted = "BASELINE_COMPLETED";
+
+        // VIEW_RECENTERED: the view was moved back to the designed eye pose.
+        // Recorded because it rewrites where "forward" is: Phase 3's head-away
+        // metrics measure angle from the board, and a recenter mid-block is a
+        // discontinuity in that signal that must be explainable afterwards.
+        public const string ViewRecentered = "VIEW_RECENTERED";
+
         // Fase 2 -- mecanicas de S5
         public const string KanjiExposed = "KANJI_EXPOSED";
         public const string AssemblyCompleted = "ASSEMBLY_COMPLETED";

@@ -178,6 +178,14 @@ namespace NeuroAdaptiveVR.Core
             if (gameFlow.CurrentState != state)
                 gameFlow.EnterState(state, applyNominalLevels: false);
 
+            // Items rebuilt HERE, not only in Awake. Awake runs before the
+            // session arrives over REST, so on 24 September this bench loaded
+            // set B from the Inspector while the session said A -- and the
+            // guard that compares them ran while there was no session to
+            // compare against, so it stayed silent. By the time anyone clicks
+            // "Start Trial Run" the session is installed.
+            BuildItems();
+
             // El plan se reconstruye --misma seed, misma secuencia (spec 6.1)--
             // pero la numeracion global NO se reinicia: varias corridas dentro
             // del mismo Play comparten sesion, y reiniciar la secuencia
@@ -190,7 +198,7 @@ namespace NeuroAdaptiveVR.Core
             Debug.Log($"[TrialDebugRunner] Arrancando {_plan.Count} trials · estado {state} · " +
                       $"LAL {lal} · ESL {esl} · " +
                       $"feedback {(immediateFeedback ? "inmediato" : "diferido")} · " +
-                      $"seed {randomSeed} · numeracion desde {_sequence + 1}");
+                      $"seed {EffectiveSeed} (bloque {_plan.Seed}) · numeracion desde {_sequence + 1}");
             NextTrial();
         }
 
@@ -234,7 +242,11 @@ namespace NeuroAdaptiveVR.Core
         {
             if (_items.Count == 0) return false;
 
-            _plan = TrialSequenceGenerator.Build(state, _items, trialCount, minLag, EffectiveSeed);
+            // Block seed, not the raw session seed: see TrialSequenceGenerator.BlockSeed.
+            // Same derivation as SessionFlowRunner, so bench and chain build the
+            // same plan for the same session.
+            _plan = TrialSequenceGenerator.Build(state, _items, trialCount, minLag,
+                TrialSequenceGenerator.BlockSeed(EffectiveSeed, state));
             _planIndex = 0;
             return _plan.Count > 0;
         }
@@ -247,24 +259,8 @@ namespace NeuroAdaptiveVR.Core
         /// de eventos que exigen un trial abierto.
         /// </summary>
         private void EmitSequence()
-        {
-            var telemetry = GetComponent<BehaviorTelemetryController>();
-            if (telemetry == null || _plan == null) return;
-
-            telemetry.Emit(TelemetryEvents.TrialSequenceGenerated, new Dictionary<string, object>
-            {
-                { "block_state", state.ToWireValue() },
-                { "kanji_set", EffectiveSet },
-                { "seed", EffectiveSeed },
-                { "seed_raw", SessionContext.IsInstalled ? SessionContext.RandomSeedRaw : null },
-                { "trial_count", _plan.Count },
-                { "min_lag_requested", _plan.MinLag },
-                { "min_lag_achieved", _plan.ShortestLag() == int.MaxValue ? -1 : _plan.ShortestLag() },
-                { "distinct_pairs", _plan.DistinctPairs },
-                { "ordering_attempts", _plan.OrderingAttempts },
-                { "sequence", _plan.ToTelemetryRows() },
-            });
-        }
+            => TrialSequenceTelemetry.Emit(GetComponent<BehaviorTelemetryController>(),
+                                           _plan, EffectiveSet, EffectiveSeed);
 
         // ------------------------------------------------------------------
         // Sondas de los guards

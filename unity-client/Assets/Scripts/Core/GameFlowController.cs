@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Data;
 using NeuroAdaptiveVR.Networking;
@@ -195,8 +196,7 @@ namespace NeuroAdaptiveVR.Core
             // S2 solo en la primera visita (spec 7.3). El tutorial ensena los
             // controles; repetirlo en la segunda visita gasta tiempo de sesion y
             // mete practica extra con la mecanica justo antes de medirla.
-            if (next == GameFlowState.S2_VRTutorial && SessionContext.IsInstalled &&
-                !SessionContext.IsFirstVisit)
+            if (WillSkip(next))
             {
                 Debug.Log($"[GameFlowController] S2 se salta: visita {SessionContext.VisitNumber} " +
                           "(spec 7.3, tutorial solo en la primera).");
@@ -204,6 +204,29 @@ namespace NeuroAdaptiveVR.Core
             }
 
             EnterState(next);
+        }
+
+        /// <summary>
+        /// Whether this session skips a state. Today only S2, on visits after
+        /// the first (spec 7.3).
+        ///
+        /// Public since 24 September because the participant-facing "Step X of
+        /// N" counter needs the same answer. The rule lives here and only here:
+        /// a counter that recomputed it could say "Step 3 of 9" in a session
+        /// that runs eight states.
+        /// </summary>
+        public bool WillSkip(GameFlowState state)
+            => state == GameFlowState.S2_VRTutorial && SessionContext.IsInstalled &&
+               !SessionContext.IsFirstVisit;
+
+        /// <summary>The states this session will actually run, S1 to S9, in order.</summary>
+        public IReadOnlyList<GameFlowState> SessionStates()
+        {
+            var states = new List<GameFlowState>(StateOrder.Length);
+            foreach (var s in StateOrder)
+                if (s != GameFlowState.S0_SessionInitialization && !WillSkip(s))
+                    states.Add(s);
+            return states;
         }
 
         /// <summary>

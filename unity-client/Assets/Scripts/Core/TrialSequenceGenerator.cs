@@ -311,5 +311,28 @@ namespace NeuroAdaptiveVR.Core
         {
             unchecked { return StableHash.Of($"{seed}:{tag}:{index}"); }
         }
+
+        /// <summary>
+        /// The seed of ONE block, derived from the session seed and the state
+        /// that runs it. Everything that builds a block plan goes through here:
+        /// SessionFlowRunner and TrialDebugRunner alike.
+        ///
+        /// WHY IT EXISTS (24 September). Until the chain existed only one block
+        /// ran per Play, so passing the raw session seed was harmless. With S6,
+        /// S7 and S8 in the same session, the raw seed makes the three blocks
+        /// share every derived draw: the options of trial i come from
+        /// Derive(seed, TagOptions, i) in all three. Whenever the same kanji and
+        /// type land on the same position, the correct answer sits on the SAME
+        /// CARD in every block -- a position cue the participant can learn, and
+        /// one that would contaminate S8, the primary learning measure.
+        ///
+        /// Deriving it in one place, and not in each caller, is what keeps the
+        /// chained run and the test bench from building different plans for
+        /// the same session.
+        /// </summary>
+        public static int BlockSeed(int sessionSeed, GameFlowState state)
+        {
+            unchecked { return StableHash.Of($"{sessionSeed}:block:{state.ToWireValue()}"); }
+        }
     }
 }

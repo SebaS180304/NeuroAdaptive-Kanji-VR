@@ -28,6 +28,10 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private TMP_Text feedbackLabel;
         [SerializeField] private TMP_Text cueLabel;
 
+        [Tooltip("Stage title strip at the top of the board ('Step 3 of 9 · Learn'). " +
+                 "NOT cleared by Clear(): it belongs to the stage, not to the trial.")]
+        [SerializeField] private TMP_Text stageTitleLabel;
+
         [Header("Response Area")]
         [Tooltip("Exactamente cuatro. Spec 9.3 fija el numero de opciones y LAL no puede cambiarlo.")]
         [SerializeField] private TrialAnswerCard[] cards = new TrialAnswerCard[4];
@@ -44,8 +48,17 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float optionKanaSize = 120f;
         [SerializeField] private float optionLatinSize = 95f;
 
+        [Tooltip("Board text size for session messages (welcome, baseline, summary). " +
+                 "Sentences, not single glyphs, so far smaller than a prompt.")]
+        [SerializeField] private float messageSize = 70f;
+
         public event Action<string> OnOptionChosen;
         public event Action OnHintRequested;
+
+        // Where each card lives in the scene. ShowSingleChoice moves one card
+        // to the centre; everything that presents a trial puts them back, so a
+        // centred Start card can never leak into a trial layout.
+        private Vector2[] _cardHome;
 
         // ------------------------------------------------------------------
         // Ciclo de vida
@@ -53,6 +66,14 @@ namespace NeuroAdaptiveVR.Controllers
 
         private void Awake()
         {
+            if (cards != null)
+            {
+                _cardHome = new Vector2[cards.Length];
+                for (int i = 0; i < cards.Length; i++)
+                    if (cards[i] != null)
+                        _cardHome[i] = ((RectTransform)cards[i].transform).anchoredPosition;
+            }
+
             if (cards == null || cards.Length != 4)
             {
                 Debug.LogError($"[StudioTrialPresenter] Hay {cards?.Length ?? 0} tarjetas cableadas y " +
@@ -105,6 +126,8 @@ namespace NeuroAdaptiveVR.Controllers
                 promptLabel.text = promptText;
                 promptLabel.fontSize = PromptSizeFor(promptText);
             }
+
+            RestoreCardPositions();
 
             int n = Mathf.Min(options.Count, cards?.Length ?? 0);
             for (int i = 0; i < n; i++)
@@ -160,6 +183,59 @@ namespace NeuroAdaptiveVR.Controllers
             if (cards != null)
                 foreach (var c in cards)
                     if (c != null) c.Hide();
+        }
+
+        // ------------------------------------------------------------------
+        // Session messages (outside any trial)
+        // ------------------------------------------------------------------
+        //
+        // Not part of ITrialPresenter: they are not trial presentation, and the
+        // response system must not know they exist. They live HERE and not in
+        // a second board component because this presenter is the one owner of
+        // the board (decision D1, 24 September). Two components writing
+        // promptLabel would make the winner depend on call order.
+
+        /// <summary>Clears the board and shows a sentence on it.</summary>
+        public void ShowMessage(string text)
+        {
+            Clear();
+            if (promptLabel == null) return;
+            promptLabel.text = text;
+            promptLabel.fontSize = messageSize;
+        }
+
+        /// <summary>
+        /// Keeps the current message and offers ONE card (e.g. "Start"). The
+        /// choice arrives through OnOptionChosen like any other; the response
+        /// system ignores it because no trial is open.
+        /// </summary>
+        public void ShowSingleChoice(string optionId, string label)
+        {
+            if (cards == null || cards.Length == 0 || cards[0] == null) return;
+            cards[0].Bind(optionId, label, OptionSizeFor(label));
+            for (int i = 1; i < cards.Length; i++)
+                if (cards[i] != null) cards[i].Hide();
+
+            // Centred on the Response Area, same height as its home. Card 1
+            // sits at the far left of a four-card row; a lone button there
+            // reads as "one of several", and on 24 September it read as
+            // misplaced. Present() restores it before the first trial.
+            if (_cardHome != null)
+                ((RectTransform)cards[0].transform).anchoredPosition = new Vector2(0f, _cardHome[0].y);
+        }
+
+        /// <summary>Stage strip at the top of the board. Empty string hides it.</summary>
+        public void SetStageTitle(string text)
+        {
+            if (stageTitleLabel != null) stageTitleLabel.text = text ?? string.Empty;
+        }
+
+        private void RestoreCardPositions()
+        {
+            if (_cardHome == null) return;
+            for (int i = 0; i < cards.Length; i++)
+                if (cards[i] != null)
+                    ((RectTransform)cards[i].transform).anchoredPosition = _cardHome[i];
         }
 
         // ------------------------------------------------------------------

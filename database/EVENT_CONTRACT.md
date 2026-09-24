@@ -83,16 +83,21 @@ Format: `{state}-{sequence}`, zero-padded to three digits — `S7-007`.
 Deterministic rather than a UUID, and deliberately so. Spec §6.1 requires that
 the seed and the final trial sequence permit exact session reconstruction; an id
 derived from the sequence is itself reconstructable, and it reads correctly in a
-query result. Trials occur in four states (S5 guided association, S6, S7, S8), so
-the state prefix is what keeps the sequence unambiguous.
+query result. Trials occur in five states (S2 tutorial practice, S5 guided association, S6,
+S7, S8), so the state prefix is what keeps the sequence unambiguous — and the
+`S2-` prefix is what keeps tutorial practice out of the primary analysis
+(spec §12 lists S2 performance as "tutorial only").
 
 The id is unique within a session, not globally. Phase 3's relational key is
 `(session_id, trial_id)`.
 
 ### 4.2 `kanji_id`
 
-The `KanjiLearningItem` asset name, not the character itself: `KANJI_YAMA`, not
-`山`. Two reasons — an ASCII identifier survives every layer between Unity and a
+The stable id from `kanji_content.json` (generated from `KANJI_IDS` in
+`tools/kanji_metrics.py`), not the character itself: `KANJI_YAMA`, not `山`.
+Until 15 September it was the `KanjiLearningItem` asset name, so renaming a file
+in the Editor silently changed what is a foreign key in Phase 3; it no longer
+depends on any file name. Two reasons — an ASCII identifier survives every layer between Unity and a
 psql terminal without an encoding question, and the character alone does not say
 which set or which authoring revision the item came from.
 
@@ -106,7 +111,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | Event | Additional payload fields |
 |---|---|
 | `STATE_ENTERED` | — (context block only) |
-| `TRIAL_SEQUENCE_GENERATED` | `block_state`, `kanji_set`, `seed`, `seed_raw`, `trial_count`, `min_lag_requested`, `min_lag_achieved`, `distinct_pairs`, `ordering_attempts`, `sequence` — spec §6.1. See §5.8 |
+| `TRIAL_SEQUENCE_GENERATED` | `block_state`, `kanji_set`, `seed`, `block_seed`, `seed_raw`, `trial_count`, `min_lag_requested`, `min_lag_achieved`, `distinct_pairs`, `ordering_attempts`, `sequence` — spec §6.1. See §5.8 |
 | `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option`, `hint_available` |
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
@@ -115,6 +120,13 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `ASSEMBLY_COMPLETED` | `duration_ms`, `incorrect_attempts`, `segment_count` — spec §5.3 |
 | `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` — spec §8.1 |
 | `PERIPHERAL_EVENT` | `event_index`, `object_name`, `duration_ms` — spec §8.1 |
+| `START_SELECTED` | `reaction_ms`, `forced_by_researcher` — S1, spec §7.2 |
+| `TUTORIAL_STARTED` | `activities` (array; `LOOK_AND_SELECT` in M2), `pool` (kanji ids) — S2, spec §7.3 |
+| `TUTORIAL_COMPLETED` | `trials`, `correct` — S2 |
+| `SYSTEM_CHECK_COMPLETED` | `headset_active`, `websocket_connected`, `passed`, `forced_by_researcher`, `eeg_checked` — S3, spec §7.4 |
+| `BASELINE_STARTED` | `eyes_open_s`, `eyes_closed_s`, `time_scale` — S4, spec §7.5 |
+| `BASELINE_COMPLETED` | `eyes_open_ms`, `eyes_closed_ms`, `time_scale`, `valid_duration` — S4 |
+| `VIEW_RECENTERED` | `reason` (`SESSION_START`, `LEFT_MENU_BUTTON`, `KEYBOARD`), `yaw_error_deg`, `offset_m`, `camera_before` ([x,y,z]) — any state |
 
 `options` and `correct_option` on `TRIAL_STARTED` are what make a trial
 reconstructable without re-running the generator: they record what the
@@ -149,6 +161,16 @@ months from now would depend on today's code. The expanded sequence does not.
 |---|---|
 | `TRIAL_SEQUENCE_GENERATED` | what was **planned** |
 | `TRIAL_STARTED` × n | what actually **happened** |
+
+**`seed` and `block_seed` (24 September).** `seed` is the session seed;
+`block_seed` is the one this block was actually generated with, derived as
+`StableHash("{seed}:block:{state}")` by `TrialSequenceGenerator.BlockSeed`.
+Until the S1-S9 chain existed only one block ran per session, and it used the
+session seed directly. With S6, S7 and S8 in one session that would make the
+three blocks share every derived draw — including the option order of trial *i*
+— so a kanji/type pair landing on the same position would put the correct answer
+on the same card in every block. Reconstruction needs `block_seed`; the audit
+trail needs to see which `seed` it came from. Both travel.
 
 If a session aborts at trial 12 of 20, the two disagree — and that disagreement
 *is* the datum: it records where the session was cut. A contract that stored only
@@ -368,6 +390,20 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**24 September 2026 — the S1-S9 chain.** No `schema_version` bump: new event
+types and one new field on an existing event, no existing field changed shape
+(§5.6).
+
+- `START_SELECTED`, `TUTORIAL_STARTED`, `TUTORIAL_COMPLETED`,
+  `SYSTEM_CHECK_COMPLETED`, `BASELINE_STARTED`, `BASELINE_COMPLETED` — names from
+  spec §7.2-§7.5. The M2 tutorial is look & select only, so its selections travel
+  as ordinary `TRIAL_*` events with `S2-` trial ids instead of `TUTORIAL_SELECT`.
+- `VIEW_RECENTERED`: a recenter redefines "forward", which Phase 3's head-away
+  metrics measure against.
+- `block_seed` on `TRIAL_SEQUENCE_GENERATED` (§5.8).
+- §4.2 corrected: it still described `kanji_id` as the asset name, which stopped
+  being true on 15 September.
 
 **16 September 2026** — added `TRIAL_SEQUENCE_GENERATED` (§5.8). No
 `schema_version` bump: a new event type, not a change to the shape of existing
