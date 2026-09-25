@@ -277,8 +277,11 @@ namespace NeuroAdaptiveVR.Core
         /// <summary>
         /// Que se muestra en la tarjeta depende del tipo: en T1 la respuesta es un
         /// kanji, en T2 un significado, en T3 una lectura (spec 6).
+        /// Public since 25 September: SessionFlowRunner sizes the answer cards
+        /// from every text this mapping can produce, so the mapping must live
+        /// in one place only.
         /// </summary>
-        private static string OptionText(KanjiItem item, RetrievalTrialType trialType) => trialType switch
+        public static string OptionText(KanjiItem item, RetrievalTrialType trialType) => trialType switch
         {
             RetrievalTrialType.MeaningToKanji => item.Character,
             RetrievalTrialType.KanjiToMeaning => item.Meaning,
@@ -310,6 +313,51 @@ namespace NeuroAdaptiveVR.Core
         private static int Derive(int seed, int tag, int index)
         {
             unchecked { return StableHash.Of($"{seed}:{tag}:{index}"); }
+        }
+
+        /// <summary>
+        /// Plan for the S5 guided association (decision D3): exactly one trial
+        /// per kanji, IN SET ORDER, each with a trial type drawn from the seed.
+        ///
+        /// Why a separate mode and not Build(state, set, 5, ...): below 15
+        /// trials Build balances by type and draws the kanji of each type
+        /// independently, so five trials could repeat one kanji and leave
+        /// another with no association at all. Here the kanji are fixed --
+        /// trial i belongs to kanji i, right after its exposure (spec 7.6) --
+        /// and only the types are drawn.
+        ///
+        /// The types are balanced before shuffling: with five kanji and three
+        /// types the split is always 2/2/1, never five of one kind. Pure random
+        /// draws could give a participant five KanjiToMeaning checks and no
+        /// reading check at all, which would make S5 instruction differ between
+        /// participants in a way the seed happens to decide.
+        /// </summary>
+        public static TrialPlan BuildOnePerKanji(GameFlowState state, IReadOnlyList<KanjiItem> set, int seed)
+        {
+            if (set == null || set.Count < 4)
+            {
+                Debug.LogError($"{Log} Hacen falta al menos 4 kanji para construir cuatro opciones " +
+                               $"distintas (spec 9.3). Recibidos: {set?.Count ?? 0}.");
+                return new TrialPlan(state, seed, 0, Array.Empty<PlannedTrial>(), 0);
+            }
+
+            var tipos = (RetrievalTrialType[])Enum.GetValues(typeof(RetrievalTrialType));
+            var bolsa = new List<RetrievalTrialType>();
+            while (bolsa.Count < set.Count) bolsa.AddRange(tipos);
+            var sorteados = Shuffle(bolsa, new System.Random(Derive(seed, TagTypeMix, 0)))
+                            .Take(set.Count).ToList();
+
+            var trials = new List<PlannedTrial>(set.Count);
+            for (int i = 0; i < set.Count; i++)
+            {
+                var opciones = BuildOptions(set, set[i], sorteados[i], Derive(seed, TagOptions, i));
+                trials.Add(new PlannedTrial(i + 1, set[i], sorteados[i], opciones));
+            }
+
+            var plan = new TrialPlan(state, seed, 0, trials, 1);
+            Debug.Log($"{Log} {plan.Summary()} · uno por kanji: " +
+                      string.Join(" ", trials.Select(t => $"{t.Target.Character}:{t.TrialType}")));
+            return plan;
         }
 
         /// <summary>

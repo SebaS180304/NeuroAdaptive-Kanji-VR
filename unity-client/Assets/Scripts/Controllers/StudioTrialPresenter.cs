@@ -52,6 +52,16 @@ namespace NeuroAdaptiveVR.Controllers
                  "Sentences, not single glyphs, so far smaller than a prompt.")]
         [SerializeField] private float messageSize = 70f;
 
+        [Tooltip("Size of the placeholder text of S5 derivation stages 1-3.")]
+        [SerializeField] private float derivationSize = 160f;
+
+        [Header("Card layout (25 September)")]
+        [Tooltip("Space between the widest text and the label edge, per side. The card grows to " +
+                 "fit its text on ONE line instead of shrinking the font.")]
+        [SerializeField] private float cardTextPadding = 15f;
+        [Tooltip("Horizontal gap between two cards of the row (40 in the authored scene).")]
+        [SerializeField] private float cardGap = 40f;
+
         public event Action<string> OnOptionChosen;
         public event Action OnHintRequested;
 
@@ -60,18 +70,34 @@ namespace NeuroAdaptiveVR.Controllers
         // centred Start card can never leak into a trial layout.
         private Vector2[] _cardHome;
 
+        // One width for every card of the row (FitCardsTo). Equal widths are
+        // deliberate: a wider card is an easier target (Fitts' law), and the
+        // correct answer must never be the easier one to hit.
+        private float _cardWidth;
+
+        // Label sizes as authored in the scene. ShowExposure enlarges the
+        // reading line; Clear() puts every size back so no trial inherits it.
+        private float _feedbackHomeSize, _cueHomeSize;
+        private Color _feedbackHomeColor;
+
         // ------------------------------------------------------------------
         // Ciclo de vida
         // ------------------------------------------------------------------
 
         private void Awake()
         {
+            if (feedbackLabel != null) { _feedbackHomeSize = feedbackLabel.fontSize; _feedbackHomeColor = feedbackLabel.color; }
+            if (cueLabel != null) _cueHomeSize = cueLabel.fontSize;
+
             if (cards != null)
             {
                 _cardHome = new Vector2[cards.Length];
                 for (int i = 0; i < cards.Length; i++)
                     if (cards[i] != null)
+                    {
                         _cardHome[i] = ((RectTransform)cards[i].transform).anchoredPosition;
+                        _cardWidth = Mathf.Max(_cardWidth, cards[i].Width);
+                    }
             }
 
             if (cards == null || cards.Length != 4)
@@ -120,6 +146,7 @@ namespace NeuroAdaptiveVR.Controllers
         {
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = string.Empty;
+            RestoreLabelStyle();   // an S5 exposure may have enlarged the cue line
 
             if (promptLabel != null)
             {
@@ -128,6 +155,22 @@ namespace NeuroAdaptiveVR.Controllers
             }
 
             RestoreCardPositions();
+
+            // Safety net: FitCardsTo already sized the row for every text the
+            // contract can produce. Growing here would only happen with content
+            // that bypassed it, and would change the layout mid-block -- so it
+            // is loud.
+            float need = 0f;
+            for (int i = 0; i < options.Count && cards != null && i < cards.Length; i++)
+                if (cards[i] != null)
+                    need = Mathf.Max(need, CardWidthFor(cards[i], options[i].DisplayText));
+            if (need > _cardWidth + 0.5f)
+            {
+                Debug.LogWarning($"[StudioTrialPresenter] An option needs a {need:0}-wide card and the row " +
+                                 $"is {_cardWidth:0}. Growing it now: the card layout changed in the middle " +
+                                 "of a block. FitCardsTo was not given this text.");
+                LayoutRow(need);
+            }
 
             int n = Mathf.Min(options.Count, cards?.Length ?? 0);
             for (int i = 0; i < n; i++)
@@ -178,6 +221,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (promptLabel != null) promptLabel.text = string.Empty;
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = string.Empty;
+            RestoreLabelStyle();
             if (hintButton != null) hintButton.gameObject.SetActive(false);
 
             if (cards != null)
@@ -222,6 +266,129 @@ namespace NeuroAdaptiveVR.Controllers
             // misplaced. Present() restores it before the first trial.
             if (_cardHome != null)
                 ((RectTransform)cards[0].transform).anchoredPosition = new Vector2(0f, _cardHome[0].y);
+
+            // A lone button has no row to match: it only has to fit its label.
+            // Present() puts the row width back.
+            cards[0].SetWidth(Mathf.Max(_cardWidth, CardWidthFor(cards[0], label)));
+        }
+
+        /// <summary>
+        /// Sizes every card of the row ONCE, from the widest text any card can
+        /// show, so each option fits on one line at its normal font size. Called
+        /// by SessionFlowRunner at session start with every option text of the
+        /// whole contract: the layout is then the same for every trial, every
+        /// block and every kanji set. Never shrinks below the authored width.
+        /// </summary>
+        public void FitCardsTo(IEnumerable<string> texts)
+        {
+            if (cards == null || cards.Length == 0 || cards[0] == null) return;
+            float need = _cardWidth;
+            string widest = null;
+            foreach (var t in texts)
+            {
+                float w = CardWidthFor(cards[0], t);
+                if (w > need) { need = w; widest = t; }
+            }
+            LayoutRow(need);
+
+            float row = cards.Length * _cardWidth + (cards.Length - 1) * cardGap;
+            Debug.Log($"[StudioTrialPresenter] Answer cards {_cardWidth:0} wide, row {row:0}" +
+                      (widest != null ? $" (widest text: '{widest}')" : " (authored width, every text fits)"));
+        }
+
+        private float CardWidthFor(TrialAnswerCard card, string text)
+        {
+            float textW = card.PreferredTextWidth(text, OptionSizeFor(text));
+            if (textW <= 0f) return 0f;
+            var cardRt = (RectTransform)card.transform;
+            // What the card adds around its label (the authored inset), plus padding.
+            float inset = 0f;
+            var lbl = card.GetComponentInChildren<TMP_Text>(true);
+            if (lbl != null) inset = cardRt.rect.width - ((RectTransform)lbl.transform).rect.width;
+            return Mathf.Ceil(textW + 2f * cardTextPadding + inset);
+        }
+
+        /// <summary>
+        /// Gives every card the same width and re-spaces the row around the
+        /// centre of the Response Area, keeping the authored gap and height.
+        /// Widens the canvas rect if the row outgrows it, so nothing sits
+        /// outside its own canvas.
+        /// </summary>
+        private void LayoutRow(float width)
+        {
+            _cardWidth = width;
+            int n = cards.Length;
+            for (int i = 0; i < n; i++)
+            {
+                if (cards[i] == null) continue;
+                cards[i].SetWidth(width);
+                float x = (i - (n - 1) * 0.5f) * (width + cardGap);
+                if (_cardHome != null) _cardHome[i] = new Vector2(x, _cardHome[i].y);
+            }
+            RestoreCardPositions();
+
+            if (cards[0] != null && cards[0].transform.parent is RectTransform area)
+            {
+                float row = n * width + (n - 1) * cardGap;
+                if (area.rect.width < row)
+                    area.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, row);
+            }
+        }
+
+        /// <summary>
+        /// S5 exposure, stage 4 onwards (spec 7.6): the glyph, then its meaning,
+        /// then its target reading, each added to what is already there so the
+        /// three end up on the board together. Null leaves a line empty.
+        ///
+        /// Uses the same three labels a trial uses, with its own sizes: the
+        /// glyph at prompt size, the meaning where feedback goes, the reading
+        /// where the cue goes but large -- it is the thing being taught, not a
+        /// hint. Clear() restores the trial sizes.
+        /// </summary>
+        public void ShowExposure(string glyph, string meaning = null, string reading = null)
+        {
+            if (cards != null)
+                foreach (var c in cards) if (c != null) c.Hide();
+            if (hintButton != null) hintButton.gameObject.SetActive(false);
+
+            if (promptLabel != null)
+            {
+                promptLabel.text = glyph ?? string.Empty;
+                promptLabel.fontSize = promptIdeographicSize;
+            }
+            if (feedbackLabel != null)
+            {
+                feedbackLabel.text = meaning ?? string.Empty;
+                feedbackLabel.color = Color.white;
+            }
+            if (cueLabel != null)
+            {
+                cueLabel.text = reading ?? string.Empty;
+                cueLabel.fontSize = Mathf.Max(_cueHomeSize, 90f);
+            }
+        }
+
+        /// <summary>
+        /// S5 derivation stages 1-3 (spec 5.1), drawn on the board since
+        /// 25 September -- in the same spot where the glyph appears at stage
+        /// 4, so the object visibly becomes the character without the
+        /// participant turning the head. `main` is the stage content, `note`
+        /// the small line under it (progress, "not authored").
+        /// </summary>
+        public void ShowDerivationStage(string main, string note)
+        {
+            if (cards != null)
+                foreach (var c in cards) if (c != null) c.Hide();
+            if (hintButton != null) hintButton.gameObject.SetActive(false);
+            RestoreLabelStyle();
+
+            if (promptLabel != null)
+            {
+                promptLabel.text = main ?? string.Empty;
+                promptLabel.fontSize = derivationSize;
+            }
+            if (feedbackLabel != null) feedbackLabel.text = string.Empty;
+            if (cueLabel != null) cueLabel.text = note ?? string.Empty;
         }
 
         /// <summary>Stage strip at the top of the board. Empty string hides it.</summary>
@@ -230,12 +397,26 @@ namespace NeuroAdaptiveVR.Controllers
             if (stageTitleLabel != null) stageTitleLabel.text = text ?? string.Empty;
         }
 
+        private void RestoreLabelStyle()
+        {
+            if (feedbackLabel != null)
+            {
+                if (_feedbackHomeSize > 0f) feedbackLabel.fontSize = _feedbackHomeSize;
+                feedbackLabel.color = _feedbackHomeColor;
+            }
+            if (cueLabel != null && _cueHomeSize > 0f) cueLabel.fontSize = _cueHomeSize;
+        }
+
         private void RestoreCardPositions()
         {
             if (_cardHome == null) return;
             for (int i = 0; i < cards.Length; i++)
                 if (cards[i] != null)
+                {
                     ((RectTransform)cards[i].transform).anchoredPosition = _cardHome[i];
+                    if (_cardWidth > 0f && !Mathf.Approximately(cards[i].Width, _cardWidth))
+                        cards[i].SetWidth(_cardWidth);   // undo a wider lone Start/Continue
+                }
         }
 
         // ------------------------------------------------------------------

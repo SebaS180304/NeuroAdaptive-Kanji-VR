@@ -44,7 +44,7 @@ namespace NeuroAdaptiveVR.EditorTools
         // sistema sensible --Linux, CI, macOS con APFS sensible-- esta constante
         // habria creado una SEGUNDA carpeta junto a la existente, con 40 assets
         // duplicados y 40 kanji_id repetidos.
-        private const string ItemFolder = "Assets/Resources/kanji";
+        internal const string ItemFolder = "Assets/Resources/kanji";
         private const string Log = "[KanjiItemGenerator]";
 
         [MenuItem("Tools/NeuroAdaptive VR/Regenerar KanjiLearningItems", priority = 100)]
@@ -122,7 +122,7 @@ namespace NeuroAdaptiveVR.EditorTools
         // Carga y validacion del contrato
         // ------------------------------------------------------------------
 
-        private static KanjiContentContract LoadContract()
+        internal static KanjiContentContract LoadContract()   // internal: TtsPlaceholderGenerator reads the same contract through it
         {
             if (!File.Exists(ContractPath))
             {

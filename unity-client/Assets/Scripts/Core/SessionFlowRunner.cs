@@ -49,6 +49,9 @@ namespace NeuroAdaptiveVR.Core
     {
         private const string Log = "[SessionFlow]";
         private const string StartOptionId = "START";
+        private const string ContinueOptionId = "CONTINUE";
+        private const string StartLabel = "Start";
+        private const string ContinueLabel = "Continue";
 
         [Header("Dependencies (found automatically if empty)")]
         [SerializeField] private GameFlowController flow;
@@ -76,7 +79,10 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private int minLag = 2;
 
         [Header("Timing -- TO VALIDATE with the pilot")]
-        [SerializeField] private float transitionSeconds = 1.5f;
+        [Tooltip("Blank board between two states. 2 s since 25 September: 1.5 s felt abrupt.")]
+        [SerializeField] private float transitionSeconds = 2f;
+        [Tooltip("Blank board between pressing Continue on a stage announcement and the stage content.")]
+        [SerializeField] private float afterIntroSeconds = 1f;
         [Tooltip("How long S3 keeps checking before declaring a failure.")]
         [SerializeField] private float systemCheckWindowSeconds = 5f;
         [SerializeField] private float baselineEyesOpenSeconds = 60f;
@@ -141,6 +147,60 @@ namespace NeuroAdaptiveVR.Core
             [GameFlowState.S8_ImmediateAssessment]       = "Final round",
             [GameFlowState.S9_SessionSummary]            = "Complete",
         };
+
+        /// <summary>
+        /// Announcement shown before a stage, with a Continue card (decided
+        /// 25 September). Not before S1 (it has Start), S3 (an automatic check
+        /// of a few seconds the participant plays no part in) or S9 (the end).
+        ///
+        /// Plain, neutral, one line of what comes next. S8 says explicitly that
+        /// there is no feedback: without it, a participant who stops seeing
+        /// "OK" may think the game broke, in the middle of the primary measure.
+        /// </summary>
+        private static readonly Dictionary<GameFlowState, string> StageIntros = new()
+        {
+            [GameFlowState.S2_VRTutorial] =
+                "A few practice questions first.\n\nPoint at an answer and pull the trigger.",
+            [GameFlowState.S4_EEGBaseline] =
+                "Now, a short rest.\n\nRelax and look forward. For part of it you will close your eyes;\n" +
+                "a chime will tell you when to open them.",
+            [GameFlowState.S5_StandardizedLearning] =
+                "You will see five new kanji, one at a time,\nwith their meaning and reading.\n\n" +
+                "After each one, a quick question.",
+            [GameFlowState.S6_GuidedPracticeCalibration] =
+                "Practice with the five kanji you just learned.\n\nChoose the correct answer.",
+            [GameFlowState.S7_ExperimentalRetrieval] =
+                "More practice with the same five kanji.\n\nChoose the correct answer.",
+            [GameFlowState.S8_ImmediateAssessment] =
+                "Final round.\n\nAnswer on your own.\nThis time you won't see whether you were right.",
+        };
+
+        private IEnumerator RunIntro(GameFlowState state)
+        {
+            if (!StageIntros.TryGetValue(state, out var text)) yield break;
+
+            _lastChoice = null;
+            _forceAdvance = false;
+            Show(text);
+            board?.ShowSingleChoice(ContinueOptionId, ContinueLabel);
+            float shownAt = Time.realtimeSinceStartup;
+
+            yield return new WaitUntil(() => _lastChoice == ContinueOptionId || _forceAdvance);
+
+            long waitMs = (long)((Time.realtimeSinceStartup - shownAt) * 1000f);
+            bool forced = _lastChoice != ContinueOptionId;
+            _forceAdvance = false;
+
+            telemetry.Emit(TelemetryEvents.StageIntroAcknowledged, new Dictionary<string, object>
+            {
+                { "wait_ms", waitMs },
+                { "forced_by_researcher", forced },
+            });
+            Debug.Log($"{Log} {state.ShortCode()} · intro {(forced ? "FORCED by researcher" : "acknowledged")} after {waitMs} ms");
+
+            board?.Clear();
+            yield return new WaitForSecondsRealtime(afterIntroSeconds);
+        }
 
         private void AnnounceStage(GameFlowState state)
         {
@@ -226,6 +286,8 @@ namespace NeuroAdaptiveVR.Core
                 yield break;
             }
 
+            FitAnswerCards();
+
             Debug.Log($"{Log} Session chain started · set {_setName} · session seed {_sessionSeed} · " +
                       $"visit {(SessionContext.IsInstalled ? SessionContext.VisitNumber.ToString() : "?")}");
 
@@ -233,6 +295,7 @@ namespace NeuroAdaptiveVR.Core
             {
                 var state = flow.CurrentState;
                 AnnounceStage(state);
+                yield return RunIntro(state);
                 bool ok = true;
                 yield return RunState(state, r => ok = r);
 
@@ -294,7 +357,7 @@ namespace NeuroAdaptiveVR.Core
 
             Show("Today you will learn five new kanji.\n\nLook at the panel to begin.\n\n" +
                  "<size=60%>If the view feels off at any time,\npress the menu button on the left controller.</size>");
-            board?.ShowSingleChoice(StartOptionId, "Start");
+            board?.ShowSingleChoice(StartOptionId, StartLabel);
             float shownAt = Time.realtimeSinceStartup;
 
             yield return new WaitUntil(() => _lastChoice == StartOptionId || _forceAdvance);
@@ -323,9 +386,6 @@ namespace NeuroAdaptiveVR.Core
                 { "activities", new List<string> { "LOOK_AND_SELECT" } },
                 { "pool", pool.Select(i => i.KanjiId).ToList() },
             });
-
-            Show("Practice\n\nPoint at an answer and pull the trigger.");
-            yield return new WaitForSecondsRealtime(3f);
 
             bool ok = true;
             yield return RunBlock(GameFlowState.S2_VRTutorial, pool, tutorialTrials, true, r => ok = r);
@@ -440,7 +500,7 @@ namespace NeuroAdaptiveVR.Core
         {
             if (learningBlockBehaviour is ILearningBlock block)
             {
-                yield return block.Run(_set, _sessionSeed);
+                yield return block.Run(_set, _setName, _sessionSeed);
                 yield break;
             }
 
@@ -543,6 +603,24 @@ namespace NeuroAdaptiveVR.Core
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// One card width for the whole session, from the widest text any card
+        /// can ever show: every option of every kanji in the contract (all sets,
+        /// not only this one, so the layout does not depend on the assigned
+        /// set), plus the Start and Continue buttons. Decided 25 September:
+        /// words like "bamboo" or "Continue" did not fit on one line.
+        /// </summary>
+        private void FitAnswerCards()
+        {
+            if (board == null || content == null) return;
+            var texts = new HashSet<string> { StartLabel, ContinueLabel };
+            var types = (RetrievalTrialType[])System.Enum.GetValues(typeof(RetrievalTrialType));
+            foreach (var item in content.All.Concat(content.Tutorial))
+                foreach (var t in types)
+                    texts.Add(TrialSequenceGenerator.OptionText(item, t));
+            board.FitCardsTo(texts);
         }
 
         private void Show(string text)

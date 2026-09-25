@@ -98,6 +98,13 @@ namespace NeuroAdaptiveVR.Data
         // discontinuity in that signal that must be explainable afterwards.
         public const string ViewRecentered = "VIEW_RECENTERED";
 
+        // STAGE_INTRO_ACKNOWLEDGED: the participant pressed Continue on the
+        // announcement shown before S2, S4, S5, S6, S7 and S8 (25 September).
+        // The wait is self-paced, so it varies between participants; it falls
+        // BETWEEN blocks, never inside one, and recording it keeps session
+        // duration fully accounted for.
+        public const string StageIntroAcknowledged = "STAGE_INTRO_ACKNOWLEDGED";
+
         // Fase 2 -- mecanicas de S5
         public const string KanjiExposed = "KANJI_EXPOSED";
         public const string AssemblyCompleted = "ASSEMBLY_COMPLETED";

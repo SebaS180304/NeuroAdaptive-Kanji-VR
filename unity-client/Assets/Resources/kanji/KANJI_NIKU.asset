@@ -20,7 +20,7 @@ MonoBehaviour:
   contextExamples: []
   visualAssociation: 
   assemblySegments: []
-  targetReadingAudio: {fileID: 0}
+  targetReadingAudio: {fileID: 8300000, guid: f9dd6d8fe2fa1e04bb10084a8c914c61, type: 3}
   anchorObjectPrefab: {fileID: 0}
   transformationAnimation: {fileID: 0}
   visualAssociationSprite: {fileID: 0}

@@ -17,7 +17,8 @@ namespace NeuroAdaptiveVR.Core
     public interface ILearningBlock
     {
         /// <param name="set">The five kanji of the session set, in contract order.</param>
+        /// <param name="setName">The set's name, for the sequence telemetry.</param>
         /// <param name="sessionSeed">The session seed. The block derives its own from it.</param>
-        IEnumerator Run(IReadOnlyList<KanjiItem> set, int sessionSeed);
+        IEnumerator Run(IReadOnlyList<KanjiItem> set, string setName, int sessionSeed);
     }
 }

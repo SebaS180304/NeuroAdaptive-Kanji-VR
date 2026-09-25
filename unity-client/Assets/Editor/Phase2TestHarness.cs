@@ -89,6 +89,7 @@ namespace NeuroAdaptiveVR.EditorTools
             SetCases(content);
             SubstitutionCases(content);
             SequenceCases(content);
+            AssociationCases(content);
             EnvironmentCases();
             AssistanceCases();
             MatrixCases();
@@ -364,6 +365,56 @@ namespace NeuroAdaptiveVR.EditorTools
         /// solo cuales son -- una reconstruccion que baraja distinto no
         /// reconstruye la misma tarea.
         /// </summary>
+        // ==================================================================
+        // S5 guided association (decision D3, 24 September)
+        // ==================================================================
+
+        private static void AssociationCases(KanjiContentController c)
+        {
+            var set = c.Set("A");
+            if (set.Count < 5) { Check("A0", "El set A tiene cinco kanji", false, $"{set.Count}"); return; }
+
+            var s5 = GameFlowState.S5_StandardizedLearning;
+            int seed = TrialSequenceGenerator.BlockSeed(StableHash.Of("20260909"), s5);
+            var p1 = TrialSequenceGenerator.BuildOnePerKanji(s5, set, seed);
+            var p2 = TrialSequenceGenerator.BuildOnePerKanji(s5, set, seed);
+
+            // A1 is the case that matters: trial i belongs to kanji i, so every
+            // kanji gets exactly one association, right after its exposure.
+            bool enOrden = p1.Count == set.Count;
+            for (int i = 0; enOrden && i < set.Count; i++)
+                enOrden = p1.Trials[i].Target.KanjiId == set[i].KanjiId;
+            Check("A1", "S5 planea exactamente un trial por kanji, en el orden del set",
+                  enOrden,
+                  string.Join(" ", p1.Trials.Select(t => t.Target.Character + ":" + t.TrialType)));
+
+            Check("A2", "Misma seed produce la misma asociacion, tipos y opciones incluidos",
+                  Fingerprint(p1) == Fingerprint(p2),
+                  $"{p1.Count} trials");
+
+            // Five kanji, three types: balanced before shuffling, so 2/2/1.
+            // A pure random draw could give five of one type, and S5
+            // instruction would then differ between participants by chance.
+            var porTipo = p1.Trials.GroupBy(t => t.TrialType).ToDictionary(g => g.Key, g => g.Count());
+            bool balanceado = porTipo.Count == 3 && porTipo.Values.All(n => n >= 1 && n <= 2);
+            Check("A3", "Los tipos de la asociacion quedan repartidos 2/2/1",
+                  balanceado,
+                  string.Join(" · ", porTipo.Select(kv => $"{kv.Key}={kv.Value}")));
+
+            bool opcionesOk = p1.Trials.All(t => t.Options.Count == 4 && t.Options.Count(o => o.IsCorrect) == 1);
+            Check("A4", "Cada trial de asociacion trae 4 opciones con exactamente una correcta",
+                  opcionesOk, opcionesOk ? "5/5" : "hay trials mal formados");
+
+            // The reason BlockSeed exists: blocks must not share their draws.
+            int baseSeed = StableHash.Of("20260909");
+            var seeds = new[] { s5, GameFlowState.S6_GuidedPracticeCalibration,
+                                GameFlowState.S7_ExperimentalRetrieval, GameFlowState.S8_ImmediateAssessment }
+                        .Select(st => TrialSequenceGenerator.BlockSeed(baseSeed, st)).ToList();
+            Check("A5", "Cada bloque (S5-S8) tiene su propia seed derivada",
+                  seeds.Distinct().Count() == seeds.Count && !seeds.Contains(baseSeed),
+                  string.Join(", ", seeds));
+        }
+
         private static string Fingerprint(TrialPlan plan)
             => string.Join(";", plan.Trials.Select(t =>
                    $"{t.Sequence}:{t.Target.KanjiId}:{t.TrialType}:" +

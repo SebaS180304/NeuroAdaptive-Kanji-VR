@@ -45,6 +45,10 @@ namespace NeuroAdaptiveVR.Controllers
             if (label == null)
                 Debug.LogError($"[TrialAnswerCard] '{name}' no tiene TMP_Text. " +
                                "La tarjeta no puede mostrar su opcion.");
+            else
+                // One line, always (25 September). The card grows to fit the
+                // text instead -- see StudioTrialPresenter.FitCardsTo.
+                label.textWrappingMode = TextWrappingModes.NoWrap;
 
             button.onClick.AddListener(Choose);
         }
@@ -64,6 +68,33 @@ namespace NeuroAdaptiveVR.Controllers
             }
             gameObject.SetActive(true);
             button.interactable = true;
+        }
+
+        /// <summary>Width the label needs to show this text on one line at this size.</summary>
+        public float PreferredTextWidth(string text, float fontSize)
+        {
+            if (label == null || string.IsNullOrEmpty(text)) return 0f;
+            float was = label.fontSize;
+            label.fontSize = fontSize;
+            float w = label.GetPreferredValues(text, float.PositiveInfinity, float.PositiveInfinity).x;
+            label.fontSize = was;
+            return w;
+        }
+
+        public float Width => ((RectTransform)transform).rect.width;
+
+        /// <summary>
+        /// Sets the card width. The label keeps the inset it was authored with
+        /// (10 px a side in the scene), so text and card grow together.
+        /// </summary>
+        public void SetWidth(float width)
+        {
+            var card = (RectTransform)transform;
+            float inset = 0f;
+            if (label != null) inset = card.rect.width - ((RectTransform)label.transform).rect.width;
+            card.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            if (label != null)
+                ((RectTransform)label.transform).SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - inset);
         }
 
         public void SetInteractable(bool value)

@@ -116,7 +116,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
 | `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names) |
-| `KANJI_EXPOSED` | `kanji_char`, `discovery_type`, `exposure_ms` — S5 discovery sequence, spec §7.6 |
+| `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`NOT_IMPLEMENTED` in version 1) — S5, spec §7.6 |
 | `ASSEMBLY_COMPLETED` | `duration_ms`, `incorrect_attempts`, `segment_count` — spec §5.3 |
 | `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` — spec §8.1 |
 | `PERIPHERAL_EVENT` | `event_index`, `object_name`, `duration_ms` — spec §8.1 |
@@ -126,6 +126,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `SYSTEM_CHECK_COMPLETED` | `headset_active`, `websocket_connected`, `passed`, `forced_by_researcher`, `eeg_checked` — S3, spec §7.4 |
 | `BASELINE_STARTED` | `eyes_open_s`, `eyes_closed_s`, `time_scale` — S4, spec §7.5 |
 | `BASELINE_COMPLETED` | `eyes_open_ms`, `eyes_closed_ms`, `time_scale`, `valid_duration` — S4 |
+| `STAGE_INTRO_ACKNOWLEDGED` | `wait_ms`, `forced_by_researcher` — Continue on the announcement before S2, S4, S5, S6, S7 and S8 |
 | `VIEW_RECENTERED` | `reason` (`SESSION_START`, `LEFT_MENU_BUTTON`, `KEYBOARD`), `yaw_error_deg`, `offset_m`, `camera_before` ([x,y,z]) — any state |
 
 `options` and `correct_option` on `TRIAL_STARTED` are what make a trial
@@ -390,6 +391,16 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**25 September 2026 — S5 version 1.** No `schema_version` bump (§5.6).
+
+- `KANJI_EXPOSED` is emitted for the first time, so its row now lists the fields
+  it actually carries. `audio_source` exists so a TTS placeholder clip is never
+  mistaken for a recording; `assembly` says explicitly that version 1 skips the
+  step, so its absence does not read as a lost event.
+- S5 guided association runs as trials `S5-001`…`S5-005`, one per kanji in set
+  order, with their own `TRIAL_SEQUENCE_GENERATED`.
+- `STAGE_INTRO_ACKNOWLEDGED`: the self-paced wait before six of the stages.
 
 **24 September 2026 — the S1-S9 chain.** No `schema_version` bump: new event
 types and one new field on an existing event, no existing field changed shape
