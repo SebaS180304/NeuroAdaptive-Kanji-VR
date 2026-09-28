@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NeuroAdaptiveVR.Core;
 using NeuroAdaptiveVR.Data;
 using UnityEngine;
 
@@ -46,27 +47,31 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private BehaviorTelemetryController telemetry;
 
         [Header("Reproducibilidad")]
-        [Tooltip("Seed con la que se sortean los conteos dentro del rango del perfil. " +
-                 "DEUDA: deberia venir de experiment_sessions.random_seed, que existe " +
-                 "en la base desde M1 y todavia nadie consume. Mientras tanto se fija " +
-                 "aqui y se registra en el evento, para que al menos quede en el dato " +
-                 "con que seed se genero el entorno.")]
+        [Tooltip("FALLBACK only. Since 30 Sep 2026 the environment derives its draws from " +
+                 "the session seed (EnvironmentSeed). This value is used only without a " +
+                 "session -- edit mode, debug Play -- and ENVIRONMENT_APPLIED then says " +
+                 "seed_source = FALLBACK.")]
         [SerializeField] private int seed = 20260909;
 
         [SerializeField]
         private StimulationOrAssistanceLevel currentLevel = StimulationOrAssistanceLevel.Off;
 
         private EnvironmentProfile _activeProfile;
-        private System.Random _rngBacking;
         private bool _warnedNoRoot;
+        private bool _warnedFallback;
+
+        // Set only by SetSeed (the Phase 2 harness). Wins over the session so a
+        // test can pin the draw regardless of what is installed.
+        private int? _seedOverride;
 
         /// <summary>
-        /// Perezoso a proposito. Inicializarlo solo en Awake deja el componente
-        /// roto con un NullReference si alguien llama SetLevel antes --desde
-        /// herramientas de editor, o si el orden de ejecucion cambia--. Un
-        /// generador que se crea cuando hace falta no tiene ese modo de fallo.
+        /// The seed every ESL draw derives from right now: an explicit override,
+        /// else the session seed, else the fallback field.
         /// </summary>
-        private System.Random Rng => _rngBacking ??= new System.Random(seed);
+        public int BaseSeed => _seedOverride ?? EnvironmentSeed.Base(seed);
+
+        public string SeedSource => _seedOverride.HasValue ? "OVERRIDE"
+                                  : EnvironmentSeed.FromSession ? "SESSION" : "FALLBACK";
 
         public StimulationOrAssistanceLevel CurrentLevel => currentLevel;
         public EnvironmentProfile ActiveProfile => _activeProfile;
@@ -77,18 +82,16 @@ namespace NeuroAdaptiveVR.Controllers
         private void Awake()
         {
             if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
-            _rngBacking = new System.Random(seed);
             VerifyContainment();
         }
 
         /// <summary>
-        /// La seed la debe fijar quien conoce la sesion, antes del primer SetLevel.
+        /// Pins the base seed, overriding the session. For tests (harness E7/E8);
+        /// a real session never calls it -- its seed comes from SessionContext.
         /// </summary>
-        public void SetSeed(int newSeed)
-        {
-            seed = newSeed;
-            _rngBacking = new System.Random(seed);
-        }
+        public void SetSeed(int newSeed) => _seedOverride = newSeed;
+
+        public void ClearSeedOverride() => _seedOverride = null;
 
         /// <summary>
         /// Cambia el nivel de estimulacion ambiental.
@@ -148,15 +151,31 @@ namespace NeuroAdaptiveVR.Controllers
                 return;
             }
 
-            int propCount = ActivateGroup("Props", profile.propCountMin, profile.propCountMax, profile.maxTier);
-            int moverCount = ActivateGroup("Movers", profile.moverCountMin, profile.moverCountMax, profile.maxTier);
+            if (SeedSource == "FALLBACK" && Application.isPlaying && !_warnedFallback)
+            {
+                _warnedFallback = true;
+                Debug.LogWarning("[EnvironmentalStimulationController] No session installed: the " +
+                                 $"environment uses the fallback seed {seed}. This run's environment " +
+                                 "is NOT reconstructible from a session (seed_source = FALLBACK).");
+            }
+
+            // One generator per level, derived from the base seed: the same level
+            // gives the same selection anywhere in the session, independently of
+            // how many levels were applied before (the old shared generator made
+            // the S5 room depend on whether S2 had run).
+            int selectionSeed = EnvironmentSeed.For(BaseSeed, "selection:" + LevelKey(profile.level));
+            var rng = new System.Random(selectionSeed);
+
+            var props = ActivateGroup("Props", profile.propCountMin, profile.propCountMax, profile.maxTier, rng);
+            var movers = ActivateGroup("Movers", profile.moverCountMin, profile.moverCountMax, profile.maxTier, rng);
 
             Debug.Log($"[EnvironmentalStimulationController] {profile.level}: " +
-                      $"{propCount} props · {moverCount} movers · " +
+                      $"{props.Count} props · {movers.Count} movers " +
+                      $"[{string.Join(", ", props.Concat(movers))}] · " +
                       $"eventos perifericos {(profile.HasPeripheralEvents ? $"cada {profile.peripheralIntervalMinSeconds:0.#}-{profile.peripheralIntervalMaxSeconds:0.#}s" : "ninguno")} " +
-                      $"· seed {seed}");
+                      $"· seed {BaseSeed} ({SeedSource})");
 
-            EmitApplied(profile, propCount, moverCount);
+            EmitApplied(profile, props, movers, selectionSeed);
             OnProfileApplied?.Invoke(profile);
         }
 
@@ -165,14 +184,14 @@ namespace NeuroAdaptiveVR.Controllers
         /// respetando el tope de tier. Los que sobran se desactivan: el estado
         /// anterior no puede quedar colgando.
         /// </summary>
-        private int ActivateGroup(string groupName, int min, int max, int maxTier)
+        private List<string> ActivateGroup(string groupName, int min, int max, int maxTier, System.Random rng)
         {
             var group = environmentalLayerRoot.Find(groupName);
             if (group == null)
             {
                 Debug.LogWarning($"[EnvironmentalStimulationController] No existe " +
                                  $"{environmentalLayerRoot.name}/{groupName}.");
-                return 0;
+                return new List<string>();
             }
 
             var all = group.GetComponentsInChildren<EnvironmentProp>(true).ToList();
@@ -182,7 +201,7 @@ namespace NeuroAdaptiveVR.Controllers
             foreach (var p in all) p.gameObject.SetActive(false);
 
             var eligible = all.Where(p => p.Tier <= maxTier).ToList();
-            int target = Mathf.Clamp(NextInclusive(min, max), 0, eligible.Count);
+            int target = Mathf.Clamp(max <= min ? min : rng.Next(min, max + 1), 0, eligible.Count);
 
             if (max > eligible.Count)
             {
@@ -199,30 +218,36 @@ namespace NeuroAdaptiveVR.Controllers
             var ordered = eligible
                 .GroupBy(p => p.Tier)
                 .OrderBy(g => g.Key)
-                .SelectMany(g => Shuffle(g.ToList()))
+                .SelectMany(g => Shuffle(g.OrderBy(p => p.name, StringComparer.Ordinal).ToList(), rng))
                 .ToList();
 
-            for (int i = 0; i < target; i++) ordered[i].gameObject.SetActive(true);
-            return target;
+            var active = new List<string>(target);
+            for (int i = 0; i < target; i++)
+            {
+                ordered[i].gameObject.SetActive(true);
+                active.Add(ordered[i].name);
+            }
+            return active;
         }
 
-        private int NextInclusive(int min, int max) => max <= min ? min : Rng.Next(min, max + 1);
-
-        private List<T> Shuffle<T>(List<T> items)
+        private static List<T> Shuffle<T>(List<T> items, System.Random rng)
         {
             for (int i = items.Count - 1; i > 0; i--)
             {
-                int j = Rng.Next(i + 1);
+                int j = rng.Next(i + 1);
                 (items[i], items[j]) = (items[j], items[i]);
             }
             return items;
         }
 
+        /// <summary>Stable text for a level in seed labels (enum names are the wire values upper-cased).</summary>
+        public static string LevelKey(StimulationOrAssistanceLevel level) => level.ToString().ToUpperInvariant();
+
         // ------------------------------------------------------------------
         // Telemetria
         // ------------------------------------------------------------------
 
-        private void EmitApplied(EnvironmentProfile profile, int propCount, int moverCount)
+        private void EmitApplied(EnvironmentProfile profile, List<string> props, List<string> movers, int selectionSeed)
         {
             if (telemetry == null) return;
 
@@ -234,12 +259,18 @@ namespace NeuroAdaptiveVR.Controllers
             telemetry.Emit(TelemetryEvents.EnvironmentApplied, new Dictionary<string, object>
             {
                 { "profile_name", profile.name },
-                { "prop_count", propCount },
-                { "mover_count", moverCount },
+                { "prop_count", props.Count },
+                { "mover_count", movers.Count },
+                // Which objects, not only how many: the moving side and the exact
+                // set are what a reconstruction -- and the FOV check -- need.
+                { "active_props", props },
+                { "active_movers", movers },
                 { "peripheral_interval_min_ms", Mathf.RoundToInt(profile.peripheralIntervalMinSeconds * 1000f) },
                 { "peripheral_interval_max_ms", Mathf.RoundToInt(profile.peripheralIntervalMaxSeconds * 1000f) },
                 { "max_tier", profile.maxTier },
-                { "seed", seed },
+                { "seed", BaseSeed },
+                { "seed_source", SeedSource },
+                { "selection_seed", selectionSeed },
             });
         }
 

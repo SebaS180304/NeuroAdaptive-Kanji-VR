@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using NeuroAdaptiveVR.Core;
 using NeuroAdaptiveVR.Data;
 using UnityEngine;
 
@@ -17,6 +18,12 @@ namespace NeuroAdaptiveVR.Controllers
     ///
     /// Los valores de 8.1 estan marcados "to validate" en 16: el intervalo real
     /// lo fija el piloto midiendo distraccion y confort.
+    ///
+    /// SEEDED (30 September 2026, F3.2): which object fires and the interval to
+    /// the next one come from a generator derived from the session seed
+    /// ("peripheral:{LEVEL}"), restarted at each ENVIRONMENT_APPLIED. Until M2
+    /// they came from UnityEngine.Random, so the same session could not show
+    /// the same distractions twice.
     /// </summary>
     public class PeripheralEventScheduler : MonoBehaviour
     {
@@ -33,6 +40,7 @@ namespace NeuroAdaptiveVR.Controllers
         private float _activeUntil;
         private int _eventIndex;
         private bool _warnedEmptyPool;
+        private System.Random _rng = new System.Random(0);
 
         private void Awake()
         {
@@ -55,6 +63,9 @@ namespace NeuroAdaptiveVR.Controllers
             _profile = profile;
             HideActive();
             RebuildPool();
+            if (profile != null && stimulation != null)
+                _rng = new System.Random(EnvironmentSeed.For(stimulation.BaseSeed,
+                    "peripheral:" + EnvironmentalStimulationController.LevelKey(profile.level)));
 
             if (profile == null || !profile.HasPeripheralEvents)
             {
@@ -70,7 +81,9 @@ namespace NeuroAdaptiveVR.Controllers
             var container = FindContainer();
             if (container == null) return;
 
-            foreach (Transform child in container)
+            // Name order, not hierarchy order: the seeded draw must not change if
+            // someone reorders the hierarchy.
+            foreach (Transform child in container.Cast<Transform>().OrderBy(t => t.name, System.StringComparer.Ordinal))
             {
                 _pool.Add(child.gameObject);
                 child.gameObject.SetActive(false);
@@ -91,7 +104,7 @@ namespace NeuroAdaptiveVR.Controllers
         {
             float min = _profile.peripheralIntervalMinSeconds;
             float max = _profile.peripheralIntervalMaxSeconds;
-            _nextEventAt = Time.time + Random.Range(min, max);
+            _nextEventAt = Time.time + min + (float)_rng.NextDouble() * (max - min);
         }
 
         private void Update()
@@ -119,7 +132,7 @@ namespace NeuroAdaptiveVR.Controllers
                 return;
             }
 
-            _active = _pool[Random.Range(0, _pool.Count)];
+            _active = _pool[_rng.Next(_pool.Count)];
             _active.SetActive(true);
             _activeUntil = Time.time + eventDurationSeconds;
             _eventIndex++;

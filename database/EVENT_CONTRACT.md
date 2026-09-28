@@ -119,7 +119,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build) — S5, spec §7.6 |
 | `ASSEMBLY_SEGMENT_PLACED` | `kanji_id`, `exposure_index`, `attempt` (1-based, counts right and wrong), `slot_index` (1-based), `segment_id`, `expected_segment_id`, `is_correct`, `selected_ms` and `placed_ms` (from the start of this kanji's assembly), `hint_shown`, `segments_authored` — one per placement attempt, spec §5.3, decision D4 |
 | `ASSEMBLY_COMPLETED` | `kanji_id`, `exposure_index`, `duration_ms`, `incorrect_attempts`, `segment_count`, `segments_placed`, `hints_shown`, `row_order` (segment ids left to right as presented), `segments_authored`, `forced_by_researcher` — spec §5.3 |
-| `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` — spec §8.1 |
+| `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `active_props` and `active_movers` (object names), `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` (the base seed of the environment), `seed_source` (`SESSION`, `FALLBACK` without a session, `OVERRIDE` in tests), `selection_seed` (derived for this level) — spec §8.1 |
 | `PERIPHERAL_EVENT` | `event_index`, `object_name`, `duration_ms` — spec §8.1 |
 | `START_SELECTED` | `reaction_ms`, `forced_by_researcher` — S1, spec §7.2 |
 | `TUTORIAL_STARTED` | `activities` (array; `LOOK_AND_SELECT` in M2), `pool` (kanji ids) — S2, spec §7.3 |
@@ -392,6 +392,20 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**29 September 2026 — Phase 3, F3.2: environment seeded by the session.** No
+`schema_version` bump: new fields on `ENVIRONMENT_APPLIED`, and `seed` keeps its
+type.
+
+- `seed` now carries the **session seed** (`SESSION`). Until M2 every row
+  carried the same value saved in the scene (`-1058336171`) regardless of the
+  session. Rows written before this date must be read with that in mind.
+- `seed_source`, `selection_seed`, `active_props` and `active_movers` added. The
+  selection is per level (`selection:{LEVEL}`): the same level gives the same room
+  anywhere in a session.
+- Mover phase and peripheral-event draws also derive from the session seed. That
+  is not visible in this row, but `PERIPHERAL_EVENT.object_name` and its timing
+  are now reproducible for a given seed.
 
 **28 September 2026 — guided assembly (worked on from 25 September, branch
 `m2-assembly`).** No `schema_version` bump: one new event type, and

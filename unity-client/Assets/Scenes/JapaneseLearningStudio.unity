@@ -8202,7 +8202,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1484434850191034316, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: seed
-      value: -1058336171
+      value: 20260909
       objectReference: {fileID: 0}
     - target: {fileID: 1484434850191034316, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: telemetry
@@ -8245,8 +8245,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: f65250ed22bb7f1419f37b86cf91d019, type: 2}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: existingSessionId
-      value: d3f19117-516a-47b4-8df2-7a88a695e688
+      value: b62330de-c0ac-41f0-99ba-0888c47bd1a2
       objectReference: {fileID: 0}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: createNewSessionOnPlay

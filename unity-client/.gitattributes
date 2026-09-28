@@ -6,10 +6,14 @@
 # This template is maintained from the gitattributes/gitattributes repository
 # and distributed under MIT License.
 
-# Define macros (only works in top-level gitattributes files)
-[attr]lfs               filter=lfs diff=lfs merge=lfs -text
-[attr]unity-json        eol=lf linguist-language=json
-[attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml
+# Macros (unity-json, unity-yaml) are defined in the repository ROOT
+# .gitattributes: git only accepts [attr] lines in the top-level file, so the
+# definitions that lived here were ignored ("not allowed") until 29 Sep 2026.
+#
+# `lfs` is deliberately NOT defined: binaries (the TTS clips, the font, the
+# textures) are committed as normal blobs. The `lfs` lines below are therefore
+# inert labels. Enabling LFS would require migrating history -- decide it on
+# purpose, not by accident.
 
 # Optionally collapse Unity YAML files on GitHub diffs
 # [attr]unity-yaml        merge=unityyamlmerge text linguist-language=yaml linguist-generated

@@ -666,6 +666,38 @@ namespace NeuroAdaptiveVR.EditorTools
                       alto.Count > segunda.Count,
                       $"MEDIUM {segunda.Count} · HIGH {alto.Count}");
 
+                // F3.2 (30 sep): each level has its own generator derived from the
+                // session seed. The room of a level must not depend on which
+                // levels were applied before it -- with the old shared generator
+                // the S5 room changed depending on whether S2 had run.
+                esl.SetSeed(seedA);
+                esl.SetLevel(StimulationOrAssistanceLevel.Low, betweenTrials: true);
+                var lowPrimero = props.Where(p => p.gameObject.activeSelf).Select(p => p.name).OrderBy(x => x).ToList();
+                esl.SetLevel(StimulationOrAssistanceLevel.High, betweenTrials: true);
+                esl.SetLevel(StimulationOrAssistanceLevel.Medium, betweenTrials: true);
+                esl.SetLevel(StimulationOrAssistanceLevel.Low, betweenTrials: true);
+                var lowDespues = props.Where(p => p.gameObject.activeSelf).Select(p => p.name).OrderBy(x => x).ToList();
+                Check("E11", "Un nivel da la misma sala sin importar que niveles se aplicaron antes",
+                      lowPrimero.SequenceEqual(lowDespues),
+                      $"LOW {Join(lowPrimero)} · tras HIGH y MEDIUM {Join(lowDespues)}");
+
+                // The motion phase is part of the reconstruction: same seed, same
+                // phase; another seed, another phase.
+                var mover = props.FirstOrDefault(p => p.GetComponent<EnvironmentMotion>() != null);
+                if (mover != null)
+                {
+                    float fA1 = EnvironmentMotion.PhaseFor(seedA, mover.name);
+                    float fA2 = EnvironmentMotion.PhaseFor(seedA, mover.name);
+                    float fB = EnvironmentMotion.PhaseFor(seedB, mover.name);
+                    Check("E12", "La fase de movimiento sale de la seed: misma seed, misma fase; otra seed, otra fase",
+                          Mathf.Approximately(fA1, fA2) && !Mathf.Approximately(fA1, fB),
+                          $"{mover.name}: {fA1:0.000} / {fA2:0.000} / seed {seedB}: {fB:0.000}");
+                }
+                else
+                {
+                    Check("E12", "La fase de movimiento sale de la seed", false, "no hay ningun EnvironmentMotion en la capa");
+                }
+
                 esl.SetLevel(StimulationOrAssistanceLevel.Focus, betweenTrials: true);
                 int enFocus = props.Count(p => p.gameObject.activeSelf);
                 Check("E9", "FOCUS deja el entorno vacio sin tocar la iluminacion",
@@ -684,7 +716,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 // activos, asi que restaurar el nivel PRIMERO y el estado visible
                 // despues. Al reves, la ultima palabra la tendria el perfil y la
                 // escena quedaria distinta de como se encontro.
-                esl.SetSeed(20260909);
+                esl.ClearSeedOverride();
                 if (nivelPrevio != StimulationOrAssistanceLevel.Off)
                     esl.SetLevel(nivelPrevio, betweenTrials: true);
 

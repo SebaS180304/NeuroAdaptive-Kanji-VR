@@ -488,7 +488,9 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
 
     target = pathlib.Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    with open(target, "w", encoding="utf-8") as fh:
+    # newline="\n": on Windows text mode would write CRLF, and git then shows
+    # the contract as modified with no visible diff (found 28 Sep 2026).
+    with open(target, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(blob, fh, ensure_ascii=False, indent=2)
     return blob
 

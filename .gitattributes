@@ -1,0 +1,9 @@
+# Repository-wide attributes (29 Sep 2026).
+#
+# Git accepts macro definitions ([attr]) ONLY in this top-level file. The
+# Unity template in unity-client/.gitattributes uses them.
+[attr]unity-json        eol=lf linguist-language=json
+[attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml
+
+# The generated content contract: always LF, whatever writes it.
+unity-client/Assets/Resources/kanji_content.json   text eol=lf

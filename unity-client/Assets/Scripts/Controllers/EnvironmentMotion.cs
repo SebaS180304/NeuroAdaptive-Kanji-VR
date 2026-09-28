@@ -1,3 +1,4 @@
+using NeuroAdaptiveVR.Core;
 using UnityEngine;
 
 namespace NeuroAdaptiveVR.Controllers
@@ -14,14 +15,15 @@ namespace NeuroAdaptiveVR.Controllers
     /// Los dos modos son los dos ejemplos literales de 8.1: "curtain/blind
     /// motion" y "slow movement outside window".
     ///
-    /// DEUDA CONOCIDA: la fase inicial se deriva del indice del objeto, asi que
-    /// el movimiento es identico entre sesiones que apliquen el mismo perfil en
-    /// el mismo momento -- pero NO esta atada a la seed de la sesion. Dos
-    /// sesiones con la misma seed ven los mismos objetos moverse igual; lo que
-    /// no se reconstruye es en que instante de su ciclo estaba cada uno cuando
-    /// empezo un trial concreto. Para spec 6.1 eso importa, y se cierra cuando
-    /// EnvironmentalStimulationController reciba la seed real de
-    /// experiment_sessions.random_seed.
+    /// RECONSTRUCTIBLE (30 September 2026, F3.2)
+    /// ----------------------------------------
+    /// The starting phase derives from the session seed and the object's name
+    /// (EnvironmentSeed "motion:{name}"), and the clock of the motion starts
+    /// when the object is activated -- that is, at its ENVIRONMENT_APPLIED. So
+    /// the pose of any mover at any instant is a function of (session seed,
+    /// time since ENVIRONMENT_APPLIED), both of which are in the data. Until M2
+    /// the phase came from the sibling index and the clock from Time.time since
+    /// the application started, and neither was recorded.
     /// </summary>
     public class EnvironmentMotion : MonoBehaviour
     {
@@ -52,18 +54,24 @@ namespace NeuroAdaptiveVR.Controllers
         private Vector3 _origin;
         private Quaternion _restRotation;
         private float _phase;
+        private float _startedAt;
+
+        /// <summary>Phase in [0, 1) of the cycle at activation. Exposed for the harness.</summary>
+        public float Phase => _phase;
 
         private void Awake()
         {
             _origin = transform.localPosition;
             _restRotation = transform.localRotation;
-
-            // Fase derivada del indice en la jerarquia: dos objetos hermanos no
-            // se mueven al unisono, y el resultado es el mismo en cada arranque.
-            // Un Random.value aqui haria que la misma sesion reconstruida se
-            // viera distinta.
-            _phase = transform.GetSiblingIndex() * 0.37f;
         }
+
+        /// <summary>
+        /// Phase from the session seed and the object's name: two movers do not
+        /// move in unison, and the same session gives the same phase every time.
+        /// A Random.value here would make a reconstructed session look different.
+        /// </summary>
+        public static float PhaseFor(int baseSeed, string objectName) =>
+            EnvironmentSeed.Unit(EnvironmentSeed.For(baseSeed, "motion:" + objectName));
 
         private void OnEnable()
         {
@@ -71,6 +79,10 @@ namespace NeuroAdaptiveVR.Controllers
             // en vez de saltar a media animacion.
             transform.localPosition = _origin;
             transform.localRotation = _restRotation;
+
+            var esl = FindAnyObjectByType<EnvironmentalStimulationController>();
+            _phase = PhaseFor(esl != null ? esl.BaseSeed : EnvironmentSeed.Base(0), name);
+            _startedAt = Time.time;
         }
 
         private void Update()
@@ -85,7 +97,7 @@ namespace NeuroAdaptiveVR.Controllers
         private void UpdateSway()
         {
             if (swayPeriodSeconds <= 0f) return;
-            float t = (Time.time / swayPeriodSeconds + _phase) * Mathf.PI * 2f;
+            float t = ((Time.time - _startedAt) / swayPeriodSeconds + _phase) * Mathf.PI * 2f;
             float angle = Mathf.Sin(t) * swayDegrees;
             transform.localRotation = _restRotation * Quaternion.Euler(0f, 0f, angle);
         }
@@ -95,7 +107,7 @@ namespace NeuroAdaptiveVR.Controllers
             float cycle = traverseSeconds + traversePauseSeconds;
             if (cycle <= 0f) return;
 
-            float t = Mathf.Repeat(Time.time + _phase * cycle, cycle);
+            float t = Mathf.Repeat(Time.time - _startedAt + _phase * cycle, cycle);
             if (t > traverseSeconds)
             {
                 // Pausa: fuera de vista, en el extremo de salida.
