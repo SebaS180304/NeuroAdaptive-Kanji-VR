@@ -611,6 +611,7 @@ namespace NeuroAdaptiveVR.EditorTools
                   dentro.Count == 0, dentro.Count == 0 ? "ok" : Join(dentro));
 
             DeterminismCase(esl, rootProp);
+            VisibleBandCase(rootProp);
         }
 
         /// <summary>
@@ -856,6 +857,156 @@ namespace NeuroAdaptiveVR.EditorTools
             bool ensamblaje = root.GetComponent<KanjiAssemblyController>() != null;
             Check("W4", "El ensamblaje guiado esta en SessionRoot (S5 no lo salta)",
                   ensamblaje, ensamblaje ? root.name : "falta KanjiAssemblyController");
+        }
+
+        // ==================================================================
+        // ESL visible band (Phase 3, F3.1)
+        // ==================================================================
+
+        // Fixed eye of the rig: the camera is anchored at 1.36 m at the origin.
+        private static readonly Vector3 Eye = new Vector3(0f, 1.36f, 0f);
+
+        // Measured in the headset on 28 September (Diseno_Sala_ESL.md 8): the
+        // visible field is +-42 deg, +-40 deg while fixating the board. The board
+        // spans +-21.8 deg. What is outside the band does not stimulate: the
+        // participant cannot see it without turning the head.
+        private const float BandInnerDeg = 22f;
+        private const float BandOuterDeg = 40f;
+
+        // A prop may sit behind the answer cards (they cover it) but never in
+        // front of them. Margin around the card row, in degrees.
+        private const float CardMarginDeg = 1f;
+        private const float CardPlaneDepth = 0.08f;
+
+        private const int MoverSamples = 24;
+
+        private struct AngularBox
+        {
+            public float H0, H1, V0, V1, ZMin;
+        }
+
+        private static AngularBox AngularOf(IEnumerable<Vector3> worldPoints)
+        {
+            var box = new AngularBox { H0 = 999f, H1 = -999f, V0 = 999f, V1 = -999f, ZMin = 999f };
+            foreach (var w in worldPoints)
+            {
+                var d = w - Eye;
+                float h = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+                float v = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+                box.H0 = Mathf.Min(box.H0, h); box.H1 = Mathf.Max(box.H1, h);
+                box.V0 = Mathf.Min(box.V0, v); box.V1 = Mathf.Max(box.V1, v);
+                box.ZMin = Mathf.Min(box.ZMin, w.z);
+            }
+            return box;
+        }
+
+        /// <summary>Oriented box of a mesh in world space, from the transform as it is now.</summary>
+        private static IEnumerable<Vector3> MeshCorners(MeshFilter mf)
+        {
+            var b = mf.sharedMesh.bounds;
+            var m = mf.transform.localToWorldMatrix;
+            for (int i = 0; i < 8; i++)
+                yield return m.MultiplyPoint3x4(new Vector3(
+                    (i & 1) == 0 ? b.min.x : b.max.x,
+                    (i & 2) == 0 ? b.min.y : b.max.y,
+                    (i & 4) == 0 ? b.min.z : b.max.z));
+        }
+
+        /// <summary>
+        /// E13. Every prop, mover and peripheral object lies in the visible band
+        /// 22-40 deg at every point of its path, and none covers the answer cards.
+        ///
+        /// Until M2 the layer was laid out for 25-50 deg from the datasheet FOV:
+        /// the lamp, the boxes and both curtains were outside the visible field,
+        /// so MEDIUM (one curtain) showed no motion at all, and two props covered
+        /// the outer cards. Nothing failed, because nothing measured it.
+        ///
+        /// Measured per mesh, not per object: a floor lamp is a thin pole under a
+        /// wide shade, and its bounding box would hide where each part really is.
+        /// Movers are measured at MoverSamples points of their path through
+        /// EnvironmentMotion.PoseAt; the pose is restored afterwards.
+        /// </summary>
+        private static void VisibleBandCase(Transform root)
+        {
+            var cards = UnityEngine.Object
+                .FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .FirstOrDefault(c => c.name == "ResponseCanvas");
+            if (cards == null)
+            {
+                Check("E13", "Todo el ESL cae en la banda visible 22-40 grados", false, "no hay ResponseCanvas");
+                return;
+            }
+            var corners = new Vector3[4];
+            ((RectTransform)cards.transform).GetWorldCorners(corners);
+            var cardBox = AngularOf(corners);
+            float cardPlane = corners.Max(c => c.z) + CardPlaneDepth;
+
+            var problems = new List<string>();
+            int measured = 0;
+            float worstInner = 999f, worstOuter = 0f;
+
+            void Measure(string label, MeshFilter mf)
+            {
+                if (mf == null || mf.sharedMesh == null) return;
+                var a = AngularOf(MeshCorners(mf));
+                bool crosses = a.H0 < 0f && a.H1 > 0f;
+                float inner = crosses ? 0f : Mathf.Min(Mathf.Abs(a.H0), Mathf.Abs(a.H1));
+                float outer = Mathf.Max(Mathf.Abs(a.H0), Mathf.Abs(a.H1));
+                worstInner = Mathf.Min(worstInner, inner);
+                worstOuter = Mathf.Max(worstOuter, outer);
+
+                bool overCards = a.ZMin < cardPlane
+                    && a.H1 > cardBox.H0 - CardMarginDeg && a.H0 < cardBox.H1 + CardMarginDeg
+                    && a.V1 > cardBox.V0 - CardMarginDeg && a.V0 < cardBox.V1 + CardMarginDeg;
+
+                if (inner < BandInnerDeg) problems.Add($"{label} inner {inner:F1}");
+                if (outer > BandOuterDeg) problems.Add($"{label} outer {outer:F1}");
+                if (overCards) problems.Add($"{label} covers the cards");
+            }
+
+            foreach (var group in new[] { "Props", "Movers", "PeripheralEvents" })
+            {
+                var g = root.Find(group);
+                if (g == null) continue;
+                foreach (Transform obj in g)
+                {
+                    measured++;
+                    var motion = obj.GetComponent<EnvironmentMotion>();
+                    var filters = obj.GetComponentsInChildren<MeshFilter>(true);
+                    if (motion == null)
+                    {
+                        foreach (var mf in filters) Measure(obj.name, mf);
+                        continue;
+                    }
+
+                    var restPos = obj.localPosition;
+                    var restRot = obj.localRotation;
+                    try
+                    {
+                        var before = problems.Count;
+                        for (int i = 0; i <= MoverSamples; i++)
+                        {
+                            float u = (float)i / MoverSamples;
+                            motion.PoseAt(restPos, restRot, u, out var p, out var r);
+                            obj.localPosition = p;
+                            obj.localRotation = r;
+                            foreach (var mf in filters) Measure($"{obj.name}@{u:F2}", mf);
+                            if (problems.Count > before) break;   // one sample is enough to report it
+                        }
+                    }
+                    finally
+                    {
+                        obj.localPosition = restPos;
+                        obj.localRotation = restRot;
+                    }
+                }
+            }
+
+            Check("E13", "Todo el ESL cae en la banda visible 22-40 grados, movers en todo su recorrido, sin tapar tarjetas",
+                  measured > 0 && problems.Count == 0,
+                  problems.Count == 0
+                      ? $"{measured} objetos · borde interior min {worstInner:F1} · exterior max {worstOuter:F1} · tarjetas h[{cardBox.H0:F1},{cardBox.H1:F1}]"
+                      : Join(problems.Distinct().Take(12)));
         }
 
         // ==================================================================

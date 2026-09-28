@@ -59,6 +59,8 @@ namespace NeuroAdaptiveVR.Controllers
         /// <summary>Phase in [0, 1) of the cycle at activation. Exposed for the harness.</summary>
         public float Phase => _phase;
 
+        public Mode MotionMode => mode;
+
         private void Awake()
         {
             _origin = transform.localPosition;
@@ -94,12 +96,31 @@ namespace NeuroAdaptiveVR.Controllers
             }
         }
 
+        /// <summary>
+        /// Local pose at fraction u of the path, from the rest pose: one full
+        /// sway period (u in [0, 1)), or the traverse from its start (u = 0) to
+        /// its end (u = 1, where it pauses out of view). Update drives the
+        /// object with it, and the harness uses it to measure a mover over its
+        /// whole path (F3.1, case E13): a static check of something that moves
+        /// answers wrong with full confidence (Diseno_Sala_ESL.md 5.3).
+        /// </summary>
+        public void PoseAt(Vector3 restPosition, Quaternion restRotation, float u,
+                           out Vector3 position, out Quaternion rotation)
+        {
+            position = restPosition;
+            rotation = restRotation;
+            if (mode == Mode.Sway)
+                rotation = restRotation * Quaternion.Euler(0f, 0f, Mathf.Sin(u * Mathf.PI * 2f) * swayDegrees);
+            else
+                position = restPosition + traverseAxis.normalized * (traverseDistance * Mathf.Clamp01(u));
+        }
+
         private void UpdateSway()
         {
             if (swayPeriodSeconds <= 0f) return;
-            float t = ((Time.time - _startedAt) / swayPeriodSeconds + _phase) * Mathf.PI * 2f;
-            float angle = Mathf.Sin(t) * swayDegrees;
-            transform.localRotation = _restRotation * Quaternion.Euler(0f, 0f, angle);
+            float u = (Time.time - _startedAt) / swayPeriodSeconds + _phase;
+            PoseAt(_origin, _restRotation, u, out _, out var rotation);
+            transform.localRotation = rotation;
         }
 
         private void UpdateTraverse()
@@ -107,16 +128,11 @@ namespace NeuroAdaptiveVR.Controllers
             float cycle = traverseSeconds + traversePauseSeconds;
             if (cycle <= 0f) return;
 
+            // Pausa (t > traverseSeconds): fuera de vista, en el extremo de salida.
             float t = Mathf.Repeat(Time.time - _startedAt + _phase * cycle, cycle);
-            if (t > traverseSeconds)
-            {
-                // Pausa: fuera de vista, en el extremo de salida.
-                transform.localPosition = _origin + traverseAxis.normalized * traverseDistance;
-                return;
-            }
-
-            float u = t / traverseSeconds;
-            transform.localPosition = _origin + traverseAxis.normalized * (traverseDistance * u);
+            float u = traverseSeconds <= 0f || t > traverseSeconds ? 1f : t / traverseSeconds;
+            PoseAt(_origin, _restRotation, u, out var position, out _);
+            transform.localPosition = position;
         }
     }
 }
