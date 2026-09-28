@@ -62,8 +62,24 @@ namespace NeuroAdaptiveVR.Controllers
         [Tooltip("Horizontal gap between two cards of the row (40 in the authored scene).")]
         [SerializeField] private float cardGap = 40f;
 
+        [Header("Guided assembly slots (spec 5.3)")]
+        [SerializeField] private float slotSize = 240f;
+        [SerializeField] private float slotGap = 40f;
+        [Tooltip("Vertical position of the slot row on the board: where the glyph sits.")]
+        [SerializeField] private float slotRowY = 90f;
+        [SerializeField] private float slotLabelSize = 60f;
+        [SerializeField] private Color slotEmptyColor = new Color(1f, 1f, 1f, 0.12f);
+        [SerializeField] private Color slotNextColor = new Color(0.35f, 0.65f, 1f, 0.55f);
+        [SerializeField] private Color slotFilledColor = new Color(0.30f, 0.72f, 0.40f, 0.55f);
+        [SerializeField] private Color slotWrongColor = new Color(0.85f, 0.35f, 0.25f, 0.70f);
+        [SerializeField] private Color segmentSelectedColor = new Color(0.35f, 0.65f, 1f, 1f);
+        [SerializeField] private Color segmentHintColor = new Color(1f, 0.82f, 0.30f, 1f);
+
         public event Action<string> OnOptionChosen;
         public event Action OnHintRequested;
+
+        /// <summary>A board slot was selected (guided assembly). Only the highlighted slot is selectable.</summary>
+        public event Action<int> OnSlotChosen;
 
         // Where each card lives in the scene. ShowSingleChoice moves one card
         // to the centre; everything that presents a trial puts them back, so a
@@ -135,6 +151,7 @@ namespace NeuroAdaptiveVR.Controllers
         }
 
         private void HandleCardChosen(string optionId) => OnOptionChosen?.Invoke(optionId);
+        private void HandleSlotClicked(int index) => OnSlotChosen?.Invoke(index);
         private void HandleHintClicked() => OnHintRequested?.Invoke();
 
         // ------------------------------------------------------------------
@@ -147,6 +164,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = string.Empty;
             RestoreLabelStyle();   // an S5 exposure may have enlarged the cue line
+            HideAssemblySlots();
 
             if (promptLabel != null)
             {
@@ -222,6 +240,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = string.Empty;
             RestoreLabelStyle();
+            HideAssemblySlots();
             if (hintButton != null) hintButton.gameObject.SetActive(false);
 
             if (cards != null)
@@ -389,6 +408,175 @@ namespace NeuroAdaptiveVR.Controllers
             }
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = note ?? string.Empty;
+        }
+
+        // ------------------------------------------------------------------
+        // Guided assembly (spec 5.3) -- the board half of it
+        // ------------------------------------------------------------------
+        //
+        // Slots on the board, where the glyph was, so the kanji is rebuilt in
+        // the place it was just shown. Segments on the answer cards, in the
+        // Response Area: the participant already looks there to answer, so the
+        // assembly adds no new head movement (decided 25 September; the spec
+        // 3.1 Interaction Table sits ~36 degrees down at 0.85 m and would make
+        // the neck flex once per kanji -- EEG artefact).
+        //
+        // KanjiAssemblyController decides; this draws. Segment choices arrive
+        // through OnOptionChosen like any card; ResponseSystemController ignores
+        // them because no trial is open.
+
+        private readonly List<Button> _slots = new();
+        private readonly List<TMP_Text> _slotLabels = new();
+        private readonly List<bool> _slotFilled = new();
+        private int _slotNext = -1;
+        private Coroutine _slotFlash;
+
+        /// <summary>
+        /// Clears the board, draws `slotCount` empty slots and binds the segment
+        /// cards in row order (id, label) centred in the Response Area.
+        /// </summary>
+        public void ShowAssembly(int slotCount, IReadOnlyList<(string id, string label)> row, string instruction)
+        {
+            Clear();
+            if (promptLabel != null) promptLabel.text = string.Empty;
+            if (cueLabel != null) cueLabel.text = instruction ?? string.Empty;
+
+            BuildSlots(slotCount);
+
+            RestoreCardPositions();
+            int n = Mathf.Min(row.Count, cards?.Length ?? 0);
+            for (int i = 0; i < n; i++)
+            {
+                cards[i].Bind(row[i].id, row[i].label, OptionSizeFor(row[i].label));
+                float x = (i - (n - 1) * 0.5f) * (_cardWidth + cardGap);
+                ((RectTransform)cards[i].transform).anchoredPosition = new Vector2(x, _cardHome[i].y);
+            }
+            for (int i = n; i < (cards?.Length ?? 0); i++) cards[i].Hide();
+        }
+
+        /// <summary>Replaces the small line under the board content (assembly instruction).</summary>
+        public void SetCue(string text)
+        {
+            if (cueLabel != null) cueLabel.text = text ?? string.Empty;
+        }
+
+        /// <summary>Highlights slot `index` as the next one and makes only it selectable.</summary>
+        public void HighlightSlot(int index)
+        {
+            _slotNext = index;
+            for (int i = 0; i < _slots.Count; i++) PaintSlot(i);
+        }
+
+        /// <summary>Marks the selected segment (null = none) and re-enables every segment still in the row.</summary>
+        public void SetSegmentSelected(string segmentId, string hintSegmentId)
+        {
+            if (cards == null) return;
+            foreach (var c in cards)
+            {
+                if (c == null || !c.gameObject.activeSelf || c.OptionId == null) continue;
+                c.SetInteractable(true);
+                if (c.OptionId == segmentId) c.SetTint(segmentSelectedColor);
+                else if (c.OptionId == hintSegmentId) c.SetTint(segmentHintColor);
+                else c.SetTint(null);
+            }
+        }
+
+        /// <summary>The segment went into slot `index`: the slot shows its label and the card leaves the row.</summary>
+        public void FillSlot(int index, string segmentId, string label)
+        {
+            if (index < 0 || index >= _slots.Count) return;
+            _slotFilled[index] = true;
+            _slotLabels[index].text = label;
+            PaintSlot(index);
+            if (cards != null)
+                foreach (var c in cards)
+                    if (c != null && c.OptionId == segmentId) c.Hide();
+        }
+
+        /// <summary>Wrong segment for slot `index`: a short flash, then it is the next slot again.</summary>
+        public void FlashSlotWrong(int index)
+        {
+            if (index < 0 || index >= _slots.Count) return;
+            if (_slotFlash != null) StopCoroutine(_slotFlash);
+            _slotFlash = StartCoroutine(FlashRoutine(index));
+        }
+
+        private System.Collections.IEnumerator FlashRoutine(int index)
+        {
+            if (_slots[index].targetGraphic != null) _slots[index].targetGraphic.color = slotWrongColor;
+            yield return new WaitForSecondsRealtime(0.4f);
+            if (index < _slots.Count) PaintSlot(index);
+            _slotFlash = null;
+        }
+
+        private void PaintSlot(int i)
+        {
+            bool next = i == _slotNext && !_slotFilled[i];
+            _slots[i].interactable = next;
+            if (_slots[i].targetGraphic != null)
+                _slots[i].targetGraphic.color = _slotFilled[i] ? slotFilledColor : next ? slotNextColor : slotEmptyColor;
+        }
+
+        private void BuildSlots(int count)
+        {
+            HideAssemblySlots();
+            var parent = promptLabel != null ? promptLabel.transform.parent as RectTransform : null;
+            if (parent == null) { Debug.LogError("[StudioTrialPresenter] No board canvas to draw assembly slots on."); return; }
+
+            for (int i = 0; i < count; i++)
+            {
+                if (i >= _slots.Count) _slots.Add(CreateSlot(parent, i));
+                var b = _slots[i];
+                b.gameObject.SetActive(true);
+                var rt = (RectTransform)b.transform;
+                rt.anchoredPosition = new Vector2((i - (count - 1) * 0.5f) * (slotSize + slotGap), slotRowY);
+                _slotLabels[i].text = string.Empty;
+                _slotFilled[i] = false;
+            }
+            _slotNext = -1;
+            for (int i = 0; i < count; i++) PaintSlot(i);
+        }
+
+        private Button CreateSlot(RectTransform parent, int index)
+        {
+            var go = new GameObject($"AssemblySlot{index + 1}", typeof(RectTransform), typeof(Image), typeof(Button));
+            go.layer = parent.gameObject.layer;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(slotSize, slotSize);
+
+            var img = go.GetComponent<Image>();
+            img.color = slotEmptyColor;
+            var b = go.GetComponent<Button>();
+            b.targetGraphic = img;
+            b.transition = Selectable.Transition.None;   // the slot colour is state, not hover feedback
+            int captured = index;
+            b.onClick.AddListener(() => HandleSlotClicked(captured));
+
+            var lgo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            lgo.layer = go.layer;
+            var lrt = (RectTransform)lgo.transform;
+            lrt.SetParent(rt, false);
+            lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+            var t = lgo.GetComponent<TextMeshProUGUI>();
+            if (promptLabel != null) t.font = promptLabel.font;
+            t.fontSize = slotLabelSize;
+            t.alignment = TextAlignmentOptions.Center;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.raycastTarget = false;
+
+            _slotLabels.Add(t);
+            _slotFilled.Add(false);
+            return b;
+        }
+
+        private void HideAssemblySlots()
+        {
+            if (_slotFlash != null) { StopCoroutine(_slotFlash); _slotFlash = null; }
+            foreach (var b in _slots) if (b != null) b.gameObject.SetActive(false);
+            _slotNext = -1;
         }
 
         /// <summary>Stage strip at the top of the board. Empty string hides it.</summary>

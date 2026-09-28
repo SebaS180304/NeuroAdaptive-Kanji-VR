@@ -12,7 +12,7 @@ namespace NeuroAdaptiveVR.Core
     /// For each of the five kanji, in set order:
     ///
     ///   object -> transformation -> reveal -> meaning -> reading -> audio
-    ///   -> [assembly] -> guided association
+    ///   -> assembly -> guided association
     ///
     /// SCOPE OF VERSION 1 (agreed 24 September, Replan_Cierre_M2_24sep.md §5)
     /// ---------------------------------------------------------------------
@@ -23,8 +23,9 @@ namespace NeuroAdaptiveVR.Core
     /// - Audio: whatever clip the item carries. Today that is a TTS
     ///   placeholder; KANJI_EXPOSED records which, so a synthetic clip is
     ///   never mistaken for a recording.
-    /// - Assembly: NOT in this version. Skipped, and recorded as skipped in
-    ///   KANJI_EXPOSED, so the build delivered on the 25th has no half-built step.
+    /// - Assembly: with the ray, through KanjiAssemblyController (added after
+    ///   the 25 September cut-off build, which skipped it). Without that
+    ///   component the step is skipped and KANJI_EXPOSED records it.
     /// - Guided association: real. One trial per kanji through the same
     ///   response cycle as S6-S8, type drawn from the seed (decision D3).
     ///
@@ -45,6 +46,8 @@ namespace NeuroAdaptiveVR.Core
         [Header("Dependencies (found automatically if empty)")]
         [SerializeField] private StudioTrialPresenter board;
         [SerializeField] private KanjiDiscoveryController discovery;
+        [Tooltip("Guided assembly (spec 5.3). Empty = the step is skipped and KANJI_EXPOSED says so.")]
+        [SerializeField] private KanjiAssemblyController assembly;
         [SerializeField] private PronunciationAudioController pronunciation;
         [SerializeField] private ResponseSystemController responses;
         [SerializeField] private BehaviorTelemetryController telemetry;
@@ -66,6 +69,7 @@ namespace NeuroAdaptiveVR.Core
         {
             if (board == null) board = FindAnyObjectByType<StudioTrialPresenter>();
             if (discovery == null) discovery = FindAnyObjectByType<KanjiDiscoveryController>();
+            if (assembly == null) assembly = FindAnyObjectByType<KanjiAssemblyController>();
             if (pronunciation == null) pronunciation = GetComponent<PronunciationAudioController>();
             if (responses == null) responses = GetComponent<ResponseSystemController>();
             if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
@@ -154,11 +158,15 @@ namespace NeuroAdaptiveVR.Core
                     { "stages_authored", authored },
                     { "audio_played", clip != null && pronunciation != null },
                     { "audio_source", PronunciationAudioController.SourceOf(clip) },
-                    // Spec 7.6 puts guided assembly here. Version 1 skips it on
-                    // purpose (agreed 24 Sep); saying so in the row keeps a
-                    // missing step from reading as a lost event.
-                    { "assembly", "NOT_IMPLEMENTED" },
+                    // RAY: ASSEMBLY_SEGMENT_PLACED / ASSEMBLY_COMPLETED follow.
+                    // NOT_IMPLEMENTED: no assembly controller in the scene, so the
+                    // missing step never reads as a lost event.
+                    { "assembly", assembly != null ? "RAY" : "NOT_IMPLEMENTED" },
                 });
+
+                // ---- Guided assembly (spec 5.3, since 28 September) ---------
+                if (assembly != null)
+                    yield return assembly.Run(item, blockSeed, i + 1);
 
                 // ---- Guided association (D3) -------------------------------
                 if (i < plan.Count)

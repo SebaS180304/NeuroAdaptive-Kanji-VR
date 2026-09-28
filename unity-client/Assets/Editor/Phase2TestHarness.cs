@@ -90,6 +90,7 @@ namespace NeuroAdaptiveVR.EditorTools
             SubstitutionCases(content);
             SequenceCases(content);
             AssociationCases(content);
+            AssemblyCases(content);
             EnvironmentCases();
             AssistanceCases();
             MatrixCases();
@@ -413,6 +414,50 @@ namespace NeuroAdaptiveVR.EditorTools
             Check("A5", "Cada bloque (S5-S8) tiene su propia seed derivada",
                   seeds.Distinct().Count() == seeds.Count && !seeds.Contains(baseSeed),
                   string.Join(", ", seeds));
+        }
+
+        // ==================================================================
+        // Guided assembly (spec 5.3, D2)
+        // ==================================================================
+
+        private static void AssemblyCases(KanjiContentController c)
+        {
+            var all = c.All.ToList();
+            int seed = TrialSequenceGenerator.BlockSeed(StableHash.Of("20260909"), GameFlowState.S5_StandardizedLearning);
+            var plans = all.Select(k => (k, p: AssemblyPlan.For(k, seed))).ToList();
+
+            // G1 is the one that matters: the piece count is part of the
+            // balance band of spec 4.1, so it must come from the contract.
+            var malContados = plans.Where(x => !x.p.Authored && x.p.Count != x.k.AssemblyGroups)
+                                   .Select(x => x.k.Character).ToList();
+            Check("G1", "Cada kanji sin segmentos autorados tiene tantos huecos como assemblyGroups",
+                  malContados.Count == 0,
+                  malContados.Count == 0 ? $"{all.Count} kanji" : string.Join(" ", malContados));
+
+            // Only kanji that can reach S5: experimental and reserve (a reserve
+            // item can substitute into a set). Tutorial kanji never get an
+            // assembly -- and 一 has a single stroke group, so it could not.
+            var tutorial = new HashSet<string>(c.Tutorial.Select(k => k.KanjiId));
+            var enS5 = plans.Where(x => !tutorial.Contains(x.k.KanjiId)).ToList();
+            var conProblema = enS5.Where(x => x.p.Problem != null).Select(x => $"{x.k.Character}: {x.p.Problem}").ToList();
+            Check("G2", "Todo kanji que puede llegar a S5 tiene un plan de ensamblaje valido (2-4 segmentos, ids unicos)",
+                  conProblema.Count == 0,
+                  conProblema.Count == 0 ? $"{enS5.Count} kanji (sin los {tutorial.Count} del tutorial)" : string.Join(" · ", conProblema.Take(5)));
+
+            bool mismoOrden = all.All(k => string.Join(",", AssemblyPlan.For(k, seed).RowOrder) ==
+                                           string.Join(",", AssemblyPlan.For(k, seed).RowOrder));
+            Check("G3", "Misma seed produce el mismo orden de la fila de segmentos",
+                  mismoOrden, mismoOrden ? "ok" : "el orden cambia entre llamadas");
+
+            bool permutacion = plans.All(x => x.p.RowOrder.OrderBy(i => i).SequenceEqual(Enumerable.Range(0, x.p.Count)));
+            Check("G4", "La fila contiene cada segmento exactamente una vez",
+                  permutacion, permutacion ? "ok" : "hay filas con segmentos repetidos o faltantes");
+
+            // The row must not always equal slot order, or the task is "take the leftmost".
+            int identidad = plans.Count(x => x.p.RowOrder.SequenceEqual(Enumerable.Range(0, x.p.Count)));
+            Check("G5", "La fila no coincide siempre con el orden de los huecos",
+                  identidad < plans.Count,
+                  $"{identidad}/{plans.Count} filas en orden de huecos (esperable por azar en algunas)");
         }
 
         private static string Fingerprint(TrialPlan plan)
@@ -770,6 +815,12 @@ namespace NeuroAdaptiveVR.EditorTools
                 .Where(m => m is ITrialPresenter).Select(m => m.GetType().Name).ToList();
             Check("W3", "Hay al menos un ITrialPresenter en la escena",
                   presenters.Count > 0, Join(presenters));
+
+            // Without it S5 silently falls back to the cut-off behaviour (no
+            // assembly, KANJI_EXPOSED.assembly = NOT_IMPLEMENTED).
+            bool ensamblaje = root.GetComponent<KanjiAssemblyController>() != null;
+            Check("W4", "El ensamblaje guiado esta en SessionRoot (S5 no lo salta)",
+                  ensamblaje, ensamblaje ? root.name : "falta KanjiAssemblyController");
         }
 
         // ==================================================================

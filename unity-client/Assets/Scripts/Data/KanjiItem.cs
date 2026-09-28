@@ -64,6 +64,9 @@ namespace NeuroAdaptiveVR.Data
         /// <summary>La UNICA lectura que se ensena y se evalua (spec 4.3).</summary>
         public string TargetReading => Content.TargetReading;
 
+        /// <summary>How many stroke groups the guided assembly has (spec 5.3). Part of the balance band of 4.1.</summary>
+        public int AssemblyGroups => Content.AssemblyGroups;
+
         public ExperimentalSet Pool => Content.Pool;
         public DiscoveryType DiscoveryType => Content.DiscoveryType;
 

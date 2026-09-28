@@ -68,6 +68,21 @@ namespace NeuroAdaptiveVR.Controllers
             }
             gameObject.SetActive(true);
             button.interactable = true;
+            SetTint(null);   // a card never carries an assembly highlight into a trial
+        }
+
+        private Color? _homeColor;
+
+        /// <summary>
+        /// Colours the card (assembly: selected segment, hint). Null restores
+        /// the authored colour. Trials never tint: Bind resets it.
+        /// </summary>
+        public void SetTint(Color? color)
+        {
+            var g = button != null ? button.targetGraphic : null;
+            if (g == null) return;
+            if (_homeColor == null) _homeColor = g.color;
+            g.color = color ?? _homeColor.Value;
         }
 
         /// <summary>Width the label needs to show this text on one line at this size.</summary>

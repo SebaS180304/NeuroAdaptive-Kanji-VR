@@ -109,6 +109,11 @@ namespace NeuroAdaptiveVR.Data
         public const string KanjiExposed = "KANJI_EXPOSED";
         public const string AssemblyCompleted = "ASSEMBLY_COMPLETED";
 
+        // ASSEMBLY_SEGMENT_PLACED (decision D4): one per placement attempt,
+        // right or wrong. ASSEMBLY_COMPLETED is the aggregate; the order and
+        // timing of each piece cannot be rebuilt from a counter afterwards.
+        public const string AssemblySegmentPlaced = "ASSEMBLY_SEGMENT_PLACED";
+
         // Fase 2 -- capa ambiental (ESL)
         //
         // ENVIRONMENT_APPLIED se emite cuando un perfil se aplica de verdad, no

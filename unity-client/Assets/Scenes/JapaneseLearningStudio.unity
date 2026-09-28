@@ -3484,6 +3484,16 @@ MonoBehaviour:
   derivationSize: 160
   cardTextPadding: 15
   cardGap: 40
+  slotSize: 240
+  slotGap: 40
+  slotRowY: 90
+  slotLabelSize: 60
+  slotEmptyColor: {r: 1, g: 1, b: 1, a: 0.12}
+  slotNextColor: {r: 0.35, g: 0.65, b: 1, a: 0.55}
+  slotFilledColor: {r: 0.3, g: 0.72, b: 0.4, a: 0.55}
+  slotWrongColor: {r: 0.85, g: 0.35, b: 0.25, a: 0.7}
+  segmentSelectedColor: {r: 0.35, g: 0.65, b: 1, a: 1}
+  segmentHintColor: {r: 1, g: 0.82, b: 0.3, a: 1}
 --- !u!4 &621902240
 Transform:
   m_ObjectHideFlags: 0
@@ -5751,7 +5761,7 @@ MonoBehaviour:
   systemCheckWindowSeconds: 5
   baselineEyesOpenSeconds: 60
   baselineEyesClosedSeconds: 45
-  baselineTimeScale: 1
+  baselineTimeScale: 0.1
   s5PlaceholderSeconds: 3
   fallbackSet: A
   fallbackSeed: 20260909
@@ -5786,6 +5796,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.S5LearningBlockController
   board: {fileID: 621902239}
   discovery: {fileID: 2066792506}
+  assembly: {fileID: 1019401308}
   pronunciation: {fileID: 1019401289}
   responses: {fileID: 0}
   telemetry: {fileID: 0}
@@ -5891,6 +5902,22 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1019401308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1019401263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfc762a166684544999d3041c12b1b60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.KanjiAssemblyController
+  board: {fileID: 621902239}
+  telemetry: {fileID: 1019401270}
+  hintAfterWrong: 3
+  completedSeconds: 1.5
 --- !u!1 &1023100426
 GameObject:
   m_ObjectHideFlags: 0
@@ -8327,6 +8354,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1125460835585896871, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1019401298}
+    - targetCorrespondingSourceObject: {fileID: 1125460835585896871, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1019401308}
   m_SourcePrefab: {fileID: 100100000, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
 --- !u!1 &1412497258
 GameObject:

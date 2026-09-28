@@ -116,8 +116,9 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
 | `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names) |
-| `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`NOT_IMPLEMENTED` in version 1) — S5, spec §7.6 |
-| `ASSEMBLY_COMPLETED` | `duration_ms`, `incorrect_attempts`, `segment_count` — spec §5.3 |
+| `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build) — S5, spec §7.6 |
+| `ASSEMBLY_SEGMENT_PLACED` | `kanji_id`, `exposure_index`, `attempt` (1-based, counts right and wrong), `slot_index` (1-based), `segment_id`, `expected_segment_id`, `is_correct`, `selected_ms` and `placed_ms` (from the start of this kanji's assembly), `hint_shown`, `segments_authored` — one per placement attempt, spec §5.3, decision D4 |
+| `ASSEMBLY_COMPLETED` | `kanji_id`, `exposure_index`, `duration_ms`, `incorrect_attempts`, `segment_count`, `segments_placed`, `hints_shown`, `row_order` (segment ids left to right as presented), `segments_authored`, `forced_by_researcher` — spec §5.3 |
 | `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` — spec §8.1 |
 | `PERIPHERAL_EVENT` | `event_index`, `object_name`, `duration_ms` — spec §8.1 |
 | `START_SELECTED` | `reaction_ms`, `forced_by_researcher` — S1, spec §7.2 |
@@ -391,6 +392,18 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**28 September 2026 — guided assembly (worked on from 25 September, branch
+`m2-assembly`).** No `schema_version` bump: one new event type, and
+`ASSEMBLY_COMPLETED` gains fields on an event that had never been emitted.
+
+- `ASSEMBLY_SEGMENT_PLACED`: one row per placement attempt, so the order and
+  timing of each piece can be rebuilt (a counter of wrong attempts cannot).
+- `ASSEMBLY_COMPLETED` is emitted for the first time. `row_order` makes the
+  segment row reconstructible; it is also derivable from `block_seed`.
+- `KANJI_EXPOSED.assembly` is `RAY` from this version on.
+- Segments without authored content are placeholders, N = `assemblyGroups`
+  from the contract; `segments_authored` says which case a row belongs to.
 
 **25 September 2026 — S5 version 1.** No `schema_version` bump (§5.6).
 
