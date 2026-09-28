@@ -68,6 +68,39 @@ namespace NeuroAdaptiveVR.Controllers
             }
             gameObject.SetActive(true);
             button.interactable = true;
+            SetTint(null);   // a card never carries an assembly highlight into a trial
+            SetOutline(false);
+        }
+
+        private Outline _outline;
+
+        /// <summary>White border marking the segment in hand during the assembly. Trials never show it.</summary>
+        public void SetOutline(bool on)
+        {
+            if (_outline == null)
+            {
+                if (!on) return;
+                var g = button != null ? button.targetGraphic : null;
+                if (g == null) return;
+                _outline = g.gameObject.AddComponent<Outline>();
+                _outline.effectColor = Color.white;
+                _outline.effectDistance = new Vector2(8f, -8f);
+            }
+            _outline.enabled = on;
+        }
+
+        private Color? _homeColor;
+
+        /// <summary>
+        /// Colours the card (assembly: selected segment, hint). Null restores
+        /// the authored colour. Trials never tint: Bind resets it.
+        /// </summary>
+        public void SetTint(Color? color)
+        {
+            var g = button != null ? button.targetGraphic : null;
+            if (g == null) return;
+            if (_homeColor == null) _homeColor = g.color;
+            g.color = color ?? _homeColor.Value;
         }
 
         /// <summary>Width the label needs to show this text on one line at this size.</summary>
