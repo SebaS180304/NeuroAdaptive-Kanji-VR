@@ -115,29 +115,84 @@ GROUP BY 1
 ORDER BY 1;
 
 \echo ''
-\echo '-- Intervalos reales entre eventos perifericos consecutivos, en segundos.'
-\echo '-- Se comparan contra el rango que declaro el ENVIRONMENT_APPLIED vigente.'
+\echo '-- Intervalos reales entre eventos perifericos, en segundos, POR SESION y'
+\echo '-- por aplicacion de nivel, contra el rango que declaro su ENVIRONMENT_APPLIED.'
+\echo '-- El scheduler reinicia el reloj en cada ENVIRONMENT_APPLIED, asi que el'
+\echo '-- primer intervalo se mide desde la aplicacion. Hasta el 29 de septiembre'
+\echo '-- esta consulta ordenaba todos los eventos de la base juntos: el ultimo'
+\echo '-- evento de una sesion y el primero de la siguiente contaban como un'
+\echo '-- intervalo de horas, y un cambio de nivel mezclaba dos rangos distintos.'
 
-WITH pe AS (
-    SELECT
-        e.id,
-        e.payload ->> 'esl'                          AS esl,
-        (e.payload ->> 'session_elapsed_ms')::bigint AS t_ms,
-        lag((e.payload ->> 'session_elapsed_ms')::bigint)
-            OVER (ORDER BY (e.payload ->> 'session_elapsed_ms')::bigint) AS t_prev_ms
+WITH marcas AS (
+    SELECT e.session_id,
+           e.id,
+           (e.payload ->> 'session_elapsed_ms')::bigint AS t_ms,
+           e.event_type,
+           e.payload ->> 'esl'                                   AS esl,
+           (e.payload ->> 'peripheral_interval_min_ms')::int     AS min_ms,
+           (e.payload ->> 'peripheral_interval_max_ms')::int     AS max_ms
     FROM session_events e
-    WHERE e.event_type = 'PERIPHERAL_EVENT'
+    WHERE e.event_type IN ('ENVIRONMENT_APPLIED', 'PERIPHERAL_EVENT')
+      AND jsonb_typeof(e.payload -> 'session_elapsed_ms') = 'number'
+),
+tramos AS (
+    -- Numero de aplicacion vigente para cada fila. A igual instante, la
+    -- aplicacion va antes que el evento ('ENVIRONMENT_APPLIED' < 'PERIPHERAL_EVENT').
+    SELECT m.*,
+           count(*) FILTER (WHERE m.event_type = 'ENVIRONMENT_APPLIED')
+               OVER (PARTITION BY m.session_id ORDER BY m.t_ms, m.event_type, m.id) AS aplicacion
+    FROM marcas m
+),
+intervalos AS (
+    SELECT t.session_id,
+           t.aplicacion,
+           t.event_type,
+           t.t_ms - lag(t.t_ms) OVER w                AS dt_ms,
+           first_value(t.esl)    OVER w               AS esl,
+           first_value(t.min_ms) OVER w               AS min_ms,
+           first_value(t.max_ms) OVER w               AS max_ms
+    FROM tramos t
+    WINDOW w AS (PARTITION BY t.session_id, t.aplicacion ORDER BY t.t_ms, t.event_type, t.id)
+)
+SELECT left(i.session_id::text, 8)                     AS sesion,
+       i.aplicacion,
+       i.esl,
+       count(*)                                        AS intervalos,
+       round(min(i.dt_ms) / 1000.0, 1)                 AS min_s,
+       round(avg(i.dt_ms) / 1000.0, 1)                 AS media_s,
+       round(max(i.dt_ms) / 1000.0, 1)                 AS max_s,
+       round(min(i.min_ms) / 1000.0, 1) || '-' ||
+       round(max(i.max_ms) / 1000.0, 1)                AS rango_declarado_s,
+       -- 250 ms de tolerancia: el scheduler dispara en el primer frame
+       -- despues del instante sorteado.
+       count(*) FILTER (WHERE i.dt_ms < i.min_ms - 250 OR i.dt_ms > i.max_ms + 250)
+                                                       AS fuera_de_rango
+FROM intervalos i
+WHERE i.event_type = 'PERIPHERAL_EVENT'
+  AND i.aplicacion > 0
+GROUP BY i.session_id, i.aplicacion, i.esl
+ORDER BY i.session_id, i.aplicacion;
+
+\echo ''
+\echo '-- fuera_de_rango tiene que ser 0 en todas las filas. Un evento periferico'
+\echo '-- en un tramo cuyo nivel no los pide (LOW, FOCUS) sale con rango 0-0 y'
+\echo '-- cuenta como fuera de rango.'
+\echo '-- Eventos perifericos sin ningun ENVIRONMENT_APPLIED previo en su sesion'
+\echo '-- (tendria que ser 0):'
+
+WITH marcas AS (
+    SELECT e.session_id, e.event_type, (e.payload ->> 'session_elapsed_ms')::bigint AS t_ms
+    FROM session_events e
+    WHERE e.event_type IN ('ENVIRONMENT_APPLIED', 'PERIPHERAL_EVENT')
       AND jsonb_typeof(e.payload -> 'session_elapsed_ms') = 'number'
 )
-SELECT esl,
-       count(*)                                        AS intervalos,
-       round(min(t_ms - t_prev_ms) / 1000.0, 1)        AS min_s,
-       round(avg(t_ms - t_prev_ms) / 1000.0, 1)        AS media_s,
-       round(max(t_ms - t_prev_ms) / 1000.0, 1)        AS max_s
-FROM pe
-WHERE t_prev_ms IS NOT NULL
-GROUP BY esl
-ORDER BY esl;
+SELECT count(*) AS eventos_sin_aplicacion_previa
+FROM marcas p
+WHERE p.event_type = 'PERIPHERAL_EVENT'
+  AND NOT EXISTS (SELECT 1 FROM marcas a
+                  WHERE a.session_id = p.session_id
+                    AND a.event_type = 'ENVIRONMENT_APPLIED'
+                    AND a.t_ms <= p.t_ms);
 
 \echo ''
 \echo '=============================================================='

@@ -86,20 +86,25 @@ Division of labour: **the optimizer proposes, the verifier disposes.** Since the
 verifier runs on every change, a split the optimizer recommends and the verifier
 rejects is a bug in the model, not a difference of opinion.
 
-## Known duplication, not yet fixed
+## One table, two scripts
 
-The optimizer carries its own copy of the 49-kanji table instead of importing
-`KANJI` from `kanji_metrics`. The shared columns — reading, strokes, morae,
-groups, readings, meaning, lesson — are maintained twice; the optimizer adds two
-of its own, semantic cluster and imageability.
+The optimizer imports `KANJI` and `SETS` from `kanji_metrics` and keeps only
+what it adds, in `OPTIMIZER_FIELDS`: semantic cluster, imageability, discovery
+kind and whether the kanji is out of the official pool. A content change is made
+once, in `kanji_metrics.py`.
 
-On 9 September the meanings were translated to English in both files separately.
-That is the cost, and it recurs on every content change.
+Until 29 September 2026 the optimizer carried its own copy of the 49-kanji
+table, and the copies had already drifted (足 was "leg" in one and "leg, foot"
+in the other). Its "split in force" was also still the pre-8-September one; it
+is now `kanji_metrics.SETS`, and the optimizer confirms that split as the proven
+optimum.
 
-The fix is to import `KANJI` and leave a side table of
-`{character: (cluster, imageability)}` here. It was not done in the same pass as
-the translation because it touches the optimizer's core and deserves its own
-verification rather than riding along with a rename.
+The order of `OPTIMIZER_FIELDS` is the kanji index the search uses to break
+symmetry. Keep it stable.
+
+The font comes from there too: the optimizer measures on the repository's
+`NotoSansCJKjp-Regular.otf`, the same face as the verifier and the board. It
+used to default to the system `.ttc`.
 
 ## What Unity does with the JSON
 
