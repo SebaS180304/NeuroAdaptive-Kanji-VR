@@ -453,11 +453,14 @@ namespace NeuroAdaptiveVR.EditorTools
             Check("G4", "La fila contiene cada segmento exactamente una vez",
                   permutacion, permutacion ? "ok" : "hay filas con segmentos repetidos o faltantes");
 
-            // The row must not always equal slot order, or the task is "take the leftmost".
-            int identidad = plans.Count(x => x.p.RowOrder.SequenceEqual(Enumerable.Range(0, x.p.Count)));
-            Check("G5", "La fila no coincide siempre con el orden de los huecos",
-                  identidad < plans.Count,
-                  $"{identidad}/{plans.Count} filas en orden de huecos (esperable por azar en algunas)");
+            // No row may equal slot order, or the participant can place left to
+            // right without reading the shapes (17/40 did before 28 September).
+            var identidad = plans.Where(x => x.p.Count > 1 && x.p.RowOrder.SequenceEqual(Enumerable.Range(0, x.p.Count)))
+                                 .Select(x => x.k.Character).ToList();
+            Check("G5", "Ninguna fila sale en el orden de los huecos",
+                  identidad.Count == 0,
+                  $"{identidad.Count}/{plans.Count(x => x.p.Count > 1)} filas en orden de huecos" +
+                  (identidad.Count > 0 ? ": " + string.Join(" ", identidad) : ""));
         }
 
         private static string Fingerprint(TrialPlan plan)

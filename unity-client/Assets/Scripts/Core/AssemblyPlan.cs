@@ -23,7 +23,8 @@ namespace NeuroAdaptiveVR.Core
     /// ---------
     /// Slots are filled in segment order (spec 5.3, "in the configured
     /// order"). The row the participant picks from is shuffled from the seed,
-    /// otherwise the task would reduce to "take the leftmost piece".
+    /// and never left in slot order, otherwise the task would reduce to "take
+    /// the leftmost piece".
     /// </summary>
     public sealed class AssemblyPlan
     {
@@ -57,6 +58,12 @@ namespace NeuroAdaptiveVR.Core
             RowOrder = rowOrder;
             Authored = authored;
             Problem = problem;
+        }
+
+        private static bool IsSlotOrder(IReadOnlyList<int> row)
+        {
+            for (int i = 0; i < row.Count; i++) if (row[i] != i) return false;
+            return true;
         }
 
         public IEnumerable<string> RowSegmentIds => RowOrder.Select(i => SegmentIds[i]);
@@ -102,6 +109,15 @@ namespace NeuroAdaptiveVR.Core
                 int j = rng.Next(i + 1);
                 (row[i], row[j]) = (row[j], row[i]);
             }
+
+            // A row that comes out in slot order lets the participant place
+            // left to right without looking at the shapes. On 28 September
+            // that was 17 of 40 rows (half of the 2-segment kanji), so the
+            // assembly got easier or harder between participants by chance.
+            // Rotate it one step: still deterministic from the seed, never in
+            // slot order. Known cost: a 2-segment row is then always reversed.
+            if (row.Count > 1 && IsSlotOrder(row))
+                row = row.Skip(1).Concat(row.Take(1)).ToList();
 
             return new AssemblyPlan(item.KanjiId, ids, labels, row, useAuthored, problem);
         }
