@@ -3490,10 +3490,13 @@ MonoBehaviour:
   slotLabelSize: 60
   slotEmptyColor: {r: 1, g: 1, b: 1, a: 0.12}
   slotNextColor: {r: 0.35, g: 0.65, b: 1, a: 0.55}
+  slotHoverColor: {r: 0.45, g: 0.75, b: 1, a: 0.85}
   slotFilledColor: {r: 0.3, g: 0.72, b: 0.4, a: 0.55}
   slotWrongColor: {r: 0.85, g: 0.35, b: 0.25, a: 0.7}
+  segmentIdleColor: {r: 0.18, g: 0.32, b: 0.55, a: 1}
   segmentSelectedColor: {r: 0.35, g: 0.65, b: 1, a: 1}
   segmentHintColor: {r: 1, g: 0.82, b: 0.3, a: 1}
+  segmentHintHoverColor: {r: 1, g: 0.84, b: 0.32, a: 1}
 --- !u!4 &621902240
 Transform:
   m_ObjectHideFlags: 0
@@ -5761,7 +5764,7 @@ MonoBehaviour:
   systemCheckWindowSeconds: 5
   baselineEyesOpenSeconds: 60
   baselineEyesClosedSeconds: 45
-  baselineTimeScale: 0.1
+  baselineTimeScale: 1
   s5PlaceholderSeconds: 3
   fallbackSet: A
   fallbackSeed: 20260909
@@ -8243,7 +8246,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: f65250ed22bb7f1419f37b86cf91d019, type: 2}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: existingSessionId
-      value: 91fef818-816b-498b-8801-e76438e59b2c
+      value: d3f19117-516a-47b4-8df2-7a88a695e688
       objectReference: {fileID: 0}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: createNewSessionOnPlay
