@@ -69,11 +69,18 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float slotRowY = 90f;
         [SerializeField] private float slotLabelSize = 60f;
         [SerializeField] private Color slotEmptyColor = new Color(1f, 1f, 1f, 0.12f);
-        [SerializeField] private Color slotNextColor = new Color(0.35f, 0.65f, 1f, 0.55f);
+        [Tooltip("Next slot, ray elsewhere: muted, so the ray's arrival is visible.")]
+        [SerializeField] private Color slotNextColor = new Color(0.35f, 0.65f, 1f, 0.28f);
+        [Tooltip("Next slot with the ray on it.")]
+        [SerializeField] private Color slotHoverColor = new Color(0.45f, 0.75f, 1f, 0.85f);
         [SerializeField] private Color slotFilledColor = new Color(0.30f, 0.72f, 0.40f, 0.55f);
         [SerializeField] private Color slotWrongColor = new Color(0.85f, 0.35f, 0.25f, 0.70f);
+        [Tooltip("Segment in the row, ray elsewhere.")]
+        [SerializeField] private Color segmentIdleColor = new Color(0.18f, 0.32f, 0.55f, 1f);
+        [Tooltip("Segment under the ray, and the segment in hand (which also gets a white border).")]
         [SerializeField] private Color segmentSelectedColor = new Color(0.35f, 0.65f, 1f, 1f);
-        [SerializeField] private Color segmentHintColor = new Color(1f, 0.82f, 0.30f, 1f);
+        [SerializeField] private Color segmentHintColor = new Color(0.80f, 0.64f, 0.20f, 1f);
+        [SerializeField] private Color segmentHintHoverColor = new Color(1f, 0.84f, 0.32f, 1f);
 
         public event Action<string> OnOptionChosen;
         public event Action OnHintRequested;
@@ -133,6 +140,11 @@ namespace NeuroAdaptiveVR.Controllers
                         continue;
                     }
                     c.OnChosen += HandleCardChosen;
+                    // Explicit null check, not ??: in the Editor a missing
+                    // component comes back as a fake-null object.
+                    var relay = c.gameObject.GetComponent<UiHoverRelay>();
+                    if (relay == null) relay = c.gameObject.AddComponent<UiHoverRelay>();
+                    relay.OnHover += _ => RepaintSegments();
                 }
             }
 
@@ -430,6 +442,8 @@ namespace NeuroAdaptiveVR.Controllers
         private readonly List<bool> _slotFilled = new();
         private int _slotNext = -1;
         private Coroutine _slotFlash;
+        private bool _assemblyActive;
+        private string _segmentInHand, _segmentHint;
 
         /// <summary>
         /// Clears the board, draws `slotCount` empty slots and binds the segment
@@ -452,6 +466,10 @@ namespace NeuroAdaptiveVR.Controllers
                 ((RectTransform)cards[i].transform).anchoredPosition = new Vector2(x, _cardHome[i].y);
             }
             for (int i = n; i < (cards?.Length ?? 0); i++) cards[i].Hide();
+
+            _assemblyActive = true;
+            _segmentInHand = _segmentHint = null;
+            RepaintSegments();
         }
 
         /// <summary>Replaces the small line under the board content (assembly instruction).</summary>
@@ -471,13 +489,33 @@ namespace NeuroAdaptiveVR.Controllers
         public void SetSegmentSelected(string segmentId, string hintSegmentId)
         {
             if (cards == null) return;
+            _segmentInHand = segmentId;
+            _segmentHint = hintSegmentId;
+            foreach (var c in cards)
+                if (c != null && c.gameObject.activeSelf && c.OptionId != null) c.SetInteractable(true);
+            RepaintSegments();
+        }
+
+        /// <summary>
+        /// Segment colours from state + ray (28 September): muted blue at rest,
+        /// bright blue under the ray, bright blue with a white border while in
+        /// hand, amber for the hint. Only during an assembly; trials keep the
+        /// authored card look.
+        /// </summary>
+        private void RepaintSegments()
+        {
+            if (!_assemblyActive || cards == null) return;
             foreach (var c in cards)
             {
                 if (c == null || !c.gameObject.activeSelf || c.OptionId == null) continue;
-                c.SetInteractable(true);
-                if (c.OptionId == segmentId) c.SetTint(segmentSelectedColor);
-                else if (c.OptionId == hintSegmentId) c.SetTint(segmentHintColor);
-                else c.SetTint(null);
+                var relay = c.GetComponent<UiHoverRelay>();
+                bool hovered = relay != null && relay.Hovered;
+                bool inHand = c.OptionId == _segmentInHand;
+                Color color = c.OptionId == _segmentHint && !inHand
+                    ? (hovered ? segmentHintHoverColor : segmentHintColor)
+                    : (inHand || hovered ? segmentSelectedColor : segmentIdleColor);
+                c.SetTint(color);
+                c.SetOutline(inHand);
             }
         }
 
@@ -513,8 +551,12 @@ namespace NeuroAdaptiveVR.Controllers
         {
             bool next = i == _slotNext && !_slotFilled[i];
             _slots[i].interactable = next;
+            var relay = _slots[i].GetComponent<UiHoverRelay>();
+            bool hovered = relay != null && relay.Hovered;
             if (_slots[i].targetGraphic != null)
-                _slots[i].targetGraphic.color = _slotFilled[i] ? slotFilledColor : next ? slotNextColor : slotEmptyColor;
+                _slots[i].targetGraphic.color = _slotFilled[i] ? slotFilledColor
+                                              : next ? (hovered ? slotHoverColor : slotNextColor)
+                                              : slotEmptyColor;
         }
 
         private void BuildSlots(int count)
@@ -553,6 +595,10 @@ namespace NeuroAdaptiveVR.Controllers
             b.transition = Selectable.Transition.None;   // the slot colour is state, not hover feedback
             int captured = index;
             b.onClick.AddListener(() => HandleSlotClicked(captured));
+            go.AddComponent<UiHoverRelay>().OnHover += _ =>
+            {
+                if (captured < _slots.Count && _slotFlash == null) PaintSlot(captured);
+            };
 
             var lgo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
             lgo.layer = go.layer;
@@ -577,6 +623,8 @@ namespace NeuroAdaptiveVR.Controllers
             if (_slotFlash != null) { StopCoroutine(_slotFlash); _slotFlash = null; }
             foreach (var b in _slots) if (b != null) b.gameObject.SetActive(false);
             _slotNext = -1;
+            _assemblyActive = false;
+            _segmentInHand = _segmentHint = null;
         }
 
         /// <summary>Stage strip at the top of the board. Empty string hides it.</summary>
