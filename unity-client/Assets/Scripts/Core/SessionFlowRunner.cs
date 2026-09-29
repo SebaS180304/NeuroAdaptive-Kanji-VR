@@ -72,6 +72,13 @@ namespace NeuroAdaptiveVR.Core
 
         [Header("Trial blocks (spec 6.1)")]
         [SerializeField] private int tutorialTrials = 3;
+
+        [Header("Tutorial (30 September)")]
+        [Tooltip("Controls induction on its own lectern at the start of S2. Empty = skipped.")]
+        [SerializeField] private ControlsIntro controlsIntro;
+        [Tooltip("Tutorial kanji built as the worked assembly example in S2. Empty = no example.")]
+        [SerializeField] private string tutorialAssemblyKanjiId = "KANJI_YON";
+        [SerializeField] private KanjiAssemblyController assembly;
         [SerializeField] private int s6Trials = 9;
         [SerializeField] private int s7Trials = 20;
         [SerializeField] private int s8Trials = 15;
@@ -160,7 +167,7 @@ namespace NeuroAdaptiveVR.Core
         private static readonly Dictionary<GameFlowState, string> StageIntros = new()
         {
             [GameFlowState.S2_VRTutorial] =
-                "A few practice questions first.\n\nPoint at an answer and pull the trigger.",
+                "First, a short introduction to the controls.",
             [GameFlowState.S4_EEGBaseline] =
                 "Now, a short rest.\n\nRelax and look forward. For part of it you will close your eyes;\n" +
                 "a chime will tell you when to open them.",
@@ -381,22 +388,70 @@ namespace NeuroAdaptiveVR.Core
         private IEnumerator RunTutorial(System.Action<bool> done)
         {
             var pool = content.Tutorial;
+            if (controlsIntro == null) controlsIntro = FindAnyObjectByType<ControlsIntro>();
+            if (assembly == null) assembly = FindAnyObjectByType<KanjiAssemblyController>();
+            var example = string.IsNullOrEmpty(tutorialAssemblyKanjiId)
+                ? null : pool.FirstOrDefault(i => i.KanjiId == tutorialAssemblyKanjiId);
+
+            var activities = new List<string>();
+            if (controlsIntro != null) activities.Add("CONTROLS_INTRO");
+            activities.Add("LOOK_AND_SELECT");
+            if (example != null && assembly != null) activities.Add("ASSEMBLY_EXAMPLE");
             telemetry.Emit(TelemetryEvents.TutorialStarted, new Dictionary<string, object>
             {
-                { "activities", new List<string> { "LOOK_AND_SELECT" } },
+                { "activities", activities },
                 { "pool", pool.Select(i => i.KanjiId).ToList() },
             });
 
+            // 1 · Controls, on the intro lectern in front of the board.
+            ControlsIntro.Result intro = default;
+            if (controlsIntro != null)
+            {
+                board?.Clear();
+                yield return controlsIntro.Run(r => intro = r);
+            }
+
+            // 2 · Practice questions.
+            yield return WaitForContinue("Now a few practice questions.\n\n" +
+                                         "The line at the top of the board tells you what to answer.\n" +
+                                         "Point at an answer and pull the trigger.");
+
             bool ok = true;
             yield return RunBlock(GameFlowState.S2_VRTutorial, pool, tutorialTrials, true, r => ok = r);
+
+            // 3 · One worked assembly, on the board, with a kanji the experiment never measures.
+            if (example != null && assembly != null)
+            {
+                yield return WaitForContinue("Now, build a kanji from its parts.\n\n" +
+                                             "1. Point at a part below the board and pull the trigger.\n" +
+                                             "2. Point at the highlighted place on the board and pull the trigger.");
+                board?.ShowExposure(example.Character, example.Meaning, example.TargetReading);
+                yield return new WaitForSecondsRealtime(2.5f);
+                yield return assembly.Run(example, TrialSequenceGenerator.BlockSeed(_sessionSeed, GameFlowState.S2_VRTutorial), 0);
+            }
 
             _scores.TryGetValue(GameFlowState.S2_VRTutorial, out var s);
             telemetry.Emit(TelemetryEvents.TutorialCompleted, new Dictionary<string, object>
             {
                 { "trials", s.total },
                 { "correct", s.correct },
+                { "controls_intro_ms", controlsIntro != null ? intro.DurationMs : -1 },
+                { "targets_hit", intro.TargetsHit },
+                { "recentered", intro.Recentered },
+                { "assembly_example", example != null && assembly != null ? example.KanjiId : null },
             });
             done(ok);
+        }
+
+        /// <summary>A message with one Continue card, inside a stage (the stage intros use RunIntro).</summary>
+        private IEnumerator WaitForContinue(string text)
+        {
+            _lastChoice = null;
+            _forceAdvance = false;
+            Show(text);
+            board?.ShowSingleChoice(ContinueOptionId, ContinueLabel);
+            yield return new WaitUntil(() => _lastChoice == ContinueOptionId || _forceAdvance);
+            _forceAdvance = false;
         }
 
         // ------------------------------------------------------------------

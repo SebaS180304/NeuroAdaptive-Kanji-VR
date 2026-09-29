@@ -70,6 +70,40 @@ namespace NeuroAdaptiveVR.Controllers
             button.interactable = true;
             SetTint(null);   // a card never carries an assembly highlight into a trial
             SetOutline(false);
+            SetImage(null);  // nor a segment image
+        }
+
+        private RawImage _image;
+
+        /// <summary>
+        /// A picture on the card instead of text: a kanji segment during the
+        /// guided assembly (30 September). Null removes it. Square, centred,
+        /// as tall as the card allows; not a raycast target, so the card's own
+        /// button still takes the ray.
+        /// </summary>
+        public void SetImage(Texture texture)
+        {
+            if (texture == null)
+            {
+                if (_image != null) _image.gameObject.SetActive(false);
+                return;
+            }
+            if (_image == null)
+            {
+                var go = new GameObject("SegmentImage", typeof(RectTransform), typeof(RawImage));
+                go.layer = gameObject.layer;
+                var rt = (RectTransform)go.transform;
+                rt.SetParent(transform, false);
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+                _image = go.GetComponent<RawImage>();
+                _image.raycastTarget = false;
+            }
+            float side = ((RectTransform)transform).rect.height * 0.92f;
+            ((RectTransform)_image.transform).sizeDelta = new Vector2(side, side);
+            _image.texture = texture;
+            _image.color = Color.white;
+            _image.gameObject.SetActive(true);
+            _image.transform.SetAsLastSibling();
         }
 
         private Outline _outline;

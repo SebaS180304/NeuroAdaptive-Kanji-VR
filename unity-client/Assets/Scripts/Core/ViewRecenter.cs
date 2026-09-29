@@ -85,6 +85,9 @@ namespace NeuroAdaptiveVR.Core
         }
 
         /// <param name="reason">Why: LEFT_MENU_BUTTON, KEYBOARD, SESSION_START, ...</param>
+        /// <summary>Fired after every successful recenter, with its reason (the controls intro waits on it).</summary>
+        public event System.Action<string> OnRecentered;
+
         public void Recenter(string reason)
         {
             if (Time.realtimeSinceStartup - _lastRecenter < cooldownSeconds) return;
@@ -117,6 +120,7 @@ namespace NeuroAdaptiveVR.Core
                 { "offset_m", Mathf.Round(moved * 1000f) / 1000f },
                 { "camera_before", new[] { posBefore.x, posBefore.y, posBefore.z } },
             });
+            OnRecentered?.Invoke(reason);
         }
     }
 }

@@ -122,8 +122,8 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `active_props` and `active_movers` (object names), `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` (the base seed of the environment), `seed_source` (`SESSION`, `FALLBACK` without a session, `OVERRIDE` in tests), `selection_seed` (derived for this level) — spec §8.1 |
 | `PERIPHERAL_EVENT` | `event_index`, `object_name`, `duration_ms` — spec §8.1 |
 | `START_SELECTED` | `reaction_ms`, `forced_by_researcher` — S1, spec §7.2 |
-| `TUTORIAL_STARTED` | `activities` (array; `LOOK_AND_SELECT` in M2), `pool` (kanji ids) — S2, spec §7.3 |
-| `TUTORIAL_COMPLETED` | `trials`, `correct` — S2 |
+| `TUTORIAL_STARTED` | `activities` (array, in order: `CONTROLS_INTRO`, `ASSEMBLY_EXAMPLE`, `LOOK_AND_SELECT` since 30 Sep; only `LOOK_AND_SELECT` in M2), `pool` (kanji ids) — S2, spec §7.3 |
+| `TUTORIAL_COMPLETED` | `trials`, `correct`; since 30 Sep also `controls_intro_ms` (-1 if no intro), `targets_hit`, `recentered` (bool: the Menu press was done, not skipped), `assembly_example` (kanji id or null) — S2 |
 | `SYSTEM_CHECK_COMPLETED` | `headset_active`, `websocket_connected`, `passed`, `forced_by_researcher`, `eeg_checked` — S3, spec §7.4 |
 | `BASELINE_STARTED` | `eyes_open_s`, `eyes_closed_s`, `time_scale` — S4, spec §7.5 |
 | `BASELINE_COMPLETED` | `eyes_open_ms`, `eyes_closed_ms`, `time_scale`, `valid_duration` — S4 |
@@ -392,6 +392,21 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**30 September 2026 — tutorial for the demo.** No new event types and no
+`schema_version` bump.
+
+- S2 now runs a controls induction, one worked assembly (`KANJI_YON`) and then
+  the practice trials. `TUTORIAL_STARTED.activities` lists them in order;
+  `TUTORIAL_COMPLETED` gains `controls_intro_ms`, `targets_hit`, `recentered`
+  and `assembly_example`.
+- The worked assembly emits the normal `ASSEMBLY_SEGMENT_PLACED` /
+  `ASSEMBLY_COMPLETED` with `state = S2_VR_TUTORIAL` and `exposure_index = 0`.
+  Analyses of the learning block filter on `state = S5_STANDARDIZED_LEARNING`.
+- `segments_authored` stays `false` for set A: the pieces now show the real
+  strokes (images cut by `tools/assembly_segments.py`), but the segment ids and
+  their count still come from `assemblyGroups`, not from authored
+  `AssemblySegment` assets.
 
 **29 September 2026 — Phase 3, F3.2: environment seeded by the session.** No
 `schema_version` bump: new fields on `ENVIRONMENT_APPLIED`, and `seed` keeps its

@@ -82,6 +82,33 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private Color segmentHintColor = new Color(0.80f, 0.64f, 0.20f, 1f);
         [SerializeField] private Color segmentHintHoverColor = new Color(1f, 0.84f, 0.32f, 1f);
 
+        [Header("Question line (30 September, demo)")]
+        [Tooltip("One line above the prompt that says what the trial asks. Same text in every " +
+                 "condition, so it does not touch the ESL/LAL manipulation.")]
+        [SerializeField] private float questionSize = 54f;
+        [Tooltip("Vertical position on the board canvas, between the stage strip and the glyph.")]
+        [SerializeField] private float questionY = 318f;
+        [SerializeField] private Color questionColor = new Color(0.80f, 0.86f, 0.95f, 1f);
+
+        [Header("Assembly with authored segment images (30 September)")]
+        [Tooltip("Resources folder with {KANJI_ID}_FULL.png and {KANJI_ID}_SEG{n}.png. When every " +
+                 "segment of a kanji is there, the assembly draws the real strokes; otherwise it " +
+                 "falls back to the labelled slots.")]
+        [SerializeField] private string segmentResourceFolder = "assembly";
+        [SerializeField] private float frameSize = 560f;
+        [SerializeField] private Color frameBackColor = new Color(1f, 1f, 1f, 0.06f);
+        [SerializeField] private Color ghostColor = new Color(1f, 1f, 1f, 0.10f);
+        [SerializeField] private Color segmentPlacedColor = new Color(0.95f, 0.97f, 1f, 1f);
+        [Tooltip("The place of the next segment, ray elsewhere.")]
+        [SerializeField] private Color segmentTargetColor = new Color(0.35f, 0.65f, 1f, 0.55f);
+        [Tooltip("The place of the next segment, ray on it.")]
+        [SerializeField] private Color segmentTargetHoverColor = new Color(0.55f, 0.82f, 1f, 0.95f);
+        [Tooltip("A correct piece flashes this colour, then turns placed. The whole kanji too, when complete.")]
+        [SerializeField] private Color segmentCorrectColor = new Color(0.30f, 0.90f, 0.45f, 1f);
+        [Tooltip("Wrong piece: the target flashes this, strong enough to read over the ghost.")]
+        [SerializeField] private Color segmentWrongColor = new Color(1f, 0.30f, 0.25f, 1f);
+        [SerializeField] private float correctFlashSeconds = 0.45f;
+
         public event Action<string> OnOptionChosen;
         public event Action OnHintRequested;
 
@@ -177,6 +204,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (cueLabel != null) cueLabel.text = string.Empty;
             RestoreLabelStyle();   // an S5 exposure may have enlarged the cue line
             HideAssemblySlots();
+            SetQuestion(QuestionFor(trialType));
 
             if (promptLabel != null)
             {
@@ -248,6 +276,7 @@ namespace NeuroAdaptiveVR.Controllers
 
         public void Clear()
         {
+            SetQuestion(null);
             if (promptLabel != null) promptLabel.text = string.Empty;
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = string.Empty;
@@ -378,6 +407,8 @@ namespace NeuroAdaptiveVR.Controllers
         /// </summary>
         public void ShowExposure(string glyph, string meaning = null, string reading = null)
         {
+            SetQuestion(null);
+            HideAssemblySlots();
             if (cards != null)
                 foreach (var c in cards) if (c != null) c.Hide();
             if (hintButton != null) hintButton.gameObject.SetActive(false);
@@ -408,6 +439,7 @@ namespace NeuroAdaptiveVR.Controllers
         /// </summary>
         public void ShowDerivationStage(string main, string note)
         {
+            SetQuestion(null);
             if (cards != null)
                 foreach (var c in cards) if (c != null) c.Hide();
             if (hintButton != null) hintButton.gameObject.SetActive(false);
@@ -449,19 +481,25 @@ namespace NeuroAdaptiveVR.Controllers
         /// Clears the board, draws `slotCount` empty slots and binds the segment
         /// cards in row order (id, label) centred in the Response Area.
         /// </summary>
-        public void ShowAssembly(int slotCount, IReadOnlyList<(string id, string label)> row, string instruction)
+        public void ShowAssembly(int slotCount, IReadOnlyList<(string id, string label)> row, string instruction,
+                                 string kanjiId = null)
         {
             Clear();
             if (promptLabel != null) promptLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = instruction ?? string.Empty;
 
-            BuildSlots(slotCount);
+            // Real strokes when every segment image exists; labelled slots otherwise.
+            var segTex = LoadSegments(kanjiId, slotCount, out var fullTex);
+            _imageMode = segTex != null;
+            if (_imageMode) BuildFrame(fullTex, segTex);
+            else BuildSlots(slotCount);
 
             RestoreCardPositions();
             int n = Mathf.Min(row.Count, cards?.Length ?? 0);
             for (int i = 0; i < n; i++)
             {
-                cards[i].Bind(row[i].id, row[i].label, OptionSizeFor(row[i].label));
+                cards[i].Bind(row[i].id, _imageMode ? string.Empty : row[i].label, OptionSizeFor(row[i].label));
+                if (_imageMode) cards[i].SetImage(_cardTex[SegmentIndex(row[i].id)]);
                 float x = (i - (n - 1) * 0.5f) * (_cardWidth + cardGap);
                 ((RectTransform)cards[i].transform).anchoredPosition = new Vector2(x, _cardHome[i].y);
             }
@@ -482,7 +520,7 @@ namespace NeuroAdaptiveVR.Controllers
         public void HighlightSlot(int index)
         {
             _slotNext = index;
-            for (int i = 0; i < _slots.Count; i++) PaintSlot(i);
+            for (int i = 0; i < SlotCount; i++) PaintSlot(i);
         }
 
         /// <summary>Marks the selected segment (null = none) and re-enables every segment still in the row.</summary>
@@ -522,10 +560,15 @@ namespace NeuroAdaptiveVR.Controllers
         /// <summary>The segment went into slot `index`: the slot shows its label and the card leaves the row.</summary>
         public void FillSlot(int index, string segmentId, string label)
         {
-            if (index < 0 || index >= _slots.Count) return;
-            _slotFilled[index] = true;
-            _slotLabels[index].text = label;
+            if (index < 0 || index >= SlotCount) return;
+            if (_imageMode) _segFilled[index] = true;
+            else
+            {
+                _slotFilled[index] = true;
+                _slotLabels[index].text = label;
+            }
             PaintSlot(index);
+            if (_imageMode) StartCoroutine(CorrectFlash(index));
             if (cards != null)
                 foreach (var c in cards)
                     if (c != null && c.OptionId == segmentId) c.Hide();
@@ -534,21 +577,24 @@ namespace NeuroAdaptiveVR.Controllers
         /// <summary>Wrong segment for slot `index`: a short flash, then it is the next slot again.</summary>
         public void FlashSlotWrong(int index)
         {
-            if (index < 0 || index >= _slots.Count) return;
+            if (index < 0 || index >= SlotCount) return;
             if (_slotFlash != null) StopCoroutine(_slotFlash);
             _slotFlash = StartCoroutine(FlashRoutine(index));
         }
 
         private System.Collections.IEnumerator FlashRoutine(int index)
         {
-            if (_slots[index].targetGraphic != null) _slots[index].targetGraphic.color = slotWrongColor;
-            yield return new WaitForSecondsRealtime(0.4f);
-            if (index < _slots.Count) PaintSlot(index);
+            var list = _imageMode ? _segSlots : _slots;
+            if (index < list.Count && list[index].targetGraphic != null)
+                list[index].targetGraphic.color = _imageMode ? segmentWrongColor : slotWrongColor;
+            yield return new WaitForSecondsRealtime(_imageMode ? 0.55f : 0.4f);
+            if (index < SlotCount) PaintSlot(index);
             _slotFlash = null;
         }
 
         private void PaintSlot(int i)
         {
+            if (_imageMode) { PaintSegmentSlot(i); return; }
             bool next = i == _slotNext && !_slotFilled[i];
             _slots[i].interactable = next;
             var relay = _slots[i].GetComponent<UiHoverRelay>();
@@ -622,9 +668,221 @@ namespace NeuroAdaptiveVR.Controllers
         {
             if (_slotFlash != null) { StopCoroutine(_slotFlash); _slotFlash = null; }
             foreach (var b in _slots) if (b != null) b.gameObject.SetActive(false);
+            if (_frame != null) _frame.gameObject.SetActive(false);
+            _imageMode = false;
             _slotNext = -1;
             _assemblyActive = false;
             _segmentInHand = _segmentHint = null;
+        }
+
+        // ------------------------------------------------------------------
+        // Assembly with authored segment images (30 September)
+        // ------------------------------------------------------------------
+        //
+        // One frame where the glyph sits. The whole kanji shows as a faint
+        // ghost; the place of the next segment is tinted and is the only thing
+        // the ray can hit; each placed segment turns solid in its exact place.
+        // Every segment image is the full frame with only its strokes inked,
+        // cut from the same Noto face the board uses (tools/assembly_segments.py),
+        // so stacking them rebuilds the glyph pixel for pixel. The controller,
+        // the slot indices and the telemetry are the same as with labelled slots.
+
+        private bool _imageMode;
+        private RectTransform _frame;
+        private RawImage _ghost;
+        private readonly List<Button> _segSlots = new();
+        private readonly List<bool> _segFilled = new();
+        private readonly Dictionary<string, int> _segIndexById = new();
+
+        private Texture2D[] _cardTex;
+
+        private int SlotCount => _imageMode ? _segSlots.Count : _slots.Count;
+
+        private int SegmentIndex(string segmentId) =>
+            segmentId != null && _segIndexById.TryGetValue(segmentId, out var i) ? i : 0;
+
+        /// <summary>All N segment textures of a kanji, or null if any is missing.</summary>
+        private Texture2D[] LoadSegments(string kanjiId, int count, out Texture2D full)
+        {
+            full = null;
+            _segIndexById.Clear();
+            if (string.IsNullOrEmpty(kanjiId) || count <= 0) return null;
+            var tex = new Texture2D[count];
+            _cardTex = new Texture2D[count];
+            for (int i = 0; i < count; i++)
+            {
+                tex[i] = Resources.Load<Texture2D>($"{segmentResourceFolder}/{kanjiId}_SEG{i + 1}");
+                if (tex[i] == null) return null;
+                // The card shows the piece cropped and large; the board keeps the full frame.
+                _cardTex[i] = Resources.Load<Texture2D>($"{segmentResourceFolder}/{kanjiId}_SEG{i + 1}_CARD") ?? tex[i];
+                // AssemblyPlan names placeholder segments {KANJI_ID}_SEG{n}, in slot order.
+                _segIndexById[$"{kanjiId}_SEG{i + 1}"] = i;
+            }
+            full = Resources.Load<Texture2D>($"{segmentResourceFolder}/{kanjiId}_FULL");
+            return tex;
+        }
+
+        private void BuildFrame(Texture2D full, Texture2D[] segments)
+        {
+            var parent = promptLabel != null ? promptLabel.transform.parent as RectTransform : null;
+            if (parent == null) { Debug.LogError("[StudioTrialPresenter] No board canvas for the assembly frame."); return; }
+
+            if (_frame == null)
+            {
+                var go = new GameObject("AssemblyFrame", typeof(RectTransform), typeof(Image));
+                go.layer = parent.gameObject.layer;
+                _frame = (RectTransform)go.transform;
+                _frame.SetParent(parent, false);
+                _frame.anchorMin = _frame.anchorMax = new Vector2(0.5f, 0.5f);
+                var back = go.GetComponent<Image>();
+                back.color = frameBackColor;
+                back.raycastTarget = false;
+                _ghost = NewRawImage("Ghost", _frame);
+            }
+            _frame.gameObject.SetActive(true);
+            _frame.sizeDelta = new Vector2(frameSize, frameSize);
+            _frame.anchoredPosition = new Vector2(0f, slotRowY);
+            _ghost.texture = full;
+            _ghost.color = ghostColor;
+            _ghost.gameObject.SetActive(full != null);
+
+            for (int i = 0; i < segments.Length; i++)
+            {
+                if (i >= _segSlots.Count)
+                {
+                    var img = NewRawImage($"Segment{i + 1}", _frame);
+                    var b = img.gameObject.AddComponent<Button>();
+                    b.targetGraphic = img;
+                    b.transition = Selectable.Transition.None;
+                    int captured = i;
+                    b.onClick.AddListener(() => HandleSlotClicked(captured));
+                    img.gameObject.AddComponent<UiHoverRelay>().OnHover += _ =>
+                    {
+                        if (captured < _segSlots.Count && _slotFlash == null) PaintSlot(captured);
+                    };
+                    _segSlots.Add(b);
+                    _segFilled.Add(false);
+                }
+                var raw = (RawImage)_segSlots[i].targetGraphic;
+                raw.texture = segments[i];
+                _segSlots[i].gameObject.SetActive(true);
+                _segFilled[i] = false;
+            }
+            for (int i = segments.Length; i < _segSlots.Count; i++) _segSlots[i].gameObject.SetActive(false);
+
+            _slotNext = -1;
+            // Only the frame's own children are shown; the Image of the frame is the backdrop.
+            for (int i = 0; i < segments.Length; i++) PaintSlot(i);
+        }
+
+        private RawImage NewRawImage(string name, RectTransform parent)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(RawImage));
+            go.layer = parent.gameObject.layer;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            var img = go.GetComponent<RawImage>();
+            img.raycastTarget = false;
+            return img;
+        }
+
+        private void PaintSegmentSlot(int i)
+        {
+            if (i < 0 || i >= _segSlots.Count) return;
+            var b = _segSlots[i];
+            var raw = (RawImage)b.targetGraphic;
+            bool filled = _segFilled[i];
+            bool next = i == _slotNext && !filled;
+            var relay = b.GetComponent<UiHoverRelay>();
+            bool hovered = relay != null && relay.Hovered;
+            b.interactable = next;
+            // Only the target can take the ray: the others cover the same rectangle.
+            raw.raycastTarget = next;
+            raw.color = filled ? segmentPlacedColor
+                      : next ? (hovered ? segmentTargetHoverColor : segmentTargetColor)
+                      : Color.clear;
+            if (next) b.transform.SetAsLastSibling();
+        }
+
+        private System.Collections.IEnumerator CorrectFlash(int index)
+        {
+            if (index >= _segSlots.Count) yield break;
+            var raw = (RawImage)_segSlots[index].targetGraphic;
+            raw.color = segmentCorrectColor;
+            yield return new WaitForSecondsRealtime(correctFlashSeconds);
+            if (_imageMode && index < _segSlots.Count && _segFilled[index]) PaintSlot(index);
+        }
+
+        /// <summary>
+        /// The kanji is complete: every piece (or every slot) turns green. The
+        /// caller decides how long it stays before moving on.
+        /// </summary>
+        public void ShowAssemblyComplete()
+        {
+            if (_imageMode)
+            {
+                StopAllCoroutines();   // a pending per-piece flash must not repaint over the green
+                _slotFlash = null;
+                for (int i = 0; i < _segSlots.Count; i++)
+                    if (_segSlots[i].gameObject.activeSelf)
+                        ((RawImage)_segSlots[i].targetGraphic).color = segmentCorrectColor;
+                if (_ghost != null) _ghost.color = Color.clear;
+            }
+            else
+            {
+                for (int i = 0; i < _slots.Count; i++)
+                    if (_slots[i].gameObject.activeSelf && _slots[i].targetGraphic != null)
+                        _slots[i].targetGraphic.color = segmentCorrectColor;
+            }
+            SetCue("Well done!");
+        }
+
+        // ------------------------------------------------------------------
+        // Question line (30 September)
+        // ------------------------------------------------------------------
+
+        private TMP_Text _question;
+
+        /// <summary>What the trial asks, by type. English, like the rest of the board.</summary>
+        public static string QuestionFor(RetrievalTrialType type) => type switch
+        {
+            RetrievalTrialType.MeaningToKanji => "Which kanji has this meaning?",
+            RetrievalTrialType.KanjiToMeaning => "What does this kanji mean?",
+            RetrievalTrialType.KanjiToReading => "How do you read this kanji?",
+            _ => string.Empty,
+        };
+
+        /// <summary>The line above the prompt. Null or empty hides it.</summary>
+        public void SetQuestion(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                if (_question != null) _question.text = string.Empty;
+                return;
+            }
+            if (_question == null)
+            {
+                var parent = promptLabel != null ? promptLabel.transform.parent as RectTransform : null;
+                if (parent == null) return;
+                var go = new GameObject("QuestionLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+                go.layer = parent.gameObject.layer;
+                var rt = (RectTransform)go.transform;
+                rt.SetParent(parent, false);
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(1500f, 70f);
+                var t = go.GetComponent<TextMeshProUGUI>();
+                if (promptLabel != null) t.font = promptLabel.font;
+                t.alignment = TextAlignmentOptions.Center;
+                t.textWrappingMode = TextWrappingModes.NoWrap;
+                t.raycastTarget = false;
+                _question = t;
+            }
+            ((RectTransform)_question.transform).anchoredPosition = new Vector2(0f, questionY);
+            _question.fontSize = questionSize;
+            _question.color = questionColor;
+            _question.text = text;
         }
 
         /// <summary>Stage strip at the top of the board. Empty string hides it.</summary>

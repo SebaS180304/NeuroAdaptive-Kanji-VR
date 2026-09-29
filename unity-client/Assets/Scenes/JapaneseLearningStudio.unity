@@ -3501,6 +3501,19 @@ MonoBehaviour:
   segmentSelectedColor: {r: 0.35, g: 0.65, b: 1, a: 1}
   segmentHintColor: {r: 1, g: 0.82, b: 0.3, a: 1}
   segmentHintHoverColor: {r: 1, g: 0.84, b: 0.32, a: 1}
+  questionSize: 54
+  questionY: 318
+  questionColor: {r: 0.8, g: 0.86, b: 0.95, a: 1}
+  segmentResourceFolder: assembly
+  frameSize: 470
+  frameBackColor: {r: 1, g: 1, b: 1, a: 0.06}
+  ghostColor: {r: 1, g: 1, b: 1, a: 0.1}
+  segmentPlacedColor: {r: 0.95, g: 0.97, b: 1, a: 1}
+  segmentTargetColor: {r: 0.35, g: 0.65, b: 1, a: 0.55}
+  segmentTargetHoverColor: {r: 0.55, g: 0.82, b: 1, a: 0.95}
+  segmentCorrectColor: {r: 0.3, g: 0.9, b: 0.45, a: 1}
+  segmentWrongColor: {r: 1, g: 0.3, b: 0.25, a: 1}
+  correctFlashSeconds: 0.45
 --- !u!4 &621902240
 Transform:
   m_ObjectHideFlags: 0
@@ -3842,6 +3855,7 @@ Transform:
   - {fileID: 2023288596}
   - {fileID: 621902240}
   - {fileID: 920880812}
+  - {fileID: 1851539490}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &684417171
@@ -5885,6 +5899,9 @@ MonoBehaviour:
   viewRecenter: {fileID: 1019401297}
   runOnSessionStart: 1
   tutorialTrials: 3
+  controlsIntro: {fileID: 1851539491}
+  tutorialAssemblyKanjiId: KANJI_YON
+  assembly: {fileID: 1019401308}
   s6Trials: 9
   s7Trials: 20
   s8Trials: 15
@@ -6051,6 +6068,9 @@ MonoBehaviour:
   telemetry: {fileID: 1019401270}
   hintAfterWrong: 3
   completedSeconds: 1.5
+  successSeconds: 1.6
+  playSounds: 1
+  volume: 0.5
 --- !u!1 &1023100426
 GameObject:
   m_ObjectHideFlags: 0
@@ -8382,11 +8402,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: existingSessionId
-      value: b62330de-c0ac-41f0-99ba-0888c47bd1a2
+      value: dc28e1ea-9a07-4aa6-a1f7-05b37c338b12
       objectReference: {fileID: 0}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: createNewSessionOnPlay
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
+      propertyPath: advanceToFirstStateOnConnect
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2799735312363916827, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: pingIntervalSeconds
@@ -11607,6 +11631,62 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1847664360}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1851539489
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1851539490}
+  - component: {fileID: 1851539491}
+  m_Layer: 0
+  m_Name: ControlsIntro
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1851539490
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1851539489}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 661885526}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1851539491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1851539489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d242dd070df088a49a20862ba6aa5706, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.ControlsIntro
+  viewRecenter: {fileID: 1019401297}
+  boardCanvas: {fileID: 772129484}
+  standMaterial: {fileID: 204563196}
+  screenCenter: {x: 0, y: 0.98, z: 1.02}
+  screenSize: {x: 0.66, y: 0.44}
+  screenTilt: 25
+  bodyColor: {r: 0.06, g: 0.07, b: 0.09, a: 1}
+  screenColor: {r: 0.07, g: 0.1, b: 0.15, a: 1}
+  textColor: {r: 0.93, g: 0.96, b: 1, a: 1}
+  buttonColor: {r: 0.15, g: 0.5, b: 0.95, a: 1}
+  targetColor: {r: 0.2, g: 0.8, b: 0.4, a: 1}
+  skipAfterSeconds: 8
 --- !u!1 &1874603647
 GameObject:
   m_ObjectHideFlags: 0
