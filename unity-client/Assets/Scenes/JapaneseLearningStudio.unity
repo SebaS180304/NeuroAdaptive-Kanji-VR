@@ -1299,7 +1299,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4291932830
+    rgba: 4290291870
   m_fontColor: {r: 0.62, g: 0.66, b: 0.72, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1814,7 +1814,7 @@ Transform:
   m_GameObject: {fileID: 335646326}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0, y: 0, z: 0}
   m_LocalScale: {x: 2, y: 1, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4061,6 +4061,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.y
       value: 1.36
       objectReference: {fileID: 0}
+    - target: {fileID: 308999861788949463, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1178791450436251564, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_CameraYOffset
       value: 1.36
@@ -4068,6 +4072,10 @@ PrefabInstance:
     - target: {fileID: 1178791450436251564, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_RequestedTrackingOriginMode
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476061164850483772, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1717954561962503725, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_Name
@@ -4113,12 +4121,28 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1718513916334437810, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2449787133337329437, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2717550568034688974, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3856033064218326565, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5167925059111895691, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8559622106701032237, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -4190,7 +4214,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -4267,6 +4291,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.TrialAnswerCard
   button: {fileID: 730911011}
   label: {fileID: 1300545117}
+  restColor: {r: 0.1647, g: 0.1922, b: 0.2588, a: 1}
+  restBorder: {r: 0.2275, g: 0.2627, b: 0.3412, a: 1}
+  hoverColor: {r: 0.2039, g: 0.251, b: 0.3529, a: 1}
+  hoverBorder: {r: 0.349, g: 0.651, b: 1, a: 1}
+  borderWidth: 6
+  hoverSeconds: 0.09
+  pressSeconds: 0.06
 --- !u!1 &731274675
 GameObject:
   m_ObjectHideFlags: 0
@@ -6885,6 +6916,7 @@ GameObject:
   - component: {fileID: 1150496543}
   - component: {fileID: 1150496542}
   - component: {fileID: 1150496541}
+  - component: {fileID: 1150496545}
   m_Layer: 0
   m_Name: HintButton
   m_TagString: Untagged
@@ -6911,7 +6943,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -6994,6 +7026,22 @@ RectTransform:
   m_AnchoredPosition: {x: 620, y: -370}
   m_SizeDelta: {x: 300, y: 110}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1150496545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1150496540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16956345aad8a7e4aac78c1792e0977f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.HintButtonLook
+  hoverBorder: {r: 0.349, g: 0.651, b: 1, a: 1}
+  hoverLighten: 0.12
+  borderWidth: 6
+  hoverSeconds: 0.09
 --- !u!1 &1160463338
 GameObject:
   m_ObjectHideFlags: 0
@@ -7233,7 +7281,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -7310,6 +7358,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.TrialAnswerCard
   button: {fileID: 1196468209}
   label: {fileID: 1784216646}
+  restColor: {r: 0.1647, g: 0.1922, b: 0.2588, a: 1}
+  restBorder: {r: 0.2275, g: 0.2627, b: 0.3412, a: 1}
+  hoverColor: {r: 0.2039, g: 0.251, b: 0.3529, a: 1}
+  hoverBorder: {r: 0.349, g: 0.651, b: 1, a: 1}
+  borderWidth: 6
+  hoverSeconds: 0.09
+  pressSeconds: 0.06
 --- !u!1 &1209545909
 GameObject:
   m_ObjectHideFlags: 0
@@ -10230,7 +10285,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -10307,6 +10362,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.TrialAnswerCard
   button: {fileID: 1632695376}
   label: {fileID: 1013368595}
+  restColor: {r: 0.1647, g: 0.1922, b: 0.2588, a: 1}
+  restBorder: {r: 0.2275, g: 0.2627, b: 0.3412, a: 1}
+  hoverColor: {r: 0.2039, g: 0.251, b: 0.3529, a: 1}
+  hoverBorder: {r: 0.349, g: 0.651, b: 1, a: 1}
+  borderWidth: 6
+  hoverSeconds: 0.09
+  pressSeconds: 0.06
 --- !u!21 &1633887602
 Material:
   serializedVersion: 8
@@ -10578,7 +10640,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -10655,6 +10717,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.TrialAnswerCard
   button: {fileID: 1652157333}
   label: {fileID: 1526349609}
+  restColor: {r: 0.1647, g: 0.1922, b: 0.2588, a: 1}
+  restBorder: {r: 0.2275, g: 0.2627, b: 0.3412, a: 1}
+  hoverColor: {r: 0.2039, g: 0.251, b: 0.3529, a: 1}
+  hoverBorder: {r: 0.349, g: 0.651, b: 1, a: 1}
+  borderWidth: 6
+  hoverSeconds: 0.09
+  pressSeconds: 0.06
 --- !u!1 &1672258556
 GameObject:
   m_ObjectHideFlags: 0

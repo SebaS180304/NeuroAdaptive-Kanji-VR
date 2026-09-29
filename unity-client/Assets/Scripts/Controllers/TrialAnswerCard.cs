@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace NeuroAdaptiveVR.Controllers
@@ -17,12 +18,38 @@ namespace NeuroAdaptiveVR.Controllers
     /// ResponseSystemController aborta el trial si no recibe exactamente cuatro.
     /// Que la escena tenga cuatro tarjetas autoradas --y no una lista que crece--
     /// es esa misma regla expresada en la jerarquia.
+    ///
+    /// Card states (UI design v1.3, D1, 30 September): the card draws its own
+    /// rest / ray-over / pressed look with a background colour and a 6-unit
+    /// border (child "Frame"), and the Button's ColorTint is switched off
+    /// (a 4 % highlight was invisible in the headset). Colour only: no scale,
+    /// no depth, no glow, no sound, no vibration (design rules 7-9). The
+    /// guided assembly keeps its own look (SetAssemblyLook): there the
+    /// presenter paints the segments.
     /// </summary>
     [RequireComponent(typeof(Button))]
-    public class TrialAnswerCard : MonoBehaviour
+    public class TrialAnswerCard : MonoBehaviour,
+        IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
     {
         [SerializeField] private Button button;
         [SerializeField] private TMP_Text label;
+
+        [Header("Card states (UI design v1.3, D1)")]
+        [SerializeField] private Color restColor = new(0.1647f, 0.1922f, 0.2588f, 1f);      // #2A3142
+        [SerializeField] private Color restBorder = new(0.2275f, 0.2627f, 0.3412f, 1f);     // #3A4357
+        [SerializeField] private Color hoverColor = new(0.2039f, 0.2510f, 0.3529f, 1f);     // #34405A
+        [SerializeField] private Color hoverBorder = new(0.3490f, 0.6510f, 1f, 1f);         // #59A6FF
+        [SerializeField] private float borderWidth = 6f;
+        [SerializeField] private float hoverSeconds = 0.09f;
+        [SerializeField] private float pressSeconds = 0.06f;
+
+        private bool _assemblyLook;
+        private bool _pointerOver, _pointerDown, _chosen;
+        private Image _background;
+        private RectTransform _frame;
+        private Image[] _edges;
+        private Color _bgFrom, _bgTo, _edgeFrom, _edgeTo;
+        private float _fadeStart, _fadeSeconds;
 
         private string _optionId;
 
@@ -51,6 +78,12 @@ namespace NeuroAdaptiveVR.Controllers
                 label.textWrappingMode = TextWrappingModes.NoWrap;
 
             button.onClick.AddListener(Choose);
+
+            // The authored colour is read before anything paints the card, so
+            // SetTint(null) always restores it.
+            _background = button.targetGraphic as Image;
+            if (button.targetGraphic != null) _homeColor = button.targetGraphic.color;
+            button.transition = Selectable.Transition.None;
         }
 
         private void OnDestroy()
@@ -68,9 +101,122 @@ namespace NeuroAdaptiveVR.Controllers
             }
             gameObject.SetActive(true);
             button.interactable = true;
+            _chosen = false;
+            _pointerDown = false;
+            _assemblyLook = false;
             SetTint(null);   // a card never carries an assembly highlight into a trial
             SetOutline(false);
             SetImage(null);  // nor a segment image
+            Repaint(0f);
+        }
+
+        /// <summary>
+        /// The guided assembly paints its segments itself (tints and the white
+        /// outline): the card then hides its frame and leaves the colour alone.
+        /// Bind turns it back off.
+        /// </summary>
+        public void SetAssemblyLook(bool on)
+        {
+            _assemblyLook = on;
+            Repaint(0f);
+        }
+
+        // ------------------------------------------------------------------
+        // Ray over / pressed (D1)
+        // ------------------------------------------------------------------
+
+        public void OnPointerEnter(PointerEventData e) { _pointerOver = true; Repaint(hoverSeconds); }
+        public void OnPointerExit(PointerEventData e) { _pointerOver = false; _pointerDown = false; Repaint(hoverSeconds); }
+        public void OnPointerDown(PointerEventData e) { _pointerDown = true; Repaint(pressSeconds); }
+        public void OnPointerUp(PointerEventData e) { _pointerDown = false; Repaint(pressSeconds); }
+
+        private void OnDisable()
+        {
+            // A card hidden under the ray never gets its exit event.
+            _pointerOver = false;
+            _pointerDown = false;
+        }
+
+        private bool Interactable => button != null && button.interactable;
+
+        /// <summary>Recomputes the target look and fades to it over `seconds` (0 = at once).</summary>
+        private void Repaint(float seconds)
+        {
+            if (_assemblyLook)
+            {
+                if (_frame != null) _frame.gameObject.SetActive(false);
+                _fadeSeconds = 0f;
+                return;
+            }
+
+            bool lit = _chosen || (Interactable && (_pointerOver || _pointerDown));
+            Color bg = lit ? hoverColor : restColor;
+            Color edge = lit ? hoverBorder : restBorder;
+
+            EnsureFrame();
+            _frame.gameObject.SetActive(true);
+            _bgFrom = _background != null ? _background.color : bg;
+            _edgeFrom = _edges[0].color;
+            _bgTo = bg;
+            _edgeTo = edge;
+            _fadeStart = Time.unscaledTime;
+            _fadeSeconds = seconds;
+            if (seconds <= 0f) ApplyFade(1f);
+        }
+
+        private void Update()
+        {
+            if (_fadeSeconds <= 0f) return;
+            float t = Mathf.Clamp01((Time.unscaledTime - _fadeStart) / _fadeSeconds);
+            ApplyFade(1f - (1f - t) * (1f - t));   // ease-out
+            if (t >= 1f) _fadeSeconds = 0f;
+        }
+
+        private void ApplyFade(float k)
+        {
+            if (_background != null) _background.color = Color.Lerp(_bgFrom, _bgTo, k);
+            if (_edges != null)
+                foreach (var e in _edges) e.color = Color.Lerp(_edgeFrom, _edgeTo, k);
+        }
+
+        /// <summary>
+        /// Four thin Images along the card's edges, inside it, drawn over the
+        /// background and under the label. Separate from the assembly's white
+        /// Outline, so both can exist.
+        /// </summary>
+        private void EnsureFrame()
+        {
+            if (_frame != null) return;
+            var go = new GameObject("Frame", typeof(RectTransform));
+            go.layer = gameObject.layer;
+            _frame = (RectTransform)go.transform;
+            _frame.SetParent(transform, false);
+            _frame.anchorMin = Vector2.zero;
+            _frame.anchorMax = Vector2.one;
+            _frame.offsetMin = _frame.offsetMax = Vector2.zero;
+            _frame.SetAsFirstSibling();
+
+            _edges = new Image[4];
+            // left, right, bottom, top
+            var mins = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 0), new Vector2(0, 1) };
+            var maxs = new[] { new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(1, 1) };
+            var pivots = new[] { new Vector2(0, 0.5f), new Vector2(1, 0.5f), new Vector2(0.5f, 0), new Vector2(0.5f, 1) };
+            for (int i = 0; i < 4; i++)
+            {
+                var e = new GameObject("Edge", typeof(RectTransform), typeof(Image));
+                e.layer = gameObject.layer;
+                var rt = (RectTransform)e.transform;
+                rt.SetParent(_frame, false);
+                rt.anchorMin = mins[i];
+                rt.anchorMax = maxs[i];
+                rt.pivot = pivots[i];
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = i < 2 ? new Vector2(borderWidth, 0f) : new Vector2(0f, borderWidth);
+                var img = e.GetComponent<Image>();
+                img.raycastTarget = false;
+                img.color = restBorder;
+                _edges[i] = img;
+            }
         }
 
         private RawImage _image;
@@ -135,6 +281,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (g == null) return;
             if (_homeColor == null) _homeColor = g.color;
             g.color = color ?? _homeColor.Value;
+            _fadeSeconds = 0f;   // a running hover fade must not overwrite the tint
         }
 
         /// <summary>Width the label needs to show this text on one line at this size.</summary>
@@ -167,11 +314,13 @@ namespace NeuroAdaptiveVR.Controllers
         public void SetInteractable(bool value)
         {
             if (button != null) button.interactable = value;
+            Repaint(hoverSeconds);
         }
 
         public void Hide()
         {
             _optionId = null;
+            _chosen = false;
             if (label != null) label.text = string.Empty;
             gameObject.SetActive(false);
         }
@@ -185,6 +334,10 @@ namespace NeuroAdaptiveVR.Controllers
             // si el trial sigue abierto es de ResponseSystemController; esto solo
             // evita el doble evento en el camino.
             button.interactable = false;
+            // Stays in the pressed look until the next Bind: with no immediate
+            // feedback this is the only sign of which card was chosen.
+            _chosen = true;
+            Repaint(pressSeconds);
             OnChosen?.Invoke(_optionId);
         }
     }

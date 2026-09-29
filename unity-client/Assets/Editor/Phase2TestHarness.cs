@@ -95,6 +95,7 @@ namespace NeuroAdaptiveVR.EditorTools
             AssistanceCases();
             MatrixCases();
             WiringCases(content);
+            HapticCases();
 
             Report();
         }
@@ -1007,6 +1008,41 @@ namespace NeuroAdaptiveVR.EditorTools
                   problems.Count == 0
                       ? $"{measured} objetos · borde interior min {worstInner:F1} · exterior max {worstOuter:F1} · tarjetas h[{cardBox.H0:F1},{cardBox.H1:F1}]"
                       : Join(problems.Distinct().Take(12)));
+        }
+
+        // ==================================================================
+        // No controller vibration (UI design v1.3, rule 7)
+        // ==================================================================
+
+        /// <summary>
+        /// X1. Vibration is a somatosensory and mechanical stimulus the EEG does not
+        /// need, so no controller vibrates in any game state: every
+        /// SimpleHapticFeedback in the scene is disabled (inactive ones included, so
+        /// re-enabling an interactor cannot bring it back), and no script under
+        /// Assets/Scripts calls SendHapticImpulse. Matched by type name so the
+        /// editor assembly does not need a reference to XRI.
+        /// </summary>
+        private static void HapticCases()
+        {
+            var enabledHaptics = new List<string>();
+            int total = 0;
+            foreach (var b in UnityEngine.Object.FindObjectsByType<Behaviour>(FindObjectsInactive.Include))
+            {
+                if (b == null || b.GetType().Name != "SimpleHapticFeedback") continue;
+                total++;
+                if (b.enabled) enabledHaptics.Add(AnimationUtility.CalculateTransformPath(b.transform, null));
+            }
+
+            var callers = new List<string>();
+            foreach (var f in System.IO.Directory.GetFiles("Assets/Scripts", "*.cs", System.IO.SearchOption.AllDirectories))
+                if (System.IO.File.ReadAllText(f).Contains("SendHapticImpulse"))
+                    callers.Add(System.IO.Path.GetFileName(f));
+
+            Check("X1", "Ningun mando vibra: todo SimpleHapticFeedback deshabilitado y ningun script llama a SendHapticImpulse",
+                  enabledHaptics.Count == 0 && callers.Count == 0,
+                  enabledHaptics.Count == 0 && callers.Count == 0
+                      ? $"{total} SimpleHapticFeedback, todos deshabilitados · 0 llamadas"
+                      : Join(enabledHaptics.Select(x => "habilitado: " + x).Concat(callers.Select(x => "llama: " + x))));
         }
 
         // ==================================================================

@@ -499,6 +499,7 @@ namespace NeuroAdaptiveVR.Controllers
             for (int i = 0; i < n; i++)
             {
                 cards[i].Bind(row[i].id, _imageMode ? string.Empty : row[i].label, OptionSizeFor(row[i].label));
+                cards[i].SetAssemblyLook(true);   // the assembly paints its own segments
                 if (_imageMode) cards[i].SetImage(_cardTex[SegmentIndex(row[i].id)]);
                 float x = (i - (n - 1) * 0.5f) * (_cardWidth + cardGap);
                 ((RectTransform)cards[i].transform).anchoredPosition = new Vector2(x, _cardHome[i].y);
