@@ -438,6 +438,7 @@ namespace NeuroAdaptiveVR.Core
                 { "controls_intro_ms", controlsIntro != null ? intro.DurationMs : -1 },
                 { "targets_hit", intro.TargetsHit },
                 { "recentered", intro.Recentered },
+                { "controller_callouts", intro.CalloutsShown },
                 { "assembly_example", example != null && assembly != null ? example.KanjiId : null },
             });
             done(ok);

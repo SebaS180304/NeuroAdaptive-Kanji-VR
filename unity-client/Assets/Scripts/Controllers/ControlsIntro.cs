@@ -24,6 +24,10 @@ namespace NeuroAdaptiveVR.Controllers
     /// component. The podium is a teaching prop, outside the Environmental
     /// Layer and outside the ESL manipulation.
     ///
+    /// The buttons are taught on the participant's own controllers: the trigger
+    /// and the left Menu button light up with a label (<see cref="ControllerCallouts"/>).
+    /// The podium only carries text, so there is a single picture of the controller.
+    ///
     /// Each step waits for the participant to DO the thing: "Next" is itself a
     /// point-and-trigger, the targets move, and the re-center step waits for the
     /// real Menu press (Skip after a few seconds, so a controller without that
@@ -38,6 +42,8 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private Canvas boardCanvas;
         [Tooltip("The board stand's material, so the podium matches it.")]
         [SerializeField] private Material standMaterial;
+        [Tooltip("Lights the real buttons on the participant's controllers.")]
+        [SerializeField] private ControllerCallouts callouts;
 
         [Header("Podium (world, metres)")]
         [Tooltip("Centre of the screen.")]
@@ -61,12 +67,11 @@ namespace NeuroAdaptiveVR.Controllers
             public int TargetsHit;
             public bool Recentered;
             public bool RecenterSkipped;
+            public bool CalloutsShown;
         }
 
         private GameObject _root;
         private TMP_Text _title, _body;
-        private RawImage _diagram;
-        private GameObject _diagramBack;
         private Button _next, _target, _skip;
         private string _clicked;
         private bool _recentered;
@@ -74,6 +79,7 @@ namespace NeuroAdaptiveVR.Controllers
         private void Awake()
         {
             if (viewRecenter == null) viewRecenter = FindAnyObjectByType<ViewRecenter>();
+            if (callouts == null) callouts = FindAnyObjectByType<ControllerCallouts>();
         }
 
         // ------------------------------------------------------------------
@@ -88,19 +94,27 @@ namespace NeuroAdaptiveVR.Controllers
 
             // 1 · The controllers
             Page("Welcome to VR",
-                 "You hold one controller in each hand.\nPoint its ray at something and pull the <b>TRIGGER</b>\n" +
-                 "(index finger) to select it.",
-                 diagram: true);
+                 "You hold one controller in each hand.\nThe lit button under your index finger is the <b>TRIGGER</b>.\n" +
+                 "Point the ray at something and pull it to select.");
+            if (callouts != null)
+            {
+                callouts.Show(ControllerCallouts.Part.Trigger, true, true, "TRIGGER · select");
+                r.CalloutsShown = true;
+            }
             yield return WaitFor(_next, "Next");
 
-            // 2 · Point and select: three targets in different places
-            Page("Point and select", "Point at the green square and pull the trigger.", diagram: false);
+            // 2 · Point and select: three targets in different places.
+            // The triggers stay lit (no labels) until the first hit.
+            callouts?.HideAll();
+            callouts?.Show(ControllerCallouts.Part.Trigger, true, true);
+            Page("Point and select", "Point at the green square and pull the trigger.");
             var spots = new[] { new Vector2(-210f, -40f), new Vector2(210f, 10f), new Vector2(0f, -120f) };
             for (int i = 0; i < spots.Length; i++)
             {
                 ((RectTransform)_target.transform).anchoredPosition = spots[i];
                 yield return WaitFor(_target, null);
                 r.TargetsHit++;
+                if (i == 0) callouts?.HideAll();
                 _body.text = i < spots.Length - 1 ? "Good! Now the next one." : "Great, that is all you need to answer.";
             }
             yield return new WaitForSecondsRealtime(0.8f);
@@ -108,8 +122,8 @@ namespace NeuroAdaptiveVR.Controllers
             // 3 · Re-center with the left Menu button
             Page("Re-center the view",
                  "If the view ever feels tilted or off to one side,\npress the <b>MENU</b> button (≡) on your <b>LEFT</b> controller.\n" +
-                 "Try it now.",
-                 diagram: true);
+                 "It is lit now. Try it.");
+            callouts?.Show(ControllerCallouts.Part.Menu, true, false, "≡ MENU · re-center");
             _next.gameObject.SetActive(false);
             _recentered = false;
             float waitFrom = Time.realtimeSinceStartup;
@@ -121,11 +135,10 @@ namespace NeuroAdaptiveVR.Controllers
                 yield return null;
             }
             _skip.gameObject.SetActive(false);
+            callouts?.HideAll();
             r.Recentered = _recentered;
             r.RecenterSkipped = !_recentered;
             _body.text = _recentered ? "Done! The view is centered again.\nYou are ready." : "No problem. You can do it at any time.";
-            _diagram.gameObject.SetActive(false);
-            _diagramBack.SetActive(false);
             yield return WaitFor(_next, "Continue");
 
             if (viewRecenter != null) viewRecenter.OnRecentered -= HandleRecentered;
@@ -149,13 +162,10 @@ namespace NeuroAdaptiveVR.Controllers
             b.gameObject.SetActive(false);
         }
 
-        private void Page(string title, string body, bool diagram)
+        private void Page(string title, string body)
         {
             _title.text = title;
             _body.text = body;
-            bool showDiagram = diagram && _diagram.texture != null;
-            _diagram.gameObject.SetActive(showDiagram);
-            _diagramBack.SetActive(showDiagram);
             _next.gameObject.SetActive(false);
             _target.gameObject.SetActive(false);
             _skip.gameObject.SetActive(false);
@@ -221,24 +231,9 @@ namespace NeuroAdaptiveVR.Controllers
 
             _title = Text("Title", crt, font, 40f, new Vector2(0f, 180f), new Vector2(620f, 56f));
             _title.fontStyle = FontStyles.Bold;
-            _body = Text("Body", crt, font, 24f, new Vector2(0f, 150f), new Vector2(620f, 110f));
+            _body = Text("Body", crt, font, 24f, new Vector2(0f, 140f), new Vector2(640f, 150f));
             _body.alignment = TextAlignmentOptions.Top;
             ((RectTransform)_body.transform).pivot = new Vector2(0.5f, 1f);
-
-            var dback = UiObj<Image>("DiagramBack", crt);
-            dback.color = new Color(0.03f, 0.05f, 0.08f, 1f);
-            dback.raycastTarget = false;
-            ((RectTransform)dback.transform).anchoredPosition = new Vector2(0f, -72f);
-            ((RectTransform)dback.transform).sizeDelta = new Vector2(520f, 178f);
-            _diagramBack = dback.gameObject;
-
-            _diagram = UiObj<RawImage>("Diagram", crt);
-            _diagram.texture = Resources.Load<Texture2D>("tutorial/controllers");
-            _diagram.color = Color.white;
-            _diagram.raycastTarget = false;
-            var drt = (RectTransform)_diagram.transform;
-            drt.anchoredPosition = new Vector2(0f, -72f);
-            drt.sizeDelta = new Vector2(496f, 178f);
 
             _next = MakeButton("Next", crt, font, new Vector2(0f, -178f), new Vector2(190f, 56f), buttonColor, "Next");
             _target = MakeButton("Target", crt, font, Vector2.zero, new Vector2(84f, 84f), targetColor, "");
