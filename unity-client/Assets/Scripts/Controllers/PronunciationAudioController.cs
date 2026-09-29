@@ -92,14 +92,18 @@ namespace NeuroAdaptiveVR.Controllers
         /// Feedback post-respuesta. Permitido en los tres tipos de trial,
         /// T3 incluido: una vez respondido, la lectura ya no revela nada.
         /// </summary>
-        public void PlayFeedback(KanjiItem item)
+        /// <returns>
+        /// The clip that actually sounded, or null if none did (no clip, or no
+        /// AudioSource). TRIAL_COMPLETED records its length (UI design v1.3, 8.1).
+        /// </returns>
+        public AudioClip PlayFeedback(KanjiItem item)
         {
-            Play(item, "feedback post-respuesta");
+            return Play(item, "feedback post-respuesta") ? item.TargetReadingAudio : null;
         }
 
-        private void Play(KanjiItem item, string moment)
+        private bool Play(KanjiItem item, string moment)
         {
-            if (item == null) return;
+            if (item == null) return false;
 
             var clip = item.TargetReadingAudio;
 
@@ -111,8 +115,9 @@ namespace NeuroAdaptiveVR.Controllers
                       (clip == null ? "  [sin clip autorado]" : $"  [{SourceOf(clip)} {clip.length:0.00} s]") +
                       (clip != null && audioSource == null ? "  [SIN AudioSource: no suena]" : ""));
 
-            if (audioSource == null || clip == null) return;
+            if (audioSource == null || clip == null) return false;
             audioSource.PlayOneShot(clip);
+            return true;
         }
     }
 }

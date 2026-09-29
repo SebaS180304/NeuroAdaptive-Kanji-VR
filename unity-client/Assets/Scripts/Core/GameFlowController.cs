@@ -116,8 +116,10 @@ namespace NeuroAdaptiveVR.Core
 
             Debug.Log($"[GameFlowController] STATE_ENTERED: {newState} (wire: {newState.ToWireValue()})");
 
-            // Sin campos propios: `state` viaja en el bloque de contexto.
-            telemetry.Emit(TelemetryEvents.StateEntered);
+            // `state` viaja en el bloque de contexto. transition_sound_lead_ms
+            // (UI design v1.3, 8.2): how long before this event the `stage`
+            // sound started. Null until that sound exists (design P4/P7).
+            telemetry.Emit(TelemetryEvents.StateEntered, StimulusTelemetry.KeyTransitionSoundLeadMs, null);
 
             CheckStateLevelMatrix(newState);
 

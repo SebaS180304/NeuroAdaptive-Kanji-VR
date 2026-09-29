@@ -42,6 +42,76 @@ namespace NeuroAdaptiveVR.Data
     }
 
     /// <summary>
+    /// Stimulus telemetry for the EEG analysis (UI design v1.3, section 8,
+    /// approved 29 September). Phase 4 has to be able to cut or mark every EEG
+    /// window in which something we put there sounded or moved. No new event:
+    /// the fields ride on TRIAL_COMPLETED (emitted after feedbackSeconds, when
+    /// everything has sounded) and on STATE_ENTERED.
+    ///
+    /// Every offset is relative to the session_elapsed_ms of ANSWER_SELECTED,
+    /// which is also the start of the feedback (ResponseSystemController shows
+    /// it and plays the reading in that same frame). The `select` sound has no
+    /// field: it always plays in the frame of ANSWER_SELECTED (offset 0).
+    /// </summary>
+    public static class StimulusTelemetry
+    {
+        public const string KeyFeedbackShown = "feedback_shown";
+        public const string KeyFeedbackAudioSource = "feedback_audio_source";
+        public const string KeyFeedbackAudioMs = "feedback_audio_ms";
+        public const string KeyResultSound = "result_sound";
+        public const string KeyResultSoundOffsetMs = "result_sound_offset_ms";
+        public const string KeyResultSoundMs = "result_sound_ms";
+        public const string KeyCardAnimation = "card_animation";
+        public const string KeyTransitionSoundLeadMs = "transition_sound_lead_ms";
+
+        public static readonly string[] TrialCompletedKeys =
+        {
+            KeyFeedbackShown, KeyFeedbackAudioSource, KeyFeedbackAudioMs, KeyResultSound,
+            KeyResultSoundOffsetMs, KeyResultSoundMs, KeyCardAnimation,
+        };
+
+        public const string None = "NONE";
+        public const string ResultCorrect = "CORRECT";
+        public const string ResultIncorrect = "INCORRECT";
+        public const string CorrectPop = "CORRECT_POP";
+
+        /// <summary>The result sound starts this long after the reading clip ends (design D4).</summary>
+        public const int ResultSoundGapMs = 150;
+
+        /// <summary>Length of the chosen-and-correct card pop (design D2): 120 + 250 + 200 ms.</summary>
+        public const int CorrectPopMs = 570;
+
+        /// <summary>
+        /// When the result sound is due, from ANSWER_SELECTED: L + 150 ms after a
+        /// reading clip of L ms, or at once if no reading sounded.
+        /// </summary>
+        public static int PlannedResultOffsetMs(int feedbackAudioMs)
+            => feedbackAudioMs > 0 ? feedbackAudioMs + ResultSoundGapMs : 0;
+
+        /// <summary>
+        /// The seven TRIAL_COMPLETED fields, built in one place so the rules hold
+        /// by construction: no feedback means no reading, no result sound and no
+        /// animation; no result sound means a null offset.
+        /// </summary>
+        public static Dictionary<string, object> TrialCompletedFields(
+            bool feedbackShown, bool isCorrect, string feedbackAudioSource, int feedbackAudioMs,
+            bool resultSoundPlayed, long resultSoundOffsetMs, int resultSoundMs)
+        {
+            bool sound = feedbackShown && resultSoundPlayed;
+            return new Dictionary<string, object>
+            {
+                { KeyFeedbackShown, feedbackShown },
+                { KeyFeedbackAudioSource, feedbackShown ? (feedbackAudioSource ?? None) : None },
+                { KeyFeedbackAudioMs, feedbackShown ? feedbackAudioMs : 0 },
+                { KeyResultSound, sound ? (isCorrect ? ResultCorrect : ResultIncorrect) : None },
+                { KeyResultSoundOffsetMs, sound ? resultSoundOffsetMs : (object)null },
+                { KeyResultSoundMs, sound ? resultSoundMs : 0 },
+                { KeyCardAnimation, feedbackShown && isCorrect ? CorrectPop : None },
+            };
+        }
+    }
+
+    /// <summary>
     /// Nombres de los eventos. Constantes y no strings sueltos porque un
     /// typo en un `event_type` produce una fila que se guarda sin error y
     /// desaparece de cualquier consulta que filtre por el nombre correcto.

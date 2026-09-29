@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using NeuroAdaptiveVR.Audio;
 using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Core;
 using NeuroAdaptiveVR.Data;
@@ -96,6 +97,7 @@ namespace NeuroAdaptiveVR.EditorTools
             MatrixCases();
             WiringCases(content);
             HapticCases();
+            StimulusTelemetryCases(content);
 
             Report();
         }
@@ -1043,6 +1045,78 @@ namespace NeuroAdaptiveVR.EditorTools
                   enabledHaptics.Count == 0 && callers.Count == 0
                       ? $"{total} SimpleHapticFeedback, todos deshabilitados · 0 llamadas"
                       : Join(enabledHaptics.Select(x => "habilitado: " + x).Concat(callers.Select(x => "llama: " + x))));
+        }
+
+        // ==================================================================
+        // Stimulus telemetry for the EEG (UI design v1.3, section 8)
+        // ==================================================================
+
+        /// <summary>
+        /// X2. TRIAL_COMPLETED carries the seven stimulus fields, and the rules
+        /// hold: without feedback there is no reading, no result sound and no
+        /// animation; a result sound always carries its offset.
+        /// X3. For every reading clip in the contract, the result sound is due
+        /// at L + 150 ms and ends inside feedbackSeconds (design D4 asks for the
+        /// list of kanji that would not fit, instead of stretching anything).
+        /// The measured offset is checked at run time by ResponseSystemController,
+        /// which warns when it lands more than one frame from the plan.
+        /// </summary>
+        private static void StimulusTelemetryCases(KanjiContentController content)
+        {
+            var problems = new List<string>();
+
+            var shown = StimulusTelemetry.TrialCompletedFields(true, true, "TTS_PLACEHOLDER", 450, true, 600, 470);
+            foreach (var k in StimulusTelemetry.TrialCompletedKeys)
+                if (!shown.ContainsKey(k)) problems.Add("falta " + k);
+            if ((string)shown[StimulusTelemetry.KeyResultSound] != StimulusTelemetry.ResultCorrect) problems.Add("acierto sin CORRECT");
+            if ((string)shown[StimulusTelemetry.KeyCardAnimation] != StimulusTelemetry.CorrectPop) problems.Add("acierto sin CORRECT_POP");
+
+            var wrong = StimulusTelemetry.TrialCompletedFields(true, false, "TTS_PLACEHOLDER", 450, true, 600, 380);
+            if ((string)wrong[StimulusTelemetry.KeyResultSound] != StimulusTelemetry.ResultIncorrect) problems.Add("error sin INCORRECT");
+            if ((string)wrong[StimulusTelemetry.KeyCardAnimation] != StimulusTelemetry.None) problems.Add("error con animacion");
+
+            var hidden = StimulusTelemetry.TrialCompletedFields(false, true, "TTS_PLACEHOLDER", 450, true, 600, 470);
+            foreach (var k in StimulusTelemetry.TrialCompletedKeys)
+                if (!hidden.ContainsKey(k)) problems.Add("sin feedback falta " + k);
+            if ((string)hidden[StimulusTelemetry.KeyResultSound] != StimulusTelemetry.None
+                || (string)hidden[StimulusTelemetry.KeyCardAnimation] != StimulusTelemetry.None
+                || hidden[StimulusTelemetry.KeyResultSoundOffsetMs] != null
+                || (int)hidden[StimulusTelemetry.KeyFeedbackAudioMs] != 0)
+                problems.Add("sin feedback deja sonido, animacion o lectura");
+
+            var silent = StimulusTelemetry.TrialCompletedFields(true, true, "NONE", 0, false, 0, 0);
+            if (silent[StimulusTelemetry.KeyResultSoundOffsetMs] != null) problems.Add("offset sin sonido");
+
+            Check("X2", "TRIAL_COMPLETED lleva los 7 campos de estimulos y sus reglas (sin feedback: NONE)",
+                  problems.Count == 0, problems.Count == 0 ? "ok" : Join(problems));
+
+            // X3: every reading clip leaves room for the result sound.
+            float feedbackSeconds = 1.5f;
+            var rs = content.GetComponent<ResponseSystemController>();
+            if (rs != null)
+            {
+                var p = new SerializedObject(rs).FindProperty("feedbackSeconds");
+                if (p != null) feedbackSeconds = p.floatValue;
+            }
+            int windowMs = Mathf.RoundToInt(feedbackSeconds * 1000f);
+            int longest = Math.Max(ProceduralSfx.CorrectMs, ProceduralSfx.IncorrectMs);
+            var late = new List<string>();
+            int maxL = 0, clips = 0;
+            foreach (var item in content.All)
+            {
+                var clip = item.TargetReadingAudio;
+                if (clip == null) continue;
+                clips++;
+                int l = Mathf.RoundToInt(clip.length * 1000f);
+                maxL = Math.Max(maxL, l);
+                if (StimulusTelemetry.PlannedResultOffsetMs(l) + longest > windowMs)
+                    late.Add($"{item.Character} L={l}");
+            }
+            Check("X3", $"Toda lectura + 150 ms + sonido de resultado cabe en feedbackSeconds ({windowMs} ms)",
+                  late.Count == 0,
+                  late.Count == 0
+                      ? $"{clips} clips · L max {maxL} ms · peor caso {StimulusTelemetry.PlannedResultOffsetMs(maxL) + longest} ms"
+                      : "no caben: " + Join(late));
         }
 
         // ==================================================================

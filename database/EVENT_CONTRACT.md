@@ -110,19 +110,19 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 
 | Event | Additional payload fields |
 |---|---|
-| `STATE_ENTERED` | — (context block only) |
+| `STATE_ENTERED` | since 30 Sep: `transition_sound_lead_ms` (int or null) — see §5.9 |
 | `TRIAL_SEQUENCE_GENERATED` | `block_state`, `kanji_set`, `seed`, `block_seed`, `seed_raw`, `trial_count`, `min_lag_requested`, `min_lag_achieved`, `distinct_pairs`, `ordering_attempts`, `sequence` — spec §6.1. See §5.8 |
 | `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option`, `hint_available` |
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
-| `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names) |
+| `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names); since 30 Sep the stimulus fields `feedback_shown`, `feedback_audio_source`, `feedback_audio_ms`, `result_sound`, `result_sound_offset_ms`, `result_sound_ms`, `card_animation` — see §5.9 |
 | `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build) — S5, spec §7.6 |
 | `ASSEMBLY_SEGMENT_PLACED` | `kanji_id`, `exposure_index`, `attempt` (1-based, counts right and wrong), `slot_index` (1-based), `segment_id`, `expected_segment_id`, `is_correct`, `selected_ms` and `placed_ms` (from the start of this kanji's assembly), `hint_shown`, `segments_authored` — one per placement attempt, spec §5.3, decision D4 |
 | `ASSEMBLY_COMPLETED` | `kanji_id`, `exposure_index`, `duration_ms`, `incorrect_attempts`, `segment_count`, `segments_placed`, `hints_shown`, `row_order` (segment ids left to right as presented), `segments_authored`, `forced_by_researcher` — spec §5.3 |
 | `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `active_props` and `active_movers` (object names), `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` (the base seed of the environment), `seed_source` (`SESSION`, `FALLBACK` without a session, `OVERRIDE` in tests), `selection_seed` (derived for this level) — spec §8.1 |
 | `PERIPHERAL_EVENT` | `event_index`, `object_name`, `duration_ms` — spec §8.1 |
 | `START_SELECTED` | `reaction_ms`, `forced_by_researcher` — S1, spec §7.2 |
-| `TUTORIAL_STARTED` | `activities` (array, in order: `CONTROLS_INTRO`, `ASSEMBLY_EXAMPLE`, `LOOK_AND_SELECT` since 30 Sep; only `LOOK_AND_SELECT` in M2), `pool` (kanji ids) — S2, spec §7.3 |
+| `TUTORIAL_STARTED` | `activities` (array, in order: `CONTROLS_INTRO`, `LOOK_AND_SELECT`, `ASSEMBLY_EXAMPLE` since 30 Sep; only `LOOK_AND_SELECT` in M2), `pool` (kanji ids) — S2, spec §7.3 |
 | `TUTORIAL_COMPLETED` | `trials`, `correct`; since 30 Sep also `controls_intro_ms` (-1 if no intro), `targets_hit`, `recentered` (bool: the Menu press was done, not skipped), `controller_callouts` (bool: the trigger and Menu were lit on the participant's controllers), `assembly_example` (kanji id or null) — S2 |
 | `SYSTEM_CHECK_COMPLETED` | `headset_active`, `websocket_connected`, `passed`, `forced_by_researcher`, `eeg_checked` — S3, spec §7.4 |
 | `BASELINE_STARTED` | `eyes_open_s`, `eyes_closed_s`, `time_scale` — S4, spec §7.5 |
@@ -144,6 +144,52 @@ Cue arrays (`hint_type`, `cues_presented`) carry cue names, not a flags integer:
 `TARGET_READING_AUDIO`, `VISUAL_ASSOCIATION`, `REVERSE_SEMANTIC_ASSOCIATION`,
 `VISUAL_TRANSFORMATION`. A bitmask in JSONB has to be decoded in every query and
 cannot be filtered with `payload -> 'cues_presented' ? 'X'`.
+
+### 5.9 Stimulus fields for the EEG analysis (since 30 September)
+
+Phase 4 has to be able to cut or mark every EEG window in which something the
+system put there sounded or moved (UI design v1.3, §8; approved 29 Sep). No new
+event carries them: `TRIAL_COMPLETED` is emitted after `feedbackSeconds`, when
+everything has already sounded, and `STATE_ENTERED` marks the stage boundary.
+
+**Origin of every offset.** The feedback starts in the frame of
+`ANSWER_SELECTED`: `ResponseSystemController` emits it and, in the same frame,
+shows the feedback and plays the reading. Every `*_offset_ms` below is relative
+to the `session_elapsed_ms` of that `ANSWER_SELECTED`.
+
+**`select` rule.** The `select` sound plays in the frame of every
+`ANSWER_SELECTED`, always (offset 0). It has no field of its own.
+
+`TRIAL_COMPLETED`:
+
+| Field | Type | Value |
+|---|---|---|
+| `feedback_shown` | bool | the trial's `ImmediateFeedback` |
+| `feedback_audio_source` | string | `AUTHORED`, `TTS_PLACEHOLDER` or `NONE` (same vocabulary as `KANJI_EXPOSED.audio_source`) |
+| `feedback_audio_ms` | int | length of the reading clip that sounded in the feedback; 0 if none |
+| `result_sound` | string | `CORRECT`, `INCORRECT` or `NONE` |
+| `result_sound_offset_ms` | int or null | **measured** offset of the result sound's `PlayOneShot` (planned: `feedback_audio_ms` + 150, or 0 with no reading); null when `result_sound` = `NONE` |
+| `result_sound_ms` | int | length of the result clip; 0 if none |
+| `card_animation` | string | `CORRECT_POP` or `NONE`; when `CORRECT_POP` it starts at offset 0 and lasts 570 ms |
+
+Rules: `feedback_shown` = false implies `feedback_audio_ms` = 0, `result_sound`
+= `NONE` and `card_animation` = `NONE`. The seven fields are built in one place
+(`StimulusTelemetry.TrialCompletedFields`) so the rules hold by construction;
+harness cases X2 and X3 check them.
+
+`STATE_ENTERED`:
+
+| Field | Type | Value |
+|---|---|---|
+| `transition_sound_lead_ms` | int or null | how long before this event the `stage` sound started (measured, ≈ 3500). Null on the first state of the session or when it did not sound. **Always null until the `stage` sound exists** (UI design P4/P7) |
+
+**Known limit.** The measured offset is the instant Unity asks for the sound.
+The headset's audio output latency (DSP buffer and Link) is added afterwards and
+is not visible here; it is measured once on the Phase 4 bench and applied as a
+constant.
+
+No `schema_version` bump (§5.6 precedent of 29 Sep): the fields are additive,
+and rows written before 30 September simply do not have them.
 
 ### 5.8 `TRIAL_SEQUENCE_GENERATED` — the plan, not the outcome
 
@@ -392,6 +438,23 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**30 September 2026 — stimulus telemetry for the EEG (UI design v1.3, §8).**
+No new event types and no `schema_version` bump: additive fields (§5.9).
+
+- `TRIAL_COMPLETED` gains `feedback_shown`, `feedback_audio_source`,
+  `feedback_audio_ms`, `result_sound`, `result_sound_offset_ms`,
+  `result_sound_ms` and `card_animation`.
+- `STATE_ENTERED` gains `transition_sound_lead_ms`, null until the `stage`
+  sound exists.
+- Rule: the `select` sound plays in the frame of every `ANSWER_SELECTED`.
+- The result sound (`correct` / `incorrect`) plays `feedback_audio_ms` + 150 ms
+  after `ANSWER_SELECTED`, only with immediate feedback. `feedbackSeconds` is
+  unchanged: the longest reading clip in the contract (魚, 576 ms) ends its
+  result sound at 1196 ms of 1500.
+- The 30 Sep tutorial entry below listed `TUTORIAL_STARTED.activities` in the
+  first demo order; the order since round 2 is `CONTROLS_INTRO`,
+  `LOOK_AND_SELECT`, `ASSEMBLY_EXAMPLE` (fixed in §5.1).
 
 **30 September 2026 — tutorial for the demo.** No new event types and no
 `schema_version` bump.

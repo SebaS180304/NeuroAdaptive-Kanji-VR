@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using NeuroAdaptiveVR.Audio;
 using NeuroAdaptiveVR.Data;
 using UnityEngine;
 
@@ -34,6 +35,8 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private BehaviorTelemetryController telemetry;
         [SerializeField] private LearningAssistanceController assistance;
         [SerializeField] private PronunciationAudioController pronunciation;
+        [Tooltip("Trial sounds (UI design v1.3, D4): select on the click, correct/incorrect after the reading.")]
+        [SerializeField] private ProceduralSfx sfx;
 
         [Tooltip("Cualquier MonoBehaviour que implemente ITrialPresenter.")]
         [SerializeField] private MonoBehaviour presenterBehaviour;
@@ -54,6 +57,7 @@ namespace NeuroAdaptiveVR.Controllers
         private bool _awaitingResponse;
         private int _hintCount;
         private LalCue _cuesPresented;
+        private double _answerSelectedAt;   // realtime of ANSWER_SELECTED: the origin of every stimulus offset
 
         /// <summary>Se dispara al cerrar el trial, con el resultado completo.</summary>
         public event Action<TrialResult> OnTrialCompleted;
@@ -65,6 +69,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
             if (assistance == null) assistance = GetComponent<LearningAssistanceController>();
             if (pronunciation == null) pronunciation = GetComponent<PronunciationAudioController>();
+            if (sfx == null) sfx = FindAnyObjectByType<ProceduralSfx>();
 
             if (assistance == null)
             {
@@ -315,12 +320,23 @@ namespace NeuroAdaptiveVR.Controllers
                 { "timed_out", false },   // sin timeout en Fase 2; el campo existe para no cambiar la forma
             });
 
+            // `select` sounds in this same frame, always (offset 0 by contract,
+            // so it carries no field). UI design v1.3, D4 and 8.1.
+            _answerSelectedAt = Time.realtimeSinceStartupAsDouble;
+            if (sfx != null) sfx.Play(ProceduralSfx.Clip.Select);
+
             StartCoroutine(CompleteTrial(isCorrect, correctText, responseTimeMs, optionId));
         }
 
         private IEnumerator CompleteTrial(bool isCorrect, string correctText, long responseTimeMs,
                                           string selectedOptionId)
         {
+            int feedbackAudioMs = 0;
+            string feedbackAudioSource = StimulusTelemetry.None;
+            bool resultSoundPlayed = false;
+            long resultSoundOffsetMs = 0;
+            int resultSoundMs = 0;
+
             if (_request.ImmediateFeedback)
             {
                 string correctOptionId = null;
@@ -331,22 +347,53 @@ namespace NeuroAdaptiveVR.Controllers
                 // El feedback post-respuesta puede repetir la lectura en los
                 // tres tipos de trial, T3 incluido: ya respondio, no revela
                 // nada (spec 9.2).
-                pronunciation?.PlayFeedback(_request.Target);
+                var reading = pronunciation != null ? pronunciation.PlayFeedback(_request.Target) : null;
+                feedbackAudioMs = reading != null ? Mathf.RoundToInt(reading.length * 1000f) : 0;
+                feedbackAudioSource = PronunciationAudioController.SourceOf(reading);
 
-                yield return new WaitForSecondsRealtime(feedbackSeconds);
+                // Result sound AFTER the reading: L + 150 ms, or at once if no
+                // reading sounded (UI design v1.3, D4). Waited frame by frame so
+                // the measured offset is within one frame of the plan.
+                if (sfx != null)
+                {
+                    int planned = StimulusTelemetry.PlannedResultOffsetMs(feedbackAudioMs);
+                    while (SinceAnswerMs() < planned) yield return null;
+                    resultSoundMs = sfx.Play(isCorrect ? ProceduralSfx.Clip.Correct : ProceduralSfx.Clip.Incorrect);
+                    resultSoundPlayed = resultSoundMs > 0;
+                    resultSoundOffsetMs = (long)Math.Round(SinceAnswerMs());
+                    float frameMs = Time.unscaledDeltaTime * 1000f + 1f;
+                    if (resultSoundPlayed && Math.Abs(resultSoundOffsetMs - planned) > frameMs)
+                        Debug.LogWarning($"[ResponseSystem] Result sound at {resultSoundOffsetMs} ms, planned " +
+                                         $"{planned} ms: more than one frame late.");
+                }
+
+                // feedbackSeconds unchanged, counted from ANSWER_SELECTED as before.
+                double remaining = feedbackSeconds - SinceAnswerMs() / 1000.0;
+                if (remaining > 0) yield return new WaitForSecondsRealtime((float)remaining);
             }
 
             var result = new TrialResult(
                 _context.TrialId, _request.TrialType, _context.KanjiId, selectedOptionId,
                 isCorrect, responseTimeMs, false, _hintCount, _cuesPresented);
 
-            telemetry.Emit(TelemetryEvents.TrialCompleted, new Dictionary<string, object>
+            var completed = new Dictionary<string, object>
             {
                 { "is_correct", isCorrect },
                 { "response_time_ms", responseTimeMs },
                 { "hint_count", _hintCount },
                 { "cues_presented", CueNames(_cuesPresented) },
-            });
+            };
+            // Stimulus fields for the EEG analysis (UI design v1.3, 8.1).
+            foreach (var kv in StimulusTelemetry.TrialCompletedFields(
+                         _request.ImmediateFeedback, isCorrect, feedbackAudioSource, feedbackAudioMs,
+                         resultSoundPlayed, resultSoundOffsetMs, resultSoundMs))
+                completed[kv.Key] = kv.Value;
+            Debug.Log($"[ResponseSystem] {_context.TrialId} stimuli: feedback={_request.ImmediateFeedback} " +
+                      $"reading={feedbackAudioSource} {feedbackAudioMs} ms · result={completed[StimulusTelemetry.KeyResultSound]} " +
+                      $"at {completed[StimulusTelemetry.KeyResultSoundOffsetMs] ?? "-"} ms " +
+                      $"(planned {StimulusTelemetry.PlannedResultOffsetMs(feedbackAudioMs)}) · " +
+                      $"card={completed[StimulusTelemetry.KeyCardAnimation]}");
+            telemetry.Emit(TelemetryEvents.TrialCompleted, completed);
 
             _presenter.Clear();
             telemetry.EndTrial();
@@ -359,6 +406,9 @@ namespace NeuroAdaptiveVR.Controllers
 
         private long ElapsedMs()
             => (long)((Time.realtimeSinceStartupAsDouble - _responseClockStart) * 1000.0);
+
+        private double SinceAnswerMs()
+            => (Time.realtimeSinceStartupAsDouble - _answerSelectedAt) * 1000.0;
 
         /// <summary>
         /// Los cues viajan como lista de nombres y no como entero de flags:
