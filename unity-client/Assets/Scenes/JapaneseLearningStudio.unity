@@ -3570,6 +3570,9 @@ MonoBehaviour:
   segmentCorrectColor: {r: 0.3, g: 0.9, b: 0.45, a: 1}
   segmentWrongColor: {r: 1, g: 0.3, b: 0.25, a: 1}
   correctFlashSeconds: 0.45
+  feedbackCorrectColor: {r: 0.2627, g: 0.8196, b: 0.4784, a: 1}
+  feedbackWrongColor: {r: 0.9412, g: 0.5294, b: 0.3529, a: 1}
+  feedbackSize: 96
 --- !u!4 &621902240
 Transform:
   m_ObjectHideFlags: 0
@@ -4298,6 +4301,15 @@ MonoBehaviour:
   borderWidth: 6
   hoverSeconds: 0.09
   pressSeconds: 0.06
+  correctColor: {r: 0.1216, g: 0.2902, b: 0.2039, a: 1}
+  correctBorder: {r: 0.2627, g: 0.8196, b: 0.4784, a: 1}
+  wrongColor: {r: 0.2902, g: 0.1647, b: 0.1333, a: 1}
+  wrongBorder: {r: 0.9412, g: 0.5294, b: 0.3529, a: 1}
+  missedBorderAlpha: 0.7
+  fadedAlpha: 0.4
+  feedbackFadeSeconds: 0.15
+  popScale: 1.05
+  popDepth: 15
 --- !u!1 &731274675
 GameObject:
   m_ObjectHideFlags: 0
@@ -7365,6 +7377,15 @@ MonoBehaviour:
   borderWidth: 6
   hoverSeconds: 0.09
   pressSeconds: 0.06
+  correctColor: {r: 0.1216, g: 0.2902, b: 0.2039, a: 1}
+  correctBorder: {r: 0.2627, g: 0.8196, b: 0.4784, a: 1}
+  wrongColor: {r: 0.2902, g: 0.1647, b: 0.1333, a: 1}
+  wrongBorder: {r: 0.9412, g: 0.5294, b: 0.3529, a: 1}
+  missedBorderAlpha: 0.7
+  fadedAlpha: 0.4
+  feedbackFadeSeconds: 0.15
+  popScale: 1.05
+  popDepth: 15
 --- !u!1 &1209545909
 GameObject:
   m_ObjectHideFlags: 0
@@ -10369,6 +10390,15 @@ MonoBehaviour:
   borderWidth: 6
   hoverSeconds: 0.09
   pressSeconds: 0.06
+  correctColor: {r: 0.1216, g: 0.2902, b: 0.2039, a: 1}
+  correctBorder: {r: 0.2627, g: 0.8196, b: 0.4784, a: 1}
+  wrongColor: {r: 0.2902, g: 0.1647, b: 0.1333, a: 1}
+  wrongBorder: {r: 0.9412, g: 0.5294, b: 0.3529, a: 1}
+  missedBorderAlpha: 0.7
+  fadedAlpha: 0.4
+  feedbackFadeSeconds: 0.15
+  popScale: 1.05
+  popDepth: 15
 --- !u!21 &1633887602
 Material:
   serializedVersion: 8
@@ -10724,6 +10754,15 @@ MonoBehaviour:
   borderWidth: 6
   hoverSeconds: 0.09
   pressSeconds: 0.06
+  correctColor: {r: 0.1216, g: 0.2902, b: 0.2039, a: 1}
+  correctBorder: {r: 0.2627, g: 0.8196, b: 0.4784, a: 1}
+  wrongColor: {r: 0.2902, g: 0.1647, b: 0.1333, a: 1}
+  wrongBorder: {r: 0.9412, g: 0.5294, b: 0.3529, a: 1}
+  missedBorderAlpha: 0.7
+  fadedAlpha: 0.4
+  feedbackFadeSeconds: 0.15
+  popScale: 1.05
+  popDepth: 15
 --- !u!1 &1672258556
 GameObject:
   m_ObjectHideFlags: 0

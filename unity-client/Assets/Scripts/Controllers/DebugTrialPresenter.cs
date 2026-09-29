@@ -64,7 +64,7 @@ namespace NeuroAdaptiveVR.Controllers
             Debug.Log(sb.ToString());
         }
 
-        public void ShowFeedback(bool isCorrect, string correctText)
+        public void ShowFeedback(bool isCorrect, string correctText, string selectedOptionId, string correctOptionId)
         {
             _accepting = false;
             Debug.Log(isCorrect ? "   ✔ correcto" : $"   ✘ incorrecto — era: {correctText}");

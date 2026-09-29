@@ -43,6 +43,29 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float hoverSeconds = 0.09f;
         [SerializeField] private float pressSeconds = 0.06f;
 
+        [Header("Feedback (UI design v1.3, D2)")]
+        [SerializeField] private Color correctColor = new(0.1216f, 0.2902f, 0.2039f, 1f);   // #1F4A34
+        [SerializeField] private Color correctBorder = new(0.2627f, 0.8196f, 0.4784f, 1f);  // #43D17A
+        [SerializeField] private Color wrongColor = new(0.2902f, 0.1647f, 0.1333f, 1f);     // #4A2A22
+        [SerializeField] private Color wrongBorder = new(0.9412f, 0.5294f, 0.3529f, 1f);    // #F0875A
+        [Tooltip("Border of the correct card when it was not chosen: solid green at this alpha.")]
+        [SerializeField, Range(0f, 1f)] private float missedBorderAlpha = 0.7f;
+        [SerializeField, Range(0f, 1f)] private float fadedAlpha = 0.4f;
+        [SerializeField] private float feedbackFadeSeconds = 0.15f;
+        [Tooltip("Pop of the chosen correct card: scale and depth towards the viewer (canvas units = mm).")]
+        [SerializeField] private float popScale = 1.05f;
+        [SerializeField] private float popDepth = 15f;
+
+        /// <summary>How a card looks during immediate feedback (D2).</summary>
+        public enum FeedbackMark { None, ChosenCorrect, ChosenWrong, CorrectMissed, Faded }
+
+        private FeedbackMark _mark;
+        private CanvasGroup _group;
+        private float _popStart = -1f;
+        private const float PopUp = 0.12f, PopHold = 0.25f, PopDown = 0.20f;   // 570 ms in all
+        private Vector3 _restScale = Vector3.one;
+        private float _restZ;
+
         private bool _assemblyLook;
         private bool _pointerOver, _pointerDown, _chosen;
         private Image _background;
@@ -82,6 +105,8 @@ namespace NeuroAdaptiveVR.Controllers
             // The authored colour is read before anything paints the card, so
             // SetTint(null) always restores it.
             _background = button.targetGraphic as Image;
+            _restScale = transform.localScale;
+            _restZ = transform.localPosition.z;
             if (button.targetGraphic != null) _homeColor = button.targetGraphic.color;
             button.transition = Selectable.Transition.None;
         }
@@ -104,10 +129,40 @@ namespace NeuroAdaptiveVR.Controllers
             _chosen = false;
             _pointerDown = false;
             _assemblyLook = false;
+            ClearFeedback();
             SetTint(null);   // a card never carries an assembly highlight into a trial
             SetOutline(false);
             SetImage(null);  // nor a segment image
             Repaint(0f);
+        }
+
+        /// <summary>
+        /// Marks the card for immediate feedback: colours fade in over 150 ms,
+        /// the faded cards drop to 40 % opacity, and the chosen correct card
+        /// pops (1.00 -> 1.05 and 15 mm towards the viewer in 120 ms, 250 ms
+        /// hold, back in 200 ms). Everything returns to rest on the next Bind.
+        /// </summary>
+        public void ShowFeedback(FeedbackMark mark)
+        {
+            _mark = mark;
+            if (mark == FeedbackMark.Faded)
+            {
+                if (_group == null) _group = GetComponent<CanvasGroup>();
+                if (_group == null) _group = gameObject.AddComponent<CanvasGroup>();
+                _group.alpha = fadedAlpha;
+            }
+            if (mark == FeedbackMark.ChosenCorrect) _popStart = Time.unscaledTime;
+            Repaint(feedbackFadeSeconds);
+        }
+
+        private void ClearFeedback()
+        {
+            _mark = FeedbackMark.None;
+            _popStart = -1f;
+            if (_group != null) _group.alpha = 1f;
+            transform.localScale = _restScale;
+            var p = transform.localPosition;
+            transform.localPosition = new Vector3(p.x, p.y, _restZ);
         }
 
         /// <summary>
@@ -152,6 +207,17 @@ namespace NeuroAdaptiveVR.Controllers
             bool lit = _chosen || (Interactable && (_pointerOver || _pointerDown));
             Color bg = lit ? hoverColor : restColor;
             Color edge = lit ? hoverBorder : restBorder;
+            switch (_mark)
+            {
+                case FeedbackMark.ChosenCorrect: bg = correctColor; edge = correctBorder; break;
+                case FeedbackMark.ChosenWrong: bg = wrongColor; edge = wrongBorder; break;
+                case FeedbackMark.CorrectMissed:
+                    bg = restColor;
+                    edge = correctBorder;
+                    edge.a = missedBorderAlpha;
+                    break;
+                case FeedbackMark.Faded: bg = restColor; edge = restBorder; break;
+            }
 
             EnsureFrame();
             _frame.gameObject.SetActive(true);
@@ -166,10 +232,29 @@ namespace NeuroAdaptiveVR.Controllers
 
         private void Update()
         {
+            if (_popStart >= 0f) AnimatePop();
             if (_fadeSeconds <= 0f) return;
             float t = Mathf.Clamp01((Time.unscaledTime - _fadeStart) / _fadeSeconds);
             ApplyFade(1f - (1f - t) * (1f - t));   // ease-out
             if (t >= 1f) _fadeSeconds = 0f;
+        }
+
+        private void AnimatePop()
+        {
+            float t = Time.unscaledTime - _popStart;
+            float k;
+            if (t < PopUp) { float u = t / PopUp; k = 1f - (1f - u) * (1f - u); }            // ease-out
+            else if (t < PopUp + PopHold) k = 1f;
+            else if (t < PopUp + PopHold + PopDown)
+            {
+                float u = (t - PopUp - PopHold) / PopDown;
+                k = 1f - (u < 0.5f ? 2f * u * u : 1f - Mathf.Pow(-2f * u + 2f, 2f) / 2f);  // ease-in-out
+            }
+            else { k = 0f; _popStart = -1f; }
+
+            transform.localScale = _restScale * Mathf.Lerp(1f, popScale, k);
+            var p = transform.localPosition;
+            transform.localPosition = new Vector3(p.x, p.y, _restZ - popDepth * k);
         }
 
         private void ApplyFade(float k)
@@ -321,6 +406,7 @@ namespace NeuroAdaptiveVR.Controllers
         {
             _optionId = null;
             _chosen = false;
+            ClearFeedback();
             if (label != null) label.text = string.Empty;
             gameObject.SetActive(false);
         }

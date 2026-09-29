@@ -129,6 +129,12 @@ namespace NeuroAdaptiveVR.Controllers
         // reading line; Clear() puts every size back so no trial inherits it.
         private float _feedbackHomeSize, _cueHomeSize;
         private Color _feedbackHomeColor;
+        private FontStyles _feedbackHomeStyle;
+
+        [Header("Trial feedback on the board (UI design v1.3, D2)")]
+        [SerializeField] private Color feedbackCorrectColor = new(0.2627f, 0.8196f, 0.4784f, 1f);   // #43D17A
+        [SerializeField] private Color feedbackWrongColor = new(0.9412f, 0.5294f, 0.3529f, 1f);     // #F0875A
+        [SerializeField] private float feedbackSize = 96f;
 
         // ------------------------------------------------------------------
         // Ciclo de vida
@@ -136,7 +142,12 @@ namespace NeuroAdaptiveVR.Controllers
 
         private void Awake()
         {
-            if (feedbackLabel != null) { _feedbackHomeSize = feedbackLabel.fontSize; _feedbackHomeColor = feedbackLabel.color; }
+            if (feedbackLabel != null)
+            {
+                _feedbackHomeSize = feedbackLabel.fontSize;
+                _feedbackHomeColor = feedbackLabel.color;
+                _feedbackHomeStyle = feedbackLabel.fontStyle;
+            }
             if (cueLabel != null) _cueHomeSize = cueLabel.fontSize;
 
             if (cards != null)
@@ -242,17 +253,36 @@ namespace NeuroAdaptiveVR.Controllers
                 cards[i].Hide();
         }
 
-        public void ShowFeedback(bool isCorrect, string correctText)
+        /// <summary>
+        /// Immediate feedback (UI design v1.3, D2). The cards show which one was
+        /// chosen and which one was correct: chosen and correct in green with a
+        /// short pop, chosen and wrong in coral, the correct one (if missed) with
+        /// a green border, the rest faded. The board says "Correct" or
+        /// "Answer: ...". The kanji keeps its colour. Colour only, no glow
+        /// (design rule 9); the pop is the only card movement in the game and
+        /// starts in the same frame as the feedback.
+        /// </summary>
+        public void ShowFeedback(bool isCorrect, string correctText, string selectedOptionId, string correctOptionId)
         {
             if (cards != null)
                 foreach (var c in cards)
-                    if (c != null) c.SetInteractable(false);
+                {
+                    if (c == null || !c.gameObject.activeSelf) continue;
+                    c.SetInteractable(false);
+                    bool chosen = c.OptionId == selectedOptionId;
+                    bool correct = c.OptionId == correctOptionId;
+                    c.ShowFeedback(chosen && correct ? TrialAnswerCard.FeedbackMark.ChosenCorrect
+                                 : chosen ? TrialAnswerCard.FeedbackMark.ChosenWrong
+                                 : correct ? TrialAnswerCard.FeedbackMark.CorrectMissed
+                                 : TrialAnswerCard.FeedbackMark.Faded);
+                }
 
             if (feedbackLabel == null) return;
 
-            feedbackLabel.text = isCorrect ? "OK" : correctText;
-            feedbackLabel.color = isCorrect ? new Color(0.30f, 0.72f, 0.40f)
-                                            : new Color(0.85f, 0.45f, 0.25f);
+            feedbackLabel.text = isCorrect ? "Correct" : $"Answer: {correctText}";
+            feedbackLabel.color = isCorrect ? feedbackCorrectColor : feedbackWrongColor;
+            feedbackLabel.fontSize = feedbackSize;
+            feedbackLabel.fontStyle = FontStyles.Bold;
         }
 
         public void SetHintAvailable(bool available)
@@ -898,6 +928,7 @@ namespace NeuroAdaptiveVR.Controllers
             {
                 if (_feedbackHomeSize > 0f) feedbackLabel.fontSize = _feedbackHomeSize;
                 feedbackLabel.color = _feedbackHomeColor;
+                feedbackLabel.fontStyle = _feedbackHomeStyle;
             }
             if (cueLabel != null && _cueHomeSize > 0f) cueLabel.fontSize = _cueHomeSize;
         }

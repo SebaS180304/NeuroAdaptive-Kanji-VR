@@ -28,8 +28,14 @@ namespace NeuroAdaptiveVR.Controllers
         void Present(RetrievalTrialType trialType, string promptText,
                      IReadOnlyList<TrialOption> options);
 
-        /// <summary>Feedback tras la respuesta. `correctText` es el texto de la opcion correcta.</summary>
-        void ShowFeedback(bool isCorrect, string correctText);
+        /// <summary>
+        /// Feedback tras la respuesta. `correctText` es el texto de la opcion
+        /// correcta; `selectedOptionId` y `correctOptionId` dicen que tarjeta se
+        /// eligio y cual era la correcta, para marcarlas (UI design v1.3, D2).
+        /// Solo se llama con ImmediateFeedback. Cambio solo visual: el
+        /// presentador sigue sin decidir si la respuesta es correcta.
+        /// </summary>
+        void ShowFeedback(bool isCorrect, string correctText, string selectedOptionId, string correctOptionId);
 
         /// <summary>Indica que hay ayuda disponible (o que no la hay) para este trial.</summary>
         void SetHintAvailable(bool available);

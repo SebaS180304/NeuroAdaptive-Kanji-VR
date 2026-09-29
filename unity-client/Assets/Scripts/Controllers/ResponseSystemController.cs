@@ -323,7 +323,10 @@ namespace NeuroAdaptiveVR.Controllers
         {
             if (_request.ImmediateFeedback)
             {
-                _presenter.ShowFeedback(isCorrect, correctText);
+                string correctOptionId = null;
+                foreach (var o in _request.Options)
+                    if (o.IsCorrect) { correctOptionId = o.OptionId; break; }
+                _presenter.ShowFeedback(isCorrect, correctText, selectedOptionId, correctOptionId);
 
                 // El feedback post-respuesta puede repetir la lectura en los
                 // tres tipos de trial, T3 incluido: ya respondio, no revela
