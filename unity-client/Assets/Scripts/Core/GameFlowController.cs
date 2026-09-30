@@ -101,6 +101,15 @@ namespace NeuroAdaptiveVR.Core
         /// acordarse. El banco de pruebas lo pasa en false porque parte de su
         /// trabajo es ejercitar combinaciones prohibidas a proposito.
         /// </param>
+        private float? _transitionSoundAt;
+
+        /// <summary>
+        /// The `stage` sound started now (Time.realtimeSinceStartup). The next
+        /// STATE_ENTERED reports how long before it that was, and forgets it:
+        /// one sound, one transition.
+        /// </summary>
+        public void MarkTransitionSound(float realtime) => _transitionSoundAt = realtime;
+
         public void EnterState(GameFlowState newState, bool applyNominalLevels = true)
         {
             // Este controlador es el unico dueño del estado. La telemetria lo
@@ -117,9 +126,14 @@ namespace NeuroAdaptiveVR.Core
             Debug.Log($"[GameFlowController] STATE_ENTERED: {newState} (wire: {newState.ToWireValue()})");
 
             // `state` viaja en el bloque de contexto. transition_sound_lead_ms
-            // (UI design v1.3, 8.2): how long before this event the `stage`
-            // sound started. Null until that sound exists (design P4/P7).
-            telemetry.Emit(TelemetryEvents.StateEntered, StimulusTelemetry.KeyTransitionSoundLeadMs, null);
+            // (UI design v1.3, 8.2 and P7): how long before this event the
+            // `stage` sound started, measured. Null when no stage sound came
+            // before this state (the first state of the session).
+            object lead = null;
+            if (_transitionSoundAt.HasValue)
+                lead = (long)Mathf.Round((Time.realtimeSinceStartup - _transitionSoundAt.Value) * 1000f);
+            _transitionSoundAt = null;
+            telemetry.Emit(TelemetryEvents.StateEntered, StimulusTelemetry.KeyTransitionSoundLeadMs, lead);
 
             CheckStateLevelMatrix(newState);
 

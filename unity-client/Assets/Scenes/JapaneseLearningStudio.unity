@@ -5689,7 +5689,8 @@ MonoBehaviour:
   s7Trials: 20
   s8Trials: 15
   minLag: 2
-  transitionSeconds: 2
+  transitionSeconds: 3.5
+  sfx: {fileID: 566084252}
   afterIntroSeconds: 1
   systemCheckWindowSeconds: 5
   baselineEyesOpenSeconds: 60

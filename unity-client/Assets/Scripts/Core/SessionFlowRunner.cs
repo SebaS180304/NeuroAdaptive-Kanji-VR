@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NeuroAdaptiveVR.Audio;
 using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Data;
 using NeuroAdaptiveVR.Networking;
@@ -86,8 +87,12 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private int minLag = 2;
 
         [Header("Timing -- TO VALIDATE with the pilot")]
-        [Tooltip("Blank board between two states. 2 s since 25 September: 1.5 s felt abrupt.")]
-        [SerializeField] private float transitionSeconds = 2f;
+        [Tooltip("Pause between two states, from the `stage` sound to the next STATE_ENTERED " +
+                 "(UI design v1.3, P7: 3.5 s since 30 September; 2 s before). The sound and the " +
+                 "response to it never fall at the start of a stage, S4's baseline included.")]
+        [SerializeField] private float transitionSeconds = 3.5f;
+        [Tooltip("The trial sound set (SessionRoot/TrialSfx): plays `stage` when a state ends.")]
+        [SerializeField] private ProceduralSfx sfx;
         [Tooltip("Blank board between pressing Continue on a stage announcement and the stage content.")]
         [SerializeField] private float afterIntroSeconds = 1f;
         [Tooltip("How long S3 keeps checking before declaring a failure.")]
@@ -132,6 +137,7 @@ namespace NeuroAdaptiveVR.Core
             if (client == null) client = GetComponent<SessionCommunicationClient>();
             if (board == null) board = FindAnyObjectByType<StudioTrialPresenter>();
             if (viewRecenter == null) viewRecenter = FindAnyObjectByType<ViewRecenter>();
+            if (sfx == null) sfx = FindAnyObjectByType<ProceduralSfx>();
         }
 
         /// <summary>
@@ -316,7 +322,14 @@ namespace NeuroAdaptiveVR.Core
 
                 if (state == GameFlowState.S9_SessionSummary) break;
 
+                // P7: the stage ends with the `stage` sound, the board goes
+                // neutral (empty, no animation) and the next stage starts
+                // transitionSeconds later. The pause comes BEFORE the next
+                // STATE_ENTERED, so no stage window contains it, and that
+                // event carries how long before it the sound started.
                 board?.Clear();
+                if (sfx != null && sfx.Play(ProceduralSfx.Clip.Stage) > 0)
+                    flow.MarkTransitionSound(Time.realtimeSinceStartup);
                 yield return new WaitForSecondsRealtime(transitionSeconds);
                 flow.AdvanceToNextState();
             }

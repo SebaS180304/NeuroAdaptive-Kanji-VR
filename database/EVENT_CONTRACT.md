@@ -183,7 +183,7 @@ harness cases X2 and X3 check them.
 
 | Field | Type | Value |
 |---|---|---|
-| `transition_sound_lead_ms` | int or null | how long before this event the `stage` sound started (measured, ≈ 3500). Null on the first state of the session or when it did not sound. **Always null until the `stage` sound exists** (UI design P4/P7) |
+| `transition_sound_lead_ms` | int or null | how long before this event the `stage` sound started (measured, ≈ 3500). Null on the first state of the session or when it did not sound. Since 30 Sep (UI design P7) the `stage` sound plays when each state ends and the next `STATE_ENTERED` follows 3.5 s later; measured from the frame `stage` was requested (audio output latency not included, same as `result_sound_offset_ms`) |
 
 **Known limit.** The measured offset is the instant Unity asks for the sound.
 The headset's audio output latency (DSP buffer and Link) is added afterwards and
@@ -511,6 +511,17 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**30 September 2026 — stage transition (UI design v1.3, P4/P7).** No new event
+types and no `schema_version` bump.
+
+- `STATE_ENTERED.transition_sound_lead_ms` is filled: every state after the
+  first is preceded by the `stage` sound and a 3.5 s pause (was 2 s of
+  silence), so the value is ≈ 3500. Null on S1. The pause sits before
+  `STATE_ENTERED`, so no stage window contains it.
+- The assembly plays the shared set: `place` and `incorrect` in the frame of
+  `ASSEMBLY_SEGMENT_PLACED`, `done` right after `ASSEMBLY_COMPLETED` (not after
+  a forced completion). There is still no hint sound.
 
 **30 September 2026 — Phase 3, F3.3: head away and idle time.** Two new event
 types (`HEAD_AWAY`, `HEAD_RETURNED`) and additive fields on `TRIAL_COMPLETED`
