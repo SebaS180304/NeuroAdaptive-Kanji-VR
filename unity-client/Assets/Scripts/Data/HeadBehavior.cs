@@ -169,13 +169,20 @@ namespace NeuroAdaptiveVR.Data
         public int LongestMs { get; private set; }
 
         private double _run;   // seconds of the current still run
+        private double _headSum, _raySum;
+        private int _frames;
+
+        /// <summary>Mean speeds over the window, for calibrating the thresholds (logged, not emitted).</summary>
+        public float MeanHeadDegPerSec => _frames > 0 ? (float)(_headSum / _frames) : 0f;
+        public float MeanRayDegPerSec => _frames > 0 ? (float)(_raySum / _frames) : 0f;
 
         public IdleTracker(Thresholds limits) { Limits = limits; }
 
-        public void Reset() { IdleMs = 0; Episodes = 0; LongestMs = 0; _run = 0; }
+        public void Reset() { IdleMs = 0; Episodes = 0; LongestMs = 0; _run = 0; _headSum = _raySum = 0; _frames = 0; }
 
         public void Step(float dt, float headDegPerSec, float rayDegPerSec)
         {
+            _headSum += headDegPerSec; _raySum += rayDegPerSec; _frames++;
             bool still = headDegPerSec < Limits.HeadDegPerSec && rayDegPerSec < Limits.RayDegPerSec;
             if (still) { _run += dt; return; }
             CloseRun();

@@ -39,6 +39,10 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private HeadAwayThresholds thresholds = HeadAwayThresholds.Default;
         [Tooltip("Off only for Editor tests without a headset.")]
         [SerializeField] private bool requireHeadsetTracking = true;
+        [Tooltip("Angular speeds are measured over this window, not frame to frame: per-frame " +
+                 "differences are dominated by tracking jitter (30 Sep headset pass: idle was 0 in " +
+                 "every trial with 5 and 10 deg/s thresholds).")]
+        [SerializeField] private float speedWindowSeconds = 0.25f;
 
         public float HeadDegPerSec { get; private set; }
         public float RayDegPerSec { get; private set; }
@@ -47,9 +51,14 @@ namespace NeuroAdaptiveVR.Controllers
         public float PitchDeg { get; private set; }
 
         private HeadAwayDetector _detector;
-        private Vector3 _lastHeadFwd;
-        private Vector3[] _lastRay;
-        private bool _hasLast;
+
+        private struct Pose
+        {
+            public double T;
+            public Vector3 Head;
+            public Vector3[] Rays;   // null entry = controller not tracked in that frame
+        }
+        private readonly List<Pose> _history = new();
 
         private void Awake()
         {
@@ -70,7 +79,6 @@ namespace NeuroAdaptiveVR.Controllers
                 controllers = found.ToArray();
             }
             _detector = new HeadAwayDetector(thresholds);
-            _lastRay = new Vector3[controllers.Length];
             if (head == null || board == null)
                 Debug.LogError($"{Log} Missing head or board: HEAD_AWAY will not be measured.");
         }
@@ -79,23 +87,34 @@ namespace NeuroAdaptiveVR.Controllers
         {
             if (head == null || board == null) return;
             _detector.Thresholds = thresholds;   // Inspector edits apply live
-            float dt = Mathf.Max(Time.unscaledDeltaTime, 1e-4f);
             double now = Time.realtimeSinceStartupAsDouble;
 
-            // Angular speeds, for idle time.
+            // Angular speeds, for idle time: the angle turned over the last
+            // speedWindowSeconds, divided by that time. Jitter does not add up
+            // over a window the way it does frame to frame.
             Vector3 fwd = head.forward;
-            float ray = 0f;
+            var pose = new Pose { T = now, Head = fwd, Rays = new Vector3[controllers.Length] };
+            var tracked = new bool[controllers.Length];
             for (int i = 0; i < controllers.Length; i++)
             {
                 var c = controllers[i];
-                if (c == null || !c.gameObject.activeInHierarchy) continue;
-                if (_hasLast) ray = Mathf.Max(ray, Vector3.Angle(_lastRay[i], c.forward) / dt);
-                _lastRay[i] = c.forward;
+                tracked[i] = c != null && c.gameObject.activeInHierarchy;
+                if (tracked[i]) pose.Rays[i] = c.forward;
             }
-            HeadDegPerSec = _hasLast ? Vector3.Angle(_lastHeadFwd, fwd) / dt : 0f;
-            RayDegPerSec = ray;
-            _lastHeadFwd = fwd;
-            _hasLast = true;
+            _history.Add(pose);
+            // Keep the newest pose that is at least one window old, and drop the rest.
+            while (_history.Count > 2 && now - _history[1].T >= speedWindowSeconds) _history.RemoveAt(0);
+            var old = _history[0];
+            double span = now - old.T;
+            if (span > 1e-3)
+            {
+                HeadDegPerSec = (float)(Vector3.Angle(old.Head, fwd) / span);
+                float ray = 0f;
+                for (int i = 0; i < controllers.Length; i++)
+                    if (tracked[i] && old.Rays[i] != Vector3.zero)
+                        ray = Mathf.Max(ray, (float)(Vector3.Angle(old.Rays[i], pose.Rays[i]) / span));
+                RayDegPerSec = ray;
+            }
 
             if (gameFlow == null || gameFlow.CurrentState == GameFlowState.S0_SessionInitialization) return;
 

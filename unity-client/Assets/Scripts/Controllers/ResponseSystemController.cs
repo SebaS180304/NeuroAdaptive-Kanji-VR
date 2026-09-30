@@ -412,7 +412,8 @@ namespace NeuroAdaptiveVR.Controllers
                       $"at {completed[StimulusTelemetry.KeyResultSoundOffsetMs] ?? "-"} ms " +
                       $"(planned {StimulusTelemetry.PlannedResultOffsetMs(feedbackAudioMs)}) · " +
                       $"card={completed[StimulusTelemetry.KeyCardAnimation]} · " +
-                      $"idle={completed["idle_ms"] ?? "-"} ms in {completed["idle_episodes"] ?? "-"}");
+                      $"idle={completed["idle_ms"] ?? "-"} ms in {completed["idle_episodes"] ?? "-"} " +
+                      $"(mean head {_idle.MeanHeadDegPerSec:0.0} deg/s, ray {_idle.MeanRayDegPerSec:0.0} deg/s)");
             telemetry.Emit(TelemetryEvents.TrialCompleted, completed);
 
             _presenter.Clear();
