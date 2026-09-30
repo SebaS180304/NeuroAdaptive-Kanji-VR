@@ -3226,6 +3226,12 @@ MonoBehaviour:
   stageChipBorderWidth: 2
   stageChipHeight: 80
   stageChipPadding: 28
+  progressDotSize: 14
+  progressDotSpacing: 10
+  progressGap: 24
+  progressDoneColor: {r: 0.4863, g: 0.5412, b: 0.6471, a: 1}
+  progressCurrentColor: {r: 0.349, g: 0.651, b: 1, a: 1}
+  progressPendingColor: {r: 0.2275, g: 0.2667, b: 0.3765, a: 1}
   segmentResourceFolder: assembly
   frameSize: 470
   frameBackColor: {r: 1, g: 1, b: 1, a: 0.06}

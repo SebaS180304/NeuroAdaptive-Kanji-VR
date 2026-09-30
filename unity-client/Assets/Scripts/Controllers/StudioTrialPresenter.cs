@@ -103,6 +103,17 @@ namespace NeuroAdaptiveVR.Controllers
         [Tooltip("Space between the text and each round end of the chip.")]
         [SerializeField] private float stageChipPadding = 28f;
 
+        [Header("Progress dots (UI design v1.3, P6)")]
+        [Tooltip("One dot per trial of the current block, right of the stage chip. They change " +
+                 "only when a trial starts, and look the same at every ESL level.")]
+        [SerializeField] private float progressDotSize = 14f;
+        [SerializeField] private float progressDotSpacing = 10f;
+        [Tooltip("Gap between the stage chip and the first dot.")]
+        [SerializeField] private float progressGap = 24f;
+        [SerializeField] private Color progressDoneColor = new Color(0.4863f, 0.5412f, 0.6471f, 1f);    // #7C8AA5
+        [SerializeField] private Color progressCurrentColor = new Color(0.3490f, 0.6510f, 1f, 1f);      // #59A6FF
+        [SerializeField] private Color progressPendingColor = new Color(0.2275f, 0.2667f, 0.3765f, 1f); // #3A4460
+
         [Header("Assembly with authored segment images (30 September)")]
         [Tooltip("Resources folder with {KANJI_ID}_FULL.png and {KANJI_ID}_SEG{n}.png. When every " +
                  "segment of a kanji is there, the assembly draws the real strokes; otherwise it " +
@@ -1126,26 +1137,121 @@ namespace NeuroAdaptiveVR.Controllers
 
         private float _headerY = float.NaN;
 
-        /// <summary>Places the stage chip (and, later, anything beside it) centred on the header row.</summary>
+        /// <summary>
+        /// Places the header row: the stage chip, then the progress dots, the
+        /// pair centred on the board as one group (so a stage without dots
+        /// keeps its chip exactly where it was).
+        /// </summary>
         private void LayoutHeader()
         {
             if (stageTitleLabel == null) return;
             var lrt = (RectTransform)stageTitleLabel.transform;
             if (float.IsNaN(_headerY)) _headerY = lrt.anchoredPosition.y;
 
-            bool on = !string.IsNullOrEmpty(stageTitleLabel.text);
-            if (_stageChip != null) _stageChip.gameObject.SetActive(on);
-            if (!on) return;
+            bool chipOn = !string.IsNullOrEmpty(stageTitleLabel.text);
+            if (_stageChip != null) _stageChip.gameObject.SetActive(chipOn);
+            int dots = _progressCount;
 
-            float textW = stageTitleLabel.GetPreferredValues(stageTitleLabel.text,
-                              float.PositiveInfinity, float.PositiveInfinity).x;
-            float chipW = textW + 2f * stageChipPadding;
-            lrt.sizeDelta = new Vector2(chipW, stageChipHeight);
-            lrt.anchoredPosition = new Vector2(0f, _headerY);
-            if (_stageChip != null)
+            float chipW = 0f;
+            if (chipOn)
             {
-                _stageChip.sizeDelta = lrt.sizeDelta;
-                _stageChip.anchoredPosition = lrt.anchoredPosition;
+                float textW = stageTitleLabel.GetPreferredValues(stageTitleLabel.text,
+                                  float.PositiveInfinity, float.PositiveInfinity).x;
+                chipW = textW + 2f * stageChipPadding;
+            }
+            float dotsW = dots > 0 ? dots * progressDotSize + (dots - 1) * progressDotSpacing : 0f;
+            float total = chipW + dotsW + (chipOn && dots > 0 ? progressGap : 0f);
+            float left = -total * 0.5f;
+
+            if (chipOn)
+            {
+                lrt.sizeDelta = new Vector2(chipW, stageChipHeight);
+                lrt.anchoredPosition = new Vector2(left + chipW * 0.5f, _headerY);
+                if (_stageChip != null)
+                {
+                    _stageChip.sizeDelta = lrt.sizeDelta;
+                    _stageChip.anchoredPosition = lrt.anchoredPosition;
+                }
+            }
+
+            if (_progressRow != null)
+            {
+                _progressRow.gameObject.SetActive(dots > 0);
+                float x = left + (chipOn ? chipW + progressGap : 0f);
+                _progressRow.anchoredPosition = new Vector2(x + dotsW * 0.5f, _headerY);
+                _progressRow.sizeDelta = new Vector2(dotsW, progressDotSize);
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Progress dots (P6)
+        // ------------------------------------------------------------------
+
+        private RectTransform _progressRow;
+        private readonly List<Image> _progressDots = new();
+        private int _progressCount;
+
+        /// <summary>
+        /// Progress through the current block: <paramref name="index"/> is the
+        /// 0-based trial that is starting, <paramref name="count"/> the block
+        /// length. Dots before it are done, it is current, the rest pending.
+        /// count 0 hides the dots. SessionFlowRunner calls this only when a
+        /// trial starts and when a block ends, so answering never moves them.
+        /// Clear() leaves them alone: like the stage chip, they belong to the
+        /// block, not to one trial.
+        /// </summary>
+        public void SetProgress(int index, int count)
+        {
+            count = Mathf.Max(0, count);
+            if (count > 0) EnsureProgressRow(count);
+            _progressCount = _progressRow != null ? count : 0;
+
+            for (int i = 0; i < _progressDots.Count; i++)
+            {
+                var dot = _progressDots[i];
+                bool on = i < _progressCount;
+                dot.gameObject.SetActive(on);
+                if (!on) continue;
+                dot.color = i < index ? progressDoneColor
+                          : i == index ? progressCurrentColor
+                          : progressPendingColor;
+                ((RectTransform)dot.transform).anchoredPosition =
+                    new Vector2(i * (progressDotSize + progressDotSpacing), 0f);
+            }
+            LayoutHeader();
+        }
+
+        private void EnsureProgressRow(int count)
+        {
+            if (_progressRow == null)
+            {
+                var parent = stageTitleLabel != null ? stageTitleLabel.transform.parent as RectTransform : null;
+                if (parent == null) return;
+                var go = new GameObject("ProgressDots", typeof(RectTransform));
+                go.layer = parent.gameObject.layer;
+                _progressRow = (RectTransform)go.transform;
+                _progressRow.SetParent(parent, false);
+                var lrt = (RectTransform)stageTitleLabel.transform;
+                _progressRow.anchorMin = lrt.anchorMin;
+                _progressRow.anchorMax = lrt.anchorMax;
+                _progressRow.pivot = new Vector2(0.5f, 0.5f);
+                if (float.IsNaN(_headerY)) _headerY = lrt.anchoredPosition.y;
+            }
+            var sprite = PillSprite.Get(progressDotSize * 0.5f);   // a pill as tall as it is wide is a circle
+            while (_progressDots.Count < count)
+            {
+                var d = new GameObject("Dot" + _progressDots.Count, typeof(RectTransform), typeof(Image));
+                d.layer = _progressRow.gameObject.layer;
+                var rt = (RectTransform)d.transform;
+                rt.SetParent(_progressRow, false);
+                rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
+                rt.pivot = new Vector2(0f, 0.5f);
+                rt.sizeDelta = new Vector2(progressDotSize, progressDotSize);
+                var img = d.GetComponent<Image>();
+                img.sprite = sprite;
+                img.type = Image.Type.Simple;
+                img.raycastTarget = false;
+                _progressDots.Add(img);
             }
         }
 

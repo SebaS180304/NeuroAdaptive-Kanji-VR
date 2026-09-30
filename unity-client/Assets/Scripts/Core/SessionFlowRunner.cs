@@ -589,11 +589,14 @@ namespace NeuroAdaptiveVR.Core
             TrialSequenceTelemetry.Emit(telemetry, plan, _setName, _sessionSeed);
 
             int correct = 0;
+            int index = 0;
             foreach (var planned in plan.Trials)
             {
                 _trialClosed = false;
                 _lastResult = null;
 
+                // P6: the dots move when a trial starts, never on the answer.
+                board?.SetProgress(index++, plan.Count);
                 responses.BeginTrial(planned.ToRequest(immediateFeedback));
 
                 // BeginTrial rejects malformed trials with an error and opens
@@ -602,6 +605,7 @@ namespace NeuroAdaptiveVR.Core
                 if (!responses.TrialInProgress && !_trialClosed)
                 {
                     Debug.LogError($"{Log} {state.ShortCode()}-{planned.Sequence:D3} did not open.");
+                    board?.SetProgress(0, 0);
                     done(false);
                     yield break;
                 }
@@ -610,6 +614,7 @@ namespace NeuroAdaptiveVR.Core
                 if (_lastResult != null && _lastResult.IsCorrect) correct++;
             }
 
+            board?.SetProgress(0, 0);   // the dots belong to the block: gone before the next screen
             _scores[state] = (correct, plan.Count);
             Debug.Log($"{Log} {state.ShortCode()} · {correct}/{plan.Count} correct");
             done(true);
