@@ -148,7 +148,12 @@ namespace NeuroAdaptiveVR.Controllers
                 _feedbackHomeColor = feedbackLabel.color;
                 _feedbackHomeStyle = feedbackLabel.fontStyle;
             }
-            if (cueLabel != null) _cueHomeSize = cueLabel.fontSize;
+            if (cueLabel != null)
+            {
+                _cueHomeSize = cueLabel.fontSize;
+                _cueHomeColor = cueLabel.color;
+                _cueHomeColorKnown = true;
+            }
 
             if (cards != null)
             {
@@ -301,7 +306,136 @@ namespace NeuroAdaptiveVR.Controllers
             // ahora no es decorativo: hace visible en el visor, y comprobable en la
             // grabacion, que LAL concedio exactamente lo que la matriz 9.1 dice, sin
             // tener que leer la base.
-            cueLabel.text = cue == LalCue.None ? string.Empty : cue.ToString();
+            //
+            // P3 (UI design v1.3): the cue is a chip, "Hint · {cue in words}",
+            // in amber on the card colour, instead of the enum name in plain text.
+            if (cue == LalCue.None)
+            {
+                cueLabel.text = string.Empty;
+                HideCueChip();
+                return;
+            }
+            string text = "Hint · " + CueWords(cue);
+            cueLabel.text = text;
+            cueLabel.fontSize = cueChipFontSize;
+            cueLabel.color = cueChipTextColor;
+            ShowCueChip(text);
+        }
+
+        [Header("Cue chip (UI design v1.3, P3)")]
+        [SerializeField] private Color cueChipColor = new(0.1647f, 0.1922f, 0.2588f, 1f);     // #2A3142
+        [SerializeField] private Color cueChipTextColor = new(0.8902f, 0.7020f, 0.2549f, 1f); // #E3B341
+        [SerializeField] private float cueChipFontSize = 56f;
+        [SerializeField] private Vector2 cueChipPadding = new(32f, 14f);
+
+        private Image _cueChip;
+        private string _cueChipText;
+        private Vector2 _cueHomePos;
+        private bool _cueShifted;
+        private Color _cueHomeColor;
+        private bool _cueHomeColorKnown;
+
+        /// <summary>
+        /// Short, lower-case names of the granted cues, joined with " · ". Short on
+        /// purpose: LAL HIGH grants two cues at once, and the full enum names
+        /// ("target reading audio · visual transformation") ran under the Hint
+        /// button. The names still map one-to-one to the LalCue flags.
+        /// </summary>
+        private static string CueWords(LalCue cue)
+        {
+            var parts = new List<string>();
+            foreach (LalCue flag in Enum.GetValues(typeof(LalCue)))
+            {
+                if (flag == LalCue.None || (cue & flag) != flag) continue;
+                parts.Add(flag switch
+                {
+                    LalCue.TargetReadingAudio => "reading audio",
+                    LalCue.VisualAssociation => "picture",
+                    LalCue.ReverseSemanticAssociation => "meaning link",
+                    LalCue.VisualTransformation => "shape",
+                    _ => flag.ToString().ToLowerInvariant(),
+                });
+            }
+            return string.Join(" · ", parts);
+        }
+
+        private void ShowCueChip(string text)
+        {
+            if (!_cueHomeColorKnown) { _cueHomeColor = Color.white; _cueHomeColorKnown = true; }
+            if (_cueChip == null)
+            {
+                var go = new GameObject("CueChip", typeof(RectTransform), typeof(Image));
+                go.layer = cueLabel.gameObject.layer;
+                var rt = (RectTransform)go.transform;
+                rt.SetParent(cueLabel.transform.parent, false);
+                _cueChip = go.GetComponent<Image>();
+                _cueChip.raycastTarget = false;
+                _cueChip.type = Image.Type.Sliced;
+            }
+            // Behind the label: moving the chip to the label's index pushes the
+            // label one up. Only when the chip is in front, or the second call
+            // would put it back on top of the text.
+            if (_cueChip.transform.GetSiblingIndex() > cueLabel.transform.GetSiblingIndex())
+                _cueChip.transform.SetSiblingIndex(cueLabel.transform.GetSiblingIndex());
+
+            // Keep the chip clear of the Hint button (bottom right): if it would
+            // reach it, the cue line slides left for as long as the chip shows.
+            var labelRt = (RectTransform)cueLabel.transform;
+            if (!_cueShifted) _cueHomePos = labelRt.anchoredPosition;
+            labelRt.anchoredPosition = _cueHomePos;
+            cueLabel.ForceMeshUpdate();
+            if (hintButton != null && hintButton.gameObject.activeSelf && hintButton.transform.parent == labelRt.parent)
+            {
+                var hrt = (RectTransform)hintButton.transform;
+                float hintLeft = hrt.anchoredPosition.x - hrt.rect.width * hrt.pivot.x;
+                float right = labelRt.anchoredPosition.x + cueLabel.textBounds.max.x + cueChipPadding.x;
+                float clear = hintLeft - 24f;
+                if (right > clear)
+                {
+                    labelRt.anchoredPosition = _cueHomePos + new Vector2(clear - right, 0f);
+                    _cueShifted = true;
+                    cueLabel.ForceMeshUpdate();
+                }
+            }
+            var b = cueLabel.textBounds;
+            var chipRt = (RectTransform)_cueChip.transform;
+            var parent = (RectTransform)chipRt.parent;
+            Vector3 centre = parent.InverseTransformPoint(cueLabel.transform.TransformPoint(b.center));
+            chipRt.anchorMin = chipRt.anchorMax = new Vector2(0.5f, 0.5f);
+            chipRt.pivot = new Vector2(0.5f, 0.5f);
+            Vector2 size = new(b.size.x + 2f * cueChipPadding.x, b.size.y + 2f * cueChipPadding.y);
+            chipRt.sizeDelta = size;
+            chipRt.anchoredPosition = (Vector2)centre - parent.rect.center;
+            _cueChip.sprite = PillSprite.Get(size.y * 0.5f);
+            _cueChip.color = cueChipColor;
+            _cueChip.gameObject.SetActive(true);
+            _cueChipText = text;
+        }
+
+        private void HideCueChip()
+        {
+            if (_cueChip != null) _cueChip.gameObject.SetActive(false);
+            _cueChipText = null;
+            if (_cueShifted && cueLabel != null)
+            {
+                ((RectTransform)cueLabel.transform).anchoredPosition = _cueHomePos;
+                _cueShifted = false;
+            }
+            if (cueLabel != null && _cueHomeColorKnown) cueLabel.color = _cueHomeColor;
+        }
+
+        // Any other use of the cue line (exposure reading, assembly instruction,
+        // notes) overwrites its text: the chip follows the text it was built for.
+        private void LateUpdate()
+        {
+            if (_cueChipText != null && (cueLabel == null || cueLabel.text != _cueChipText))
+            {
+                // Undo only what the chip changed: whoever wrote the new text may
+                // have set its own size (the S5 reading is 90).
+                bool chipSize = cueLabel != null && Mathf.Approximately(cueLabel.fontSize, cueChipFontSize);
+                HideCueChip();
+                if (chipSize && _cueHomeSize > 0f) cueLabel.fontSize = _cueHomeSize;
+            }
         }
 
         public void Clear()
