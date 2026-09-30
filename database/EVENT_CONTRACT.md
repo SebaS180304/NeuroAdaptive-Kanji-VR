@@ -115,7 +115,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option`, `hint_available` |
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
-| `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names); since 30 Sep the stimulus fields `feedback_shown`, `feedback_audio_source`, `feedback_audio_ms`, `result_sound`, `result_sound_offset_ms`, `result_sound_ms`, `card_animation` — see §5.9 |
+| `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names); since 30 Sep the stimulus fields `feedback_shown`, `feedback_audio_source`, `feedback_audio_ms`, `result_sound`, `result_sound_offset_ms`, `result_sound_ms`, `card_animation` — see §5.9; since 30 Sep (F3.3) also `idle_ms`, `idle_episodes`, `idle_longest_ms` and their thresholds — see §5.10 |
 | `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build) — S5, spec §7.6 |
 | `ASSEMBLY_SEGMENT_PLACED` | `kanji_id`, `exposure_index`, `attempt` (1-based, counts right and wrong), `slot_index` (1-based), `segment_id`, `expected_segment_id`, `is_correct`, `selected_ms` and `placed_ms` (from the start of this kanji's assembly), `hint_shown`, `segments_authored` — one per placement attempt, spec §5.3, decision D4 |
 | `ASSEMBLY_COMPLETED` | `kanji_id`, `exposure_index`, `duration_ms`, `incorrect_attempts`, `segment_count`, `segments_placed`, `hints_shown`, `row_order` (segment ids left to right as presented), `segments_authored`, `forced_by_researcher` — spec §5.3 |
@@ -127,6 +127,8 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `SYSTEM_CHECK_COMPLETED` | `headset_active`, `websocket_connected`, `passed`, `forced_by_researcher`, `eeg_checked` — S3, spec §7.4 |
 | `BASELINE_STARTED` | `eyes_open_s`, `eyes_closed_s`, `time_scale` — S4, spec §7.5 |
 | `BASELINE_COMPLETED` | `eyes_open_ms`, `eyes_closed_ms`, `time_scale`, `valid_duration` — S4 |
+| `HEAD_AWAY` | `episode`, `onset_offset_ms`, `yaw_deg`, `pitch_deg`, `limit`, thresholds — since 30 Sep, §5.10 |
+| `HEAD_RETURNED` | `episode`, `duration_ms`, `max_abs_yaw_deg`, `max_pitch_up_deg`, `max_pitch_down_deg`, `reason`, thresholds — since 30 Sep, §5.10 |
 | `STAGE_INTRO_ACKNOWLEDGED` | `wait_ms`, `forced_by_researcher` — Continue on the announcement before S2, S4, S5, S6, S7 and S8 |
 | `VIEW_RECENTERED` | `reason` (`SESSION_START`, `LEFT_MENU_BUTTON`, `KEYBOARD`), `yaw_error_deg`, `offset_m`, `camera_before` ([x,y,z]) — any state |
 
@@ -190,6 +192,75 @@ constant.
 
 No `schema_version` bump (§5.6 precedent of 29 Sep): the fields are additive,
 and rows written before 30 September simply do not have them.
+
+### 5.10 Head away and idle time (Phase 3, F3.3 — since 30 September)
+
+Every threshold here is **provisional, set in the Inspector and marked *to
+validate***: the phase test (7–8 October) calibrates them. Each row carries the
+values it was measured with, so rows written under different thresholds stay
+comparable afterwards.
+
+**Reference.** The angles are those of the head's forward direction relative to
+the direction from the head to the centre of the Learning Board, recomputed every
+frame from the current head position: yaw is left/right (positive right), pitch
+is up/down (positive up). A re-center moves the rig, not the board, so the
+reference survives it (the `VIEW_RECENTERED` row marks the discontinuity).
+
+**When.** From the first `STATE_ENTERED` after S0 until the session ends, in every
+state, S4 included: Phase 4 needs them wherever there is EEG. Only while the
+headset is tracked.
+
+#### `HEAD_AWAY`
+
+Emitted when the head has stayed outside the task band for `min_away_ms`. The
+row is written at confirmation, and `onset_offset_ms` says how long before that
+the head actually left (≈ −`min_away_ms`), so the episode can be placed exactly.
+
+| Field | Type | Value |
+|---|---|---|
+| `episode` | int | 1-based counter within the session |
+| `onset_offset_ms` | int | ms from the moment the head left the band to this row (negative) |
+| `yaw_deg`, `pitch_deg` | float | head angles at confirmation |
+| `limit` | string | which limit was crossed first: `YAW`, `PITCH_UP`, `PITCH_DOWN` |
+| `yaw_limit_deg`, `pitch_up_limit_deg`, `pitch_down_limit_deg` | float | thresholds in force |
+| `min_away_ms` | int | dwell required to confirm |
+
+#### `HEAD_RETURNED`
+
+Emitted when the head is back inside the band (with `hysteresis_deg` of margin)
+for `min_return_ms`, or when the episode has to be closed for another reason.
+
+| Field | Type | Value |
+|---|---|---|
+| `episode` | int | same number as its `HEAD_AWAY` |
+| `duration_ms` | int | from the moment the head left the band to the moment it came back |
+| `max_abs_yaw_deg`, `max_pitch_up_deg`, `max_pitch_down_deg` | float | extremes reached during the episode |
+| `reason` | string | `RETURNED`, `TRACKING_LOST` or `SESSION_END` |
+| `hysteresis_deg`, `min_return_ms` | float, int | thresholds in force |
+
+Every `HEAD_AWAY` has exactly one `HEAD_RETURNED` with the same `episode`. Both
+carry the trial block when a trial is open, so an episode that starts inside a
+trial is attributable to it; an episode may span trials, and the schema splits
+it by time.
+
+#### Idle time — fields on `TRIAL_COMPLETED`
+
+Measured only in the response window (from `TRIAL_STARTED` to `ANSWER_SELECTED`).
+A frame is idle when the head turns slower than `idle_head_deg_s` **and** every
+tracked controller's ray turns slower than `idle_ray_deg_s`; only runs of idle
+frames lasting at least `idle_min_ms` count.
+
+| Field | Type | Value |
+|---|---|---|
+| `idle_ms` | int | total length of the counted idle runs |
+| `idle_episodes` | int | how many runs |
+| `idle_longest_ms` | int | the longest one |
+| `idle_min_ms`, `idle_head_deg_s`, `idle_ray_deg_s` | int, float, float | thresholds in force |
+
+Per-trial head-away time is **not** a field: it is derived in the schema from the
+`HEAD_AWAY` / `HEAD_RETURNED` pairs, which stay the single owner of that fact.
+
+No `schema_version` bump (§5.6): two new events and additive fields.
 
 ### 5.8 `TRIAL_SEQUENCE_GENERATED` — the plan, not the outcome
 
@@ -300,9 +371,10 @@ a field does not have to guess which case they are in.
 
 ### 5.2 Reserved for Phase 3
 
-`HEAD_AWAY`, `HEAD_RETURNED`, `DISTRACTOR_INTERACTION`, and the derived behavior
-measures of §11 (idle time, response-time variability in the observation window).
-Named here so Phase 2 does not accidentally use the names for something else.
+`DISTRACTOR_INTERACTION` (still reserved; definition due before 5 October).
+`HEAD_AWAY` / `HEAD_RETURNED` and idle time are defined in §5.10 since
+30 September. Response-time variability stays derived: the schema computes it
+over the observation window, and no event carries it.
 
 ### 5.3 Deviation from §11.1 — `ANSWER_CORRECT` / `ANSWER_INCORRECT`
 
@@ -317,7 +389,8 @@ contradict itself. Correctness is a property of the answer, not an event in its
 own right.
 
 This needs an edit to spec §11.1 to stay true. Flagged rather than done, because
-the spec is the source of truth and this document is not.
+the spec is the source of truth and this document is not. **Confirmed by Sebas on
+30 September 2026: they stay derived; the edit goes into spec v1.3.**
 
 ### 5.4 Deviation from §11 — naming convention
 
@@ -438,6 +511,12 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**30 September 2026 — Phase 3, F3.3: head away and idle time.** Two new event
+types (`HEAD_AWAY`, `HEAD_RETURNED`) and additive fields on `TRIAL_COMPLETED`
+(idle time); no `schema_version` bump (§5.6). Definitions and provisional
+thresholds in §5.10. `ANSWER_CORRECT` / `ANSWER_INCORRECT` confirmed as derived
+(§5.3).
 
 **30 September 2026 — stimulus telemetry for the EEG (UI design v1.3, §8).**
 No new event types and no `schema_version` bump: additive fields (§5.9).

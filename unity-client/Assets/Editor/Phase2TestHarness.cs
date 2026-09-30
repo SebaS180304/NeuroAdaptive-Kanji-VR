@@ -98,6 +98,7 @@ namespace NeuroAdaptiveVR.EditorTools
             WiringCases(content);
             HapticCases();
             StimulusTelemetryCases(content);
+            HeadBehaviorCases();
 
             Report();
         }
@@ -1117,6 +1118,87 @@ namespace NeuroAdaptiveVR.EditorTools
                   late.Count == 0
                       ? $"{clips} clips · L max {maxL} ms · peor caso {StimulusTelemetry.PlannedResultOffsetMs(maxL) + longest} ms"
                       : "no caben: " + Join(late));
+        }
+
+        // ==================================================================
+        // Head away and idle time (Phase 3, F3.3; EVENT_CONTRACT.md 5.10)
+        // ==================================================================
+
+        /// <summary>
+        /// X4. The head-away state machine, driven frame by frame at 72 Hz with the
+        /// default thresholds: a glance shorter than min_away_ms emits nothing; a
+        /// real look-away emits HEAD_AWAY dated back to the first frame outside;
+        /// the return waits min_return_ms with hysteresis; losing tracking closes
+        /// the episode; episodes are numbered.
+        /// X5. Idle time: still runs shorter than idle_min_ms do not count, longer
+        /// ones do, and any movement breaks a run.
+        /// </summary>
+        private static void HeadBehaviorCases()
+        {
+            var p = new List<string>();
+            var th = HeadAwayThresholds.Default;
+            var d = new HeadAwayDetector(th);
+            const double dt = 1.0 / 72.0;
+            double t = 0;
+            var events = new List<HeadAwayDetector.Result>();
+            void Run(double seconds, float yaw, float pitch)
+            {
+                int n = (int)Math.Round(seconds / dt);
+                for (int i = 0; i < n; i++) { t += dt; var r = d.Step(t, yaw, pitch); if (r != null) events.Add(r.Value); }
+            }
+
+            Run(1.0, 0f, 0f);                 // looking at the board
+            Run(0.3, 55f, 0f);                // glance: 300 ms < 500 ms
+            Run(0.5, 0f, 0f);
+            if (events.Count != 0) p.Add($"una mirada de 300 ms emitio {events.Count}");
+
+            Run(1.0, 60f, 0f);                // real look-away, 1 s
+            var away = events.Find(e => e.Kind == HeadAwayDetector.Kind.Away);
+            if (events.Count != 1 || away.Episode != 1 || away.Limit != "YAW") p.Add("no hubo HEAD_AWAY #1 por YAW");
+            else if (Math.Abs(away.OnsetOffsetMs + th.MinAwayMs) > 20) p.Add($"onset {away.OnsetOffsetMs} ms, se esperaba ~-{th.MinAwayMs}");
+
+            Run(0.3, 37f, 0f);                // inside the limit but inside the hysteresis band: not back
+            if (events.Count != 1) p.Add("volvio dentro de la histeresis");
+            Run(0.1, 0f, 0f);                 // back, but for less than min_return_ms
+            Run(0.2, 60f, 0f);                // out again: still the same episode
+            Run(0.6, 0f, 0f);                 // back for good
+            var ret = events.Find(e => e.Kind == HeadAwayDetector.Kind.Returned);
+            if (events.Count != 2 || ret.Episode != 1 || ret.Reason != "RETURNED") p.Add("no hubo HEAD_RETURNED #1");
+            else if (Math.Abs(ret.DurationMs - 1600) > 30) p.Add($"duracion {ret.DurationMs} ms, se esperaba ~1600");
+            else if (Math.Abs(ret.MaxAbsYawDeg - 60f) > 0.01f) p.Add("max yaw mal");
+
+            Run(1.0, 0f, -60f);               // down, below the cards: episode 2
+            var closed = d.ForceClose(t, "TRACKING_LOST");
+            if (!(events.Count == 3 && events[2].Episode == 2 && events[2].Limit == "PITCH_DOWN")) p.Add("no hubo HEAD_AWAY #2 por PITCH_DOWN");
+            if (closed == null || closed.Value.Reason != "TRACKING_LOST" || closed.Value.Episode != 2) p.Add("perder tracking no cerro el episodio");
+            if (d.ForceClose(t, "SESSION_END") != null) p.Add("cerro dos veces");
+            Run(1.0, 0f, -20f);               // looking at the cards: inside
+            if (events.Count != 3) p.Add("mirar las tarjetas conto como apartar la vista");
+
+            Check("X4", "HEAD_AWAY/RETURNED: umbral, permanencia, histeresis, onset, cierre por tracking y numeracion",
+                  p.Count == 0, p.Count == 0 ? $"2 episodios · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms" : Join(p));
+
+            var q = new List<string>();
+            var idle = new IdleTracker(IdleTracker.Thresholds.Default);
+            void Idle(double seconds, float head, float ray)
+            {
+                int n = (int)Math.Round(seconds / dt);
+                for (int i = 0; i < n; i++) idle.Step((float)dt, head, ray);
+            }
+            Idle(0.8, 1f, 1f);               // 800 ms still: does not count
+            Idle(0.1, 20f, 1f);              // head moves
+            Idle(1.5, 1f, 2f);               // 1.5 s still: counts
+            Idle(0.1, 1f, 30f);              // ray moves
+            Idle(2.0, 0f, 0f);               // 2 s still, closed by Finish
+            idle.Finish();
+            if (idle.Episodes != 2) q.Add($"{idle.Episodes} episodios, se esperaban 2");
+            if (Math.Abs(idle.IdleMs - 3500) > 30) q.Add($"idle {idle.IdleMs} ms, se esperaba ~3500");
+            if (Math.Abs(idle.LongestMs - 2000) > 30) q.Add($"el mas largo {idle.LongestMs} ms");
+            var f = idle.Fields();
+            foreach (var k in new[] { "idle_ms", "idle_episodes", "idle_longest_ms", "idle_min_ms", "idle_head_deg_s", "idle_ray_deg_s" })
+                if (!f.ContainsKey(k)) q.Add("falta " + k);
+            Check("X5", "Idle time: tramos quietos cortos no cuentan, los largos si, cualquier movimiento corta",
+                  q.Count == 0, q.Count == 0 ? $"{idle.IdleMs} ms en {idle.Episodes} tramos (mas largo {idle.LongestMs})" : Join(q));
         }
 
         // ==================================================================

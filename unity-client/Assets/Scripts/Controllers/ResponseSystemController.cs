@@ -37,6 +37,11 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private PronunciationAudioController pronunciation;
         [Tooltip("Trial sounds (UI design v1.3, D4): select on the click, correct/incorrect after the reading.")]
         [SerializeField] private ProceduralSfx sfx;
+        [Tooltip("Head and ray angular speeds for idle time (Phase 3, F3.3).")]
+        [SerializeField] private HeadAwayMonitor behavior;
+
+        [Header("Idle time — provisional, TO VALIDATE (EVENT_CONTRACT.md 5.10)")]
+        [SerializeField] private IdleTracker.Thresholds idleThresholds = IdleTracker.Thresholds.Default;
 
         [Tooltip("Cualquier MonoBehaviour que implemente ITrialPresenter.")]
         [SerializeField] private MonoBehaviour presenterBehaviour;
@@ -58,6 +63,7 @@ namespace NeuroAdaptiveVR.Controllers
         private int _hintCount;
         private LalCue _cuesPresented;
         private double _answerSelectedAt;   // realtime of ANSWER_SELECTED: the origin of every stimulus offset
+        private IdleTracker _idle;
 
         /// <summary>Se dispara al cerrar el trial, con el resultado completo.</summary>
         public event Action<TrialResult> OnTrialCompleted;
@@ -70,6 +76,8 @@ namespace NeuroAdaptiveVR.Controllers
             if (assistance == null) assistance = GetComponent<LearningAssistanceController>();
             if (pronunciation == null) pronunciation = GetComponent<PronunciationAudioController>();
             if (sfx == null) sfx = FindAnyObjectByType<ProceduralSfx>();
+            if (behavior == null) behavior = FindAnyObjectByType<HeadAwayMonitor>();
+            _idle = new IdleTracker(idleThresholds);
 
             if (assistance == null)
             {
@@ -156,6 +164,8 @@ namespace NeuroAdaptiveVR.Controllers
             // database/EVENT_CONTRACT.md seccion 8.
             _responseClockStart = Time.realtimeSinceStartupAsDouble;
             _awaitingResponse = true;
+            _idle.Limits = idleThresholds;
+            _idle.Reset();   // idle time counts only in the response window (F3.3)
         }
 
         /// <summary>
@@ -320,6 +330,8 @@ namespace NeuroAdaptiveVR.Controllers
                 { "timed_out", false },   // sin timeout en Fase 2; el campo existe para no cambiar la forma
             });
 
+            _idle.Finish();   // the response window closes here
+
             // `select` sounds in this same frame, always (offset 0 by contract,
             // so it carries no field). UI design v1.3, D4 and 8.1.
             _answerSelectedAt = Time.realtimeSinceStartupAsDouble;
@@ -388,11 +400,19 @@ namespace NeuroAdaptiveVR.Controllers
                          _request.ImmediateFeedback, isCorrect, feedbackAudioSource, feedbackAudioMs,
                          resultSoundPlayed, resultSoundOffsetMs, resultSoundMs))
                 completed[kv.Key] = kv.Value;
+            // Idle time in the response window (F3.3, EVENT_CONTRACT.md 5.10).
+            // Without a monitor the three measures are null, not a misleading 0.
+            foreach (var kv in _idle.Fields())
+            {
+                bool measure = kv.Key == "idle_ms" || kv.Key == "idle_episodes" || kv.Key == "idle_longest_ms";
+                completed[kv.Key] = behavior == null && measure ? null : kv.Value;
+            }
             Debug.Log($"[ResponseSystem] {_context.TrialId} stimuli: feedback={_request.ImmediateFeedback} " +
                       $"reading={feedbackAudioSource} {feedbackAudioMs} ms · result={completed[StimulusTelemetry.KeyResultSound]} " +
                       $"at {completed[StimulusTelemetry.KeyResultSoundOffsetMs] ?? "-"} ms " +
                       $"(planned {StimulusTelemetry.PlannedResultOffsetMs(feedbackAudioMs)}) · " +
-                      $"card={completed[StimulusTelemetry.KeyCardAnimation]}");
+                      $"card={completed[StimulusTelemetry.KeyCardAnimation]} · " +
+                      $"idle={completed["idle_ms"] ?? "-"} ms in {completed["idle_episodes"] ?? "-"}");
             telemetry.Emit(TelemetryEvents.TrialCompleted, completed);
 
             _presenter.Clear();
@@ -406,6 +426,13 @@ namespace NeuroAdaptiveVR.Controllers
 
         private long ElapsedMs()
             => (long)((Time.realtimeSinceStartupAsDouble - _responseClockStart) * 1000.0);
+
+        // Idle time (F3.3): fed every frame of the response window only.
+        private void Update()
+        {
+            if (!_awaitingResponse || behavior == null || _idle == null) return;
+            _idle.Step(Time.unscaledDeltaTime, behavior.HeadDegPerSec, behavior.RayDegPerSec);
+        }
 
         private double SinceAnswerMs()
             => (Time.realtimeSinceStartupAsDouble - _answerSelectedAt) * 1000.0;

@@ -198,11 +198,14 @@ namespace NeuroAdaptiveVR.Data
         public const string EnvironmentApplied = "ENVIRONMENT_APPLIED";
         public const string PeripheralEvent = "PERIPHERAL_EVENT";
 
-        // Fase 3 -- reservados. Declarados aca para que Fase 2 no use estos
-        // nombres para otra cosa y para que el vocabulario viva en un solo
-        // archivo. NO emitir todavia.
+        // Phase 3 -- head away (F3.3, since 30 September; EVENT_CONTRACT.md 5.10).
+        // Emitted by HeadAwayMonitor; not trial-scoped, but they carry the trial
+        // block when a trial is open.
         public const string HeadAway = "HEAD_AWAY";
         public const string HeadReturned = "HEAD_RETURNED";
+
+        // Fase 3 -- reservado. NO emitir todavia: su definicion se decide antes
+        // del 5 de octubre.
         public const string DistractorInteraction = "DISTRACTOR_INTERACTION";
 
         /// <summary>
