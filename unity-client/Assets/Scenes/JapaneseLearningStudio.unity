@@ -3216,9 +3216,16 @@ MonoBehaviour:
   segmentSelectedColor: {r: 0.35, g: 0.65, b: 1, a: 1}
   segmentHintColor: {r: 1, g: 0.82, b: 0.3, a: 1}
   segmentHintHoverColor: {r: 1, g: 0.84, b: 0.32, a: 1}
-  questionSize: 54
-  questionY: 318
+  questionSize: 62
+  questionY: 308
   questionColor: {r: 0.8, g: 0.86, b: 0.95, a: 1}
+  questionMediumDilate: 0.08
+  stageTitleSize: 56
+  stageTitleColor: {r: 0.6627, g: 0.7059, b: 0.7765, a: 1}
+  stageChipBorder: {r: 0.2275, g: 0.2667, b: 0.3765, a: 1}
+  stageChipBorderWidth: 2
+  stageChipHeight: 80
+  stageChipPadding: 28
   segmentResourceFolder: assembly
   frameSize: 470
   frameBackColor: {r: 1, g: 1, b: 1, a: 0.06}
@@ -4687,6 +4694,7 @@ MonoBehaviour:
     MinAwayMs: 500
     MinReturnMs: 200
   requireHeadsetTracking: 1
+  speedWindowSeconds: 0.25
 --- !u!4 &793224997
 Transform:
   m_ObjectHideFlags: 0
@@ -5403,7 +5411,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.12, g: 0.13, b: 0.15, a: 0.96}
+  m_Color: {r: 0.10980392, g: 0.13333334, b: 0.1882353, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -6600,6 +6608,7 @@ MonoBehaviour:
   restColor: {r: 0.8902, g: 0.702, b: 0.2549, a: 1}
   labelText: '? Hint'
   labelColor: {r: 0.1098, g: 0.1333, b: 0.1882, a: 1}
+  labelSize: 56
   hoverBorder: {r: 0.349, g: 0.651, b: 1, a: 1}
   hoverLighten: 0.12
   borderWidth: 6

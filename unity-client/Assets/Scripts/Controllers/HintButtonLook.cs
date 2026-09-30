@@ -14,6 +14,8 @@ namespace NeuroAdaptiveVR.Controllers
     ///
     /// P3: at rest it is an amber chip with round ends (#E3B341) that reads
     /// "? Hint" in #1C2230, instead of a grey "?" with no button shape.
+    ///
+    /// P1: the label is 56 units, the minimum for text in the task area.
     /// </summary>
     [RequireComponent(typeof(Button))]
     public class HintButtonLook : MonoBehaviour,
@@ -24,6 +26,8 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private Color restColor = new(0.8902f, 0.7020f, 0.2549f, 1f);    // #E3B341
         [SerializeField] private string labelText = "? Hint";
         [SerializeField] private Color labelColor = new(0.1098f, 0.1333f, 0.1882f, 1f);   // #1C2230
+        [Tooltip("P1: no text in the task area below 56 units.")]
+        [SerializeField] private float labelSize = 56f;
 
         [Header("Ray over (D1)")]
         [SerializeField] private Color hoverBorder = new(0.3490f, 0.6510f, 1f, 1f);       // #59A6FF
@@ -59,6 +63,7 @@ namespace NeuroAdaptiveVR.Controllers
                     label.text = labelText;
                     label.color = labelColor;
                     label.fontStyle = FontStyles.Bold;
+                    label.fontSize = labelSize;
                 }
             }
             _rest = _background != null ? _background.color : Color.gray;

@@ -85,10 +85,23 @@ namespace NeuroAdaptiveVR.Controllers
         [Header("Question line (30 September, demo)")]
         [Tooltip("One line above the prompt that says what the trial asks. Same text in every " +
                  "condition, so it does not touch the ESL/LAL manipulation.")]
-        [SerializeField] private float questionSize = 54f;
+        [SerializeField] private float questionSize = 62f;
         [Tooltip("Vertical position on the board canvas, between the stage strip and the glyph.")]
-        [SerializeField] private float questionY = 318f;
+        [SerializeField] private float questionY = 308f;
         [SerializeField] private Color questionColor = new Color(0.80f, 0.86f, 0.95f, 1f);
+        [Tooltip("P1 asks for Medium, and the project only has Noto Sans CJK JP Regular. Until the " +
+                 "Medium font asset is imported (after the demos), the question uses a copy of the " +
+                 "font material with the face dilated by this much. 0 = plain Regular.")]
+        [SerializeField, Range(0f, 0.3f)] private float questionMediumDilate = 0.08f;
+
+        [Header("Stage chip (UI design v1.3, P1)")]
+        [SerializeField] private float stageTitleSize = 56f;
+        [SerializeField] private Color stageTitleColor = new Color(0.6627f, 0.7059f, 0.7765f, 1f);   // #A9B4C6
+        [SerializeField] private Color stageChipBorder = new Color(0.2275f, 0.2667f, 0.3765f, 1f);   // #3A4460
+        [SerializeField] private float stageChipBorderWidth = 2f;
+        [SerializeField] private float stageChipHeight = 80f;
+        [Tooltip("Space between the text and each round end of the chip.")]
+        [SerializeField] private float stageChipPadding = 28f;
 
         [Header("Assembly with authored segment images (30 September)")]
         [Tooltip("Resources folder with {KANJI_ID}_FULL.png and {KANJI_ID}_SEG{n}.png. When every " +
@@ -1036,9 +1049,11 @@ namespace NeuroAdaptiveVR.Controllers
                 var rt = (RectTransform)go.transform;
                 rt.SetParent(parent, false);
                 rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-                rt.sizeDelta = new Vector2(1500f, 70f);
+                rt.sizeDelta = new Vector2(1500f, 80f);
                 var t = go.GetComponent<TextMeshProUGUI>();
                 if (promptLabel != null) t.font = promptLabel.font;
+                var medium = MediumMaterial(t.font);
+                if (medium != null) t.fontSharedMaterial = medium;
                 t.alignment = TextAlignmentOptions.Center;
                 t.textWrappingMode = TextWrappingModes.NoWrap;
                 t.raycastTarget = false;
@@ -1050,10 +1065,88 @@ namespace NeuroAdaptiveVR.Controllers
             _question.text = text;
         }
 
-        /// <summary>Stage strip at the top of the board. Empty string hides it.</summary>
+        private Material _mediumMaterial;
+
+        /// <summary>
+        /// Stand-in for a Medium weight: the font's own material with a slightly
+        /// dilated face. Remove when the Noto Sans JP Medium asset exists.
+        /// </summary>
+        private Material MediumMaterial(TMP_FontAsset font)
+        {
+            if (font == null || font.material == null || questionMediumDilate <= 0f) return null;
+            if (_mediumMaterial == null)
+            {
+                _mediumMaterial = new Material(font.material) { name = font.material.name + " (Medium)" };
+                _mediumMaterial.SetFloat(ShaderUtilities.ID_FaceDilate, questionMediumDilate);
+                ShaderUtilities.UpdateShaderRatios(_mediumMaterial);
+            }
+            return _mediumMaterial;
+        }
+
+        private RectTransform _stageChip;
+
+        /// <summary>
+        /// Stage chip at the top of the board ("Step 3 of 9 · Learn"). Empty
+        /// string hides it. P1: the text sits inside a pill outline, sized to
+        /// the text, centred where the old strip was.
+        /// </summary>
         public void SetStageTitle(string text)
         {
-            if (stageTitleLabel != null) stageTitleLabel.text = text ?? string.Empty;
+            if (stageTitleLabel == null) return;
+            stageTitleLabel.text = text ?? string.Empty;
+            StyleStageChip();
+            LayoutHeader();
+        }
+
+        private void StyleStageChip()
+        {
+            stageTitleLabel.fontSize = stageTitleSize;
+            stageTitleLabel.color = stageTitleColor;
+            stageTitleLabel.alignment = TextAlignmentOptions.Center;
+            stageTitleLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            if (_stageChip != null) return;
+
+            var parent = stageTitleLabel.transform.parent as RectTransform;
+            if (parent == null) return;
+            var go = new GameObject("StageChip", typeof(RectTransform), typeof(Image));
+            go.layer = stageTitleLabel.gameObject.layer;
+            _stageChip = (RectTransform)go.transform;
+            _stageChip.SetParent(parent, false);
+            var lrt = (RectTransform)stageTitleLabel.transform;
+            _stageChip.anchorMin = lrt.anchorMin;
+            _stageChip.anchorMax = lrt.anchorMax;
+            _stageChip.pivot = new Vector2(0.5f, 0.5f);
+            _stageChip.SetSiblingIndex(stageTitleLabel.transform.GetSiblingIndex());   // behind the text
+            var img = go.GetComponent<Image>();
+            img.sprite = PillSprite.Get(stageChipHeight * 0.5f, stageChipBorderWidth);
+            img.type = Image.Type.Sliced;
+            img.color = stageChipBorder;
+            img.raycastTarget = false;
+        }
+
+        private float _headerY = float.NaN;
+
+        /// <summary>Places the stage chip (and, later, anything beside it) centred on the header row.</summary>
+        private void LayoutHeader()
+        {
+            if (stageTitleLabel == null) return;
+            var lrt = (RectTransform)stageTitleLabel.transform;
+            if (float.IsNaN(_headerY)) _headerY = lrt.anchoredPosition.y;
+
+            bool on = !string.IsNullOrEmpty(stageTitleLabel.text);
+            if (_stageChip != null) _stageChip.gameObject.SetActive(on);
+            if (!on) return;
+
+            float textW = stageTitleLabel.GetPreferredValues(stageTitleLabel.text,
+                              float.PositiveInfinity, float.PositiveInfinity).x;
+            float chipW = textW + 2f * stageChipPadding;
+            lrt.sizeDelta = new Vector2(chipW, stageChipHeight);
+            lrt.anchoredPosition = new Vector2(0f, _headerY);
+            if (_stageChip != null)
+            {
+                _stageChip.sizeDelta = lrt.sizeDelta;
+                _stageChip.anchoredPosition = lrt.anchoredPosition;
+            }
         }
 
         private void RestoreLabelStyle()
