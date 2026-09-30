@@ -96,8 +96,9 @@ namespace NeuroAdaptiveVR.Controllers
                 Debug.LogError($"[TrialAnswerCard] '{name}' no tiene TMP_Text. " +
                                "La tarjeta no puede mostrar su opcion.");
             else
-                // One line, always (25 September). The card grows to fit the
-                // text instead -- see StudioTrialPresenter.FitCardsTo.
+                // One line by default. P2 (UI design v1.3): Bind can allow a
+                // second line, broken between words only -- see
+                // StudioTrialPresenter.FitCardsTo and TrialTextSize.
                 label.textWrappingMode = TextWrappingModes.NoWrap;
 
             button.onClick.AddListener(Choose);
@@ -116,13 +117,20 @@ namespace NeuroAdaptiveVR.Controllers
             if (button != null) button.onClick.RemoveListener(Choose);
         }
 
-        public void Bind(string optionId, string displayText, float fontSize)
+        /// <param name="wrap">
+        /// P2: let the text take a second line, broken between words. Only the
+        /// presenter decides it, when the text does not fit on one line at the
+        /// minimum size. FitCardsTo makes every single word fit the card, so
+        /// TMP never has to split a word.
+        /// </param>
+        public void Bind(string optionId, string displayText, float fontSize, bool wrap = false)
         {
             _optionId = optionId;
             if (label != null)
             {
                 label.text = displayText;
                 label.fontSize = fontSize;
+                label.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
             }
             gameObject.SetActive(true);
             button.interactable = true;
@@ -381,6 +389,9 @@ namespace NeuroAdaptiveVR.Controllers
         }
 
         public float Width => ((RectTransform)transform).rect.width;
+
+        /// <summary>Width of the label box: the card minus its authored inset.</summary>
+        public float LabelWidth => label != null ? ((RectTransform)label.transform).rect.width : 0f;
 
         /// <summary>
         /// Sets the card width. The label keeps the inset it was authored with

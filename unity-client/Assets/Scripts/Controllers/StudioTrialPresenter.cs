@@ -55,10 +55,13 @@ namespace NeuroAdaptiveVR.Controllers
         [Tooltip("Size of the placeholder text of S5 derivation stages 1-3.")]
         [SerializeField] private float derivationSize = 160f;
 
-        [Header("Card layout (25 September)")]
-        [Tooltip("Space between the widest text and the label edge, per side. The card grows to " +
-                 "fit its text on ONE line instead of shrinking the font.")]
+        [Header("Card layout (25 September; P2 on 30 September)")]
+        [Tooltip("Space between the widest text and the label edge, per side.")]
         [SerializeField] private float cardTextPadding = 15f;
+        [Tooltip("P2: option text shrinks from its script's size (optionLatinSize etc.) down to " +
+                 "this before it takes a second line. The card width is sized so every text of " +
+                 "the contract fits at this size.")]
+        [SerializeField] private float optionMinSize = 70f;
         [Tooltip("Horizontal gap between two cards of the row (40 in the authored scene).")]
         [SerializeField] private float cardGap = 40f;
 
@@ -261,7 +264,7 @@ namespace NeuroAdaptiveVR.Controllers
             float need = 0f;
             for (int i = 0; i < options.Count && cards != null && i < cards.Length; i++)
                 if (cards[i] != null)
-                    need = Mathf.Max(need, CardWidthFor(cards[i], options[i].DisplayText));
+                    need = Mathf.Max(need, MinCardWidthFor(cards[i], options[i].DisplayText));
             if (need > _cardWidth + 0.5f)
             {
                 Debug.LogWarning($"[StudioTrialPresenter] An option needs a {need:0}-wide card and the row " +
@@ -270,10 +273,22 @@ namespace NeuroAdaptiveVR.Controllers
                 LayoutRow(need);
             }
 
+            // P2: one text size for the four cards of the trial (decided 30
+            // September): the largest size at which every option fits on one
+            // line, never above its script's size nor below optionMinSize. A
+            // bigger or smaller card text would make one answer stand out, the
+            // same reason the four cards share one width.
             int n = Mathf.Min(options.Count, cards?.Length ?? 0);
+            float trialSize = float.PositiveInfinity;
             for (int i = 0; i < n; i++)
-                cards[i].Bind(options[i].OptionId, options[i].DisplayText,
-                              OptionSizeFor(options[i].DisplayText));
+                trialSize = Mathf.Min(trialSize, OneLineSizeFor(cards[i], options[i].DisplayText));
+            for (int i = 0; i < n; i++)
+            {
+                string text = options[i].DisplayText;
+                float size = Mathf.Min(OptionSizeFor(text), trialSize);
+                bool wrap = cards[i].PreferredTextWidth(text, size) > cards[i].LabelWidth - 2f * cardTextPadding + 0.5f;
+                cards[i].Bind(options[i].OptionId, text, size, wrap);
+            }
 
             // Si llegaran menos de cuatro opciones el sistema de respuesta ya
             // habria abortado; ocultar el resto evita dejar una tarjeta del trial
@@ -522,7 +537,8 @@ namespace NeuroAdaptiveVR.Controllers
 
         /// <summary>
         /// Sizes every card of the row ONCE, from the widest text any card can
-        /// show, so each option fits on one line at its normal font size. Called
+        /// show. P2: "fits" means at optionMinSize, on one line or on two lines
+        /// broken between words; Present then picks the largest size that fits. Called
         /// by SessionFlowRunner at session start with every option text of the
         /// whole contract: the layout is then the same for every trial, every
         /// block and every kanji set. Never shrinks below the authored width.
@@ -534,7 +550,7 @@ namespace NeuroAdaptiveVR.Controllers
             string widest = null;
             foreach (var t in texts)
             {
-                float w = CardWidthFor(cards[0], t);
+                float w = MinCardWidthFor(cards[0], t);
                 if (w > need) { need = w; widest = t; }
             }
             LayoutRow(need);
@@ -542,6 +558,55 @@ namespace NeuroAdaptiveVR.Controllers
             float row = cards.Length * _cardWidth + (cards.Length - 1) * cardGap;
             Debug.Log($"[StudioTrialPresenter] Answer cards {_cardWidth:0} wide, row {row:0}" +
                       (widest != null ? $" (widest text: '{widest}')" : " (authored width, every text fits)"));
+        }
+
+        /// <summary>
+        /// P2: card width a text needs at the minimum size. A text of several
+        /// words may take two lines, so it only needs its longest line when
+        /// split in two between words; a single word needs its full width. The
+        /// row is sized from this, so no word is ever split.
+        /// </summary>
+        private float MinCardWidthFor(TrialAnswerCard card, string text)
+        {
+            if (string.IsNullOrEmpty(text)) return 0f;
+            float size = Mathf.Min(OptionSizeFor(text), optionMinSize);
+            float oneLine = CardWidthAt(card, text, size);
+            int best = -1;
+            float bestLine = float.PositiveInfinity;
+            for (int i = text.IndexOf(' '); i > 0; i = text.IndexOf(' ', i + 1))
+            {
+                float line = Mathf.Max(CardWidthAt(card, text.Substring(0, i).TrimEnd(), size),
+                                       CardWidthAt(card, text.Substring(i + 1).TrimStart(), size));
+                if (line < bestLine) { bestLine = line; best = i; }
+            }
+            return best < 0 ? oneLine : Mathf.Min(oneLine, bestLine);
+        }
+
+        /// <summary>
+        /// P2: the largest size, between optionMinSize and the script's size,
+        /// at which <paramref name="text"/> fits this card on one line.
+        /// Returns optionMinSize when it does not fit even there (it wraps).
+        /// </summary>
+        private float OneLineSizeFor(TrialAnswerCard card, string text)
+        {
+            float max = OptionSizeFor(text);
+            float min = Mathf.Min(max, optionMinSize);
+            float room = card.LabelWidth - 2f * cardTextPadding;
+            float w = card.PreferredTextWidth(text, max);
+            if (w <= 0f || w <= room) return max;
+            // Text width is linear in font size.
+            return Mathf.Clamp(Mathf.Floor(max * room / w), min, max);
+        }
+
+        private float CardWidthAt(TrialAnswerCard card, string text, float size)
+        {
+            float textW = card.PreferredTextWidth(text, size);
+            if (textW <= 0f) return 0f;
+            var cardRt = (RectTransform)card.transform;
+            float inset = 0f;
+            var lbl = card.GetComponentInChildren<TMP_Text>(true);
+            if (lbl != null) inset = cardRt.rect.width - ((RectTransform)lbl.transform).rect.width;
+            return Mathf.Ceil(textW + 2f * cardTextPadding + inset);
         }
 
         private float CardWidthFor(TrialAnswerCard card, string text)
