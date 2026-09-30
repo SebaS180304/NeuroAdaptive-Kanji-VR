@@ -346,15 +346,18 @@ namespace NeuroAdaptiveVR.Controllers
             // grabacion, que LAL concedio exactamente lo que la matriz 9.1 dice, sin
             // tener que leer la base.
             //
-            // P3 (UI design v1.3): the cue is a chip, "Hint · {cue in words}",
-            // in amber on the card colour, instead of the enum name in plain text.
+            // P3 (UI design v1.3): the cue is a chip with the cue in words, in
+            // amber on the card colour, instead of the enum name in plain text.
+            // Only the cue: the "Hint · " prefix went on 30 September (Sebas);
+            // the chip already reads as the hint, it sits by the Hint button.
             if (cue == LalCue.None)
             {
                 cueLabel.text = string.Empty;
                 HideCueChip();
                 return;
             }
-            string text = "Hint · " + CueWords(cue);
+            string text = CueWords(cue);
+            if (text.Length > 0) text = char.ToUpperInvariant(text[0]) + text.Substring(1);
             cueLabel.text = text;
             cueLabel.fontSize = cueChipFontSize;
             cueLabel.color = cueChipTextColor;

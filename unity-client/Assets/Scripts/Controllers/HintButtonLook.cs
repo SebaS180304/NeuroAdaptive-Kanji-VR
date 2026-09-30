@@ -13,7 +13,8 @@ namespace NeuroAdaptiveVR.Controllers
     /// ColorTint is switched off.
     ///
     /// P3: at rest it is an amber chip with round ends (#E3B341) that reads
-    /// "? Hint" in #1C2230, instead of a grey "?" with no button shape.
+    /// "Hint" in #1C2230, instead of a grey "?" with no button shape ("? Hint"
+    /// until 30 September; Sebas asked for the word alone).
     ///
     /// P1: the label is 56 units, the minimum for text in the task area.
     /// </summary>
@@ -24,7 +25,7 @@ namespace NeuroAdaptiveVR.Controllers
         [Header("Chip (P3)")]
         [SerializeField] private bool chip = true;
         [SerializeField] private Color restColor = new(0.8902f, 0.7020f, 0.2549f, 1f);    // #E3B341
-        [SerializeField] private string labelText = "? Hint";
+        [SerializeField] private string labelText = "Hint";
         [SerializeField] private Color labelColor = new(0.1098f, 0.1333f, 0.1882f, 1f);   // #1C2230
         [Tooltip("P1: no text in the task area below 56 units.")]
         [SerializeField] private float labelSize = 56f;
