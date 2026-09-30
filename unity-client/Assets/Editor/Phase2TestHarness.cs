@@ -1221,7 +1221,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 { ProceduralSfx.Clip.Select, (ProceduralSfx.SelectMs, -22f) },
                 { ProceduralSfx.Clip.Correct, (ProceduralSfx.CorrectMs, -16f) },
                 { ProceduralSfx.Clip.Incorrect, (ProceduralSfx.IncorrectMs, -20f) },
-                { ProceduralSfx.Clip.Stage, (ProceduralSfx.StageMs, -26f) },
+                { ProceduralSfx.Clip.Stage, (ProceduralSfx.StageMs, -16f) },
                 { ProceduralSfx.Clip.Place, (ProceduralSfx.PlaceMs, -20f) },
                 { ProceduralSfx.Clip.Done, (ProceduralSfx.DoneMs, -16f) },
             };

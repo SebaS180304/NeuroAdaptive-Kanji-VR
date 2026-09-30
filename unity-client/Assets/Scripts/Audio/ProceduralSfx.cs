@@ -88,9 +88,11 @@ namespace NeuroAdaptiveVR.Audio
             clips[Clip.Incorrect] = Render("sfx_incorrect", -20f, false,
                 new Note(220f, 0f, 0.120f), new Note(164.8f, 0.120f, 0.260f));
 
-            // stage: D4 A4 E5 together, 1.2 s, -26 dB, sine. Three notes at once
+            // stage: D4 A4 E5 together, 1.2 s, -16 dB, sine (design said -26 dB;
+            // raised on 30 September after the headset pass: too quiet to notice
+            // the change of stage). Three notes at once
             // would peak at three times the level, so each gets a third.
-            clips[Clip.Stage] = Render("sfx_stage", -26f, false, StageHz.Length,
+            clips[Clip.Stage] = Render("sfx_stage", -16f, false, StageHz.Length,
                 new Note(StageHz[0], 0f, 1.2f), new Note(StageHz[1], 0f, 1.2f), new Note(StageHz[2], 0f, 1.2f));
             // place: G5 784 Hz, 80 ms, -20 dB, triangle
             clips[Clip.Place] = Render("sfx_place", -20f, true, new Note(784f, 0f, 0.080f));
