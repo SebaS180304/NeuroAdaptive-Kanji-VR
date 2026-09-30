@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NeuroAdaptiveVR.Audio;
 using NeuroAdaptiveVR.Core;
 using NeuroAdaptiveVR.Data;
 using UnityEngine;
@@ -48,12 +49,10 @@ namespace NeuroAdaptiveVR.Controllers
         [Tooltip("The complete kanji stays green this long (not after a forced completion).")]
         [SerializeField] private float successSeconds = 1.6f;
 
-        [Header("Sounds (procedural)")]
+        [Header("Sounds (UI design v1.3, P4)")]
+        [Tooltip("The trial sound set (SessionRoot/TrialSfx): place, incorrect and done.")]
+        [SerializeField] private ProceduralSfx sfx;
         [SerializeField] private bool playSounds = true;
-        [SerializeField, Range(0f, 1f)] private float volume = 0.5f;
-
-        private AudioSource _audio;
-        private AudioClip _placeClip, _wrongClip, _doneClip;
 
         private readonly Queue<string> _segmentClicks = new();
         private readonly Queue<int> _slotClicks = new();
@@ -65,7 +64,7 @@ namespace NeuroAdaptiveVR.Controllers
         {
             if (board == null) board = FindAnyObjectByType<StudioTrialPresenter>();
             if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
-            BuildClips();
+            if (sfx == null) sfx = FindAnyObjectByType<ProceduralSfx>();
         }
 
         private void OnEnable()
@@ -168,7 +167,7 @@ namespace NeuroAdaptiveVR.Controllers
 
                     if (ok)
                     {
-                        Play(_placeClip);
+                        Play(ProceduralSfx.Clip.Place);
                         board.FillSlot(slot, selected, plan.Labels[slot]);
                         slot++;
                         wrongHere = 0;
@@ -185,7 +184,7 @@ namespace NeuroAdaptiveVR.Controllers
                         incorrect++;
                         wrongHere++;
                         selected = null;
-                        Play(_wrongClip);
+                        Play(ProceduralSfx.Clip.Incorrect);
                         board.FlashSlotWrong(slot);
                         if (wrongHere >= hintAfterWrong && hintFor == null)
                         {
@@ -225,7 +224,7 @@ namespace NeuroAdaptiveVR.Controllers
             {
                 // Success is visible AND audible: in VR the eyes may be on the cards.
                 board.ShowAssemblyComplete();
-                Play(_doneClip);
+                Play(ProceduralSfx.Clip.Done);
                 yield return new WaitForSecondsRealtime(successSeconds);
             }
             board.ShowExposure(item.Character);
@@ -233,46 +232,14 @@ namespace NeuroAdaptiveVR.Controllers
         }
 
         // ------------------------------------------------------------------
-        // Sounds, generated so no asset is needed (same approach as the S4 chime)
+        // Sounds: the shared set of design section 4 (P4). Each one plays in
+        // the frame of the event it belongs to: place and incorrect with
+        // ASSEMBLY_SEGMENT_PLACED, done right after ASSEMBLY_COMPLETED.
         // ------------------------------------------------------------------
 
-        private void Play(AudioClip clip)
+        private void Play(ProceduralSfx.Clip clip)
         {
-            if (!playSounds || clip == null) return;
-            if (_audio == null)
-            {
-                _audio = gameObject.AddComponent<AudioSource>();
-                _audio.playOnAwake = false;
-                _audio.spatialBlend = 0f;
-            }
-            _audio.PlayOneShot(clip, volume);
-        }
-
-        private void BuildClips()
-        {
-            if (_placeClip != null) return;
-            _placeClip = Tones("AssemblyPlace", new[] { 988f }, 0.09f, 0.35f);                 // short high tick
-            _wrongClip = Tones("AssemblyWrong", new[] { 196f }, 0.16f, 0.30f, down: true);
-            _doneClip = Tones("AssemblyDone", new[] { 523f, 659f, 784f, 1047f }, 0.11f, 0.35f); // C E G C
-        }
-
-        private static AudioClip Tones(string name, float[] freqs, float noteSeconds, float amp, bool down = false)
-        {
-            const int rate = 44100;
-            int per = (int)(rate * noteSeconds);
-            int tail = (int)(rate * 0.15f);
-            var data = new float[per * freqs.Length + tail];
-            for (int k = 0; k < freqs.Length; k++)
-                for (int i = 0; i < per + tail && k * per + i < data.Length; i++)
-                {
-                    float t = (float)i / rate;
-                    float f = down ? freqs[k] * (1f - 0.25f * t / noteSeconds) : freqs[k];
-                    float env = Mathf.Min(1f, t / 0.005f) * Mathf.Exp(-t * (down ? 14f : 18f));
-                    data[k * per + i] += amp * env * Mathf.Sin(2f * Mathf.PI * f * t);
-                }
-            var clip = AudioClip.Create(name, data.Length, 1, rate, false);
-            clip.SetData(data, 0);
-            return clip;
+            if (playSounds && sfx != null) sfx.Play(clip);
         }
 
         private static string Instruction(int slot, int count) =>

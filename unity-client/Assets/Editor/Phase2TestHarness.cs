@@ -99,6 +99,7 @@ namespace NeuroAdaptiveVR.EditorTools
             HapticCases();
             StimulusTelemetryCases(content);
             HeadBehaviorCases();
+            SoundSetCases();
 
             Report();
         }
@@ -1199,6 +1200,55 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (!f.ContainsKey(k)) q.Add("falta " + k);
             Check("X5", "Idle time: tramos quietos cortos no cuentan, los largos si, cualquier movimiento corta",
                   q.Count == 0, q.Count == 0 ? $"{idle.IdleMs} ms en {idle.Episodes} tramos (mas largo {idle.LongestMs})" : Join(q));
+        }
+
+        // ==================================================================
+        // Sound set (UI design v1.3, section 4 and P4)
+        // ==================================================================
+
+        /// <summary>
+        /// X6. The six clips of the set exist with the lengths of design section 4,
+        /// none peaks above its level, the stage chord shares no pitch with the S4
+        /// eyes-closed chime (within 3 %), and the assembly finds the shared set
+        /// in the scene instead of making its own sounds.
+        /// </summary>
+        private static void SoundSetCases()
+        {
+            var q = new List<string>();
+            var clips = ProceduralSfx.Synthesize();
+            var want = new Dictionary<ProceduralSfx.Clip, (int ms, float db)>
+            {
+                { ProceduralSfx.Clip.Select, (ProceduralSfx.SelectMs, -22f) },
+                { ProceduralSfx.Clip.Correct, (ProceduralSfx.CorrectMs, -16f) },
+                { ProceduralSfx.Clip.Incorrect, (ProceduralSfx.IncorrectMs, -20f) },
+                { ProceduralSfx.Clip.Stage, (ProceduralSfx.StageMs, -26f) },
+                { ProceduralSfx.Clip.Place, (ProceduralSfx.PlaceMs, -20f) },
+                { ProceduralSfx.Clip.Done, (ProceduralSfx.DoneMs, -16f) },
+            };
+            var peaks = new List<string>();
+            foreach (var kv in want)
+            {
+                if (!clips.TryGetValue(kv.Key, out var c) || c == null) { q.Add("falta " + kv.Key); continue; }
+                int ms = Mathf.RoundToInt(c.length * 1000f);
+                if (Math.Abs(ms - kv.Value.ms) > 1) q.Add($"{kv.Key} dura {ms} ms, se esperaban {kv.Value.ms}");
+                var data = new float[c.samples];
+                c.GetData(data, 0);
+                float peak = data.Max(Math.Abs);
+                float limit = Mathf.Pow(10f, kv.Value.db / 20f) * 1.01f;
+                if (peak > limit) q.Add($"{kv.Key} pico {20f * Mathf.Log10(peak):0.0} dB, nivel {kv.Value.db} dB");
+                peaks.Add($"{kv.Key} {20f * Mathf.Log10(Mathf.Max(peak, 1e-6f)):0.0} dB");
+                UnityEngine.Object.DestroyImmediate(c);
+            }
+            foreach (var hz in ProceduralSfx.StageHz)
+                if (Math.Abs(hz - SessionFlowRunner.ChimeHz) / SessionFlowRunner.ChimeHz < 0.03f)
+                    q.Add($"stage usa {hz} Hz, igual que el chime de S4");
+
+            var assembly = UnityEngine.Object.FindObjectsByType<KanjiAssemblyController>(FindObjectsInactive.Include);
+            var sets = UnityEngine.Object.FindObjectsByType<ProceduralSfx>(FindObjectsInactive.Include);
+            if (assembly.Length > 0 && sets.Length == 0) q.Add("hay ensamblaje y ningun ProceduralSfx en la escena");
+
+            Check("X6", "Set de sonidos: 6 clips con su duracion y nivel; stage no comparte tono con el chime de S4",
+                  q.Count == 0, q.Count == 0 ? Join(peaks) : Join(q));
         }
 
         // ==================================================================

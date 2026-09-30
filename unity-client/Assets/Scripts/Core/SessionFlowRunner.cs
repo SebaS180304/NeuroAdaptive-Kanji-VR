@@ -702,6 +702,10 @@ namespace NeuroAdaptiveVR.Core
             _chime.Play();
         }
 
+        /// <summary>Pitch of the S4 eyes-closed chime. The stage sound (P4/P7) must
+        /// not share it; the harness checks that (X6).</summary>
+        public const float ChimeHz = 880f;
+
         /// <summary>A 0.4 s, 880 Hz tone with a soft envelope. Procedural so
         /// S4 does not depend on an authored asset that does not exist yet.</summary>
         private static AudioClip BuildChime()
@@ -714,7 +718,7 @@ namespace NeuroAdaptiveVR.Core
             {
                 float t = (float)i / rate;
                 float env = Mathf.Min(1f, t / 0.02f) * Mathf.Exp(-t * 6f);
-                data[i] = 0.35f * env * Mathf.Sin(2f * Mathf.PI * 880f * t);
+                data[i] = 0.35f * env * Mathf.Sin(2f * Mathf.PI * ChimeHz * t);
             }
             var clip = AudioClip.Create("S4Chime", n, 1, rate, false);
             clip.SetData(data, 0);
