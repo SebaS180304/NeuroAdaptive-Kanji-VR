@@ -1,8 +1,9 @@
-# Initial PostgreSQL schema — Phase 1
+# PostgreSQL schema — Phase 1 + schema v1 (Phase 3)
 
-Entity-relationship diagram of the foundational schema. See `schema.sql`
-for the full DDL and `backend/alembic/versions/0001_initial_schema.py`
-for the equivalent migration; the two must be kept identical.
+Entity-relationship diagrams of the foundational schema (migration 0001) and
+of schema v1 (migration 0002, F3.4, [below](#schema-v1--phase-3-migration-0002)).
+See `schema.sql` for the full DDL and `backend/alembic/versions/` for the
+equivalent migrations; they must be kept identical.
 
 ```mermaid
 erDiagram
@@ -143,3 +144,71 @@ referenced a `server_timestamp` column that never existed (the real name is
 milliseconds field of an interval and silently discards minutes — a
 1 min 200 ms offset was reported as 200. It now uses
 `EXTRACT(EPOCH FROM ...) * 1000`.
+
+## Schema v1 — Phase 3, migration 0002
+
+Added on 1 October 2026 (F3.4). Design and reasons: `MER_Schema_v1.md` in the
+project docs. The five Phase 1 tables do not change; `session_events` gains one
+expression index on `payload->>'trial_id'`.
+
+**`session_events` stays the source of truth.** Every table below except
+`kanji_items` is a projection of it, rebuilt by `project_session(session_id)`
+and kept current by `project_event(event_id)`, which the backend calls after
+storing each event. Both are PL/pgSQL, in the migration, so the backend, the
+backfill (`backfill_projection.sql`) and pgAdmin run the same code. A row
+always keeps the id of the event it came from; a failure never loses the event
+and is logged in `projection_errors`. `verify_projection.sql` checks tables
+against events.
+
+`kanji_items` is reference data, seeded by `seed_kanji_items.sql`, which
+`tools/kanji_seed_sql.py` generates from `kanji_content.json` (and
+`tools/kanji_metrics.py --export` regenerates with it).
+
+```mermaid
+erDiagram
+    EXPERIMENT_SESSIONS ||--o{ SESSION_EVENTS : "source of truth"
+    EXPERIMENT_SESSIONS ||--o{ SESSION_STATES : "goes through"
+    EXPERIMENT_SESSIONS ||--o{ TRIAL_BLOCKS : "plans"
+    TRIAL_BLOCKS ||--|{ PLANNED_TRIALS : "contains"
+    EXPERIMENT_SESSIONS ||--o{ TRIALS : "runs"
+    TRIALS ||--o{ HINT_REQUESTS : "receives"
+    EXPERIMENT_SESSIONS ||--o{ ENVIRONMENT_APPLICATIONS : "applies ESL"
+    EXPERIMENT_SESSIONS ||--o{ PERIPHERAL_EVENTS : "shows"
+    EXPERIMENT_SESSIONS ||--o{ HEAD_AWAY_EPISODES : "records"
+    EXPERIMENT_SESSIONS ||--o{ KANJI_EXPOSURES : "S5"
+    EXPERIMENT_SESSIONS ||--o{ ASSEMBLIES : "S2 and S5"
+    EXPERIMENT_SESSIONS ||--o{ ASSEMBLY_ATTEMPTS : "S2 and S5"
+    EXPERIMENT_SESSIONS ||--o{ PROJECTION_ERRORS : "log"
+    KANJI_ITEMS ||--o{ PLANNED_TRIALS : "kanji_id"
+    KANJI_ITEMS ||--o{ TRIALS : "kanji_id"
+    KANJI_ITEMS ||--o{ KANJI_EXPOSURES : "kanji_id"
+    KANJI_ITEMS ||--o{ ASSEMBLIES : "kanji_id"
+    KANJI_ITEMS ||--o{ ASSEMBLY_ATTEMPTS : "kanji_id"
+    SESSION_EVENTS ||--o| TRIALS : "started / answer / completed"
+    SESSION_EVENTS ||--o| HINT_REQUESTS : "source_event_id"
+    SESSION_EVENTS ||--o| HEAD_AWAY_EPISODES : "away / returned"
+    SESSION_EVENTS ||--o{ PROJECTION_ERRORS : "event_id"
+    PLANNED_TRIALS |o..o| TRIALS : "plan vs run (no FK)"
+```
+
+| Table | From event(s) | Key |
+|---|---|---|
+| `kanji_items` | — (seed) | `kanji_id` |
+| `session_states` | `STATE_ENTERED` | `(session_id, visit_seq)` |
+| `trial_blocks` | `TRIAL_SEQUENCE_GENERATED` | `(session_id, block_state)` |
+| `planned_trials` | each entry of `sequence` | `(session_id, trial_id)` |
+| `trials` | `TRIAL_STARTED` creates; `ANSWER_SELECTED`, `TRIAL_COMPLETED` fill in | `(session_id, trial_id)` |
+| `hint_requests` | `HINT_REQUESTED` | `source_event_id` |
+| `environment_applications` | `ENVIRONMENT_APPLIED` | `source_event_id` |
+| `peripheral_events` | `PERIPHERAL_EVENT` | `source_event_id` |
+| `head_away_episodes` | `HEAD_AWAY` creates; `HEAD_RETURNED` closes | `(session_id, episode)` |
+| `kanji_exposures` | `KANJI_EXPOSED` | `source_event_id` |
+| `assemblies` | `ASSEMBLY_COMPLETED` | `(session_id, exposure_index)` |
+| `assembly_attempts` | `ASSEMBLY_SEGMENT_PLACED` | `source_event_id` |
+| `projection_errors` | failures of `project_event` | `id` |
+
+Derived, not stored: `v_environment_intervals` (validity of each ESL
+application), `v_trial_behavior` (head-away time in each trial's response
+window, peripheral events in the whole trial) and `trial_timeline(session_id,
+window_n DEFAULT 3)`, one row per trial with the observation-window aggregates
+the F5a State Estimator reads.

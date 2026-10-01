@@ -41,6 +41,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
+from sqlalchemy import text
 
 from app.db.base import AsyncSessionLocal
 from app.models.session import ExperimentSession, GameFlowState
@@ -122,11 +123,34 @@ async def _handle_session_event(websocket: WebSocket, session_id: uuid.UUID, mes
     async with AsyncSessionLocal() as db:
         event = SessionEventModel(**parsed.model_dump())
         db.add(event)
+        await db.flush()  # assigns event.id
         await _sync_current_state(db, session_id, parsed)
+        await _project(db, event.id)
         await db.commit()
         await db.refresh(event)
 
     await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": str(event.id)})
+
+
+async def _project(db, event_id: int) -> None:
+    """
+    Schema v1 (F3.4, MER D1): project the event into the relational tables
+    in the same transaction that stores it, so trial_timeline is current
+    while the session runs (F5a reads it during S7).
+
+    project_event() is PL/pgSQL (migration 0002) and never raises: a failure
+    is rolled back to its own savepoint and recorded in projection_errors,
+    and the event is committed anyway. The except below only covers a
+    database without the function (migration not applied): the event still
+    has to be kept.
+    """
+    try:
+        async with db.begin_nested():
+            ok = (await db.execute(text("SELECT project_event(:id)"), {"id": event_id})).scalar()
+        if not ok:
+            logger.warning("event %s stored but not projected; see projection_errors", event_id)
+    except Exception:  # pragma: no cover - only without migration 0002
+        logger.exception("project_event(%s) unavailable; event stored without projection", event_id)
 
 
 async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCreate) -> None:

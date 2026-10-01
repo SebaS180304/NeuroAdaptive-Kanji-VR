@@ -788,6 +788,12 @@ def main() -> int:
         export_content(g, args.export, stream=real_stdout)
         if args.export != "-":
             print(f"Contrato de contenido escrito en {args.export}\n")
+            # The kanji_items seed (schema v1, F3.4) comes from the same json,
+            # written in the same run, so the catalogue and the content
+            # contract cannot drift apart (decided 1 Oct 2026).
+            from kanji_seed_sql import DEFAULT_OUT, write_seed
+            write_seed(pathlib.Path(args.export), DEFAULT_OUT)
+            print(f"Semilla de kanji_items escrita en {DEFAULT_OUT}\n")
 
     orphans = [e for rows in table.values() for e, v in rows.items() if not v]
 

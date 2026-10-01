@@ -79,6 +79,10 @@ With the local venv, from `backend/`: `pytest`.
 Runs against the database configured in `.env` — make sure you have run
 `alembic upgrade head` first.
 
+`tests/test_projection.py` (schema v1, F3.4) also needs the kanji catalogue:
+apply `database/seed_kanji_items.sql` after `alembic upgrade head` (section 7).
+It skips itself, with that message, when the catalogue is empty.
+
 **These four tests do not cover the WebSocket protocol.**
 `test_websocket_ping_and_events` never opens a socket: `httpx.AsyncClient`
 does not speak WebSocket, so the test only asserts that the session was
@@ -170,3 +174,32 @@ tests/                         # pytest
 
 See `../database/ERD.md` for what the schema covers in this phase and what
 arrives in later ones.
+
+## 7. Schema v1 (Phase 3, F3.4) — projection of `session_events`
+
+Migration `0002` adds the relational tables of schema v1 and the projector
+(`project_event`, `project_session`, in PL/pgSQL). From then on the WebSocket
+handler projects every event right after storing it, in the same transaction;
+a projection failure never loses the event and is logged in
+`projection_errors`. Design: `MER_Schema_v1.md` (project docs); tables:
+`database/ERD.md`.
+
+From the repo root (PowerShell), once:
+
+```powershell
+docker compose exec backend alembic upgrade head
+Get-Content database\seed_kanji_items.sql | docker compose exec -T db psql -U neuroadaptive -d neuroadaptive_vr
+Get-Content database\backfill_projection.sql | docker compose exec -T db psql -U neuroadaptive -d neuroadaptive_vr
+Get-Content database\verify_projection.sql | docker compose exec -T db psql -U neuroadaptive -d neuroadaptive_vr
+docker compose exec backend pytest
+```
+
+- `seed_kanji_items.sql` is generated (`python tools/kanji_seed_sql.py`, and
+  again by every `kanji_metrics.py --export`). Re-apply it whenever
+  `kanji_content.json` changes; it is an idempotent upsert.
+- `backfill_projection.sql` projects the M2 evidence sessions and every
+  session since 28 Sep; edit its `targets` view for others. Re-running it
+  rebuilds the same rows.
+- `verify_projection.sql`: any row in its checks 2-4 is a discrepancy.
+- Per trial, with the observation window (default 3):
+  `SELECT * FROM trial_timeline('<session uuid>');`

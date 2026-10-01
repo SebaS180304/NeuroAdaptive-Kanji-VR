@@ -1,0 +1,508 @@
+{
+ "description": "Synthetic session following EVENT_CONTRACT.md (30 Sep 2026): one event of every projected type, plus two log-only events. Used by tests/test_projection.py and database/dev/check_projection.sh.",
+ "events": [
+  {
+   "event_type": "STATE_ENTERED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S1_WELCOME_ORIENTATION",
+    "session_elapsed_ms": 0,
+    "esl": "LOW",
+    "lal": "OFF",
+    "transition_sound_lead_ms": null
+   }
+  },
+  {
+   "event_type": "ENVIRONMENT_APPLIED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S1_WELCOME_ORIENTATION",
+    "session_elapsed_ms": 5,
+    "esl": "LOW",
+    "lal": "OFF",
+    "profile_name": "LOW_Studio",
+    "prop_count": 6,
+    "mover_count": 0,
+    "active_props": [
+     "Plant",
+     "Shelf"
+    ],
+    "active_movers": [],
+    "peripheral_interval_min_ms": 0,
+    "peripheral_interval_max_ms": 0,
+    "max_tier": 1,
+    "seed": 12345,
+    "seed_source": "SESSION",
+    "selection_seed": 678
+   }
+  },
+  {
+   "event_type": "START_SELECTED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S1_WELCOME_ORIENTATION",
+    "session_elapsed_ms": 4000,
+    "esl": "LOW",
+    "lal": "OFF",
+    "reaction_ms": 3995,
+    "forced_by_researcher": false
+   }
+  },
+  {
+   "event_type": "STATE_ENTERED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 7500,
+    "esl": "LOW",
+    "lal": "OFF",
+    "transition_sound_lead_ms": 3507
+   }
+  },
+  {
+   "event_type": "TRIAL_SEQUENCE_GENERATED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 8000,
+    "esl": "LOW",
+    "lal": "OFF",
+    "block_state": "S2_VR_TUTORIAL",
+    "kanji_set": "A",
+    "seed": -1058336171,
+    "block_seed": 99,
+    "seed_raw": "777",
+    "trial_count": 2,
+    "min_lag_requested": 2,
+    "min_lag_achieved": 1,
+    "distinct_pairs": 2,
+    "ordering_attempts": 3,
+    "sequence": [
+     {
+      "trial_sequence": 1,
+      "kanji_id": "KANJI_ICHI",
+      "trial_type": "T1_MEANING_TO_KANJI",
+      "options": [
+       "KANJI_ICHI",
+       "KANJI_NI",
+       "KANJI_SAN",
+       "KANJI_YON"
+      ],
+      "correct_option": "KANJI_ICHI"
+     },
+     {
+      "trial_sequence": 2,
+      "kanji_id": "KANJI_NI",
+      "trial_type": "T2_KANJI_TO_MEANING",
+      "options": [
+       "KANJI_NI",
+       "KANJI_GO",
+       "KANJI_ICHI",
+       "KANJI_SAN"
+      ],
+      "correct_option": "KANJI_NI"
+     }
+    ]
+   }
+  },
+  {
+   "event_type": "TRIAL_STARTED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 9000,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-001",
+    "trial_sequence": 1,
+    "trial_type": "T1_MEANING_TO_KANJI",
+    "kanji_id": "KANJI_ICHI",
+    "kanji_char": "一",
+    "options": [
+     "KANJI_ICHI",
+     "KANJI_NI",
+     "KANJI_SAN",
+     "KANJI_YON"
+    ],
+    "correct_option": "KANJI_ICHI",
+    "hint_available": true
+   }
+  },
+  {
+   "event_type": "HEAD_AWAY",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 10500,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-001",
+    "trial_sequence": 1,
+    "trial_type": "T1_MEANING_TO_KANJI",
+    "kanji_id": "KANJI_ICHI",
+    "episode": 1,
+    "onset_offset_ms": -500,
+    "yaw_deg": 44.2,
+    "pitch_deg": -3.1,
+    "limit": "YAW",
+    "yaw_limit_deg": 40,
+    "pitch_up_limit_deg": 40,
+    "pitch_down_limit_deg": 50,
+    "min_away_ms": 500
+   }
+  },
+  {
+   "event_type": "HINT_REQUESTED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 11000,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-001",
+    "trial_sequence": 1,
+    "trial_type": "T1_MEANING_TO_KANJI",
+    "kanji_id": "KANJI_ICHI",
+    "hint_type": [],
+    "hint_available": true,
+    "time_since_trial_start_ms": 2000
+   }
+  },
+  {
+   "event_type": "HINT_REQUESTED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 11500,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-001",
+    "trial_sequence": 1,
+    "trial_type": "T1_MEANING_TO_KANJI",
+    "kanji_id": "KANJI_ICHI",
+    "hint_type": [
+     "TARGET_READING_AUDIO"
+    ],
+    "hint_available": true,
+    "time_since_trial_start_ms": 2500
+   }
+  },
+  {
+   "event_type": "ANSWER_SELECTED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 13000,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-001",
+    "trial_sequence": 1,
+    "trial_type": "T1_MEANING_TO_KANJI",
+    "kanji_id": "KANJI_ICHI",
+    "kanji_char": "一",
+    "selected_option": "KANJI_ICHI",
+    "is_correct": true,
+    "response_time_ms": 4000,
+    "timed_out": false
+   }
+  },
+  {
+   "event_type": "TRIAL_COMPLETED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 14500,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-001",
+    "trial_sequence": 1,
+    "trial_type": "T1_MEANING_TO_KANJI",
+    "kanji_id": "KANJI_ICHI",
+    "is_correct": true,
+    "response_time_ms": 4000,
+    "hint_count": 2,
+    "cues_presented": [
+     "TARGET_READING_AUDIO"
+    ],
+    "feedback_shown": true,
+    "feedback_audio_source": "TTS_PLACEHOLDER",
+    "feedback_audio_ms": 450,
+    "result_sound": "CORRECT",
+    "result_sound_offset_ms": 601,
+    "result_sound_ms": 470,
+    "card_animation": "CORRECT_POP",
+    "idle_ms": 1200,
+    "idle_episodes": 1,
+    "idle_longest_ms": 1200,
+    "idle_min_ms": 1000,
+    "idle_head_deg_s": 5.0,
+    "idle_ray_deg_s": 10.0
+   }
+  },
+  {
+   "event_type": "PERIPHERAL_EVENT",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 15000,
+    "esl": "LOW",
+    "lal": "LOW",
+    "event_index": 0,
+    "object_name": "Silhouette_A",
+    "duration_ms": 8000
+   }
+  },
+  {
+   "event_type": "TRIAL_STARTED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 16000,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-002",
+    "trial_sequence": 2,
+    "trial_type": "T2_KANJI_TO_MEANING",
+    "kanji_id": "KANJI_NI",
+    "kanji_char": "二",
+    "options": [
+     "KANJI_NI",
+     "KANJI_GO",
+     "KANJI_ICHI",
+     "KANJI_SAN"
+    ],
+    "correct_option": "KANJI_NI",
+    "hint_available": false
+   }
+  },
+  {
+   "event_type": "HEAD_RETURNED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 17000,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-002",
+    "trial_sequence": 2,
+    "trial_type": "T2_KANJI_TO_MEANING",
+    "kanji_id": "KANJI_NI",
+    "episode": 1,
+    "duration_ms": 7000,
+    "max_abs_yaw_deg": 61.5,
+    "max_pitch_up_deg": 4.0,
+    "max_pitch_down_deg": -8.2,
+    "reason": "RETURNED",
+    "hysteresis_deg": 5,
+    "min_return_ms": 200
+   }
+  },
+  {
+   "event_type": "ANSWER_SELECTED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 19000,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-002",
+    "trial_sequence": 2,
+    "trial_type": "T2_KANJI_TO_MEANING",
+    "kanji_id": "KANJI_NI",
+    "kanji_char": "二",
+    "selected_option": "KANJI_GO",
+    "is_correct": false,
+    "response_time_ms": 3000,
+    "timed_out": false
+   }
+  },
+  {
+   "event_type": "TRIAL_COMPLETED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 20500,
+    "esl": "LOW",
+    "lal": "LOW",
+    "trial_id": "S2-002",
+    "trial_sequence": 2,
+    "trial_type": "T2_KANJI_TO_MEANING",
+    "kanji_id": "KANJI_NI",
+    "is_correct": false,
+    "response_time_ms": 3000,
+    "hint_count": 0,
+    "cues_presented": [],
+    "feedback_shown": true,
+    "feedback_audio_source": "TTS_PLACEHOLDER",
+    "feedback_audio_ms": 380,
+    "result_sound": "INCORRECT",
+    "result_sound_offset_ms": 531,
+    "result_sound_ms": 380,
+    "card_animation": "NONE",
+    "idle_ms": 0,
+    "idle_episodes": 0,
+    "idle_longest_ms": 0,
+    "idle_min_ms": 1000,
+    "idle_head_deg_s": 5.0,
+    "idle_ray_deg_s": 10.0
+   }
+  },
+  {
+   "event_type": "ASSEMBLY_SEGMENT_PLACED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 23000,
+    "esl": "LOW",
+    "lal": "OFF",
+    "kanji_id": "KANJI_YON",
+    "exposure_index": 0,
+    "attempt": 1,
+    "slot_index": 1,
+    "segment_id": "KANJI_YON_SEG2",
+    "expected_segment_id": "KANJI_YON_SEG1",
+    "is_correct": false,
+    "selected_ms": 1200,
+    "placed_ms": 1900,
+    "hint_shown": false,
+    "segments_authored": true
+   }
+  },
+  {
+   "event_type": "ASSEMBLY_SEGMENT_PLACED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 24000,
+    "esl": "LOW",
+    "lal": "OFF",
+    "kanji_id": "KANJI_YON",
+    "exposure_index": 0,
+    "attempt": 2,
+    "slot_index": 1,
+    "segment_id": "KANJI_YON_SEG1",
+    "expected_segment_id": "KANJI_YON_SEG1",
+    "is_correct": true,
+    "selected_ms": 2300,
+    "placed_ms": 2900,
+    "hint_shown": false,
+    "segments_authored": true
+   }
+  },
+  {
+   "event_type": "ASSEMBLY_COMPLETED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S2_VR_TUTORIAL",
+    "session_elapsed_ms": 26000,
+    "esl": "LOW",
+    "lal": "OFF",
+    "kanji_id": "KANJI_YON",
+    "exposure_index": 0,
+    "duration_ms": 5000,
+    "incorrect_attempts": 1,
+    "segment_count": 2,
+    "segments_placed": 2,
+    "hints_shown": 0,
+    "row_order": [
+     "KANJI_YON_SEG2",
+     "KANJI_YON_SEG1"
+    ],
+    "segments_authored": true,
+    "forced_by_researcher": false
+   }
+  },
+  {
+   "event_type": "STATE_ENTERED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S5_STANDARDIZED_LEARNING",
+    "session_elapsed_ms": 30000,
+    "esl": "LOW",
+    "lal": "OFF",
+    "transition_sound_lead_ms": 3509
+   }
+  },
+  {
+   "event_type": "KANJI_EXPOSED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S5_STANDARDIZED_LEARNING",
+    "session_elapsed_ms": 31000,
+    "esl": "LOW",
+    "lal": "OFF",
+    "kanji_id": "KANJI_YAMA",
+    "kanji_char": "山",
+    "exposure_index": 1,
+    "discovery_type": "Pictographic",
+    "exposure_ms": 9000,
+    "stage_ms": [
+     2000,
+     2000,
+     2000,
+     3000
+    ],
+    "stages_authored": false,
+    "audio_played": true,
+    "audio_source": "TTS_PLACEHOLDER",
+    "assembly": "RAY"
+   }
+  },
+  {
+   "event_type": "STATE_ENTERED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S7_EXPERIMENTAL_RETRIEVAL",
+    "session_elapsed_ms": 60000,
+    "esl": "MEDIUM",
+    "lal": "LOW",
+    "transition_sound_lead_ms": 3505
+   }
+  },
+  {
+   "event_type": "ENVIRONMENT_APPLIED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S7_EXPERIMENTAL_RETRIEVAL",
+    "session_elapsed_ms": 60010,
+    "esl": "MEDIUM",
+    "lal": "LOW",
+    "profile_name": "MEDIUM_Studio",
+    "prop_count": 9,
+    "mover_count": 1,
+    "active_props": [
+     "Plant",
+     "Shelf",
+     "Lamp"
+    ],
+    "active_movers": [
+     "Curtain"
+    ],
+    "peripheral_interval_min_ms": 0,
+    "peripheral_interval_max_ms": 0,
+    "max_tier": 2,
+    "seed": 12345,
+    "seed_source": "SESSION",
+    "selection_seed": 910
+   }
+  },
+  {
+   "event_type": "VIEW_RECENTERED",
+   "payload": {
+    "schema_version": 1,
+    "state": "S7_EXPERIMENTAL_RETRIEVAL",
+    "session_elapsed_ms": 61000,
+    "esl": "MEDIUM",
+    "lal": "LOW",
+    "reason": "LEFT_MENU_BUTTON",
+    "yaw_error_deg": 2.1,
+    "offset_m": 0.03,
+    "camera_before": [
+     0,
+     1.36,
+     0
+    ]
+   }
+  }
+ ]
+}

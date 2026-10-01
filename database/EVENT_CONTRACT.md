@@ -512,6 +512,15 @@ belongs in `TrialRequest`.
 
 ## 11 · Change log
 
+**1 October 2026 — schema v1 (F3.4).** The contract does not change. The
+backend now projects every event into the relational tables of schema v1
+(migration `0002`, `database/ERD.md`) right after storing it. The projection
+reads the fields exactly as this document defines them, so a field renamed
+here has to be renamed in `project_event` (PL/pgSQL, in
+`backend/alembic/versions/sql/0002_schema_v1_up.sql`) in the same change, or
+its rows end in `projection_errors`. `session_events` stays the source of
+truth (§7).
+
 **30 September 2026 — stage transition (UI design v1.3, P4/P7).** No new event
 types and no `schema_version` bump.
 
