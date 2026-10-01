@@ -22,10 +22,20 @@ namespace NeuroAdaptiveVR.Core
     /// evento sale con `session_elapsed_ms = -1` (ver SessionClock y
     /// database/EVENT_CONTRACT.md seccion 3).
     ///
-    /// `createNewSessionOnPlay` era correcto para M1 y deja de serlo ahora: a
-    /// partir de Fase 2 la sesion la crea el investigador y Unity solo la
-    /// consume. Mientras el Research Dashboard no exista (Fase 7), la sesion
-    /// se crea por REST a mano y su id se pega en `existingSessionId`.
+    /// Two ways to get a session:
+    ///
+    /// - `createNewSessionOnPlay` (default since 1 Oct 2026): every Play
+    ///   creates a NEW, complete session -- kanji set, seed, condition and
+    ///   visit from the Inspector -- under one reused development participant.
+    ///   Until then development reused one session id (dc28e1ea...) across
+    ///   Plays, so a single session held dozens of runs: trial ids, blocks and
+    ///   head-away episodes repeated, and schema v1 (F3.4) could project only
+    ///   the first run; every later one ended in projection_errors as
+    ///   DUPLICATE. One Play, one session, and the projection is clean.
+    /// - `existingSessionId`, with createNewSessionOnPlay off: a session the
+    ///   researcher created by REST (the real path until the Research
+    ///   Dashboard exists, Phase 7). Use a fresh one per run for the same
+    ///   reason.
     /// </summary>
     [RequireComponent(typeof(SessionCommunicationClient))]
     public class SessionBootstrap : MonoBehaviour
@@ -35,15 +45,28 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private string backendHttpUrl = "http://localhost:8000";
 
         [Header("Sesion")]
-        [Tooltip("Si esta activo, crea participante + sesion nuevos en cada Play. " +
-                 "Camino de M1; en Fase 2 la sesion la crea el investigador.")]
+        [Tooltip("Every Play creates a new, complete session (set, seed, condition from " +
+                 "below). Turn off to run a session created by REST (existingSessionId).")]
         [SerializeField] private bool createNewSessionOnPlay = true;
 
-        [Tooltip("Se usa solo si createNewSessionOnPlay esta desactivado.")]
+        [Tooltip("Used only when createNewSessionOnPlay is off. Use a fresh session per run: " +
+                 "a reused id mixes several runs in one session.")]
         [SerializeField] private string existingSessionId;
 
         [Tooltip("STATIC | BEHAVIOR_ADAPTIVE | MULTIMODAL_ADAPTIVE")]
         [SerializeField] private string condition = "STATIC";
+
+        [Header("New session on Play")]
+        [Tooltip("external_code of the development participant. Reused across Plays " +
+                 "(created the first time), so the participants table does not grow per Play.")]
+        [SerializeField] private string devParticipantCode = "DEV_UNITY";
+        [Tooltip("assigned_kanji_set of the new session: A, B or C.")]
+        [SerializeField] private string newSessionKanjiSet = "A";
+        [Tooltip("random_seed of the new session. Empty: a new one per Play " +
+                 "(dev-yyyyMMdd-HHmmss). Fix it (e.g. 777) to repeat a sequence and an ESL " +
+                 "selection for the reproducibility checks.")]
+        [SerializeField] private string newSessionSeed = "";
+        [SerializeField, Min(1)] private int newSessionVisit = 1;
 
         [Header("Prueba")]
         [Tooltip("Manda un VALIDATION_EVENT en cuanto conecta, util para verificar el round trip completo.")]
@@ -77,23 +100,35 @@ namespace NeuroAdaptiveVR.Core
 
             if (createNewSessionOnPlay)
             {
+                // One development participant for every Play: look it up by
+                // external_code, create it only the first time.
                 string participantId = null;
-                string externalCode = $"UNITY_{DateTime.UtcNow:yyyyMMddHHmmss}";
-
-                yield return PostJson(
-                    $"{backendHttpUrl}/participants",
-                    JsonConvert.SerializeObject(new Dictionary<string, object>
-                    {
-                        { "external_code", externalCode },
-                    }),
-                    body => participantId = ReadField(body, "id"));
+                yield return GetJson($"{backendHttpUrl}/participants",
+                    body => participantId = FindParticipantId(body, devParticipantCode));
 
                 if (string.IsNullOrEmpty(participantId))
                 {
-                    Debug.LogError("[SessionBootstrap] No se pudo crear el participante. Abortando.");
+                    yield return PostJson(
+                        $"{backendHttpUrl}/participants",
+                        JsonConvert.SerializeObject(new Dictionary<string, object>
+                        {
+                            { "external_code", devParticipantCode },
+                        }),
+                        body => participantId = ReadField(body, "id"));
+                }
+
+                if (string.IsNullOrEmpty(participantId))
+                {
+                    Debug.LogError("[SessionBootstrap] Could not find or create the development " +
+                                   $"participant '{devParticipantCode}'. Aborting.");
                     yield break;
                 }
-                Debug.Log($"[SessionBootstrap] Participante creado: {participantId}");
+
+                // A complete session: with set and seed it is reconstructible
+                // (spec 6.1) and passes the same check as a researcher's one.
+                string seed = string.IsNullOrWhiteSpace(newSessionSeed)
+                    ? $"dev-{DateTime.UtcNow:yyyyMMdd-HHmmss}"
+                    : newSessionSeed.Trim();
 
                 yield return PostJson(
                     $"{backendHttpUrl}/sessions",
@@ -101,6 +136,10 @@ namespace NeuroAdaptiveVR.Core
                     {
                         { "participant_id", participantId },
                         { "condition", condition },
+                        { "assigned_kanji_set", newSessionKanjiSet },
+                        { "random_seed", seed },
+                        { "visit_number", newSessionVisit },
+                        { "software_version", Application.version },
                     }),
                     body =>
                     {
@@ -110,10 +149,12 @@ namespace NeuroAdaptiveVR.Core
 
                 if (string.IsNullOrEmpty(sessionId))
                 {
-                    Debug.LogError("[SessionBootstrap] No se pudo crear la sesion. Abortando.");
+                    Debug.LogError("[SessionBootstrap] Could not create the session. Aborting.");
                     yield break;
                 }
-                Debug.Log($"[SessionBootstrap] Sesion creada: {sessionId}");
+                Debug.Log($"[SessionBootstrap] NEW session {sessionId} · participant " +
+                          $"{devParticipantCode} · set {newSessionKanjiSet} · seed {seed} · " +
+                          $"visit {newSessionVisit} · {condition}");
             }
             else if (!string.IsNullOrWhiteSpace(sessionId))
             {
@@ -340,6 +381,26 @@ namespace NeuroAdaptiveVR.Core
         {
             DateParseHandling = DateParseHandling.None,
         };
+
+        /// <summary>id of the participant with this external_code in a GET /participants list, or null.</summary>
+        private static string FindParticipantId(string jsonBody, string externalCode)
+        {
+            try
+            {
+                var list = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(
+                    jsonBody, RawJsonSettings);
+                if (list == null) return null;
+                foreach (var p in list)
+                    if (p != null && p.TryGetValue("external_code", out var code) &&
+                        string.Equals(code?.ToString(), externalCode, StringComparison.Ordinal))
+                        return p.TryGetValue("id", out var id) ? id?.ToString() : null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SessionBootstrap] Could not read the participant list: {ex.Message}");
+            }
+            return null;
+        }
 
         private static string ReadField(string jsonBody, string key)
         {

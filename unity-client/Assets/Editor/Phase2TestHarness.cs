@@ -918,27 +918,54 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>
-        /// E13. Every prop, mover and peripheral object lies in the visible band
-        /// 22-40 deg at every point of its path, and none covers the answer cards.
+        /// E13. The ESL layout stays where it was decided, and nothing covers the
+        /// answer cards.
         ///
-        /// Until M2 the layer was laid out for 25-50 deg from the datasheet FOV:
-        /// the lamp, the boxes and both curtains were outside the visible field,
-        /// so MEDIUM (one curtain) showed no motion at all, and two props covered
-        /// the outer cards. Nothing failed, because nothing measured it.
-        ///
-        /// Measured per mesh, not per object: a floor lamp is a thin pole under a
-        /// wide shade, and its bounding box would hide where each part really is.
-        /// Movers are measured at MoverSamples points of their path through
-        /// EnvironmentMotion.PoseAt; the pose is restored afterwards.
+        /// History. Until M2 the layer was laid out for 25-50 deg from the
+        /// datasheet FOV and two props covered the outer cards; F3.1 (28 Sep)
+        /// moved everything into the visible band 22-40 deg and this case
+        /// enforced that band. On 1 Oct Sebas moved props by hand -- the wall
+        /// clock to the centre above the board, the wastebasket and the chair
+        /// outwards -- and decided that layout is the new one. The band is no
+        /// longer a rule for every object, so the case now guards the LAYOUT OF
+        /// RECORD: each object's angular extent from the eye, measured per mesh
+        /// and, for movers, over their whole path, must match the table below
+        /// within LayoutToleranceDeg. Moving an object on purpose means updating
+        /// its row here (and Diseno_Sala_ESL.md); moving one by accident fails.
+        /// Objects outside 22-40 deg are listed in the detail, as information.
         /// </summary>
+        private static readonly Dictionary<string, (float h0, float h1, float v0, float v1)> LayoutOfRecord = new()
+        {
+            // measured 1 Oct 2026 from the eye (0, 1.36, 0); degrees, + right / + up
+            { "FloorLamp_T1",               (-29.2f, -22.2f, -24.6f,  5.8f) },
+            { "Plant_T1",                   (-38.3f, -23.2f, -32.0f, -6.7f) },
+            { "Wastebasket_T2",             ( 20.4f,  27.0f, -26.1f, -18.1f) },
+            { "Bookshelf_T3",               (-39.7f, -28.2f, -23.4f, -6.5f) },
+            { "WallPicture_T2",             (-37.0f, -29.7f,  12.0f, 19.3f) },
+            { "SideTable_T1",               ( 25.4f,  39.0f, -25.1f, -10.4f) },
+            { "WallShelf_T2",               ( 25.6f,  37.9f,  12.1f, 20.6f) },
+            { "Chair_T3",                   ( 31.0f,  43.8f, -28.1f, -7.8f) },
+            { "StackedBoxes_T3",            ( 22.6f,  32.7f, -35.6f, -22.9f) },
+            { "WallClock_T3",               ( -2.9f,   2.9f,  15.6f, 21.1f) },
+            { "CurtainLeft_T2",             (-37.7f, -32.9f,  -5.8f, 11.8f) },
+            { "OutsideFigureLeft_T3",       (-39.3f, -24.9f,  -7.7f,  1.7f) },
+            { "CurtainRight_T2",            ( 32.9f,  37.7f,  -5.8f, 11.8f) },
+            { "OutsideFigureRight_T3",      ( 24.9f,  39.3f,  -7.7f,  1.7f) },
+            { "PeripheralEvent_WindowLeft", (-33.2f, -29.6f,   1.7f,  4.5f) },
+            { "PeripheralEvent_WindowRight",( 29.6f,  33.2f,   1.7f,  4.5f) },
+            { "PeripheralEvent_Shelf",      ( 33.1f,  36.7f,  15.2f, 18.6f) },
+        };
+
+        private const float LayoutToleranceDeg = 0.5f;
+
         private static void VisibleBandCase(Transform root)
         {
             var cards = UnityEngine.Object
-                .FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .FindObjectsByType<Canvas>(FindObjectsInactive.Include)
                 .FirstOrDefault(c => c.name == "ResponseCanvas");
             if (cards == null)
             {
-                Check("E13", "Todo el ESL cae en la banda visible 22-40 grados", false, "no hay ResponseCanvas");
+                Check("E13", "El layout del ESL es el de registro y nada tapa las tarjetas", false, "no hay ResponseCanvas");
                 return;
             }
             var corners = new Vector3[4];
@@ -947,56 +974,44 @@ namespace NeuroAdaptiveVR.EditorTools
             float cardPlane = corners.Max(c => c.z) + CardPlaneDepth;
 
             var problems = new List<string>();
-            int measured = 0;
-            float worstInner = 999f, worstOuter = 0f;
+            var outsideBand = new List<string>();
+            var seen = new HashSet<string>();
 
-            void Measure(string label, MeshFilter mf)
+            // Union of the angular boxes of every mesh of an object (and, for a
+            // mover, of every sampled pose); flags the card overlap per pose.
+            AngularBox Measure(Transform obj, out bool overCards)
             {
-                if (mf == null || mf.sharedMesh == null) return;
-                var a = AngularOf(MeshCorners(mf));
-                bool crosses = a.H0 < 0f && a.H1 > 0f;
-                float inner = crosses ? 0f : Mathf.Min(Mathf.Abs(a.H0), Mathf.Abs(a.H1));
-                float outer = Mathf.Max(Mathf.Abs(a.H0), Mathf.Abs(a.H1));
-                worstInner = Mathf.Min(worstInner, inner);
-                worstOuter = Mathf.Max(worstOuter, outer);
-
-                bool overCards = a.ZMin < cardPlane
-                    && a.H1 > cardBox.H0 - CardMarginDeg && a.H0 < cardBox.H1 + CardMarginDeg
-                    && a.V1 > cardBox.V0 - CardMarginDeg && a.V0 < cardBox.V1 + CardMarginDeg;
-
-                if (inner < BandInnerDeg) problems.Add($"{label} inner {inner:F1}");
-                if (outer > BandOuterDeg) problems.Add($"{label} outer {outer:F1}");
-                if (overCards) problems.Add($"{label} covers the cards");
-            }
-
-            foreach (var group in new[] { "Props", "Movers", "PeripheralEvents" })
-            {
-                var g = root.Find(group);
-                if (g == null) continue;
-                foreach (Transform obj in g)
+                var box = new AngularBox { H0 = 999f, H1 = -999f, V0 = 999f, V1 = -999f, ZMin = 999f };
+                bool covers = false;
+                void Add()
                 {
-                    measured++;
-                    var motion = obj.GetComponent<EnvironmentMotion>();
-                    var filters = obj.GetComponentsInChildren<MeshFilter>(true);
-                    if (motion == null)
+                    foreach (var mf in obj.GetComponentsInChildren<MeshFilter>(true))
                     {
-                        foreach (var mf in filters) Measure(obj.name, mf);
-                        continue;
+                        if (mf == null || mf.sharedMesh == null) continue;
+                        var a = AngularOf(MeshCorners(mf));
+                        box.H0 = Mathf.Min(box.H0, a.H0); box.H1 = Mathf.Max(box.H1, a.H1);
+                        box.V0 = Mathf.Min(box.V0, a.V0); box.V1 = Mathf.Max(box.V1, a.V1);
+                        box.ZMin = Mathf.Min(box.ZMin, a.ZMin);
+                        covers |= a.ZMin < cardPlane
+                            && a.H1 > cardBox.H0 - CardMarginDeg && a.H0 < cardBox.H1 + CardMarginDeg
+                            && a.V1 > cardBox.V0 - CardMarginDeg && a.V0 < cardBox.V1 + CardMarginDeg;
                     }
+                }
 
+                var motion = obj.GetComponent<EnvironmentMotion>();
+                if (motion == null) Add();
+                else
+                {
                     var restPos = obj.localPosition;
                     var restRot = obj.localRotation;
                     try
                     {
-                        var before = problems.Count;
                         for (int i = 0; i <= MoverSamples; i++)
                         {
-                            float u = (float)i / MoverSamples;
-                            motion.PoseAt(restPos, restRot, u, out var p, out var r);
+                            motion.PoseAt(restPos, restRot, (float)i / MoverSamples, out var p, out var r);
                             obj.localPosition = p;
                             obj.localRotation = r;
-                            foreach (var mf in filters) Measure($"{obj.name}@{u:F2}", mf);
-                            if (problems.Count > before) break;   // one sample is enough to report it
+                            Add();
                         }
                     }
                     finally
@@ -1005,12 +1020,42 @@ namespace NeuroAdaptiveVR.EditorTools
                         obj.localRotation = restRot;
                     }
                 }
+                overCards = covers;
+                return box;
             }
 
-            Check("E13", "Todo el ESL cae en la banda visible 22-40 grados, movers en todo su recorrido, sin tapar tarjetas",
-                  measured > 0 && problems.Count == 0,
+            foreach (var group in new[] { "Props", "Movers", "PeripheralEvents" })
+            {
+                var g = root.Find(group);
+                if (g == null) continue;
+                foreach (Transform obj in g)
+                {
+                    seen.Add(obj.name);
+                    var a = Measure(obj, out bool overCards);
+                    if (overCards) problems.Add($"{obj.name} covers the cards");
+
+                    if (!LayoutOfRecord.TryGetValue(obj.name, out var rec))
+                        problems.Add($"{obj.name} is not in the layout of record (h [{a.H0:F1},{a.H1:F1}] v [{a.V0:F1},{a.V1:F1}])");
+                    else if (Mathf.Abs(a.H0 - rec.h0) > LayoutToleranceDeg || Mathf.Abs(a.H1 - rec.h1) > LayoutToleranceDeg ||
+                             Mathf.Abs(a.V0 - rec.v0) > LayoutToleranceDeg || Mathf.Abs(a.V1 - rec.v1) > LayoutToleranceDeg)
+                        problems.Add($"{obj.name} moved: h [{a.H0:F1},{a.H1:F1}] v [{a.V0:F1},{a.V1:F1}], " +
+                                     $"record h [{rec.h0:F1},{rec.h1:F1}] v [{rec.v0:F1},{rec.v1:F1}]");
+
+                    bool crosses = a.H0 < 0f && a.H1 > 0f;
+                    float inner = crosses ? 0f : Mathf.Min(Mathf.Abs(a.H0), Mathf.Abs(a.H1));
+                    float outer = Mathf.Max(Mathf.Abs(a.H0), Mathf.Abs(a.H1));
+                    if (inner < BandInnerDeg || outer > BandOuterDeg)
+                        outsideBand.Add($"{obj.name} {inner:F1}-{outer:F1}");
+                }
+            }
+            foreach (var name in LayoutOfRecord.Keys)
+                if (!seen.Contains(name)) problems.Add($"{name} missing from the scene");
+
+            Check("E13", "El layout del ESL es el de registro (1 oct) y nada tapa las tarjetas",
+                  seen.Count > 0 && problems.Count == 0,
                   problems.Count == 0
-                      ? $"{measured} objetos · borde interior min {worstInner:F1} · exterior max {worstOuter:F1} · tarjetas h[{cardBox.H0:F1},{cardBox.H1:F1}]"
+                      ? $"{seen.Count} objetos en su sitio · fuera de 22-40 (informativo): " +
+                        (outsideBand.Count == 0 ? "ninguno" : Join(outsideBand))
                       : Join(problems.Distinct().Take(12)));
         }
 
