@@ -17,7 +17,8 @@ namespace NeuroAdaptiveVR.Data
         public float YawLimitDeg;
         [Tooltip("TO VALIDATE. Pitch above the board direction beyond this is outside.")]
         public float PitchUpLimitDeg;
-        [Tooltip("TO VALIDATE. Pitch below the board direction beyond this is outside (the cards sit ~28 deg below).")]
+        [Tooltip("TO VALIDATE. Pitch below the board direction beyond this is outside. The card row spans ~17-25 deg below; " +
+                 "looking at the floor measured -41 deg in the headset (5 Oct), so 50 never fired.")]
         public float PitchDownLimitDeg;
         [Tooltip("TO VALIDATE. Margin the head must come back inside before an episode can close.")]
         public float HysteresisDeg;
@@ -28,7 +29,7 @@ namespace NeuroAdaptiveVR.Data
 
         public static HeadAwayThresholds Default => new()
         {
-            YawLimitDeg = 40f, PitchUpLimitDeg = 40f, PitchDownLimitDeg = 50f,
+            YawLimitDeg = 40f, PitchUpLimitDeg = 40f, PitchDownLimitDeg = 35f,
             HysteresisDeg = 5f, MinAwayMs = 500, MinReturnMs = 200,
         };
     }

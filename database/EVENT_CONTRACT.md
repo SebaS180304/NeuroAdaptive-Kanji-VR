@@ -512,6 +512,14 @@ belongs in `TrialRequest`.
 
 ## 11 · Change log
 
+**5 October 2026 — pitch-down threshold.** No field changes. The default
+`pitch_down_limit_deg` goes from 50 to 35. Measured in the headset: looking at
+the floor puts the head at about −41° from the board direction (the eyes do the
+rest), so with 50 no `PITCH_DOWN` episode could fire; the card row spans about
+−17° to −25°, so 35 keeps a 10° margin below it. Still *to validate* in the
+phase test. Rows carry the threshold in force (`pitch_down_limit_deg`), so rows
+before and after the change stay distinguishable.
+
 **1 October 2026 — schema v1 (F3.4).** The contract does not change. The
 backend now projects every event into the relational tables of schema v1
 (migration `0002`, `database/ERD.md`) right after storing it. The projection

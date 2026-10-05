@@ -1218,11 +1218,16 @@ namespace NeuroAdaptiveVR.EditorTools
             if (!(events.Count == 3 && events[2].Episode == 2 && events[2].Limit == "PITCH_DOWN")) p.Add("no hubo HEAD_AWAY #2 por PITCH_DOWN");
             if (closed == null || closed.Value.Reason != "TRACKING_LOST" || closed.Value.Episode != 2) p.Add("perder tracking no cerro el episodio");
             if (d.ForceClose(t, "SESSION_END") != null) p.Add("cerro dos veces");
-            Run(1.0, 0f, -20f);               // looking at the cards: inside
+            Run(1.0, 0f, -25f);               // the bottom edge of the cards: inside
             if (events.Count != 3) p.Add("mirar las tarjetas conto como apartar la vista");
+            Run(1.0, 0f, -41f);               // looking at the floor, as measured in the headset on 5 Oct
+            Run(0.6, 0f, 0f);
+            if (!(events.Count == 5 && events[3].Episode == 3 && events[3].Limit == "PITCH_DOWN"
+                  && events[4].Kind == HeadAwayDetector.Kind.Returned))
+                p.Add("mirar al piso (-41 grados, medido en visor) no fue HEAD_AWAY por PITCH_DOWN");
 
             Check("X4", "HEAD_AWAY/RETURNED: umbral, permanencia, histeresis, onset, cierre por tracking y numeracion",
-                  p.Count == 0, p.Count == 0 ? $"2 episodios · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms" : Join(p));
+                  p.Count == 0, p.Count == 0 ? $"3 episodios · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms" : Join(p));
 
             var q = new List<string>();
             var idle = new IdleTracker(IdleTracker.Thresholds.Default);
