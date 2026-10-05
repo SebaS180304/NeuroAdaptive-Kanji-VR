@@ -8106,6 +8106,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
+      propertyPath: newSessionSeed
+      value: 777
+      objectReference: {fileID: 0}
+    - target: {fileID: 2034076106708227797, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       propertyPath: existingSessionId
       value: 
       objectReference: {fileID: 0}
