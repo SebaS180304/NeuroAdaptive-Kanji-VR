@@ -25,6 +25,17 @@ namespace NeuroAdaptiveVR.Controllers
     /// own colour (amber, never used for the trigger), a pulsing ring around the
     /// button several times its size, and the label sits straight above the
     /// button in view, with a vertical line down to it.
+    ///
+    /// Meta Quest 2 models (5 October, after the headset check of F3). The
+    /// generic XRI model does not have the Quest 2 layout, so the participant
+    /// saw a lit button that was not where their thumb found it. The visuals are
+    /// now the Touch for Quest 2 models (Assets/Models/MetaQuest2Controllers).
+    /// Each is one skinned mesh with a bone per button; its mesh was split in the
+    /// Editor into three submeshes by bone weight (OculusTouchForQuest2_*_Buttons):
+    /// 0 the body, 1 the trigger (b_trigger_front), 2 the menu button
+    /// (b_button_oculus). A part found as a bone glows through its submesh's
+    /// material slot; a part found as its own mesh (the generic model, kept as a
+    /// fallback) glows through its renderer. Same look either way.
     /// </summary>
     public class ControllerCallouts : MonoBehaviour
     {
@@ -32,9 +43,9 @@ namespace NeuroAdaptiveVR.Controllers
 
         public enum Part { Trigger, Menu }
 
-        [Tooltip("'Left Controller Visual' under the XR Origin.")]
+        [Tooltip("The left controller model: 'Left MetaQuest2 Model' (or the generic 'Left Controller Visual').")]
         [SerializeField] private Transform leftVisual;
-        [Tooltip("'Right Controller Visual' under the XR Origin.")]
+        [Tooltip("The right controller model: 'Right MetaQuest2 Model' (or the generic 'Right Controller Visual').")]
         [SerializeField] private Transform rightVisual;
         [Tooltip("The board canvas: its font is copied for the labels.")]
         [SerializeField] private Canvas boardCanvas;
@@ -56,9 +67,17 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float menuRingRadius = 0.009f;
         [SerializeField] private float menuRingWidth = 0.0025f;
 
+        // Mesh name on the generic XRI model, bone name on the Meta Quest 2 models.
+        private static readonly string[] TriggerNames = { "b_trigger_front", "Trigger" };
+        private static readonly string[] MenuNames = { "b_button_oculus", "Button_Home" };
+
+        // Material slots of the split Meta Quest 2 mesh (see the class summary).
+        private const int TriggerSlot = 1, MenuSlot = 2;
+
         private sealed class Lit
         {
             public Renderer Renderer;
+            public int Slot;
             public Material Original;
             public Material Glow;
             public Color Accent;
@@ -78,11 +97,13 @@ namespace NeuroAdaptiveVR.Controllers
         {
             public LineRenderer Line;
             public Material Mat;
+            public Color Accent;
         }
 
         private readonly List<Lit> _lit = new();
         private readonly List<Label> _labels = new();
         private readonly List<Ring> _rings = new();
+        private readonly List<GameObject> _anchors = new();
         private Material _lineMat;
         private Camera _cam;
 
@@ -90,7 +111,9 @@ namespace NeuroAdaptiveVR.Controllers
 
         private void Awake()
         {
+            if (leftVisual == null) leftVisual = FindVisual("Left MetaQuest2 Model");
             if (leftVisual == null) leftVisual = FindVisual("Left Controller Visual");
+            if (rightVisual == null) rightVisual = FindVisual("Right MetaQuest2 Model");
             if (rightVisual == null) rightVisual = FindVisual("Right Controller Visual");
         }
 
@@ -111,10 +134,13 @@ namespace NeuroAdaptiveVR.Controllers
         {
             foreach (var l in _lit)
             {
-                if (l.Renderer != null) l.Renderer.sharedMaterial = l.Original;
+                if (l.Renderer != null) SetSlot(l.Renderer, l.Slot, l.Original);
                 if (l.Glow != null) Destroy(l.Glow);
             }
             _lit.Clear();
+            foreach (var a in _anchors)
+                if (a != null) Destroy(a);
+            _anchors.Clear();
             foreach (var lb in _labels)
                 if (lb.Root != null) Destroy(lb.Root);
             _labels.Clear();
@@ -135,27 +161,69 @@ namespace NeuroAdaptiveVR.Controllers
                 Debug.LogWarning($"{Log} no controller visual for side {side}");
                 return;
             }
-            var mesh = FindDeep(visual, part == Part.Trigger ? "Trigger" : "Button_Home");
-            var r = mesh != null ? mesh.GetComponent<Renderer>() : null;
-            if (r == null)
+            Transform anchor = null;
+            foreach (var n in part == Part.Trigger ? TriggerNames : MenuNames)
+                if ((anchor = FindDeep(visual, n)) != null) break;
+            if (anchor == null)
             {
-                Debug.LogWarning($"{Log} {part} mesh not found under {visual.name}");
+                Debug.LogWarning($"{Log} {part} not found under {visual.name}");
                 return;
             }
 
             Color col = part == Part.Menu ? menuAccent : accent;
-            if (_lit.Find(x => x.Renderer == r) == null)
+            Renderer r = anchor.GetComponent<Renderer>();
+            int slot = 0;
+            if (r == null)
             {
-                var glow = new Material(r.sharedMaterial) { name = r.sharedMaterial.name + " (callout)" };
-                glow.EnableKeyword("_EMISSION");
-                glow.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-                _lit.Add(new Lit { Renderer = r, Original = r.sharedMaterial, Glow = glow, Accent = col });
-                r.sharedMaterial = glow;
-                if (part == Part.Menu) _rings.Add(MakeRing(visual, r));
+                // Meta model: the part is a bone; it glows through its submesh's slot, and
+                // labels and rings go to the centre of that submesh, not to the bone pivot.
+                var smr = visual.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                slot = part == Part.Trigger ? TriggerSlot : MenuSlot;
+                if (smr == null || smr.sharedMesh == null || smr.sharedMesh.subMeshCount <= slot)
+                {
+                    Debug.LogWarning($"{Log} {visual.name}: no split mesh with a slot for {part}");
+                    return;
+                }
+                r = smr;
+                var existing = anchor.Find("Callout anchor " + anchor.name);
+                if (existing != null) anchor = existing;
+                else
+                {
+                    var centre = smr.transform.TransformPoint(smr.sharedMesh.GetSubMesh(slot).bounds.center);
+                    var a = new GameObject("Callout anchor " + anchor.name);
+                    a.transform.SetParent(anchor, false);
+                    a.transform.position = centre;
+                    _anchors.Add(a);
+                    anchor = a.transform;
+                }
             }
 
-            if (!string.IsNullOrEmpty(label) && _labels.Find(x => x.Anchor == r.transform) == null)
-                _labels.Add(MakeLabel(r.transform, side, label, col, part == Part.Menu));
+            if (_lit.Find(x => x.Renderer == r && x.Slot == slot) == null)
+            {
+                var original = r.sharedMaterials[slot];
+                var glow = new Material(original) { name = original.name + " (callout)" };
+                glow.EnableKeyword("_EMISSION");
+                glow.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                _lit.Add(new Lit { Renderer = r, Slot = slot, Original = original, Glow = glow, Accent = col });
+                SetSlot(r, slot, glow);
+                if (part == Part.Menu) _rings.Add(MakeRing(visual, anchor, menuRingRadius, col));
+            }
+
+            if (!string.IsNullOrEmpty(label) && _labels.Find(x => x.Anchor == anchor) == null)
+                _labels.Add(MakeLabel(anchor, side, label, col, part == Part.Menu));
+        }
+
+        private static void SetSlot(Renderer r, int slot, Material m)
+        {
+            var mats = r.sharedMaterials;
+            if (slot < mats.Length) { mats[slot] = m; r.sharedMaterials = mats; }
+        }
+
+        /// <summary>The point a label and its line go to: the button mesh's centre, or the anchor.</summary>
+        private static Vector3 AnchorPoint(Transform anchor)
+        {
+            var r = anchor.GetComponent<Renderer>();
+            return r != null ? r.bounds.center : anchor.position;
         }
 
         private void LateUpdate()
@@ -174,16 +242,21 @@ namespace NeuroAdaptiveVR.Controllers
                 if (l.Glow.HasProperty("_Color")) l.Glow.SetColor("_Color", baseCol);
                 if (l.Glow.HasProperty("_EmissionColor")) l.Glow.SetColor("_EmissionColor", emis);
             }
-            // The ring breathes with the button: a little larger and brighter at the peak.
+            if (_cam == null) _cam = Camera.main;
+            // The ring breathes: a little larger and brighter at the peak.
             foreach (var rg in _rings)
             {
                 if (rg.Line == null) continue;
-                rg.Line.transform.localScale = Vector3.one * Mathf.Lerp(1f, 1.25f, s);
-                Color rc = Color.Lerp(menuAccent, Color.Lerp(menuAccent, Color.white, 0.4f), s);
-                if (rg.Mat != null && rg.Mat.HasProperty("_BaseColor")) rg.Mat.SetColor("_BaseColor", rc);
+                var rt = rg.Line.transform;
+                rt.localScale = Vector3.one * Mathf.Lerp(1f, 1.25f, s);
+                Color rc = Color.Lerp(rg.Accent, Color.Lerp(rg.Accent, Color.white, 0.4f), s);
+                if (rg.Mat != null)
+                {
+                    if (rg.Mat.HasProperty("_BaseColor")) rg.Mat.SetColor("_BaseColor", rc);
+                    if (rg.Mat.HasProperty("_Color")) rg.Mat.SetColor("_Color", rc);
+                }
             }
 
-            if (_cam == null) _cam = Camera.main;
             if (_cam == null) return;
             var ct = _cam.transform;
             foreach (var lb in _labels)
@@ -193,7 +266,7 @@ namespace NeuroAdaptiveVR.Controllers
                 bool on = lb.Anchor.gameObject.activeInHierarchy;
                 if (lb.Root.activeSelf != on) lb.Root.SetActive(on);
                 if (!on) continue;
-                Vector3 p = lb.Anchor.GetComponent<Renderer>().bounds.center;
+                Vector3 p = AnchorPoint(lb.Anchor);
                 float halfW = lb.Panel.rect.width * 0.5f * lb.Root.transform.lossyScale.x;
                 float halfH = lb.Panel.rect.height * 0.5f * lb.Root.transform.lossyScale.y;
                 Vector3 pos, edge;
@@ -293,18 +366,18 @@ namespace NeuroAdaptiveVR.Controllers
         }
 
         /// <summary>
-        /// A flat ring around the Menu button, on the controller's face, so a 6 mm
-        /// button reads from arm's length. Child of the controller visual: it follows the hand.
+        /// A ring around the Menu button so a small button reads from arm's length.
+        /// Child of the button: it follows the hand and the press animation. It lies
+        /// in the plane of the controller's face (the model's up axis is the face
+        /// normal), 4 mm above it so the curved shell does not hide part of it.
         /// </summary>
-        private Ring MakeRing(Transform visual, Renderer button)
+        private Ring MakeRing(Transform visual, Transform button, float radius, Color col)
         {
             var go = new GameObject("Callout ring " + button.name);
-            go.transform.SetParent(visual, false);
-            // Centred on the button, in the plane of the controller's face (the visual's up axis
-            // is the face normal), 4 mm above it so the curved grip does not hide part of it.
-            go.transform.position = button.bounds.center + visual.up * 0.004f;
+            go.transform.SetParent(button, false);
+            go.transform.position = AnchorPoint(button) + visual.up * 0.004f;
             go.transform.rotation = Quaternion.LookRotation(visual.up, visual.forward);
-            var mat = NewUnlit("CalloutRing", menuAccent);
+            var mat = NewUnlit("CalloutRing", col);
             var line = go.AddComponent<LineRenderer>();
             line.useWorldSpace = false;
             line.loop = true;
@@ -315,7 +388,7 @@ namespace NeuroAdaptiveVR.Controllers
             for (int i = 0; i < n; i++)
             {
                 float a = i * 2f * Mathf.PI / n;
-                line.SetPosition(i, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * (menuRingRadius / scale));
+                line.SetPosition(i, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * (radius / scale));
             }
             line.widthMultiplier = menuRingWidth / scale;
             // View-facing ribbon: the URP Unlit material is single-sided, and a ribbon lying
@@ -324,7 +397,7 @@ namespace NeuroAdaptiveVR.Controllers
             line.sharedMaterial = mat;
             line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             line.receiveShadows = false;
-            return new Ring { Line = line, Mat = mat };
+            return new Ring { Line = line, Mat = mat, Accent = col };
         }
 
         private static Material NewUnlit(string name, Color col)
