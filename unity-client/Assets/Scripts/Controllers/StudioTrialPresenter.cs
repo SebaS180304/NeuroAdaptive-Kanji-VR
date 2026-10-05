@@ -125,11 +125,18 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float frameSize = 560f;
         [SerializeField] private Color frameBackColor = new Color(1f, 1f, 1f, 0.06f);
         [SerializeField] private Color ghostColor = new Color(1f, 1f, 1f, 0.10f);
-        [SerializeField] private Color segmentPlacedColor = new Color(0.95f, 0.97f, 1f, 1f);
-        [Tooltip("The place of the next segment, ray elsewhere.")]
+        [Tooltip("A segment already in place. Muted on purpose (5 October, phase test F1): the " +
+                 "brightest thing on the board must be the place to fill next, not what is done.")]
+        [SerializeField] private Color segmentPlacedColor = new Color(0.50f, 0.56f, 0.66f, 1f);
+        [Tooltip("The place of the next segment, ray elsewhere: the dim end of its pulse.")]
         [SerializeField] private Color segmentTargetColor = new Color(0.35f, 0.65f, 1f, 0.55f);
-        [Tooltip("The place of the next segment, ray on it.")]
-        [SerializeField] private Color segmentTargetHoverColor = new Color(0.55f, 0.82f, 1f, 0.95f);
+        [Tooltip("The bright end of the pulse of the next place (5 October, phase test F1).")]
+        [SerializeField] private Color segmentTargetPulseColor = new Color(0.72f, 0.90f, 1f, 1f);
+        [Tooltip("The place of the next segment, ray on it: steady, no pulse, so the ray's arrival reads.")]
+        [SerializeField] private Color segmentTargetHoverColor = new Color(1f, 1f, 1f, 1f);
+        [Tooltip("Pulses per second of the next place. Slow on purpose: a soft cue, not a flicker, " +
+                 "and far below the EEG bands of interest.")]
+        [SerializeField, Range(0.2f, 2f)] private float targetPulseHz = 0.8f;
         [Tooltip("A correct piece flashes this colour, then turns placed. The whole kanji too, when complete.")]
         [SerializeField] private Color segmentCorrectColor = new Color(0.30f, 0.90f, 0.45f, 1f);
         [Tooltip("Wrong piece: the target flashes this, strong enough to read over the ghost.")]
@@ -470,6 +477,7 @@ namespace NeuroAdaptiveVR.Controllers
         // notes) overwrites its text: the chip follows the text it was built for.
         private void LateUpdate()
         {
+            PulseAssemblyTarget();
             if (_cueChipText != null && (cueLabel == null || cueLabel.text != _cueChipText))
             {
                 // Undo only what the chip changed: whoever wrote the new text may
@@ -858,7 +866,7 @@ namespace NeuroAdaptiveVR.Controllers
             bool hovered = relay != null && relay.Hovered;
             if (_slots[i].targetGraphic != null)
                 _slots[i].targetGraphic.color = _slotFilled[i] ? slotFilledColor
-                                              : next ? (hovered ? slotHoverColor : slotNextColor)
+                                              : next ? (hovered ? slotHoverColor : Color.Lerp(slotNextColor, segmentTargetPulseColor, TargetPulse()))
                                               : slotEmptyColor;
         }
 
@@ -1058,9 +1066,26 @@ namespace NeuroAdaptiveVR.Controllers
             // Only the target can take the ray: the others cover the same rectangle.
             raw.raycastTarget = next;
             raw.color = filled ? segmentPlacedColor
-                      : next ? (hovered ? segmentTargetHoverColor : segmentTargetColor)
+                      : next ? (hovered ? segmentTargetHoverColor : Color.Lerp(segmentTargetColor, segmentTargetPulseColor, TargetPulse()))
                       : Color.clear;
-            if (next) b.transform.SetAsLastSibling();
+            if (next && b.transform.GetSiblingIndex() != b.transform.parent.childCount - 1)
+                b.transform.SetAsLastSibling();
+        }
+
+        /// <summary>0..1, smooth: where the next place is in its pulse.</summary>
+        private float TargetPulse() =>
+            0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * targetPulseHz * 2f * Mathf.PI);
+
+        /// <summary>
+        /// Keeps the next place pulsing (5 October, phase test F1: OBS_02 asked for the
+        /// place to fill to pulse). Only while an assembly runs, never over a wrong-piece
+        /// flash, and never on a slot already filled (the completion green stays).
+        /// </summary>
+        private void PulseAssemblyTarget()
+        {
+            if (!_assemblyActive || _slotFlash != null || _slotNext < 0 || _slotNext >= SlotCount) return;
+            bool filled = _imageMode ? _segFilled[_slotNext] : _slotFilled[_slotNext];
+            if (!filled) PaintSlot(_slotNext);
         }
 
         private System.Collections.IEnumerator CorrectFlash(int index)

@@ -461,9 +461,13 @@ MonoBehaviour:
   rightVisual: {fileID: 604861914}
   boardCanvas: {fileID: 772129484}
   accent: {r: 0.35, g: 0.65, b: 1, a: 1}
+  menuAccent: {r: 1, g: 0.72, b: 0.2, a: 1}
   pulseHz: 1.5
   labelOffset: {x: 0.075, y: 0.055}
   labelFontSize: 30
+  menuLabelHeight: 0.065
+  menuRingRadius: 0.009
+  menuRingWidth: 0.0025
 --- !u!1 &108418674
 GameObject:
   m_ObjectHideFlags: 0
@@ -3237,9 +3241,11 @@ MonoBehaviour:
   frameSize: 470
   frameBackColor: {r: 1, g: 1, b: 1, a: 0.06}
   ghostColor: {r: 1, g: 1, b: 1, a: 0.1}
-  segmentPlacedColor: {r: 0.95, g: 0.97, b: 1, a: 1}
+  segmentPlacedColor: {r: 0.5, g: 0.56, b: 0.66, a: 1}
   segmentTargetColor: {r: 0.35, g: 0.65, b: 1, a: 0.55}
-  segmentTargetHoverColor: {r: 0.55, g: 0.82, b: 1, a: 0.95}
+  segmentTargetPulseColor: {r: 0.72, g: 0.9, b: 1, a: 1}
+  segmentTargetHoverColor: {r: 1, g: 1, b: 1, a: 1}
+  targetPulseHz: 0.8
   segmentCorrectColor: {r: 0.3, g: 0.9, b: 0.45, a: 1}
   segmentWrongColor: {r: 1, g: 0.3, b: 0.25, a: 1}
   correctFlashSeconds: 0.45
