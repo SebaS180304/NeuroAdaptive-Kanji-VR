@@ -932,6 +932,9 @@ namespace NeuroAdaptiveVR.EditorTools
         /// and, for movers, over their whole path, must match the table below
         /// within LayoutToleranceDeg. Moving an object on purpose means updating
         /// its row here (and Diseno_Sala_ESL.md); moving one by accident fails.
+        /// On 5 Oct MIRAI asked for one more tier-2 prop so that MEDIUM (4-6 of
+        /// the tier-2 pool) stops showing the same six props for every seed:
+        /// DeskItems_T2, books, paper, mug and pen cup on the side table.
         /// Objects outside 22-40 deg are listed in the detail, as information.
         /// </summary>
         private static readonly Dictionary<string, (float h0, float h1, float v0, float v1)> LayoutOfRecord = new()
@@ -947,6 +950,8 @@ namespace NeuroAdaptiveVR.EditorTools
             { "Chair_T3",                   ( 31.0f,  43.8f, -28.1f, -7.8f) },
             { "StackedBoxes_T3",            ( 22.6f,  32.7f, -35.6f, -22.9f) },
             { "WallClock_T3",               ( -2.9f,   2.9f,  15.6f, 21.1f) },
+            // added 5 Oct 2026 (MIRAI: one more tier-2 prop so MEDIUM varies between seeds)
+            { "DeskItems_T2",               ( 27.1f,  36.7f, -12.1f, -7.8f) },
             { "CurtainLeft_T2",             (-37.7f, -32.9f,  -5.8f, 11.8f) },
             { "OutsideFigureLeft_T3",       (-39.3f, -24.9f,  -7.7f,  1.7f) },
             { "CurtainRight_T2",            ( 32.9f,  37.7f,  -5.8f, 11.8f) },
