@@ -5,32 +5,43 @@ using UnityEngine;
 namespace NeuroAdaptiveVR.Data
 {
     /// <summary>
-    /// Provisional thresholds of the head-away detector (EVENT_CONTRACT.md 5.10).
-    /// Set in the Inspector of HeadAwayMonitor and marked *to validate*: the
-    /// phase test of 7-8 October calibrates them. Every row carries the values
-    /// it was measured with.
+    /// Thresholds of the head-away detector (EVENT_CONTRACT.md 5.10). Set in the
+    /// Inspector of HeadAwayMonitor; every row carries the values it was measured
+    /// with.
+    ///
+    /// F5a, D7 (6 Oct): calibrated with two HeadAngleProbe passes in the headset
+    /// (Medicion_D7_HeadAway.md). The limits form the task region: every task
+    /// fixation measured (board, cards, Hint, reading, scanning the cards) stays
+    /// inside, and every head-turned look at the room leaves it. Still *to
+    /// validate* with participants. What no head threshold can see: looks made
+    /// with the eyes only (the head moved less than 5 deg), and targets at
+    /// 19-23 deg of yaw, which overlap card 4 (20.5 deg).
     /// </summary>
     [Serializable]
     public struct HeadAwayThresholds
     {
-        [Tooltip("TO VALIDATE. |yaw| beyond this, relative to the board, is outside the task band.")]
+        [Tooltip("TO VALIDATE. |yaw| beyond this, relative to the board, is outside the task region. " +
+                 "Measured 6 Oct: card 4 at 20.6, windows and room props from 26 on.")]
         public float YawLimitDeg;
-        [Tooltip("TO VALIDATE. Pitch above the board direction beyond this is outside.")]
+        [Tooltip("TO VALIDATE. Pitch above the board direction beyond this is outside. " +
+                 "Measured 6 Oct: board centre 6.6, natural reading under 1.5, clock 18-20.")]
         public float PitchUpLimitDeg;
-        [Tooltip("TO VALIDATE. Pitch below the board direction beyond this is outside. The card row spans ~17-25 deg below; " +
-                 "looking at the floor measured -41 deg in the headset (5 Oct), so 50 never fired.")]
+        [Tooltip("TO VALIDATE. Pitch below the board direction beyond this is outside. Measured 6 Oct: the head " +
+                 "stays above -11 on the cards (the eyes do the rest); boxes -23, floor -40 to -55.")]
         public float PitchDownLimitDeg;
-        [Tooltip("TO VALIDATE. Margin the head must come back inside before an episode can close.")]
+        [Tooltip("TO VALIDATE. Margin the head must come back inside before an episode can close. " +
+                 "3, so that coming back to card 4 (20.5 deg) closes it.")]
         public float HysteresisDeg;
-        [Tooltip("TO VALIDATE. Time outside before HEAD_AWAY is confirmed.")]
+        [Tooltip("TO VALIDATE. Time outside before HEAD_AWAY is confirmed. Quick glances at the " +
+                 "window measured 0.45-0.73 s outside (6 Oct): 500 missed half of them.")]
         public int MinAwayMs;
         [Tooltip("TO VALIDATE. Time back inside before HEAD_RETURNED is confirmed.")]
         public int MinReturnMs;
 
         public static HeadAwayThresholds Default => new()
         {
-            YawLimitDeg = 40f, PitchUpLimitDeg = 40f, PitchDownLimitDeg = 35f,
-            HysteresisDeg = 5f, MinAwayMs = 500, MinReturnMs = 200,
+            YawLimitDeg = 24f, PitchUpLimitDeg = 12f, PitchDownLimitDeg = 15f,
+            HysteresisDeg = 3f, MinAwayMs = 300, MinReturnMs = 200,
         };
     }
 

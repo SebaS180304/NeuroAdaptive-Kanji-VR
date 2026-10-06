@@ -1180,7 +1180,10 @@ namespace NeuroAdaptiveVR.EditorTools
         /// default thresholds: a glance shorter than min_away_ms emits nothing; a
         /// real look-away emits HEAD_AWAY dated back to the first frame outside;
         /// the return waits min_return_ms with hysteresis; losing tracking closes
-        /// the episode; episodes are numbered.
+        /// the episode; episodes are numbered. Since F5a (D7) it also replays the
+        /// head angles measured in the headset on 6 Oct (two HeadAngleProbe passes):
+        /// every task fixation stays inside, every head-turned look at the room
+        /// leaves, and a quick 0.45 s glance at the window counts.
         /// X5. Idle time: still runs shorter than idle_min_ms do not count, longer
         /// ones do, and any movement breaks a run.
         /// </summary>
@@ -1199,40 +1202,74 @@ namespace NeuroAdaptiveVR.EditorTools
             }
 
             Run(1.0, 0f, 0f);                 // looking at the board
-            Run(0.3, 55f, 0f);                // glance: 300 ms < 500 ms
+            Run(0.2, -30f, 0f);               // glance at the window: 200 ms < min_away_ms
             Run(0.5, 0f, 0f);
-            if (events.Count != 0) p.Add($"una mirada de 300 ms emitio {events.Count}");
+            if (events.Count != 0) p.Add($"una mirada de 200 ms emitio {events.Count}");
 
-            Run(1.0, 60f, 0f);                // real look-away, 1 s
+            Run(1.0, -29.7f, 5.5f);           // left window, head turned (measured 6 Oct): 1 s
             var away = events.Find(e => e.Kind == HeadAwayDetector.Kind.Away);
             if (events.Count != 1 || away.Episode != 1 || away.Limit != "YAW") p.Add("no hubo HEAD_AWAY #1 por YAW");
             else if (Math.Abs(away.OnsetOffsetMs + th.MinAwayMs) > 20) p.Add($"onset {away.OnsetOffsetMs} ms, se esperaba ~-{th.MinAwayMs}");
 
-            Run(0.3, 37f, 0f);                // inside the limit but inside the hysteresis band: not back
+            Run(0.3, th.YawLimitDeg - th.HysteresisDeg / 2f, 0f);   // inside the limit, inside the hysteresis band: not back
             if (events.Count != 1) p.Add("volvio dentro de la histeresis");
-            Run(0.1, 0f, 0f);                 // back, but for less than min_return_ms
-            Run(0.2, 60f, 0f);                // out again: still the same episode
+            Run(0.1, 20.5f, -5.5f);           // back on card 4, but for less than min_return_ms
+            Run(0.2, -29.7f, 5.5f);           // out again: still the same episode
             Run(0.6, 0f, 0f);                 // back for good
             var ret = events.Find(e => e.Kind == HeadAwayDetector.Kind.Returned);
             if (events.Count != 2 || ret.Episode != 1 || ret.Reason != "RETURNED") p.Add("no hubo HEAD_RETURNED #1");
             else if (Math.Abs(ret.DurationMs - 1600) > 30) p.Add($"duracion {ret.DurationMs} ms, se esperaba ~1600");
-            else if (Math.Abs(ret.MaxAbsYawDeg - 60f) > 0.01f) p.Add("max yaw mal");
+            else if (Math.Abs(ret.MaxAbsYawDeg - 29.7f) > 0.01f) p.Add("max yaw mal");
 
-            Run(1.0, 0f, -60f);               // down, below the cards: episode 2
+            Run(1.0, -2.6f, -54.7f);          // the floor (measured): episode 2
             var closed = d.ForceClose(t, "TRACKING_LOST");
             if (!(events.Count == 3 && events[2].Episode == 2 && events[2].Limit == "PITCH_DOWN")) p.Add("no hubo HEAD_AWAY #2 por PITCH_DOWN");
             if (closed == null || closed.Value.Reason != "TRACKING_LOST" || closed.Value.Episode != 2) p.Add("perder tracking no cerro el episodio");
             if (d.ForceClose(t, "SESSION_END") != null) p.Add("cerro dos veces");
-            Run(1.0, 0f, -25f);               // the bottom edge of the cards: inside
-            if (events.Count != 3) p.Add("mirar las tarjetas conto como apartar la vista");
-            Run(1.0, 0f, -41f);               // looking at the floor, as measured in the headset on 5 Oct
             Run(0.6, 0f, 0f);
-            if (!(events.Count == 5 && events[3].Episode == 3 && events[3].Limit == "PITCH_DOWN"
-                  && events[4].Kind == HeadAwayDetector.Kind.Returned))
-                p.Add("mirar al piso (-41 grados, medido en visor) no fue HEAD_AWAY por PITCH_DOWN");
 
-            Check("X4", "HEAD_AWAY/RETURNED: umbral, permanencia, histeresis, onset, cierre por tracking y numeracion",
-                  p.Count == 0, p.Count == 0 ? $"3 episodios · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms" : Join(p));
+            // Task fixations measured with the head turned (6 Oct, both passes) plus the
+            // extremes of natural reading and of scanning the cards: never away.
+            var task = new (string name, float yaw, float pitch)[]
+            {
+                ("board", -2.3f, 6.6f), ("tarjeta 1", -16.6f, -5.5f), ("tarjeta 4", 20.6f, -8.2f),
+                ("Hint", 18.5f, -1.1f), ("Hint", 15.9f, 1.6f), ("leer el board", 3.4f, 1.3f),
+                ("recorrer tarjetas", -15.5f, -10.8f), ("recorrer tarjetas", 12.6f, 0.7f),
+            };
+            foreach (var x in task)
+            {
+                int before = events.Count;
+                Run(1.0, x.yaw, x.pitch);
+                if (events.Count != before) p.Add($"mirar {x.name} ({x.yaw}, {x.pitch}) conto como apartar la vista");
+            }
+            Run(0.6, 0f, 0f);
+
+            // Room targets measured with the head turned: each one leaves, by its limit.
+            var room = new (string name, float yaw, float pitch, string limit)[]
+            {
+                ("reloj", -2.5f, 20.3f, "PITCH_UP"), ("repisa", 26.2f, 15.3f, "YAW"),
+                ("planta", -26.7f, -7.1f, "YAW"), ("ventana derecha", 31.2f, 0.8f, "YAW"),
+                ("silla", 35.0f, -6.5f, "YAW"), ("cajas", 18.6f, -23.4f, "PITCH_DOWN"),
+                ("techo", 0.9f, 52.3f, "PITCH_UP"),
+            };
+            int roomOk = 0;
+            foreach (var x in room)
+            {
+                int before = events.Count;
+                Run(1.0, x.yaw, x.pitch);
+                Run(0.6, 0f, 0f);
+                bool ok = events.Count == before + 2 && events[before].Kind == HeadAwayDetector.Kind.Away
+                          && events[before].Limit == x.limit && events[before + 1].Kind == HeadAwayDetector.Kind.Returned;
+                if (ok) roomOk++; else p.Add($"mirar {x.name} ({x.yaw}, {x.pitch}) no fue HEAD_AWAY por {x.limit}");
+            }
+
+            int beforeGlance = events.Count;
+            Run(0.45, -26.8f, 0f);            // the shortest quick glance at the window that was measured
+            Run(0.6, 0f, 0f);
+            if (events.Count != beforeGlance + 2) p.Add("una mirada rapida de 450 ms a la ventana no conto");
+
+            Check("X4", "HEAD_AWAY/RETURNED: umbral, permanencia, histeresis, onset, cierre por tracking, numeracion y angulos medidos en visor (D7)",
+                  p.Count == 0, p.Count == 0 ? $"{events.Count} eventos · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms · tarea {task.Length}/{task.Length} dentro · sala {roomOk}/{room.Length} fuera" : Join(p));
 
             var q = new List<string>();
             var idle = new IdleTracker(IdleTracker.Thresholds.Default);

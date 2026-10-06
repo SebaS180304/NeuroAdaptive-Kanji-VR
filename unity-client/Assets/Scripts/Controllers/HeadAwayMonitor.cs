@@ -19,8 +19,9 @@ namespace NeuroAdaptiveVR.Controllers
     ///
     /// Runs from the first state after S0 until the session ends, in every state
     /// (S4 included: Phase 4 needs the episodes wherever there is EEG), and only
-    /// while the headset is tracked. Thresholds are provisional and marked
-    /// *to validate*.
+    /// while the headset is tracked. Thresholds come from the
+    /// headset measurement of 6 Oct (F5a, D7: HeadAwayThresholds) and are still
+    /// marked *to validate*.
     /// </summary>
     public class HeadAwayMonitor : MonoBehaviour
     {
@@ -35,7 +36,7 @@ namespace NeuroAdaptiveVR.Controllers
         [Tooltip("Left and right controllers; their forward is the ray.")]
         [SerializeField] private Transform[] controllers;
 
-        [Header("Provisional thresholds — TO VALIDATE in the phase test (7-8 Oct)")]
+        [Header("Thresholds — task region measured 6 Oct (F5a D7), TO VALIDATE with participants")]
         [SerializeField] private HeadAwayThresholds thresholds = HeadAwayThresholds.Default;
         [Tooltip("Off only for Editor tests without a headset.")]
         [SerializeField] private bool requireHeadsetTracking = true;

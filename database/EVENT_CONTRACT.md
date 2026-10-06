@@ -512,6 +512,21 @@ belongs in `TrialRequest`.
 
 ## 11 · Change log
 
+**6 October 2026 — head-away thresholds from the task region (F5a, D7).** No
+field changes. The defaults become `yaw_limit_deg` 24 (was 40),
+`pitch_up_limit_deg` 12 (was 40), `pitch_down_limit_deg` 15 (was 35),
+`hysteresis_deg` 3 (was 5) and `min_away_ms` 300 (was 500); `min_return_ms`
+stays 200. Measured in the headset with two passes of `HeadAngleProbe`
+(`Medicion_D7_HeadAway.md`): with the old values almost no look at the room fired
+(the windows sit at 26–31° of yaw, the clock at 18–20° of pitch), while every
+task fixation (board, cards, Hint, natural reading, scanning the cards) stays
+inside the new limits and every head-turned look at the room leaves them. Quick
+glances at the window lasted 0.45–0.73 s outside, so 500 ms missed half of them.
+Not visible to any head threshold: looks made with the eyes only, and targets
+at 19–23° of yaw, which overlap card 4. Still *to validate* with participants;
+rows carry the thresholds in force, so rows before and after stay
+distinguishable.
+
 **5 October 2026 — pitch-down threshold.** No field changes. The default
 `pitch_down_limit_deg` goes from 50 to 35. Measured in the headset: looking at
 the floor puts the head at about −41° from the board direction (the eyes do the
