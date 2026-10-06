@@ -17,8 +17,9 @@ namespace NeuroAdaptiveVR.Core
     /// Every <see cref="sampleIntervalSeconds"/> it writes the head yaw and pitch
     /// relative to the head→board direction, computed exactly as HeadAwayMonitor
     /// does, so the numbers can be used as thresholds without conversion. The
-    /// right controller's A button adds a mark (with a short haptic pulse); B
-    /// adds an UNDO mark that cancels the previous one.
+    /// right controller's A button adds a mark; B adds an UNDO mark that cancels
+    /// the previous one. No haptics: no controller vibrates in this project
+    /// (harness case X1).
     ///
     /// <see cref="DumpTargets"/> writes, for every target of the walk (board,
     /// cards, Hint button, props, movers, peripherals, windows), the angular box
@@ -90,8 +91,8 @@ namespace NeuroAdaptiveVR.Core
             var right = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
             bool a = right.isValid && right.TryGetFeatureValue(CommonUsages.primaryButton, out bool av) && av;
             bool b = right.isValid && right.TryGetFeatureValue(CommonUsages.secondaryButton, out bool bv) && bv;
-            if (a && !_aWas) Mark("MARK", right);
-            if (b && !_bWas) Mark("UNDO", right);
+            if (a && !_aWas) Mark("MARK");
+            if (b && !_bWas) Mark("UNDO");
             _aWas = a;
             _bWas = b;
 
@@ -122,7 +123,7 @@ namespace NeuroAdaptiveVR.Core
 
         private string _pendingPromptId;
 
-        private void Mark(string kind, InputDevice device)
+        private void Mark(string kind)
         {
             if (kind == "MARK") Marks++;
             _pendingMark = kind;
@@ -132,7 +133,6 @@ namespace NeuroAdaptiveVR.Core
                 _prompt = kind == "MARK" ? Math.Min(_prompt + 1, _promptIds.Length) : Math.Max(_prompt - 1, 0);
                 RefreshLabel();
             }
-            device.SendHapticImpulse(0, kind == "MARK" ? 0.6f : 0.3f, kind == "MARK" ? 0.08f : 0.25f);
             Debug.Log($"{Log} {kind} {Marks}");
         }
 
