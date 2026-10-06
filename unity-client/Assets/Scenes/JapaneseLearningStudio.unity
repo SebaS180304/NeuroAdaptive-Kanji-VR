@@ -3868,7 +3868,7 @@ PrefabInstance:
       objectReference: {fileID: 2036128088036272072}
     - target: {fileID: 3838591909117182087, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_StickRotationRange.x
-      value: 20
+      value: -20
       objectReference: {fileID: 0}
     - target: {fileID: 3838591909117182087, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_StickRotationRange.y
@@ -3904,7 +3904,7 @@ PrefabInstance:
       objectReference: {fileID: 5829562431749407163}
     - target: {fileID: 4883220357337963943, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_StickRotationRange.x
-      value: 20
+      value: -20
       objectReference: {fileID: 0}
     - target: {fileID: 4883220357337963943, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       propertyPath: m_StickRotationRange.y
