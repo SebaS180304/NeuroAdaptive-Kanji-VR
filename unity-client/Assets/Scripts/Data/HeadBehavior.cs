@@ -27,7 +27,8 @@ namespace NeuroAdaptiveVR.Data
                  "Measured 6 Oct: board centre 6.6, natural reading under 1.5, clock 18-20.")]
         public float PitchUpLimitDeg;
         [Tooltip("TO VALIDATE. Pitch below the board direction beyond this is outside. Measured 6 Oct: the head " +
-                 "stays above -11 on the cards (the eyes do the rest); boxes -23, floor -40 to -55.")]
+                 "stays above -11 scanning the cards, but fixing card 4 took it to -18.5 (check session, S7-013); " +
+                 "boxes -23, floor -40 to -55. 15 fired on the card, so 22.")]
         public float PitchDownLimitDeg;
         [Tooltip("TO VALIDATE. Margin the head must come back inside before an episode can close. " +
                  "3, so that coming back to card 4 (20.5 deg) closes it.")]
@@ -40,7 +41,7 @@ namespace NeuroAdaptiveVR.Data
 
         public static HeadAwayThresholds Default => new()
         {
-            YawLimitDeg = 24f, PitchUpLimitDeg = 12f, PitchDownLimitDeg = 15f,
+            YawLimitDeg = 24f, PitchUpLimitDeg = 12f, PitchDownLimitDeg = 22f,
             HysteresisDeg = 3f, MinAwayMs = 300, MinReturnMs = 200,
         };
     }

@@ -14,9 +14,12 @@ namespace NeuroAdaptiveVR.Data
     {
         [Tooltip("TO VALIDATE. A dwell on the room counts from this length on.")]
         public int DwellMinMs;
-        [Tooltip("TO VALIDATE. Margin around each object's angular box. The head points short of what the " +
-                 "eyes look at (measured 6 Oct: 2-5 deg below low objects), so the box has to be wider than the object.")]
-        public float BoxMarginDeg;
+        [Tooltip("TO VALIDATE. Margin to the left and right of each object's angular box.")]
+        public float BoxMarginYawDeg;
+        [Tooltip("TO VALIDATE. Margin above and below each object's angular box. Wider than the yaw margin: " +
+                 "the head stops short of low objects and the eyes do the rest (measured 6 Oct: side table 5 deg, " +
+                 "chair 3.9, bookshelf 3.7 above their boxes; S7-004 of the check session, side table 2.2-5).")]
+        public float BoxMarginPitchDeg;
         [Tooltip("TO VALIDATE. A dwell survives a break shorter than this (tracking jitter, a glance back).")]
         public int DwellBreakMs;
         [Tooltip("TO VALIDATE. Turn toward a peripheral event that counts as orienting.")]
@@ -26,7 +29,7 @@ namespace NeuroAdaptiveVR.Data
 
         public static DistractorThresholds Default => new()
         {
-            DwellMinMs = 1000, BoxMarginDeg = 3f, DwellBreakMs = 200,
+            DwellMinMs = 1000, BoxMarginYawDeg = 3f, BoxMarginPitchDeg = 6f, DwellBreakMs = 200,
             OrientingMinDeg = 10f, OrientingWindowMs = 2000,
         };
     }
@@ -44,12 +47,25 @@ namespace NeuroAdaptiveVR.Data
         public float CentreYaw => (YawMin + YawMax) * 0.5f;
         public float CentrePitch => (PitchMin + PitchMax) * 0.5f;
 
+        /// <summary>How far (yaw, pitch) lies outside the box on each axis; 0 inside.</summary>
+        public void Offsets(float yaw, float pitch, out float dyaw, out float dpitch)
+        {
+            dyaw = Math.Max(Math.Max(YawMin - yaw, 0f), yaw - YawMax);
+            dpitch = Math.Max(Math.Max(PitchMin - pitch, 0f), pitch - PitchMax);
+        }
+
         /// <summary>Angular distance from (yaw, pitch) to the box; 0 inside.</summary>
         public float DistanceTo(float yaw, float pitch)
         {
-            float dy = Math.Max(Math.Max(YawMin - yaw, 0f), yaw - YawMax);
-            float dp = Math.Max(Math.Max(PitchMin - pitch, 0f), pitch - PitchMax);
+            Offsets(yaw, pitch, out float dy, out float dp);
             return (float)Math.Sqrt(dy * dy + dp * dp);
+        }
+
+        /// <summary>Inside the box widened by the yaw and pitch margins.</summary>
+        public bool WithinMargins(float yaw, float pitch, float marginYaw, float marginPitch)
+        {
+            Offsets(yaw, pitch, out float dy, out float dp);
+            return dy <= marginYaw && dp <= marginPitch;
         }
 
         public float DistanceToCentre(float yaw, float pitch)
@@ -61,8 +77,8 @@ namespace NeuroAdaptiveVR.Data
 
     /// <summary>
     /// DWELL (D5, variant A): the head stays on the room, outside the task region
-    /// of D7 and within <see cref="DistractorThresholds.BoxMarginDeg"/> of an
-    /// active prop, mover or peripheral, for at least DwellMinMs. One dwell is
+    /// of D7 and inside the box of an active prop, mover or peripheral widened
+    /// by the yaw and pitch margins, for at least DwellMinMs. One dwell is
     /// one continuous stretch, even if the head drifts from one object to the
     /// next; its object is the one the head was nearest to for longest.
     ///
@@ -110,10 +126,11 @@ namespace NeuroAdaptiveVR.Data
             if (outsideTask && boxes != null)
                 for (int i = 0; i < boxes.Count; i++)
                 {
+                    if (!boxes[i].WithinMargins(yaw, pitch, Thresholds.BoxMarginYawDeg, Thresholds.BoxMarginPitchDeg)) continue;
                     float d = boxes[i].DistanceTo(yaw, pitch);
                     if (d < nearestDist) { nearestDist = d; nearest = i; }
                 }
-            bool on = nearest >= 0 && nearestDist <= Thresholds.BoxMarginDeg;
+            bool on = nearest >= 0;
 
             if (on)
             {

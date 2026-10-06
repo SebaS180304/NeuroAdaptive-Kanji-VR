@@ -1236,6 +1236,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 ("board", -2.3f, 6.6f), ("tarjeta 1", -16.6f, -5.5f), ("tarjeta 4", 20.6f, -8.2f),
                 ("Hint", 18.5f, -1.1f), ("Hint", 15.9f, 1.6f), ("leer el board", 3.4f, 1.3f),
                 ("recorrer tarjetas", -15.5f, -10.8f), ("recorrer tarjetas", 12.6f, 0.7f),
+                ("tarjeta 4 fija", 20.9f, -18.5f),   // check session, S7-013: fired with pitch down 15
             };
             foreach (var x in task)
             {
@@ -1355,7 +1356,8 @@ namespace NeuroAdaptiveVR.EditorTools
         /// on 6 Oct and the boxes of the registry layout seen from the eye. DWELL:
         /// a look at the clock counts, a short one does not, a break shorter than
         /// dwell_break_ms does not split it, the task region and the floor never
-        /// count, an inactive prop does not count, tracking loss closes it.
+        /// count, an inactive prop does not count, a low object counts with the
+        /// head 5 deg above its box (pitch margin), tracking loss closes it.
         /// ORIENTING: a turn toward the peripheral within the window counts, a
         /// small turn or a late one does not.
         /// </summary>
@@ -1413,6 +1415,12 @@ namespace NeuroAdaptiveVR.EditorTools
             Run(0.4, 0f, 0f, withPlant);
             if (dwells.Count != 3 || dwells[2].ObjectName != "Plant_T1") p.Add("mirar la planta activa no dio DWELL");
 
+            var sideTable = Box("SideTable_T1", "PROP", 25.4f, 39.0f, -27.7f, -13.0f);
+            var withTable = new List<Data.AngularBox> { clock, sideTable };
+            Run(1.5, 26.6f, -8.0f, withTable);            // the side table: head 5 deg above its box (measured)
+            Run(0.4, 0f, 0f, withTable);
+            if (dwells.Count != 4 || dwells[3].ObjectName != "SideTable_T1") p.Add("mirar la mesa lateral (5 grados sobre su caja) no dio DWELL");
+
             Run(1.2, -2.5f, 20.3f, high);                 // tracking lost in the middle of a dwell
             var forced = d.ForceClose();
             if (forced == null || forced.Value.ObjectName != "WallClock_T3") p.Add("perder tracking no cerro el DWELL");
@@ -1442,7 +1450,7 @@ namespace NeuroAdaptiveVR.EditorTools
 
             Check("X7", "DISTRACTOR_INTERACTION: DWELL fuera de la region de tarea, corte, prop inactivo, tracking; ORIENTING en ventana",
                   p.Count == 0, p.Count == 0
-                      ? $"{dwells.Count + 1} DWELL (reloj {dwells[0].DurationMs} ms, planta {dwells[2].BoxDistanceDeg:0.0} grados de su caja) · ORIENTING giro {turns[0].TurnDeg:0.0} grados, pico {turns[0].PeakMs} ms"
+                      ? $"{dwells.Count + 1} DWELL (reloj {dwells[0].DurationMs} ms, planta {dwells[2].BoxDistanceDeg:0.0} y mesa {dwells[3].BoxDistanceDeg:0.0} grados de su caja) · ORIENTING giro {turns[0].TurnDeg:0.0} grados, pico {turns[0].PeakMs} ms"
                       : Join(p));
         }
 

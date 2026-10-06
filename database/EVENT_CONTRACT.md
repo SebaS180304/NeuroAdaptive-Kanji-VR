@@ -272,9 +272,11 @@ ESL) from "the head went elsewhere" (floor, ceiling, controllers), which
 
 Two kinds:
 
-- **`DWELL`**: the head stays outside the task region and within
-  `box_margin_deg` of the angular box of an **active** prop, mover or
-  peripheral, for at least `dwell_min_ms`. Breaks shorter than `dwell_break_ms`
+- **`DWELL`**: the head stays outside the task region and inside the angular
+  box of an **active** prop, mover or peripheral widened by
+  `box_margin_yaw_deg` and `box_margin_pitch_deg`, for at least `dwell_min_ms`.
+  The pitch margin is the wider one: the head stops short of low objects and
+  the eyes do the rest. Breaks shorter than `dwell_break_ms`
   do not split it. Emitted when the dwell ends.
 - **`ORIENTING`**: within `orienting_window_ms` of a `PERIPHERAL_EVENT`, the head
   turns at least `orienting_min_deg` toward the object (the angular distance
@@ -291,7 +293,7 @@ Two kinds:
 | `peripheral_event_index` | int or null | ORIENTING: the `event_index` of the `PERIPHERAL_EVENT`. Null for DWELL |
 | `head_turn_deg` | float | ORIENTING: the turn toward the object. DWELL: the closest the head got to the object's centre |
 | `box_distance_deg` | float or null | DWELL: the closest the head got to the object's box (0 = inside). Null for ORIENTING |
-| `dwell_min_ms`, `dwell_break_ms`, `box_margin_deg`, `orienting_min_deg`, `orienting_window_ms` | int, int, float, float, int | thresholds in force (*to validate*) |
+| `dwell_min_ms`, `dwell_break_ms`, `box_margin_yaw_deg`, `box_margin_pitch_deg`, `orienting_min_deg`, `orienting_window_ms` | int, int, float, float, float, int | thresholds in force (*to validate*) |
 
 Not trial-scoped; it carries the trial block when a trial is open. The
 estimator counts a row for the trial open when it arrives, or for the next
@@ -556,6 +558,15 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**6 October 2026 (evening) — adjustments after the check session.** A short
+headset session (`371b2c59`) checked D7 and D5 together. Two changes, both in
+thresholds: `pitch_down_limit_deg` goes from 15 to 22, because fixing card 4
+took the head to −18.5° and opened a false `HEAD_AWAY`; and the single
+`box_margin_deg` of `DISTRACTOR_INTERACTION` becomes `box_margin_yaw_deg` 3 and
+`box_margin_pitch_deg` 6, because a look at the side table kept the head 2–5°
+above its box and no `DWELL` was emitted. Rows of that session carry the
+earlier field (`box_margin_deg`); it is the only one that does.
 
 **6 October 2026 — `DISTRACTOR_INTERACTION` (F5a, D5).** One new event type
 (§5.11), reserved since Phase 3 and emitted from now on by `DistractorMonitor`;

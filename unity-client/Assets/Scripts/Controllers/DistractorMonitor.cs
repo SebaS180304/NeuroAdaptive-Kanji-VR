@@ -195,7 +195,8 @@ namespace NeuroAdaptiveVR.Controllers
                 { "onset_offset_ms", -(int)System.Math.Round((now - onset) * 1000.0) },
                 { "dwell_min_ms", th.DwellMinMs },
                 { "dwell_break_ms", th.DwellBreakMs },
-                { "box_margin_deg", th.BoxMarginDeg },
+                { "box_margin_yaw_deg", th.BoxMarginYawDeg },
+                { "box_margin_pitch_deg", th.BoxMarginPitchDeg },
                 { "orienting_min_deg", th.OrientingMinDeg },
                 { "orienting_window_ms", th.OrientingWindowMs },
             };
