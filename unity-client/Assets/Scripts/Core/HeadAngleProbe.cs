@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using TMPro;
 using UnityEngine;
 using UnityEngine.XR;
 
@@ -25,6 +26,12 @@ namespace NeuroAdaptiveVR.Core
     /// that is where the target IS, while the samples say where the head
     /// actually POINTS when looking at it.
     ///
+    /// <see cref="SetPrompts"/> (optional) shows the current target of the walk in
+    /// the headset, below the board centre: A confirms it and moves to the next
+    /// one, B goes back. Every sample carries the id of the prompt on screen, so
+    /// the walk labels itself and continuous segments (reading, quick glances)
+    /// can be analysed whole.
+    ///
     /// Output: unity-client/Logs/HeadProbe/ (ignored by git).
     /// </summary>
     public class HeadAngleProbe : MonoBehaviour
@@ -45,6 +52,12 @@ namespace NeuroAdaptiveVR.Core
         private double _start, _nextSample;
         private bool _aWas, _bWas;
         private string _pendingMark = "";
+        private string[] _promptIds = Array.Empty<string>();
+        private string[] _promptTexts = Array.Empty<string>();
+        private int _prompt;
+        private TextMeshPro _label;
+
+        public string CurrentPromptId => _prompt < _promptIds.Length ? _promptIds[_prompt] : "";
 
         private void Awake()
         {
@@ -60,7 +73,7 @@ namespace NeuroAdaptiveVR.Core
             SamplesPath = Path.Combine(dir, $"head_probe_{stamp}_samples.csv");
             TargetsPath = Path.Combine(dir, $"head_probe_{stamp}_targets.csv");
             _samples = new StreamWriter(SamplesPath, false, new UTF8Encoding(false));
-            _samples.WriteLine("t_ms,yaw_deg,pitch_deg,head_x,head_y,head_z,head_deg_s,tracked,mark,mark_kind");
+            _samples.WriteLine("t_ms,yaw_deg,pitch_deg,head_x,head_y,head_z,head_deg_s,tracked,mark,mark_kind,prompt");
             _start = Time.realtimeSinceStartupAsDouble;
             _nextSample = _start;
             Debug.Log($"{Log} Writing {SamplesPath}");
@@ -97,20 +110,62 @@ namespace NeuroAdaptiveVR.Core
             bool tracked = hd.isValid && hd.TryGetFeatureValue(CommonUsages.isTracked, out bool tr) && tr;
             var p = head.position;
             string kind = _pendingMark;
+            string promptId = _pendingPromptId ?? CurrentPromptId;
             _samples.WriteLine(string.Join(",",
                 ((int)Math.Round((now - _start) * 1000.0)).ToString(Inv),
                 F(yaw), F(pitch), F(p.x, 3), F(p.y, 3), F(p.z, 3), F(speed), tracked ? "1" : "0",
-                kind.Length > 0 ? Marks.ToString(Inv) : "", kind));
+                kind.Length > 0 ? Marks.ToString(Inv) : "", kind, promptId));
             Samples++;
             _pendingMark = "";
+            _pendingPromptId = null;
         }
+
+        private string _pendingPromptId;
 
         private void Mark(string kind, InputDevice device)
         {
             if (kind == "MARK") Marks++;
             _pendingMark = kind;
+            _pendingPromptId = CurrentPromptId;   // the mark belongs to the target it confirms
+            if (_promptIds.Length > 0)
+            {
+                _prompt = kind == "MARK" ? Math.Min(_prompt + 1, _promptIds.Length) : Math.Max(_prompt - 1, 0);
+                RefreshLabel();
+            }
             device.SendHapticImpulse(0, kind == "MARK" ? 0.6f : 0.3f, kind == "MARK" ? 0.08f : 0.25f);
             Debug.Log($"{Log} {kind} {Marks}");
+        }
+
+        /// <summary>Shows the walk in the headset. ids go to the CSV; texts to the label.</summary>
+        public void SetPrompts(string[] ids, string[] texts)
+        {
+            _promptIds = ids ?? Array.Empty<string>();
+            _promptTexts = texts ?? Array.Empty<string>();
+            _prompt = 0;
+            if (_label == null && board != null && head != null)
+            {
+                var go = new GameObject("HeadAngleProbe Prompt");
+                go.transform.SetParent(transform, false);
+                Vector3 toHead = (head.position - board.position).normalized;
+                go.transform.position = board.position - board.up * 0.30f + toHead * 0.04f;
+                go.transform.rotation = board.rotation;
+                _label = go.AddComponent<TextMeshPro>();
+                _label.fontSize = 0.9f;
+                _label.alignment = TextAlignmentOptions.Center;
+                _label.color = new Color(1f, 0.85f, 0.25f);
+                _label.outlineWidth = 0.25f;
+                _label.outlineColor = Color.black;
+                _label.rectTransform.sizeDelta = new Vector2(1.4f, 0.3f);
+            }
+            RefreshLabel();
+        }
+
+        private void RefreshLabel()
+        {
+            if (_label == null) return;
+            _label.text = _prompt < _promptTexts.Length
+                ? $"{_prompt + 1}/{_promptTexts.Length} · {_promptTexts[_prompt]}\n<size=60%>A = listo · B = atrás</size>"
+                : "Fin. Avísale a Claude.";
         }
 
         /// <summary>Angular boxes of the walk targets from the current head position.</summary>
