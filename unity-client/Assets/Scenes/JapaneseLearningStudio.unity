@@ -5942,7 +5942,7 @@ MonoBehaviour:
   systemCheckWindowSeconds: 5
   baselineEyesOpenSeconds: 60
   baselineEyesClosedSeconds: 45
-  baselineTimeScale: 0.1
+  baselineTimeScale: 1
   s5PlaceholderSeconds: 3
   fallbackSet: A
   fallbackSeed: 20260909
