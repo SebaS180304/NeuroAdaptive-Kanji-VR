@@ -2116,7 +2116,8 @@ MonoBehaviour:
   peripherals: {fileID: 1019401275}
   thresholds:
     DwellMinMs: 1000
-    BoxMarginDeg: 3
+    BoxMarginYawDeg: 3
+    BoxMarginPitchDeg: 6
     DwellBreakMs: 200
     OrientingMinDeg: 10
     OrientingWindowMs: 2000
@@ -4853,7 +4854,7 @@ MonoBehaviour:
   thresholds:
     YawLimitDeg: 24
     PitchUpLimitDeg: 12
-    PitchDownLimitDeg: 15
+    PitchDownLimitDeg: 22
     HysteresisDeg: 3
     MinAwayMs: 300
     MinReturnMs: 200
