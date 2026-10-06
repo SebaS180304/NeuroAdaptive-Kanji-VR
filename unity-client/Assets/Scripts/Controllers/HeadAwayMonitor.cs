@@ -137,6 +137,35 @@ namespace NeuroAdaptiveVR.Controllers
             if (_detector != null) Emit(_detector.ForceClose(Time.realtimeSinceStartupAsDouble, "SESSION_END"));
         }
 
+        /// <summary>The thresholds in force; their limits are the task region of D7.</summary>
+        public HeadAwayThresholds Thresholds => thresholds;
+
+        /// <summary>
+        /// Inside the task region of D7: within the yaw and pitch limits (the band
+        /// HEAD_AWAY leaves). DistractorMonitor uses it so the two events agree
+        /// on where the task is.
+        /// </summary>
+        public bool InsideTaskRegion(float yawDeg, float pitchDeg)
+            => Mathf.Abs(yawDeg) <= thresholds.YawLimitDeg
+               && pitchDeg <= thresholds.PitchUpLimitDeg
+               && pitchDeg >= -thresholds.PitchDownLimitDeg;
+
+        /// <summary>
+        /// Yaw and pitch of a world point in the frame of YawDeg/PitchDeg: relative
+        /// to the direction from the current head position to the board centre.
+        /// </summary>
+        public bool TryAngles(Vector3 worldPoint, out float yawDeg, out float pitchDeg)
+        {
+            yawDeg = pitchDeg = 0f;
+            if (head == null || board == null) return false;
+            Vector3 toBoard = board.position - head.position;
+            Vector3 toPoint = worldPoint - head.position;
+            if (toPoint.sqrMagnitude < 1e-6f) return false;
+            yawDeg = Mathf.DeltaAngle(Yaw(toBoard), Yaw(toPoint));
+            pitchDeg = Pitch(toPoint) - Pitch(toBoard);
+            return true;
+        }
+
         private static float Yaw(Vector3 v) => Mathf.Atan2(v.x, v.z) * Mathf.Rad2Deg;
         private static float Pitch(Vector3 v) => Mathf.Asin(Mathf.Clamp(v.normalized.y, -1f, 1f)) * Mathf.Rad2Deg;
 

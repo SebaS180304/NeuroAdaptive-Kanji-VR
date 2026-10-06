@@ -99,6 +99,7 @@ namespace NeuroAdaptiveVR.EditorTools
             HapticCases();
             StimulusTelemetryCases(content);
             HeadBehaviorCases();
+            DistractorCases();
             SoundSetCases();
 
             Report();
@@ -1344,6 +1345,106 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         // ==================================================================
+
+        // ==================================================================
+        // DISTRACTOR_INTERACTION (F5a, D5; EVENT_CONTRACT.md 5.11)
+        // ==================================================================
+
+        /// <summary>
+        /// X7. DWELL and ORIENTING, driven at 72 Hz with the head angles measured
+        /// on 6 Oct and the boxes of the registry layout seen from the eye. DWELL:
+        /// a look at the clock counts, a short one does not, a break shorter than
+        /// dwell_break_ms does not split it, the task region and the floor never
+        /// count, an inactive prop does not count, tracking loss closes it.
+        /// ORIENTING: a turn toward the peripheral within the window counts, a
+        /// small turn or a late one does not.
+        /// </summary>
+        private static void DistractorCases()
+        {
+            var p = new List<string>();
+            var th = DistractorThresholds.Default;
+            var task = HeadAwayThresholds.Default;
+            bool Outside(float y, float pt) => Math.Abs(y) > task.YawLimitDeg || pt > task.PitchUpLimitDeg || pt < -task.PitchDownLimitDeg;
+            Data.AngularBox Box(string n, string g, float y0, float y1, float p0, float p1)
+                => new Data.AngularBox { Name = n, Group = g, YawMin = y0, YawMax = y1, PitchMin = p0, PitchMax = p1 };
+            var clock = Box("WallClock_T3", "PROP", -2.9f, 2.9f, 13.1f, 18.5f);
+            var lamp = Box("FloorLamp_T1", "PROP", -29.2f, -22.2f, -27.2f, 3.2f);
+            var plant = Box("Plant_T1", "PROP", -38.3f, -23.2f, -34.6f, -9.3f);
+            var high = new List<Data.AngularBox> { clock, lamp, plant };
+            var noPlant = new List<Data.AngularBox> { clock };
+            var withPlant = new List<Data.AngularBox> { clock, plant };   // without the lamp, whose box the plant look also falls in
+
+            var d = new DwellDetector(th);
+            const double dt = 1.0 / 72.0;
+            double t = 0;
+            var dwells = new List<DwellDetector.Result>();
+            void Run(double seconds, float yaw, float pitch, List<Data.AngularBox> boxes)
+            {
+                int n = (int)Math.Round(seconds / dt);
+                for (int i = 0; i < n; i++) { t += dt; var r = d.Step(t, yaw, pitch, Outside(yaw, pitch), boxes); if (r != null) dwells.Add(r.Value); }
+            }
+
+            Run(1.0, 0f, 0f, high);                       // the board
+            Run(1.5, -2.5f, 20.3f, high);                 // the clock, head-turned (measured)
+            Run(0.4, 0f, 0f, high);
+            if (dwells.Count != 1 || dwells[0].ObjectName != "WallClock_T3" || Math.Abs(dwells[0].DurationMs - 1500) > 30)
+                p.Add($"mirar el reloj 1.5 s dio {dwells.Count} DWELL" + (dwells.Count > 0 ? $" ({dwells[0].ObjectName}, {dwells[0].DurationMs} ms)" : ""));
+
+            Run(0.8, -2.5f, 20.3f, high);                 // too short
+            Run(0.4, 0f, 0f, high);
+            if (dwells.Count != 1) p.Add("una mirada de 800 ms al reloj conto");
+
+            Run(0.7, -2.5f, 20.3f, high);                 // 0.7 + break 0.1 + 0.6: one dwell
+            Run(0.1, 0f, 0f, high);
+            Run(0.6, -2.5f, 20.3f, high);
+            Run(0.4, 0f, 0f, high);
+            if (dwells.Count != 2 || Math.Abs(dwells[1].DurationMs - 1400) > 30)
+                p.Add("un corte de 100 ms partio el DWELL o no lo cerro");
+
+            Run(2.0, -23.1f, 2.5f, high);                 // the lamp from inside the task region (measured)
+            Run(2.0, -2.6f, -54.7f, high);                // the floor: away, but not the room
+            Run(0.4, 0f, 0f, high);
+            if (dwells.Count != 2) p.Add("la region de tarea o el piso dieron DWELL");
+
+            Run(1.5, -26.7f, -7.1f, noPlant);             // the plant while it is inactive
+            Run(0.4, 0f, 0f, noPlant);
+            if (dwells.Count != 2) p.Add("un prop inactivo dio DWELL");
+            Run(1.5, -26.7f, -7.1f, withPlant);           // the plant while active (2.2 deg below its box)
+            Run(0.4, 0f, 0f, withPlant);
+            if (dwells.Count != 3 || dwells[2].ObjectName != "Plant_T1") p.Add("mirar la planta activa no dio DWELL");
+
+            Run(1.2, -2.5f, 20.3f, high);                 // tracking lost in the middle of a dwell
+            var forced = d.ForceClose();
+            if (forced == null || forced.Value.ObjectName != "WallClock_T3") p.Add("perder tracking no cerro el DWELL");
+
+            // ORIENTING: a peripheral at the right window (registry centre 31.4, 0.5).
+            var o = new OrientingDetector(th);
+            float Dist(float y, float pt) => (float)Math.Sqrt((y - 31.4f) * (y - 31.4f) + (pt - 0.5f) * (pt - 0.5f));
+            var turns = new List<OrientingDetector.Result>();
+            void Orient(double seconds, float yaw, float pitch)
+            {
+                int n = (int)Math.Round(seconds / dt);
+                for (int i = 0; i < n; i++) { t += dt; var r = o.Step(t, Dist(yaw, pitch), true); if (r != null) turns.Add(r.Value); }
+            }
+            o.Begin(t, "PeripheralEvent_WindowRight", 1, Dist(0f, 0f));
+            Orient(0.4, 0f, 0f);
+            Orient(1.8, 20f, 1f);                         // turns 20 deg toward it
+            if (turns.Count != 1 || turns[0].EventIndex != 1 || turns[0].TurnDeg < th.OrientingMinDeg)
+                p.Add("girar 20 grados hacia el periferico no dio ORIENTING");
+            else if (Math.Abs(turns[0].PeakMs - 400) > 30) p.Add($"pico a {turns[0].PeakMs} ms, se esperaba ~400");
+
+            o.Begin(t, "PeripheralEvent_WindowRight", 2, Dist(0f, 0f));
+            Orient(2.2, 5f, 0f);                          // 5 deg: not orienting
+            o.Begin(t, "PeripheralEvent_WindowRight", 3, Dist(0f, 0f));
+            Orient(2.1, 0f, 0f);
+            Orient(1.0, 25f, 0f);                         // turns after the window
+            if (turns.Count != 1) p.Add($"un giro de 5 grados o uno tardio dio ORIENTING ({turns.Count - 1})");
+
+            Check("X7", "DISTRACTOR_INTERACTION: DWELL fuera de la region de tarea, corte, prop inactivo, tracking; ORIENTING en ventana",
+                  p.Count == 0, p.Count == 0
+                      ? $"{dwells.Count + 1} DWELL (reloj {dwells[0].DurationMs} ms, planta {dwells[2].BoxDistanceDeg:0.0} grados de su caja) · ORIENTING giro {turns[0].TurnDeg:0.0} grados, pico {turns[0].PeakMs} ms"
+                      : Join(p));
+        }
 
         private static void Check(string id, string title, bool passed, string detail)
             => _cases.Add(new Case { Id = id, Title = title, Passed = passed, Detail = detail });

@@ -262,6 +262,51 @@ Per-trial head-away time is **not** a field: it is derived in the schema from th
 
 No `schema_version` bump (§5.6): two new events and additive fields.
 
+### 5.11 `DISTRACTOR_INTERACTION` (F5a, D5 — since 6 October)
+
+Emitted by `DistractorMonitor` when the environment takes the participant's
+attention. It is what lets the estimator tell "the room took it" (lower the
+ESL) from "the head went elsewhere" (floor, ceiling, controllers), which
+`HEAD_AWAY` alone cannot. Same angle frame as §5.10, and the task region is the
+`HEAD_AWAY` band, so the two never disagree about where the task is.
+
+Two kinds:
+
+- **`DWELL`**: the head stays outside the task region and within
+  `box_margin_deg` of the angular box of an **active** prop, mover or
+  peripheral, for at least `dwell_min_ms`. Breaks shorter than `dwell_break_ms`
+  do not split it. Emitted when the dwell ends.
+- **`ORIENTING`**: within `orienting_window_ms` of a `PERIPHERAL_EVENT`, the head
+  turns at least `orienting_min_deg` toward the object (the angular distance
+  from the head to it shrinks by that much). Emitted when the window ends. No
+  turn, no row: the orienting rate is counted against `PERIPHERAL_EVENT`.
+
+| Field | Type | Value |
+|---|---|---|
+| `kind` | string | `DWELL` or `ORIENTING` |
+| `object_name` | string | the object, as in `ENVIRONMENT_APPLIED` / `PERIPHERAL_EVENT`. For `DWELL`, the one whose box the head was nearest to for longest |
+| `object_group` | string | `PROP`, `MOVER` or `PERIPHERAL` |
+| `onset_offset_ms` | int | ms from the start (DWELL) or from the peripheral event (ORIENTING) to this row (negative) |
+| `duration_ms` | int | DWELL: length of the dwell. ORIENTING: from the peripheral event to the largest turn |
+| `peripheral_event_index` | int or null | ORIENTING: the `event_index` of the `PERIPHERAL_EVENT`. Null for DWELL |
+| `head_turn_deg` | float | ORIENTING: the turn toward the object. DWELL: the closest the head got to the object's centre |
+| `box_distance_deg` | float or null | DWELL: the closest the head got to the object's box (0 = inside). Null for ORIENTING |
+| `dwell_min_ms`, `dwell_break_ms`, `box_margin_deg`, `orienting_min_deg`, `orienting_window_ms` | int, int, float, float, int | thresholds in force (*to validate*) |
+
+Not trial-scoped; it carries the trial block when a trial is open. The
+estimator counts a row for the trial open when it arrives, or for the next
+trial of the same state if it arrives during the feedback
+(`backend/app/adaptation/trials.py`).
+
+**What it cannot see** (measured 6 October, `Medicion_D7_HeadAway.md`): looks
+made with the eyes only, and looks at objects whose head direction stays inside
+the task region (19–23° of yaw). The object name is the nearest box, often a
+neighbour of the one actually looked at (the eyes do the last few degrees):
+use it to read a session, not as a statistic.
+
+Until migration `0003` the row lives only in `session_events`: `project_event`
+skips unknown types without an error (§7).
+
 ### 5.8 `TRIAL_SEQUENCE_GENERATED` — the plan, not the outcome
 
 Emitted once per block, **before the first trial of that block runs**, carrying
@@ -511,6 +556,10 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**6 October 2026 — `DISTRACTOR_INTERACTION` (F5a, D5).** One new event type
+(§5.11), reserved since Phase 3 and emitted from now on by `DistractorMonitor`;
+no `schema_version` bump (§5.6). Not projected until migration `0003`.
 
 **6 October 2026 — head-away thresholds from the task region (F5a, D7).** No
 field changes. The defaults become `yaw_limit_deg` 24 (was 40),

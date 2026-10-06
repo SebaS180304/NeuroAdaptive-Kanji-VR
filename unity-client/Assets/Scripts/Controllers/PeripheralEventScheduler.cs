@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NeuroAdaptiveVR.Core;
@@ -41,6 +42,13 @@ namespace NeuroAdaptiveVR.Controllers
         private int _eventIndex;
         private bool _warnedEmptyPool;
         private System.Random _rng = new System.Random(0);
+
+        /// <summary>
+        /// A peripheral event became visible: the object and its event_index
+        /// (the same as in PERIPHERAL_EVENT). DistractorMonitor opens its
+        /// orienting window here (F5a, D5).
+        /// </summary>
+        public event Action<GameObject, int> OnPeripheralFired;
 
         private void Awake()
         {
@@ -147,6 +155,7 @@ namespace NeuroAdaptiveVR.Controllers
                 { "object_name", _active.name },
                 { "duration_ms", Mathf.RoundToInt(eventDurationSeconds * 1000f) },
             });
+            OnPeripheralFired?.Invoke(_active, _eventIndex);
         }
 
         private void HideActive()

@@ -204,8 +204,10 @@ namespace NeuroAdaptiveVR.Data
         public const string HeadAway = "HEAD_AWAY";
         public const string HeadReturned = "HEAD_RETURNED";
 
-        // Fase 3 -- reservado. NO emitir todavia: su definicion se decide antes
-        // del 5 de octubre.
+        // F5a, D5 (since 6 October; EVENT_CONTRACT.md 5.11). Emitted by
+        // DistractorMonitor: DWELL when the head stays on an active room object
+        // outside the task region, ORIENTING when it turns toward a peripheral
+        // event. Not trial-scoped; carries the trial block when a trial is open.
         public const string DistractorInteraction = "DISTRACTOR_INTERACTION";
 
         /// <summary>

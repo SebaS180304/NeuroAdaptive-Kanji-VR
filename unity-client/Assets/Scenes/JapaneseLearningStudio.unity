@@ -2066,6 +2066,61 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 385791648}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &387344812
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 387344813}
+  - component: {fileID: 387344814}
+  m_Layer: 0
+  m_Name: DistractorMonitor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &387344813
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 387344812}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1019401316}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &387344814
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 387344812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6113ae7b04073da49a1c847064d94ac7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.DistractorMonitor
+  telemetry: {fileID: 1019401270}
+  gameFlow: {fileID: 1410280776}
+  headAway: {fileID: 793224996}
+  peripherals: {fileID: 1019401275}
+  thresholds:
+    DwellMinMs: 1000
+    BoxMarginDeg: 3
+    DwellBreakMs: 200
+    OrientingMinDeg: 10
+    OrientingWindowMs: 2000
+  boxRefreshSeconds: 0.2
 --- !u!1 &389082436
 GameObject:
   m_ObjectHideFlags: 0
@@ -4796,11 +4851,11 @@ MonoBehaviour:
   - {fileID: 707591631}
   - {fileID: 707591630}
   thresholds:
-    YawLimitDeg: 40
-    PitchUpLimitDeg: 40
-    PitchDownLimitDeg: 35
-    HysteresisDeg: 5
-    MinAwayMs: 500
+    YawLimitDeg: 24
+    PitchUpLimitDeg: 12
+    PitchDownLimitDeg: 15
+    HysteresisDeg: 3
+    MinAwayMs: 300
     MinReturnMs: 200
   requireHeadsetTracking: 1
   speedWindowSeconds: 0.25
@@ -8775,6 +8830,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7972647531362228387, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 793224997}
+    - targetCorrespondingSourceObject: {fileID: 7972647531362228387, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 387344813}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1125460835585896871, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       insertIndex: -1
