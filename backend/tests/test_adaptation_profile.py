@@ -101,7 +101,8 @@ def test_profile_skips_first_s6_trial(recorded):
 
 def test_profile_obs01_references(recorded):
     profile = build_profile(recorded[OBS_01])
-    assert profile.rt_ref == {T1: 2313.0, T2: 2197.0, T3: 3263.5}
+    # T3 has only 2 valid trials (1947, 4580): it uses the global median.
+    assert profile.rt_ref == {T1: 2313.0, T2: 2197.0, T3: 2275.5}
     assert profile.rt_ref_global == 2275.5
     assert profile.acc_ref == pytest.approx(7 / 8)  # S6-002 wrong
     assert profile.rt_spread == SPREAD_FLOOR  # raw MAD below the floor
@@ -112,7 +113,7 @@ def test_profile_obs01_references(recorded):
 
 def test_profile_obs02_references(recorded):
     profile = build_profile(recorded[OBS_02])
-    assert profile.rt_ref == {T1: 2197.0, T2: 3007.5, T3: 4199.0}
+    assert profile.rt_ref == {T1: 2197.0, T2: 2502.0, T3: 4199.0}   # T2: 2 trials, global
     assert profile.acc_ref == 1.0
     assert profile.rt_spread == pytest.approx(profile.rt_spread_raw)
     assert profile.rt_spread > SPREAD_FLOOR
@@ -147,12 +148,16 @@ def test_obs01_windows(recorded):
     assert (w3.n, w3.slow_errors, w3.fast_errors) == (3, 2, 0)
     assert w3.acc_delta == pytest.approx(1 / 3 - 7 / 8)
 
-    # S7-008 / S7-009: errors at 1.08 and 1.43 times the T3 reference.
+    # S7-008 / S7-009: errors at 1.55 and 2.05 times the reference (T3 uses
+    # the global median: only 2 valid T3 trials in S6). Two slow errors, in
+    # S7-009 and again in S7-010: the case §4.3 expects to read as OVERLOADED.
     w9 = windows["S7-009"]
-    assert w9.trial_rt_ratios == pytest.approx((2352 / 2197, 3532 / 3263.5, 4661 / 3263.5))
-    assert w9.slow_errors == 1
-    assert w9.rt_ratio == pytest.approx(3532 / 3263.5)
-    assert w9.rt_z == pytest.approx((3532 / 3263.5 - 1) / SPREAD_FLOOR)
+    assert w9.trial_rt_ratios == pytest.approx((2352 / 2197, 3532 / 2275.5, 4661 / 2275.5))
+    assert w9.slow_errors == 2
+    assert w9.rt_ratio == pytest.approx(3532 / 2275.5)
+    assert w9.rt_z == pytest.approx((3532 / 2275.5 - 1) / SPREAD_FLOOR)
+    assert windows["S7-010"].slow_errors == 2
+    assert windows["S7-008"].slow_errors == 1
 
     # A window with no errors is at or above the S6 accuracy.
     assert windows["S7-016"].acc_delta == pytest.approx(1 - 7 / 8)

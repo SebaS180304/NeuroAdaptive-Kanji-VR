@@ -7,7 +7,7 @@ the new phase (11.8 s in OBS_01 against ~2.3 s for the rest).
 
 | Field | How |
 | --- | --- |
-| ``rt_ref[type]`` | Median RT per trial type, without timeouts. A type with fewer than 2 valid trials uses the global median |
+| ``rt_ref[type]`` | Median RT per trial type, without timeouts. A type with fewer than 3 valid trials uses the global median (decided 7 Oct; the plan said 2) |
 | ``rt_spread`` | MAD of ``rt / rt_ref[type]``, floored at 0.15 |
 | ``acc_ref`` | Proportion correct (a timeout counts as an error) |
 | ``idle_eff_ref`` | Median of effective idle / RT |
@@ -27,7 +27,7 @@ from app.adaptation.trials import TrialRecord
 
 PROFILE_PHASE = "S6"
 SKIP_FIRST_TRIALS = 1  # D6
-MIN_TRIALS_PER_TYPE = 2
+MIN_TRIALS_PER_TYPE = 3  # decided 7 Oct: with 2, one slow S6 trial sets the reference (OBS_01, T3)
 SPREAD_FLOOR = 0.15  # D6
 RELIABLE_MIN_TRIALS = 6
 LOW_RELIABILITY = 0.6
