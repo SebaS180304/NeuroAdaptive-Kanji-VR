@@ -112,6 +112,28 @@ namespace NeuroAdaptiveVR.Data
     }
 
     /// <summary>
+    /// How a cue reached the participant (D9, Plan_Fase5a.md §4). Per trial,
+    /// on TRIAL_STARTED and TRIAL_COMPLETED: <c>cue_trigger</c> is PROACTIVE
+    /// when the trial is inside the window that follows an engine raise of LAL
+    /// (with <c>proactive_index</c> 1..3), ON_REQUEST when the only cue came
+    /// from the Hint button, and null when no cue was presented. A Hint pressed
+    /// inside the window is still recorded apart: HINT_REQUESTED always carries
+    /// ON_REQUEST, and <c>hint_count</c> counts it.
+    /// </summary>
+    public static class CueTelemetry
+    {
+        public const string KeyCueTrigger = "cue_trigger";
+        public const string KeyProactiveIndex = "proactive_index";
+
+        public const string Proactive = "PROACTIVE";
+        public const string OnRequest = "ON_REQUEST";
+
+        /// <summary>The trial-level trigger: proactive wins, then a granted hint, else none.</summary>
+        public static string TriggerOf(int proactiveIndex, bool hintGrantedCue)
+            => proactiveIndex > 0 ? Proactive : hintGrantedCue ? OnRequest : null;
+    }
+
+    /// <summary>
     /// Nombres de los eventos. Constantes y no strings sueltos porque un
     /// typo en un `event_type` produce una fila que se guarda sin error y
     /// desaparece de cualquier consulta que filtre por el nombre correcto.

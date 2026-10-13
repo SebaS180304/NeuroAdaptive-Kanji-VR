@@ -20,14 +20,29 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField]
         private StimulationOrAssistanceLevel currentLevel = StimulationOrAssistanceLevel.Off;
 
+        [Tooltip("D9 (approved by MIRAI on 13 Oct): trials that get the cue without asking after " +
+                 "the engine raises LAL. Adaptive conditions only; STATIC never.")]
+        [SerializeField] private int proactiveTrials = ProactiveCueWindow.DefaultLength;
+
+        private readonly ProactiveCueWindow _proactive = new ProactiveCueWindow();
+
         public StimulationOrAssistanceLevel CurrentLevel => currentLevel;
+
+        /// <summary>Trials of the current proactive window still to come (D9).</summary>
+        public int ProactiveTrialsLeft => _proactive.Remaining;
 
         /// <summary>
         /// Unico punto de entrada para cambiar LAL. El guard-clause de timing
         /// es explicito para que sea imposible saltarselo por accidente
         /// cuando Fase 5 conecte el Adaptation Engine.
+        ///
+        /// D9: with <paramref name="proactiveCues"/> (the engine's DECISION
+        /// carries it), a raise opens a window of 3 trials in which the cue is
+        /// presented without asking. The count starts at the first trial after
+        /// this call. A new raise opens a new window; lowering LAL closes it.
+        /// A blocked change opens nothing.
         /// </summary>
-        public void SetLevel(StimulationOrAssistanceLevel newLevel, bool betweenTrials)
+        public void SetLevel(StimulationOrAssistanceLevel newLevel, bool betweenTrials, bool proactiveCues = false)
         {
             if (!betweenTrials)
             {
@@ -35,8 +50,34 @@ namespace NeuroAdaptiveVR.Controllers
                                 "between trials, never while the learner is answering (spec 10.2).");
                 return;
             }
+            int from = Rank(currentLevel), to = Rank(newLevel);
             currentLevel = newLevel;
+
+            if (to < from) _proactive.Close();
+            else if (to > from && proactiveCues) _proactive.Open(proactiveTrials);
         }
+
+        /// <summary>
+        /// Called once at the start of every trial (D9). Returns the position
+        /// of this trial in the proactive window (1..3), or 0 when the cue stays
+        /// on request. Outside an adaptive S7 (STATIC, S6, S8...) it always
+        /// returns 0 and closes any window, so the cue can never appear by
+        /// itself there.
+        /// </summary>
+        public int BeginTrialProactive(bool adaptationAllowed)
+        {
+            if (!adaptationAllowed) { _proactive.Close(); return 0; }
+            return _proactive.NextTrial();
+        }
+
+        /// <summary>Order of the LAL levels; BASELINE (an ESL level) and unknown values rank as OFF.</summary>
+        private static int Rank(StimulationOrAssistanceLevel level) => level switch
+        {
+            StimulationOrAssistanceLevel.Low => 1,
+            StimulationOrAssistanceLevel.Medium => 2,
+            StimulationOrAssistanceLevel.High => 3,
+            _ => 0,
+        };
 
         /// <summary>
         /// Cues disponibles para este tipo de trial en este nivel, segun la
@@ -93,5 +134,46 @@ namespace NeuroAdaptiveVR.Controllers
 
         public LalCue AvailableCuesNow(RetrievalTrialType trialType)
             => AvailableCues(trialType, currentLevel);
+    }
+
+    /// <summary>
+    /// D9 window: after the engine raises LAL, the next N trials (3, MIRAI,
+    /// 13 Oct) present the cue without asking. Plain class so the harness can
+    /// test it without a scene.
+    ///
+    /// Fits spec 10.2 without new rules: the 3-trial cooldown stops LAL from
+    /// changing inside the window, and the 4-trial tail freeze keeps the last
+    /// possible window inside S7.
+    /// </summary>
+    public sealed class ProactiveCueWindow
+    {
+        public const int DefaultLength = 3;
+
+        private int _length;
+        private int _index;
+
+        public int Remaining => _length - _index;
+        public bool Active => Remaining > 0;
+
+        /// <summary>Opens a new window; the next trial is number 1.</summary>
+        public void Open(int length = DefaultLength)
+        {
+            _length = Mathf.Max(0, length);
+            _index = 0;
+        }
+
+        public void Close()
+        {
+            _length = 0;
+            _index = 0;
+        }
+
+        /// <summary>The trial's position in the window (1..length), or 0 if the window is closed.</summary>
+        public int NextTrial()
+        {
+            if (!Active) return 0;
+            _index++;
+            return _index;
+        }
     }
 }

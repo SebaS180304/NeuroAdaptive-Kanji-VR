@@ -39,6 +39,8 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private ProceduralSfx sfx;
         [Tooltip("Head and ray angular speeds for idle time (Phase 3, F3.3).")]
         [SerializeField] private HeadAwayMonitor behavior;
+        [Tooltip("D9: proactive cues only where adaptation is allowed (S7, adaptive conditions).")]
+        [SerializeField] private NeuroAdaptiveVR.Core.GameFlowController flow;
 
         [Header("Idle time — provisional, TO VALIDATE (EVENT_CONTRACT.md 5.10)")]
         [SerializeField] private IdleTracker.Thresholds idleThresholds = IdleTracker.Thresholds.Default;
@@ -62,6 +64,8 @@ namespace NeuroAdaptiveVR.Controllers
         private bool _awaitingResponse;
         private int _hintCount;
         private LalCue _cuesPresented;
+        private bool _hintGrantedCue;
+        private int _proactiveIndex;        // D9: 1..3 inside the window after an engine raise of LAL, else 0
         private double _answerSelectedAt;   // realtime of ANSWER_SELECTED: the origin of every stimulus offset
         private IdleTracker _idle;
 
@@ -77,6 +81,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (pronunciation == null) pronunciation = GetComponent<PronunciationAudioController>();
             if (sfx == null) sfx = FindAnyObjectByType<ProceduralSfx>();
             if (behavior == null) behavior = FindAnyObjectByType<HeadAwayMonitor>();
+            if (flow == null) flow = FindAnyObjectByType<NeuroAdaptiveVR.Core.GameFlowController>();
             _idle = new IdleTracker(idleThresholds);
 
             if (assistance == null)
@@ -135,10 +140,17 @@ namespace NeuroAdaptiveVR.Controllers
             _context = request.ToTrialContext(state);
             _hintCount = 0;
             _cuesPresented = LalCue.None;
+            _hintGrantedCue = false;
 
             telemetry.BeginTrial(_context);
 
             LalCue available = assistance.AvailableCuesNow(request.TrialType);
+
+            // D9: one slot of the proactive window per trial, only where
+            // adaptation is allowed; anywhere else the window is closed.
+            bool adaptationAllowed = flow != null && flow.IsAdaptationAllowed();
+            int slot = assistance.BeginTrialProactive(adaptationAllowed);
+            _proactiveIndex = slot > 0 && available != LalCue.None ? slot : 0;
 
             var optionIds = new List<string>(request.Options.Count);
             string correctOptionId = null;
@@ -154,10 +166,17 @@ namespace NeuroAdaptiveVR.Controllers
                 { "options", optionIds },          // en el orden presentado
                 { "correct_option", correctOptionId },
                 { "hint_available", available != LalCue.None },
+                { CueTelemetry.KeyCueTrigger, CueTelemetry.TriggerOf(_proactiveIndex, false) },
+                { CueTelemetry.KeyProactiveIndex, _proactiveIndex > 0 ? _proactiveIndex : (object)null },
             });
 
             _presenter.SetHintAvailable(available != LalCue.None);
             _presenter.Present(request.TrialType, BuildPromptText(request), request.Options);
+
+            // D9: inside the window the cue of the level is presented with the
+            // trial, through the same path as a Hint (same cues of 9.1, same T3
+            // audio guard). The Hint button stays for asking again.
+            if (_proactiveIndex > 0) PresentCues(available);
 
             // El cronometro arranca DESPUES de presentar. El tiempo de
             // presentacion y animacion no es tiempo de respuesta -- ver
@@ -267,6 +286,14 @@ namespace NeuroAdaptiveVR.Controllers
                 return;
             }
 
+            _hintGrantedCue = true;
+            PresentCues(available);
+            EmitHintRequested(available);
+        }
+
+        /// <summary>Presents the cues of the level: on request (Hint) or proactively (D9).</summary>
+        private void PresentCues(LalCue available)
+        {
             _cuesPresented |= available;
 
             if ((available & LalCue.TargetReadingAudio) != 0)
@@ -276,7 +303,6 @@ namespace NeuroAdaptiveVR.Controllers
             }
 
             _presenter.ShowCue(available);
-            EmitHintRequested(available);
         }
 
         private void EmitHintRequested(LalCue granted)
@@ -286,6 +312,7 @@ namespace NeuroAdaptiveVR.Controllers
             {
                 { "hint_type", CueNames(granted) },
                 { "hint_available", granted != LalCue.None },
+                { CueTelemetry.KeyCueTrigger, CueTelemetry.OnRequest },
                 { "time_since_trial_start_ms", ElapsedMs() },
             });
         }
@@ -394,6 +421,8 @@ namespace NeuroAdaptiveVR.Controllers
                 { "response_time_ms", responseTimeMs },
                 { "hint_count", _hintCount },
                 { "cues_presented", CueNames(_cuesPresented) },
+                { CueTelemetry.KeyCueTrigger, CueTelemetry.TriggerOf(_proactiveIndex, _hintGrantedCue) },
+                { CueTelemetry.KeyProactiveIndex, _proactiveIndex > 0 ? _proactiveIndex : (object)null },
             };
             // Stimulus fields for the EEG analysis (UI design v1.3, 8.1).
             foreach (var kv in StimulusTelemetry.TrialCompletedFields(

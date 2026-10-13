@@ -100,6 +100,7 @@ namespace NeuroAdaptiveVR.EditorTools
             StimulusTelemetryCases(content);
             HeadBehaviorCases();
             DistractorCases();
+            ProactiveCueCases();
             SoundSetCases();
 
             Report();
@@ -1452,6 +1453,64 @@ namespace NeuroAdaptiveVR.EditorTools
                   p.Count == 0, p.Count == 0
                       ? $"{dwells.Count + 1} DWELL (reloj {dwells[0].DurationMs} ms, planta {dwells[2].BoxDistanceDeg:0.0} y mesa {dwells[3].BoxDistanceDeg:0.0} grados de su caja) · ORIENTING giro {turns[0].TurnDeg:0.0} grados, pico {turns[0].PeakMs} ms"
                       : Join(p));
+        }
+
+        // ==================================================================
+        // D9 · proactive cues (Plan_Fase5a.md §4, approved by MIRAI 13 Oct)
+        // ==================================================================
+        private static void ProactiveCueCases()
+        {
+            var p = new List<string>();
+            string Seq(Func<int> next, int n) => string.Join(",", Enumerable.Range(0, n).Select(_ => next()));
+
+            var w = new ProactiveCueWindow();
+            if (Seq(w.NextTrial, 2) != "0,0") p.Add("ventana cerrada dio cue");
+            w.Open();
+            if (Seq(w.NextTrial, 4) != "1,2,3,0") p.Add("la ventana no dura exactamente 3 trials");
+            w.Open(); w.NextTrial(); w.Open();
+            if (w.NextTrial() != 1) p.Add("una subida nueva no reabre la ventana en 1");
+
+            var go = new GameObject("HarnessLAL_D9") { hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                var lal = go.AddComponent<LearningAssistanceController>();
+                var M = StimulationOrAssistanceLevel.Medium;
+                var H = StimulationOrAssistanceLevel.High;
+                var L = StimulationOrAssistanceLevel.Low;
+                Func<int> adaptive = () => lal.BeginTrialProactive(true);
+
+                lal.SetLevel(M, true); lal.SetLevel(H, true, proactiveCues: true);
+                string a = Seq(adaptive, 5);
+                if (a != "1,2,3,0,0") p.Add($"subida con proactive_cues: {a}, se esperaba 1,2,3,0,0");
+
+                lal.SetLevel(M, true); lal.SetLevel(H, true);
+                if (adaptive() != 0) p.Add("subida sin proactive_cues abrio ventana");
+
+                lal.SetLevel(M, true); lal.SetLevel(H, false, proactiveCues: true);   // blocked: LogError expected
+                if (lal.CurrentLevel != M || adaptive() != 0) p.Add("un cambio bloqueado a media respuesta abrio ventana");
+
+                lal.SetLevel(H, true, proactiveCues: true); adaptive(); lal.SetLevel(M, true);
+                if (adaptive() != 0) p.Add("bajar LAL no cerro la ventana");
+
+                lal.SetLevel(L, true); lal.SetLevel(M, true, proactiveCues: true);
+                if (lal.BeginTrialProactive(false) != 0) p.Add("STATIC / fuera de S7 dio cue proactivo");
+                if (adaptive() != 0) p.Add("salir del contexto adaptativo no cerro la ventana");
+
+                lal.SetLevel(L, true); lal.SetLevel(M, true, proactiveCues: true); adaptive(); adaptive();
+                lal.SetLevel(H, true, proactiveCues: true);
+                string b = Seq(adaptive, 4);
+                if (b != "1,2,3,0") p.Add($"segunda subida: {b}, se esperaba ventana nueva 1,2,3,0");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+
+            if (CueTelemetry.TriggerOf(2, false) != CueTelemetry.Proactive
+                || CueTelemetry.TriggerOf(1, true) != CueTelemetry.Proactive
+                || CueTelemetry.TriggerOf(0, true) != CueTelemetry.OnRequest
+                || CueTelemetry.TriggerOf(0, false) != null)
+                p.Add("cue_trigger no sigue PROACTIVE > ON_REQUEST > null");
+
+            Check("X8", "D9: cue proactivo solo en los 3 trials tras una subida de LAL con proactive_cues; nunca fuera de S7 adaptativo",
+                  p.Count == 0, p.Count == 0 ? "ventana 1,2,3 · reabre con cada subida · se cierra al bajar o fuera de S7 adaptativo" : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)
