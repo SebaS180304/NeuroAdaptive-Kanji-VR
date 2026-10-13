@@ -1,9 +1,12 @@
 """
 Replay of a session through the estimator (Planteamiento_Tecnico_F5a.md §5).
 
-Prints, trial by trial of S7, the window indicators, the state, the cause and
-the confidence the live path would have produced. The rule engine (rules.py,
-Tue 13) adds its decision column here.
+Prints, trial by trial of S7, the window indicators, the state, the cause, the
+confidence and the rule engine's decision that the live path would have
+produced. A recorded session is replayed as if it were adaptive: the engine
+assumes each change it decides is applied, whatever condition the session
+actually ran in, so a STATIC recording shows what the adaptive path would have
+done with the same behaviour.
 
     # from the database (inside the backend container), by id or id prefix
     docker compose exec backend python -m app.adaptation.replay 87761ce6
@@ -26,7 +29,8 @@ from typing import Any, Iterable, Mapping
 from app.adaptation.estimator import estimate
 from app.adaptation.indicators import window_indicators, window_trials
 from app.adaptation.profile import build_profile
-from app.adaptation.trials import build_trials
+from app.adaptation.rules import decide, initial_state
+from app.adaptation.trials import S7_STATE, build_trials
 
 
 def load_from_file(path: Path, session_prefix: str) -> list[dict[str, Any]]:
@@ -60,17 +64,32 @@ def load_from_db(session_prefix: str) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
+def s7_entry(events: Iterable[Mapping[str, Any]]) -> Mapping[str, Any]:
+    """Payload of the STATE_ENTERED that opened S7 (start time and levels), or {}."""
+    for event in events:
+        payload = event.get("payload") or {}
+        if event["event_type"] == "STATE_ENTERED" and payload.get("state") == S7_STATE:
+            return payload
+    return {}
+
+
 def replay(events: Iterable[Mapping[str, Any]]) -> tuple[Any, list[dict[str, Any]]]:
     """Profile and one row per answered S7 trial, as the live path computes them."""
+    events = list(events)
     trials = build_trials(events)
     profile = build_profile(trials)
+    entry = s7_entry(events)
+    started = entry.get("session_elapsed_ms")
+    engine = initial_state(entry.get("esl"), entry.get("lal"), None if started is None else int(started))
     rows = []
     for trial in trials:
         if trial.phase != "S7":
             continue
         window = window_indicators(window_trials(trials, trial.trial_id), profile)
         result = estimate(window, profile)
-        rows.append({"trial": trial, "window": window, "result": result})
+        seq = trial.trial_sequence or int(trial.trial_id.split("-")[1])
+        decision, engine = decide(result, seq, trial.answered_ms, engine)
+        rows.append({"trial": trial, "window": window, "result": result, "decision": decision})
     return profile, rows
 
 
@@ -85,7 +104,7 @@ def print_table(session: str, profile, rows: list[dict[str, Any]]) -> None:
           f"acc {p['acc_ref']} · idle_eff {p['idle_eff_ref']} · n {p['n_trials']} · reliability {p['reliability']}")
     print()
     head = f"{'trial':7} {'type':5} {'rt':>6} {'ok':2}  {'ratio':>5} {'z':>6} {'acc':>6} {'fast':>4} {'slow':>4} " \
-           f"{'away':>5} {'dwell':>5} {'orient':>6} {'idle':>6}  {'state':10} {'cause':11} {'conf':>4}"
+           f"{'away':>5} {'dwell':>5} {'orient':>6} {'idle':>6}  {'state':10} {'cause':11} {'conf':>4}  {'decision'}"
     print(head)
     print("-" * len(head))
     for row in rows:
@@ -93,7 +112,18 @@ def print_table(session: str, profile, rows: list[dict[str, Any]]) -> None:
         print(f"{t.trial_id:7} {t.trial_type[:2]:5} {t.rt_ms:6d} {'ok' if t.is_correct else 'x':2}  "
               f"{_fmt(w.rt_ratio):>5} {_fmt(w.rt_z, '{:.1f}'):>6} {_fmt(w.acc_delta):>6} {w.fast_errors:4d} {w.slow_errors:4d} "
               f"{w.away_ms:5d} {w.env_dwell_ms:5d} {_fmt(w.orienting_rate):>6} {_fmt(w.idle_eff_ratio):>6}  "
-              f"{r.state:10} {(r.cause or ''):11} {r.confidence:4.2f}")
+              f"{r.state:10} {(r.cause or ''):11} {r.confidence:4.2f}  {_fmt_decision(row['decision'])}")
+    changes = [row["decision"] for row in rows if row["decision"].is_change]
+    print()
+    print(f"{len(changes)} change(s)")
+    for d in changes:
+        print(f"  {d.trial_id}: {d.explanation}")
+
+
+def _fmt_decision(d) -> str:
+    if d.is_change:
+        return f"{d.action} {d.from_level}->{d.to_level}" + (" +cues" if d.proactive_cues else "")
+    return f"- {d.reason_code}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -107,7 +137,8 @@ def main(argv: list[str] | None = None) -> int:
     profile, rows = replay(events)
     if args.json:
         for row in rows:
-            print(json.dumps(row["result"].as_dict(), ensure_ascii=False, default=str))
+            out = {**row["result"].as_dict(), "decision": row["decision"].as_dict()}
+            print(json.dumps(out, ensure_ascii=False, default=str))
     else:
         print_table(str(events[0]["session_id"]) if events else args.session, profile, rows)
     return 0
