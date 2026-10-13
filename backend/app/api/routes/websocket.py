@@ -24,6 +24,14 @@ Servidor -> Cliente:
     {"type": "PONG", "server_time": "...", "offset_ms": 12.3}
     {"type": "ACK", "of": "SESSION_EVENT", "id": "123"}
     {"type": "ERROR", "detail": "..."}
+    {"type": "DECISION", "decision_id": "d-...", "trial_id": "S7-009", "action": ..., ...}
+
+DECISION (F5a, Planteamiento_Tecnico_F5a.md §2 and §8.1): in an adaptive
+session, every ANSWER_SELECTED of S7 gets one, NO_CHANGE included, sent right
+after its ACK so it travels during the 1.5 s of feedback. The backend then
+stores it as an ADAPTATION_DECISION event (source BACKEND) with its latency,
+measured from the arrival of the answer to the send. STATIC sessions never
+reach the estimator.
 
 El `id` de un ACK viaja SIEMPRE como string, para los dos tipos de
 evento. Hasta el cierre de Fase 1 el de SESSION_EVENT salia como entero
@@ -36,13 +44,15 @@ numerico lo convierte donde lo necesita.
 
 import json
 import logging
+import time
 import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
-from sqlalchemy import text
+from sqlalchemy import select, text
 
+from app.adaptation.state import ADAPTATION_DECISION, PendingDecision, SessionAdaptationState
 from app.db.base import AsyncSessionLocal
 from app.models.session import ExperimentSession, GameFlowState
 from app.models.system_event import SystemValidationEvent
@@ -53,6 +63,10 @@ from app.services.session_clock import now_utc, offset_ms
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["websocket"])
+
+# F5a: adaptation state per open session, in memory (§2.2). Rebuilt from
+# session_events on every (re)connection, so losing it costs nothing.
+_adaptation: dict[uuid.UUID, SessionAdaptationState] = {}
 
 
 @router.websocket("/ws/session/{session_id}")
@@ -68,8 +82,10 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
             await websocket.send_json({"type": "ERROR", "detail": "unknown session_id"})
             await websocket.close(code=4404)
             return
+        condition = session.condition.value if session.condition is not None else None
+        await _load_adaptation(db, session_id, condition)
 
-    logger.info("WS connected for session=%s", session_id)
+    logger.info("WS connected for session=%s condition=%s", session_id, condition)
 
     try:
         while True:
@@ -82,6 +98,7 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
 
             msg_type = message.get("type")
             received_at = now_utc()
+            received_perf = time.perf_counter()
 
             if msg_type == "PING":
                 client_ts = _parse_timestamp(message.get("client_timestamp"))
@@ -94,7 +111,7 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
                 )
 
             elif msg_type == "SESSION_EVENT":
-                await _handle_session_event(websocket, session_id, message)
+                await _handle_session_event(websocket, session_id, message, received_perf)
 
             elif msg_type == "VALIDATION_EVENT":
                 await _handle_validation_event(websocket, session_id, message)
@@ -108,7 +125,9 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
         logger.info("WS disconnected for session=%s", session_id)
 
 
-async def _handle_session_event(websocket: WebSocket, session_id: uuid.UUID, message: dict) -> None:
+async def _handle_session_event(
+    websocket: WebSocket, session_id: uuid.UUID, message: dict, received_perf: float | None = None
+) -> None:
     try:
         parsed = SessionEventCreate(
             session_id=session_id,
@@ -130,6 +149,56 @@ async def _handle_session_event(websocket: WebSocket, session_id: uuid.UUID, mes
         await db.refresh(event)
 
     await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": str(event.id)})
+
+    state = _adaptation.get(session_id)
+    if state is not None:
+        try:
+            pending = state.feed(parsed.event_type, parsed.payload)
+        except Exception:  # never lose the session over the estimator
+            logger.exception("adaptation failed on event %s (session=%s)", event.id, session_id)
+            pending = None
+        if pending is not None:
+            await _send_decision(websocket, session_id, pending, received_perf)
+
+
+async def _load_adaptation(db, session_id: uuid.UUID, condition: str | None) -> None:
+    """Adaptation state for an adaptive session, rebuilt from its stored events."""
+    probe = SessionAdaptationState(condition)
+    if not probe.adaptive:
+        _adaptation.pop(session_id, None)
+        return
+    rows = (await db.execute(
+        select(SessionEventModel.event_type, SessionEventModel.payload)
+        .where(SessionEventModel.session_id == session_id)
+        .order_by(SessionEventModel.id)
+    )).all()
+    _adaptation[session_id] = SessionAdaptationState.rebuild(
+        condition, ({"event_type": r.event_type, "payload": r.payload} for r in rows)
+    )
+    if rows:
+        logger.info("adaptation state rebuilt from %d events (session=%s)", len(rows), session_id)
+
+
+async def _send_decision(
+    websocket: WebSocket, session_id: uuid.UUID, pending: PendingDecision, received_perf: float | None
+) -> None:
+    """Send first (Unity is waiting), then store with the latency measured at the send."""
+    await websocket.send_json(pending.message())
+    latency_ms = None if received_perf is None else (time.perf_counter() - received_perf) * 1000.0
+    async with AsyncSessionLocal() as db:
+        event = SessionEventModel(
+            session_id=session_id,
+            event_type=ADAPTATION_DECISION,
+            payload=pending.event_payload(latency_ms),
+            client_timestamp=None,
+        )
+        db.add(event)
+        await db.flush()
+        await _project(db, event.id)
+        await db.commit()
+    d = pending.decision
+    logger.info("DECISION %s %s %s (%s, %.1f ms) session=%s", d.trial_id, d.action, d.reason_code,
+                pending.decision_id, latency_ms or -1, session_id)
 
 
 async def _project(db, event_id: int) -> None:
