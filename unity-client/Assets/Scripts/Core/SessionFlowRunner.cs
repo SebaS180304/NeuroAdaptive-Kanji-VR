@@ -60,6 +60,13 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private KanjiContentController content;
         [SerializeField] private BehaviorTelemetryController telemetry;
         [SerializeField] private SessionCommunicationClient client;
+        [Tooltip("F5a: DECISION messages from the backend. Added at runtime if missing.")]
+        [SerializeField] private AdaptationClient adaptation;
+        [SerializeField] private EnvironmentalStimulationController stimulation;
+        [SerializeField] private LearningAssistanceController assistance;
+        [Tooltip("F5a, D1: how long to wait for the DECISION after the trial closes. It normally " +
+                 "arrives during the feedback, so the wait is 0; past this, ADAPTATION_SKIPPED TIMEOUT.")]
+        [SerializeField] private int decisionWaitMs = 300;
         [Tooltip("The board. Session messages and the Start card go through it: it is the board's only owner.")]
         [SerializeField] private StudioTrialPresenter board;
         [Tooltip("Any MonoBehaviour implementing ILearningBlock. Empty = S5 is crossed with a labelled placeholder.")]
@@ -138,6 +145,12 @@ namespace NeuroAdaptiveVR.Core
             if (board == null) board = FindAnyObjectByType<StudioTrialPresenter>();
             if (viewRecenter == null) viewRecenter = FindAnyObjectByType<ViewRecenter>();
             if (sfx == null) sfx = FindAnyObjectByType<ProceduralSfx>();
+            if (stimulation == null) stimulation = GetComponent<EnvironmentalStimulationController>();
+            if (stimulation == null) stimulation = FindAnyObjectByType<EnvironmentalStimulationController>();
+            if (assistance == null) assistance = GetComponent<LearningAssistanceController>();
+            if (assistance == null) assistance = FindAnyObjectByType<LearningAssistanceController>();
+            if (adaptation == null) adaptation = FindAnyObjectByType<AdaptationClient>();
+            if (adaptation == null) adaptation = gameObject.AddComponent<AdaptationClient>();
         }
 
         /// <summary>
@@ -600,6 +613,7 @@ namespace NeuroAdaptiveVR.Core
             if (plan.Count == 0) { done(false); yield break; }
 
             TrialSequenceTelemetry.Emit(telemetry, plan, _setName, _sessionSeed);
+            adaptation?.Clear();
 
             int correct = 0;
             int index = 0;
@@ -625,12 +639,89 @@ namespace NeuroAdaptiveVR.Core
 
                 yield return new WaitUntil(() => _trialClosed);
                 if (_lastResult != null && _lastResult.IsCorrect) correct++;
+
+                // F5a: the backend's decision for this trial, applied before the next one.
+                if (state == GameFlowState.S7_ExperimentalRetrieval)
+                {
+                    string closedId = $"{state.ShortCode()}-{planned.Sequence:D3}";
+                    string nextId = index < plan.Count
+                        ? $"{state.ShortCode()}-{plan.Trials[index].Sequence:D3}" : null;
+                    yield return ApplyDecision(closedId, nextId);
+                }
             }
 
             board?.SetProgress(0, 0);   // the dots belong to the block: gone before the next screen
             _scores[state] = (correct, plan.Count);
             Debug.Log($"{Log} {state.ShortCode()} · {correct}/{plan.Count} correct");
             done(true);
+        }
+
+        // ------------------------------------------------------------------
+        // F5a -- closed loop: apply the backend's DECISION between trials (§8.2)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Only in an adaptive S7 (STATIC never waits and never emits). Takes the
+        /// DECISION of the trial that just closed, waiting at most decisionWaitMs;
+        /// applies a change with the controllers' own between-trials guard, and
+        /// records ADAPTATION_APPLIED or ADAPTATION_SKIPPED. NO_CHANGE emits
+        /// nothing here: the backend already stored it.
+        /// </summary>
+        private IEnumerator ApplyDecision(string closedTrialId, string nextTrialId)
+        {
+            bool allowed = flow != null && flow.IsAdaptationAllowed();
+            if (!allowed || adaptation == null) yield break;
+
+            float started = Time.realtimeSinceStartup;
+            IncomingMessage decision = null;
+            while (!adaptation.TryTake(closedTrialId, out decision)
+                   && (Time.realtimeSinceStartup - started) * 1000f < decisionWaitMs)
+                yield return null;
+            long waitedMs = (long)((Time.realtimeSinceStartup - started) * 1000f);
+
+            var outcome = AdaptationApply.Resolve(true, responses != null && responses.TrialInProgress,
+                                                  decision, nextTrialId != null, out bool isEsl, out var to);
+            if (outcome == AdaptationApply.Outcome.Nothing) yield break;
+
+            if (outcome == AdaptationApply.Outcome.Apply)
+            {
+                var before = isEsl ? stimulation?.CurrentLevel : assistance?.CurrentLevel;
+                if (isEsl) stimulation?.SetLevel(to, betweenTrials: true);
+                else assistance?.SetLevel(to, betweenTrials: true, proactiveCues: decision.ProactiveCues == true);
+                var after = isEsl ? stimulation?.CurrentLevel : assistance?.CurrentLevel;
+
+                if (after == to)
+                {
+                    telemetry.Emit(TelemetryEvents.AdaptationApplied, new Dictionary<string, object>
+                    {
+                        { "decision_id", decision.DecisionId },
+                        { "decision_trial_id", closedTrialId },
+                        { "applied_before_trial_id", nextTrialId },
+                        { "dimension", decision.Dimension },
+                        { "from_level", before?.ToWireValue() },
+                        { "to_level", to.ToWireValue() },
+                        { "proactive_cues", decision.ProactiveCues == true },
+                        { "waited_ms", waitedMs },
+                    });
+                    Debug.Log($"{Log} {closedTrialId} · {decision.Dimension} {before} -> {to} before {nextTrialId} " +
+                              $"(waited {waitedMs} ms): {decision.Explanation}");
+                    yield break;
+                }
+                outcome = AdaptationApply.Outcome.SkipGuard;   // a controller refused it
+            }
+
+            if (outcome == AdaptationApply.Outcome.SkipTimeout) adaptation.MarkSkipped(closedTrialId);
+            telemetry.Emit(TelemetryEvents.AdaptationSkipped, new Dictionary<string, object>
+            {
+                { "decision_id", decision?.DecisionId },
+                { "decision_trial_id", closedTrialId },
+                { "reason", AdaptationApply.ReasonOf(outcome) },
+                { "dimension", decision?.Dimension },
+                { "to_level", decision?.ToLevel },
+                { "waited_ms", waitedMs },
+            });
+            Debug.LogWarning($"{Log} {closedTrialId} · adaptation skipped ({AdaptationApply.ReasonOf(outcome)}, " +
+                             $"waited {waitedMs} ms)");
         }
 
         // ------------------------------------------------------------------

@@ -232,6 +232,16 @@ namespace NeuroAdaptiveVR.Data
         // event. Not trial-scoped; carries the trial block when a trial is open.
         public const string DistractorInteraction = "DISTRACTOR_INTERACTION";
 
+        // F5a loop (since 13 October; Planteamiento_Tecnico_F5a.md §8.3).
+        // Emitted by SessionFlowRunner between S7 trials of an adaptive
+        // session: APPLIED when the backend's DECISION changed ESL or LAL
+        // before the next trial; SKIPPED when it could not (TIMEOUT: no
+        // decision within the wait; GUARD: a trial was open; NOT_ALLOWED: no
+        // trial left; INVALID: a decision Unity cannot read). The decision
+        // itself is ADAPTATION_DECISION, written by the backend.
+        public const string AdaptationApplied = "ADAPTATION_APPLIED";
+        public const string AdaptationSkipped = "ADAPTATION_SKIPPED";
+
         /// <summary>
         /// Eventos que solo tienen sentido dentro de un trial abierto.
         /// BehaviorTelemetryController los rechaza con error si no hay trial,

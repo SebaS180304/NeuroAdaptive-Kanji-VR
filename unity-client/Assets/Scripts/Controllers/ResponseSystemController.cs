@@ -348,6 +348,11 @@ namespace NeuroAdaptiveVR.Controllers
                 return;
             }
 
+            _idle.Finish();   // the response window closes here
+
+            // F5a (§2.2): the idle measures travel with the answer too, because
+            // the backend decides on ANSWER_SELECTED, 1.5 s before
+            // TRIAL_COMPLETED. Same values as TRIAL_COMPLETED; null without a monitor.
             telemetry.Emit(TelemetryEvents.AnswerSelected, new Dictionary<string, object>
             {
                 { "kanji_char", _request.Target.Character },
@@ -355,9 +360,10 @@ namespace NeuroAdaptiveVR.Controllers
                 { "is_correct", isCorrect },
                 { "response_time_ms", responseTimeMs },
                 { "timed_out", false },   // sin timeout en Fase 2; el campo existe para no cambiar la forma
+                { "idle_ms", behavior != null ? _idle.IdleMs : (object)null },
+                { "idle_episodes", behavior != null ? _idle.Episodes : (object)null },
+                { "idle_longest_ms", behavior != null ? _idle.LongestMs : (object)null },
             });
-
-            _idle.Finish();   // the response window closes here
 
             // `select` sounds in this same frame, always (offset 0 by contract,
             // so it carries no field). UI design v1.3, D4 and 8.1.

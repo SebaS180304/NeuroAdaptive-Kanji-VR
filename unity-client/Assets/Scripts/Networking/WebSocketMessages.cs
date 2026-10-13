@@ -83,5 +83,28 @@ namespace NeuroAdaptiveVR.Networking
         /// <summary>Solo ERROR.</summary>
         [JsonProperty("detail")]
         public string Detail;
+
+        // --- DECISION (F5a, Planteamiento_Tecnico_F5a.md §8.1) ---
+        // One per answered trial of an adaptive S7, NO_CHANGE included. Sent by
+        // the backend during the feedback of that trial; applied (or skipped)
+        // by SessionFlowRunner between trials. Nullable where the backend can
+        // send null, for the same reason as OffsetMs.
+
+        [JsonProperty("decision_id")] public string DecisionId;
+        [JsonProperty("trial_id")] public string TrialId;
+        /// <summary>NO_CHANGE | CHANGE_ENVIRONMENT | CHANGE_ASSISTANCE.</summary>
+        [JsonProperty("action")] public string Action;
+        /// <summary>ESL | LAL, null with NO_CHANGE.</summary>
+        [JsonProperty("dimension")] public string Dimension;
+        [JsonProperty("from_level")] public string FromLevel;
+        [JsonProperty("to_level")] public string ToLevel;
+        /// <summary>D9: the raise opens a window of proactive cues.</summary>
+        [JsonProperty("proactive_cues")] public bool? ProactiveCues;
+        [JsonProperty("learner_state")] public string LearnerState;
+        [JsonProperty("cause")] public string Cause;
+        [JsonProperty("confidence")] public double? Confidence;
+        [JsonProperty("reason_code")] public string ReasonCode;
+        [JsonProperty("explanation")] public string Explanation;
+        [JsonProperty("cooldown_until_trial")] public int? CooldownUntilTrial;
     }
 }

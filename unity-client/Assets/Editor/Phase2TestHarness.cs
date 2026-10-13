@@ -6,6 +6,7 @@ using NeuroAdaptiveVR.Audio;
 using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Core;
 using NeuroAdaptiveVR.Data;
+using NeuroAdaptiveVR.Networking;
 using UnityEditor;
 using UnityEngine;
 
@@ -101,6 +102,7 @@ namespace NeuroAdaptiveVR.EditorTools
             HeadBehaviorCases();
             DistractorCases();
             ProactiveCueCases();
+            AdaptationLoopCases();
             SoundSetCases();
 
             Report();
@@ -1511,6 +1513,65 @@ namespace NeuroAdaptiveVR.EditorTools
 
             Check("X8", "D9: cue proactivo solo en los 3 trials tras una subida de LAL con proactive_cues; nunca fuera de S7 adaptativo",
                   p.Count == 0, p.Count == 0 ? "ventana 1,2,3 · reabre con cada subida · se cierra al bajar o fuera de S7 adaptativo" : Join(p));
+        }
+
+        // ==================================================================
+        // F5a loop: applying the backend's DECISION (Planteamiento_Tecnico_F5a.md §8.2)
+        // ==================================================================
+        private static void AdaptationLoopCases()
+        {
+            IncomingMessage Dec(string action, string dim, string to, string trial = "S7-009")
+                => new IncomingMessage { Type = "DECISION", DecisionId = "d-test", TrialId = trial, Action = action,
+                                         Dimension = dim, FromLevel = "MEDIUM", ToLevel = to, ProactiveCues = dim == "LAL" };
+            var lalUp = Dec("CHANGE_ASSISTANCE", "LAL", "HIGH");
+            var eslDown = Dec("CHANGE_ENVIRONMENT", "ESL", "LOW");
+            AdaptationApply.Outcome R(bool allowed, bool inTrial, IncomingMessage d, bool next = true)
+                => AdaptationApply.Resolve(allowed, inTrial, d, next, out _, out _);
+
+            Check("AD1", "STATIC o fuera de S7 adaptativo: no se espera ni se aplica ninguna decision",
+                  R(false, false, lalUp) == AdaptationApply.Outcome.NotApplicable
+                  && R(false, false, null) == AdaptationApply.Outcome.NotApplicable,
+                  $"con decision {R(false, false, lalUp)} · sin decision {R(false, false, null)}");
+
+            Check("AD2", "Nunca durante un trial: con un trial abierto el cambio se salta como GUARD",
+                  R(true, true, lalUp) == AdaptationApply.Outcome.SkipGuard
+                  && AdaptationApply.ReasonOf(AdaptationApply.Outcome.SkipGuard) == "GUARD",
+                  $"{R(true, true, lalUp)}");
+
+            var p = new List<string>();
+            if (R(true, false, null) != AdaptationApply.Outcome.SkipTimeout) p.Add("sin decision no dio TIMEOUT");
+            var go = new GameObject("HarnessAdaptationClient") { hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                var client = go.AddComponent<AdaptationClient>();
+                client.Accept(Dec("NO_CHANGE", null, null, "S7-004"));
+                if (!client.TryTake("S7-004", out var got) || got.Action != "NO_CHANGE") p.Add("no guardo la decision por trial_id");
+                if (client.TryTake("S7-004", out _)) p.Add("la misma decision se pudo tomar dos veces");
+                client.MarkSkipped("S7-005");
+                client.Accept(Dec("CHANGE_ASSISTANCE", "LAL", "HIGH", "S7-005"));
+                if (client.TryTake("S7-005", out _) || client.LateDiscarded != 1) p.Add("una decision tardia no se descarto");
+                client.Accept(new IncomingMessage { Type = "ACK", Id = "1" });
+                if (client.TryTake(null, out _)) p.Add("un ACK se tomo como decision");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+            Check("AD3", "Decision tardia: sin decision a tiempo es TIMEOUT y la que llega despues se descarta",
+                  p.Count == 0, p.Count == 0 ? "TIMEOUT · descartada al llegar tarde · una sola toma por trial" : Join(p));
+
+            var q = new List<string>();
+            if (R(true, false, Dec("NO_CHANGE", null, null)) != AdaptationApply.Outcome.Nothing) q.Add("NO_CHANGE emitio algo");
+            if (R(true, false, lalUp, next: false) != AdaptationApply.Outcome.SkipNotAllowed) q.Add("cambio sin trial siguiente no se salto");
+            if (R(true, false, Dec("CHANGE_ASSISTANCE", "ESL", "HIGH")) != AdaptationApply.Outcome.SkipInvalid) q.Add("accion y dimension cruzadas no fue INVALID");
+            if (R(true, false, Dec("CHANGE_ASSISTANCE", "LAL", "OFF")) != AdaptationApply.Outcome.SkipInvalid) q.Add("LAL a OFF no fue INVALID");
+            if (R(true, false, Dec("CHANGE_ENVIRONMENT", "ESL", "BOGUS")) != AdaptationApply.Outcome.SkipInvalid) q.Add("nivel desconocido no fue INVALID");
+            Check("AD4", "NO_CHANGE no emite nada; sin trial siguiente o con una decision ilegible, se salta",
+                  q.Count == 0, q.Count == 0 ? "NO_CHANGE · NOT_ALLOWED · INVALID (3 casos)" : Join(q));
+
+            var a1 = AdaptationApply.Resolve(true, false, lalUp, true, out bool esl1, out var to1);
+            var a2 = AdaptationApply.Resolve(true, false, eslDown, true, out bool esl2, out var to2);
+            Check("AD5", "Entre trials, un cambio legible se aplica en su dimension y nivel",
+                  a1 == AdaptationApply.Outcome.Apply && !esl1 && to1 == StimulationOrAssistanceLevel.High
+                  && a2 == AdaptationApply.Outcome.Apply && esl2 && to2 == StimulationOrAssistanceLevel.Low,
+                  $"LAL {a1} {to1} · ESL {a2} {to2}");
         }
 
         private static void Check(string id, string title, bool passed, string detail)
