@@ -304,6 +304,9 @@ def test_obs01_raises_assistance_at_s7_010_and_returns_at_s7_015(decisions):
     assert "slow errors" in d["S7-010"].explanation
     assert [d[f"S7-{i:03d}"].reason_code for i in (11, 12, 13)] == [COOLDOWN] * 3
     assert (d["S7-015"].reason_code, d["S7-015"].to_level) == (STABLE_RETURN, "MEDIUM")
+    # the return says what held, never "your usual pace" (it is not a pace check)
+    assert "no sign of overload or disengagement" in d["S7-015"].explanation
+    assert "practice pace" in d["S7-015"].explanation and "usual pace" not in d["S7-015"].explanation
     assert sum(x.is_change for x in d.values()) == 2
 
 

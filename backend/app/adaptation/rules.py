@@ -338,7 +338,19 @@ def decide(
     )
 
     if reason == STABLE_RETURN:
-        why = f"{cfg.hysteresis_windows} windows in a row at your usual pace and accuracy"
+        # Says what held, not "your usual pace": STABLE only means no overload
+        # or disengagement condition was met (session 099690e1, S7-012, was
+        # STABLE at 4.2x the practice pace because accuracy held).
+        ind = result.indicators or {}
+        pace = ind.get("rt_ratio")
+        acc = ind.get("acc_delta")
+        details = []
+        if isinstance(pace, (int, float)):
+            details.append(f"answers at {pace:.2f}× the practice pace")
+        if isinstance(acc, (int, float)):
+            details.append(f"{acc:+.2f} accuracy against practice")
+        why = (f"{cfg.hysteresis_windows} windows in a row with no sign of overload or disengagement"
+               + (f" ({', '.join(details)})" if details else ""))
     else:
         why = _evidence_text(result)
         if reason == f"{DISENGAGED}_{IMPULSIVE}" and dimension == LAL:
