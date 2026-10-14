@@ -306,8 +306,81 @@ the task region (19–23° of yaw). The object name is the nearest box, often a
 neighbour of the one actually looked at (the eyes do the last few degrees):
 use it to read a session, not as a statistic.
 
-Until migration `0003` the row lives only in `session_events`: `project_event`
-skips unknown types without an error (§7).
+Projected into `distractor_interactions` since migration `0003` (14 October).
+Rows stored before it are projected by `database/backfill_projection.sql`.
+
+### 5.12 The adaptation loop (F5a — since 13 October)
+
+In `BEHAVIOR_ADAPTIVE` and `MULTIMODAL_ADAPTIVE`, every answered trial of S7
+gets one decision from the backend, `NO_CHANGE` included
+(`Planteamiento_Tecnico_F5a.md` §2 and §8). STATIC never does (criterion 5).
+Projected by migration `0003` into `adaptation_decisions` and
+`adaptation_applications`; `v_adaptations` joins them and `trial_timeline`
+carries the decision of each trial.
+
+#### `ANSWER_SELECTED` — idle fields
+
+`idle_ms`, `idle_episodes` and `idle_longest_ms` (§5.10) travel on the answer as
+well, with the same values `TRIAL_COMPLETED` carries: the backend decides on
+`ANSWER_SELECTED`, 1.5 s before the trial closes. Null without a head monitor.
+
+#### `ADAPTATION_DECISION` — written by the backend
+
+Stored by the backend right after it sends the `DECISION` WebSocket message
+(never by Unity). It carries the context block and the trial block of the
+`ANSWER_SELECTED` that produced it, so it passes `verify_events.sql` like any
+other row, plus `source = "BACKEND"`.
+
+| Field | Type | Value |
+|---|---|---|
+| `decision_id` | string | `d-` + 12 hex characters; unique in the session |
+| `action` | string | `NO_CHANGE`, `CHANGE_ENVIRONMENT` or `CHANGE_ASSISTANCE` |
+| `dimension` | string or null | `ESL` or `LAL`; null with `NO_CHANGE` |
+| `from_level`, `to_level` | string or null | one step on LOW…HIGH; null with `NO_CHANGE` |
+| `proactive_cues` | bool | true only when LAL goes up (D9) |
+| `learner_state` | string | `STABLE`, `DISENGAGED` or `OVERLOADED` |
+| `cause` | string or null | `ENVIRONMENT`, `AWAY` or `IMPULSIVE` for `DISENGAGED`; null otherwise |
+| `confidence` | float | 0–1; states under 0.5 are ignored by the rules |
+| `reason_code` | string | why: the state (`OVERLOADED`, `DISENGAGED_ENVIRONMENT`, `STABLE_RETURN`…) or what blocked it (`INITIAL_WINDOW`, `COOLDOWN`, `HYSTERESIS`, `TAIL_FREEZE`, `AT_LIMIT`, `LOW_CONFIDENCE`, `STABLE`) |
+| `explanation` | string | readable sentence, in English |
+| `cooldown_until_trial` | int or null | last trial sequence of the cooldown in force |
+| `decision_latency_ms` | float | from the arrival of the answer to the send of `DECISION` |
+| `indicators`, `evidence`, `conditions`, `support` | object, list, object, float | the estimator's window and the conditions that held |
+| `estimator_version`, `rules_version`, `thresholds` | string, string, object | what decided, with the thresholds in force |
+
+#### `ADAPTATION_APPLIED` / `ADAPTATION_SKIPPED` — Unity
+
+Emitted by `SessionFlowRunner` between two S7 trials of an adaptive session, after
+waiting at most 300 ms for the `DECISION` of the trial that just closed. Not
+trial-scoped (no trial block): the trial is named in the fields. `NO_CHANGE`
+emits nothing here.
+
+| Field | Type | Value |
+|---|---|---|
+| `decision_id` | string or null | null for a `TIMEOUT` (no decision arrived) |
+| `decision_trial_id` | string | the trial the decision belongs to |
+| `applied_before_trial_id` | string | APPLIED: the next trial, the first one at the new level |
+| `dimension`, `from_level`, `to_level` | string | the change (`from_level` only on APPLIED) |
+| `proactive_cues` | bool | APPLIED: the D9 window was opened |
+| `reason` | string | SKIPPED: `TIMEOUT`, `GUARD` (a trial was open or a controller refused), `NOT_ALLOWED` (no trial left) or `INVALID` |
+| `waited_ms` | int | how long Unity waited for the decision (normally 0: it arrives during the feedback) |
+
+A decision that arrives after its trial was skipped is discarded, never applied
+late (criterion 12).
+
+#### D9 fields — `TRIAL_STARTED`, `TRIAL_COMPLETED`, `HINT_REQUESTED`
+
+| Field | Event | Value |
+|---|---|---|
+| `cue_trigger` | `TRIAL_STARTED`, `TRIAL_COMPLETED` | `PROACTIVE` inside the 3 trials after an applied LAL raise with `proactive_cues`; `ON_REQUEST` when the only cue came from Hint; null when no cue was presented. `TRIAL_STARTED` can only say `PROACTIVE` or null |
+| `proactive_index` | `TRIAL_STARTED`, `TRIAL_COMPLETED` | 1–3 with `PROACTIVE`, null otherwise |
+| `cue_trigger` | `HINT_REQUESTED` | always `ON_REQUEST`: a Hint inside the window is recorded apart |
+
+`ADAPTATION_OUTCOME` (O4: `decision_id`, `outcome` = `POSITIVE` / `NEUTRAL` /
+`NEGATIVE` / `UNCERTAIN`) is reserved for F6; migration `0003` already projects
+it onto its decision.
+
+No `schema_version` bump (§5.6): new event types and additive fields.
 
 ### 5.8 `TRIAL_SEQUENCE_GENERATED` — the plan, not the outcome
 
@@ -558,6 +631,24 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**14 October 2026 — migration `0003` and the adaptation loop (F5a).** The events
+of §5.12, written since 13 October, are now projected: `ADAPTATION_DECISION` into
+`adaptation_decisions`, `ADAPTATION_APPLIED` / `ADAPTATION_SKIPPED` into
+`adaptation_applications`, `DISTRACTOR_INTERACTION` into
+`distractor_interactions`, `cue_trigger` / `proactive_index` onto `trials`, and
+the idle fields are read from `ANSWER_SELECTED` too. `trial_timeline` gains the
+decision, the D5 counts and the D9 fields at the end of its columns. No field
+changes; rows stored before the migration need `backfill_projection.sql`.
+Outside this contract: a WebSocket reconnect is recorded as a
+`VALIDATION_EVENT` `UNITY_BACKEND_WS` with status `WARNING` and
+`detail.event = "RECONNECTED"`; events produced while disconnected are queued and
+arrive later with their original `client_timestamp` and `session_elapsed_ms`.
+
+**13 October 2026 — the adaptation loop and D9 (F5a).** New event types
+`ADAPTATION_DECISION` (backend), `ADAPTATION_APPLIED` and `ADAPTATION_SKIPPED`
+(Unity); additive fields `cue_trigger` / `proactive_index` (D9) and the idle
+fields on `ANSWER_SELECTED` (§5.12). No `schema_version` bump.
 
 **6 October 2026 (evening) — adjustments after the check session.** A short
 headset session (`371b2c59`) checked D7 and D5 together. Two changes, both in

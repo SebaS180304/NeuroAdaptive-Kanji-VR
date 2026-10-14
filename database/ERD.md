@@ -212,3 +212,36 @@ application), `v_trial_behavior` (head-away time in each trial's response
 window, peripheral events in the whole trial) and `trial_timeline(session_id,
 window_n DEFAULT 3)`, one row per trial with the observation-window aggregates
 the F5a State Estimator reads.
+
+## Adaptation loop — F5a, migration 0003
+
+Added on 14 October 2026 (`Planteamiento_Tecnico_F5a.md` §8.3, contract §5.11
+and §5.12). Same rules as schema v1: projections of `session_events`, rebuilt by
+`project_session()`, each row with the id of its event.
+
+```mermaid
+erDiagram
+    EXPERIMENT_SESSIONS ||--o{ DISTRACTOR_INTERACTIONS : "D5"
+    TRIALS ||--o| ADAPTATION_DECISIONS : "one per answered adaptive S7 trial"
+    EXPERIMENT_SESSIONS ||--o{ ADAPTATION_APPLICATIONS : "what Unity did"
+    ADAPTATION_DECISIONS |o..o{ ADAPTATION_APPLICATIONS : "decision_trial_id (no FK)"
+    SESSION_EVENTS ||--o| ADAPTATION_DECISIONS : "source / outcome"
+```
+
+| Table | From event(s) | Key |
+|---|---|---|
+| `distractor_interactions` | `DISTRACTOR_INTERACTION` (`DWELL`, `ORIENTING`) | `source_event_id` |
+| `adaptation_decisions` | `ADAPTATION_DECISION` (backend, `NO_CHANGE` included); `ADAPTATION_OUTCOME` fills `outcome` (F6) | `source_event_id`; unique `(session_id, decision_id)` and `(session_id, trial_id)` |
+| `adaptation_applications` | `ADAPTATION_APPLIED`, `ADAPTATION_SKIPPED` (Unity) | `source_event_id` |
+| `trials` (new columns) | `cue_trigger`, `proactive_index` from `TRIAL_COMPLETED` (D9); idle also from `ANSWER_SELECTED` | — |
+
+`adaptation_applications` has no FK to its decision: a `TIMEOUT` skip has no
+decision id. `v_adaptations` joins each decision with the last application row
+of its trial. `trial_timeline` gains, at the end: `cue_trigger`,
+`proactive_index`, `distractor_dwell_ms`, `dwell_count`, `orienting_count` (the
+estimator's attribution: an interaction counts for the trial answered at or
+after it), `learner_state`, `decision_confidence`, `decision_action`,
+`decision_reason`, `decision_latency_ms` and `adaptation_result`.
+`verify_adaptation.sql` checks the loop: STATIC without decisions, one decision
+per answered adaptive S7 trial, every APPLIED between its two trials, the D9
+window and the latency.
