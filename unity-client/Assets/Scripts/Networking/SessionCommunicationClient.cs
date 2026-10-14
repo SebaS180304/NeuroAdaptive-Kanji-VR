@@ -26,7 +26,10 @@ namespace NeuroAdaptiveVR.Networking
     ///   kept in order in a bounded queue (OutgoingQueue) instead of dropped,
     ///   with their original client_timestamp, and flushed on reconnect;
     /// - the reconnect is recorded as a VALIDATION_EVENT UNITY_BACKEND_WS
-    ///   with status RECONNECTED (gap, attempts, flushed, dropped).
+    ///   with status WARNING and detail.event = RECONNECTED (gap, attempts,
+    ///   flushed, dropped). The status enum of system_validation_events is
+    ///   OK / WARNING / ERROR: a status "RECONNECTED" was rejected by the
+    ///   backend in the first test (14 Oct) and never stored.
     /// PINGs are never queued. A message already on the wire when the
     /// socket died can still be lost: there is no per-event ACK tracking.
     ///
@@ -195,8 +198,9 @@ namespace NeuroAdaptiveVR.Networking
             Debug.LogWarning($"[SessionCommunicationClient] Reconnected after {gapMs} ms and {attempts} " +
                              $"attempt(s): {pending.Count} queued events sent, {dropped} dropped.");
 
-            SendValidationEvent("UNITY_BACKEND_WS", "RECONNECTED", new Dictionary<string, object>
+            SendValidationEvent("UNITY_BACKEND_WS", "WARNING", new Dictionary<string, object>
             {
+                { "event", "RECONNECTED" },
                 { "gap_ms", gapMs },
                 { "attempts", attempts },
                 { "flushed", pending.Count },
