@@ -103,6 +103,7 @@ namespace NeuroAdaptiveVR.EditorTools
             DistractorCases();
             ProactiveCueCases();
             AdaptationLoopCases();
+            ReconnectionCases();
             SoundSetCases();
 
             Report();
@@ -1572,6 +1573,30 @@ namespace NeuroAdaptiveVR.EditorTools
                   a1 == AdaptationApply.Outcome.Apply && !esl1 && to1 == StimulationOrAssistanceLevel.High
                   && a2 == AdaptationApply.Outcome.Apply && esl2 && to2 == StimulationOrAssistanceLevel.Low,
                   $"LAL {a1} {to1} · ESL {a2} {to2}");
+        }
+
+        // ==================================================================
+        // F5a · WebSocket reconnection (14 Oct; drop of 98752f4e on 7 Oct)
+        // ==================================================================
+        private static void ReconnectionCases()
+        {
+            var p = new List<string>();
+            var q = new OutgoingQueue(3);
+            for (int i = 1; i <= 5; i++)
+                q.Enqueue(new OutgoingMessage { Type = "SESSION_EVENT", EventType = $"E{i}" });
+            if (q.Count != 3 || q.Dropped != 2) p.Add($"capacidad 3 con 5 eventos: {q.Count} en cola, {q.Dropped} descartados");
+            var drained = q.DrainAll();
+            string order = string.Join(",", drained.Select(m => m.EventType));
+            if (order != "E1,E2,E3") p.Add($"orden al vaciar {order}, se esperaba E1,E2,E3 (se conservan los mas viejos)");
+            if (q.Count != 0 || q.Dropped != 0) p.Add("vaciar no reinicio la cola y el contador");
+            if (q.Enqueue(null)) p.Add("acepto un mensaje nulo");
+            Check("N1", "Cola sin conexion: conserva el orden, tiene tope, cuenta lo descartado y se vacia completa",
+                  p.Count == 0, p.Count == 0 ? "3 en orden · 2 descartados contados · reinicio al vaciar" : Join(p));
+
+            var delays = Enumerable.Range(0, 7).Select(ReconnectPolicy.DelaySeconds).ToList();
+            string seq = string.Join(", ", delays.Select(d => d.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
+            Check("N2", "Reintentos de reconexion: 0.5, 1, 2, 4 s y luego cada 5 s, sin rendirse",
+                  seq == "0.5, 1.0, 2.0, 4.0, 5.0, 5.0, 5.0", seq);
         }
 
         private static void Check(string id, string title, bool passed, string detail)

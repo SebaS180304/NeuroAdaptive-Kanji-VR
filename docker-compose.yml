@@ -33,6 +33,15 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+    # No --reload (14 Oct). With the code mounted, uvicorn --reload restarted
+    # the server on every .py change and closed every open WebSocket: that is
+    # what dropped session 98752f4e on 7 Oct (profile.py written at 17:58:43,
+    # "WS disconnected" in the same second). After changing backend code, apply
+    # it with `docker compose restart backend`, between sessions.
+    # --ws-ping-timeout 60: tolerate up to ~60 s without a pong (an Editor stall
+    # or a Link hiccup) before closing; uvicorn's default is 20 s.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
+              "--ws-ping-interval", "20", "--ws-ping-timeout", "60"]
 
   # Portal web para inspeccionar la base de datos y lanzar queries.
   #

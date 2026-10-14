@@ -13,4 +13,7 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# No --reload: it restarts the server on every .py change and closes the
+# session WebSockets (drop of 98752f4e, 7 Oct). docker-compose.yml sets the
+# same command; restart the backend to apply code changes.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--ws-ping-interval", "20", "--ws-ping-timeout", "60"]
