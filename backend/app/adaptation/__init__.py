@@ -15,14 +15,16 @@ recorded session (Planteamiento_Tecnico_F5a.md §2.1, principle 3):
 - ``estimator``: state, cause and confidence of each window (§4.3).
 - ``rules``: the rule engine, from state to action under the constraints of
   spec §10.2 (§5).
-- ``replay``: the estimator and the rule engine over a recorded session, trial
-  by trial (``python -m app.adaptation.replay <session>``).
-
-The per-session in-memory state (``state.py``) comes in a later module.
+- ``outcome``: the outcome of each change over the 3 trials of its cooldown
+  (O4).
+- ``state``: the per-session state of the live path (decisions and outcomes).
+- ``replay``: the estimator, the rule engine and the outcomes over a recorded
+  session, trial by trial (``python -m app.adaptation.replay <session>``).
 """
 
 from app.adaptation.estimator import EstimatorResult, estimate
 from app.adaptation.indicators import WindowIndicators, window_indicators
+from app.adaptation.outcome import Outcome, classify
 from app.adaptation.profile import S6Profile, build_profile
 from app.adaptation.rules import Decision, EngineState, adaptation_allowed, decide, initial_state
 from app.adaptation.trials import TrialRecord, TrialStreamBuilder, build_trials
@@ -31,6 +33,7 @@ __all__ = [
     "Decision",
     "EngineState",
     "EstimatorResult",
+    "Outcome",
     "S6Profile",
     "TrialRecord",
     "TrialStreamBuilder",
@@ -38,6 +41,7 @@ __all__ = [
     "adaptation_allowed",
     "build_profile",
     "build_trials",
+    "classify",
     "decide",
     "estimate",
     "initial_state",

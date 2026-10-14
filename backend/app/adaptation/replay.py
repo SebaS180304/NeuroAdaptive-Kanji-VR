@@ -28,6 +28,7 @@ from typing import Any, Iterable, Mapping
 
 from app.adaptation.estimator import estimate
 from app.adaptation.indicators import window_indicators, window_trials
+from app.adaptation.outcome import POST_WINDOW, classify
 from app.adaptation.profile import build_profile
 from app.adaptation.rules import decide, initial_state
 from app.adaptation.trials import S7_STATE, build_trials
@@ -82,6 +83,7 @@ def replay(events: Iterable[Mapping[str, Any]]) -> tuple[Any, list[dict[str, Any
     started = entry.get("session_elapsed_ms")
     engine = initial_state(entry.get("esl"), entry.get("lal"), None if started is None else int(started))
     rows = []
+    open_changes = []      # (row, pre result, seq): O4, assumed applied
     for trial in trials:
         if trial.phase != "S7":
             continue
@@ -89,7 +91,15 @@ def replay(events: Iterable[Mapping[str, Any]]) -> tuple[Any, list[dict[str, Any
         result = estimate(window, profile)
         seq = trial.trial_sequence or int(trial.trial_id.split("-")[1])
         decision, engine = decide(result, seq, trial.answered_ms, engine)
-        rows.append({"trial": trial, "window": window, "result": result, "decision": decision})
+        row = {"trial": trial, "window": window, "result": result, "decision": decision, "outcome": None}
+        for change in [c for c in open_changes if seq >= c[2] + POST_WINDOW]:
+            change[0]["outcome"] = classify(change[0]["decision"].as_dict(), change[1], result)
+            open_changes.remove(change)
+        if decision.is_change:
+            open_changes.append((row, result, seq))
+        rows.append(row)
+    for row, pre, _ in open_changes:       # S7 ended first
+        row["outcome"] = classify(row["decision"].as_dict(), pre, None)
     return profile, rows
 
 
@@ -116,8 +126,12 @@ def print_table(session: str, profile, rows: list[dict[str, Any]]) -> None:
     changes = [row["decision"] for row in rows if row["decision"].is_change]
     print()
     print(f"{len(changes)} change(s)")
+    outcomes = {row["trial"].trial_id: row["outcome"] for row in rows if row["outcome"] is not None}
     for d in changes:
         print(f"  {d.trial_id}: {d.explanation}")
+        o = outcomes.get(d.trial_id)
+        if o is not None:
+            print(f"      -> {o.outcome} ({o.reason_code}): {o.explanation}")
 
 
 def _fmt_decision(d) -> str:
@@ -137,7 +151,8 @@ def main(argv: list[str] | None = None) -> int:
     profile, rows = replay(events)
     if args.json:
         for row in rows:
-            out = {**row["result"].as_dict(), "decision": row["decision"].as_dict()}
+            out = {**row["result"].as_dict(), "decision": row["decision"].as_dict(),
+                   "outcome": row["outcome"].as_dict() if row["outcome"] else None}
             print(json.dumps(out, ensure_ascii=False, default=str))
     else:
         print_table(str(events[0]["session_id"]) if events else args.session, profile, rows)

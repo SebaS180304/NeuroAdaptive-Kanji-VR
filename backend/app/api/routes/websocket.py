@@ -31,7 +31,8 @@ session, every ANSWER_SELECTED of S7 gets one, NO_CHANGE included, sent right
 after its ACK so it travels during the 1.5 s of feedback. The backend then
 stores it as an ADAPTATION_DECISION event (source BACKEND) with its latency,
 measured from the arrival of the answer to the send. STATIC sessions never
-reach the estimator.
+reach the estimator. Three trials after each change, the backend also stores
+its ADAPTATION_OUTCOME (O4, app/adaptation/outcome.py); that one is not sent.
 
 El `id` de un ACK viaja SIEMPRE como string, para los dos tipos de
 evento. Hasta el cierre de Fase 1 el de SESSION_EVENT salia como entero
@@ -52,7 +53,12 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from sqlalchemy import select, text
 
-from app.adaptation.state import ADAPTATION_DECISION, PendingDecision, SessionAdaptationState
+from app.adaptation.state import (
+    ADAPTATION_DECISION,
+    ADAPTATION_OUTCOME,
+    PendingDecision,
+    SessionAdaptationState,
+)
 from app.db.base import AsyncSessionLocal
 from app.models.session import ExperimentSession, GameFlowState
 from app.models.system_event import SystemValidationEvent
@@ -159,6 +165,9 @@ async def _handle_session_event(
             pending = None
         if pending is not None:
             await _send_decision(websocket, session_id, pending, received_perf)
+        outcomes = state.take_outcomes()
+        if outcomes:
+            await _store_outcomes(session_id, outcomes)
 
 
 async def _load_adaptation(db, session_id: uuid.UUID, condition: str | None) -> None:
@@ -199,6 +208,21 @@ async def _send_decision(
     d = pending.decision
     logger.info("DECISION %s %s %s (%s, %.1f ms) session=%s", d.trial_id, d.action, d.reason_code,
                 pending.decision_id, latency_ms or -1, session_id)
+
+
+async def _store_outcomes(session_id: uuid.UUID, outcomes: list[dict]) -> None:
+    """O4: ADAPTATION_OUTCOME rows (backend only; nothing is sent to Unity)."""
+    async with AsyncSessionLocal() as db:
+        for payload in outcomes:
+            event = SessionEventModel(session_id=session_id, event_type=ADAPTATION_OUTCOME,
+                                      payload=payload, client_timestamp=None)
+            db.add(event)
+            await db.flush()
+            await _project(db, event.id)
+        await db.commit()
+    for p in outcomes:
+        logger.info("OUTCOME %s %s %s session=%s", p.get("decision_trial_id"), p.get("outcome"),
+                    p.get("outcome_reason"), session_id)
 
 
 async def _project(db, event_id: int) -> None:

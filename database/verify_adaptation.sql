@@ -111,3 +111,14 @@ WHERE p.resolved_at IS NULL
   AND p.event_type IN ('DISTRACTOR_INTERACTION', 'ADAPTATION_DECISION', 'ADAPTATION_APPLIED',
                        'ADAPTATION_SKIPPED', 'ADAPTATION_OUTCOME', 'ANSWER_SELECTED', 'TRIAL_COMPLETED')
 GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+
+\echo '== 9 · O4: outcome of each change (APPLIED changes of a finished S7 without one are listed with outcome NULL)'
+SELECT left(v.session_id::text, 8) AS session, v.trial_id, v.action, v.from_level, v.to_level,
+       v.unity_result, v.outcome,
+       e.payload ->> 'outcome_reason' AS reason, e.payload ->> 'outcome_explanation' AS explanation
+FROM v_adaptations v
+JOIN target t ON t.id = v.session_id
+LEFT JOIN adaptation_decisions d ON d.session_id = v.session_id AND d.decision_id = v.decision_id
+LEFT JOIN session_events e ON e.id = d.outcome_event_id
+WHERE v.action <> 'NO_CHANGE'
+ORDER BY 1, 2;
