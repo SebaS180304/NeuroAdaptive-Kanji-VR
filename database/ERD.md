@@ -244,4 +244,5 @@ after it), `learner_state`, `decision_confidence`, `decision_action`,
 `decision_reason`, `decision_latency_ms` and `adaptation_result`.
 `verify_adaptation.sql` checks the loop: STATIC without decisions, one decision
 per answered adaptive S7 trial, every APPLIED between its two trials, the D9
-window and the latency.
+window and the latency. `check_loop.sql` lists the latest adaptive session's
+decisions, applies, D9 cues and O4 outcomes, for a look after a headset run.
