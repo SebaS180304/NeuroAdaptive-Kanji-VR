@@ -4,9 +4,10 @@ Adaptive kanji-learning prototype in Virtual Reality, instrumented with
 behavioral telemetry and EEG. Single repository for the project: Unity
 client, backend and database under one version control tree.
 
-Status: **M1 · Technical Feasibility closed** (3 September 2026).
-In progress: **Phase 2 · Core Kanji VR Experience**, feeding milestone
-**M2 · Instrumented Learning Prototype** (25 September).
+Status: **M1 · Technical Feasibility closed** (3 September 2026). Phase 2
+(static learning prototype) and Phase 3 (behavior instrumentation) are
+merged into the current line of work.
+In progress: **Phase 5a · Behavior Adaptation** (closed loop in S7).
 
 ## What is here
 
@@ -25,7 +26,7 @@ cp backend/.env.example backend/.env
 docker compose up -d --build
 docker compose exec backend alembic upgrade head
 docker compose exec backend python scripts/ws_smoke_test.py   # walking skeleton
-docker compose exec backend pytest                            # 4 tests
+docker compose exec backend pytest                            # whole suite
 ```
 
 The smoke test and the test suite run **inside the container**: the
@@ -84,18 +85,22 @@ A caveat learned during M1: the Project is the source of truth for
 repository. Update the status documents whenever a block of work closes,
 or verify against the repo before a milestone review.
 
-## In progress — Phase 2 (Static VR Learning Prototype)
+## In progress — Phase 5a (Behavior Adaptation)
 
-The `JapaneseLearningStudio` scene with its five functional zones, the 25
-`KanjiLearningItem` assets, the response system shared by S5/S6/S7/S8, the
-S5 mechanics, and the flow chained end to end without adaptation. Detailed
-plan in `claude/Planteamiento_Fase2_M2.md`.
+In an adaptive session, the backend decides after every S7 answer whether to
+change the environment (ESL) or the assistance (LAL), and sends a `DECISION`
+over the WebSocket. Unity applies it between trials, and three trials later
+the backend classifies the outcome of each change. Code in
+`backend/app/adaptation/` and `unity-client/Assets/Scripts/Networking/AdaptationClient.cs`;
+detailed plan in `claude/Planteamiento_Tecnico_F5a.md`.
 
 ## Branch convention
 
-`milestone/<milestone>-<short-description>`. The M1 branch is
-`milestone/m1-unity-backend-communication`; Phase 2 runs on
-`milestone/m2-static-learning-prototype`.
+Milestones M1 and M2 ran on `milestone/<milestone>-<short-description>`
+(`milestone/m1-unity-backend-communication`,
+`milestone/m2-static-learning-prototype`). From Phase 3 on, each phase runs
+on `phase/<n>-<short-description>` (`phase/3-behavior-instrumentation`,
+`phase/5a-behavior-adpatation`).
 
 ## A note on language
 
