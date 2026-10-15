@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +35,7 @@ async def list_participants(db: AsyncSession = Depends(get_db)) -> list[Particip
 
 
 @router.get("/{participant_id}", response_model=ParticipantRead)
-async def get_participant(participant_id: str, db: AsyncSession = Depends(get_db)) -> Participant:
+async def get_participant(participant_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Participant:
     participant = await db.get(Participant, participant_id)
     if participant is None:
         raise HTTPException(status_code=404, detail="participant not found")

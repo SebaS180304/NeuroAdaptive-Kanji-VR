@@ -8,6 +8,8 @@ versiones, crea la sesion y guarda el config snapshot completo
 reproducibility and traceability.").
 """
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,7 +62,7 @@ async def list_sessions(db: AsyncSession = Depends(get_db)) -> list[ExperimentSe
 
 
 @router.get("/{session_id}", response_model=SessionRead)
-async def get_session(session_id: str, db: AsyncSession = Depends(get_db)) -> ExperimentSession:
+async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ExperimentSession:
     session = await db.get(ExperimentSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
@@ -91,7 +93,7 @@ def _status_for(state: GameFlowState) -> SessionStatus:
 
 @router.patch("/{session_id}/state", response_model=SessionRead)
 async def update_session_state(
-    session_id: str, payload: SessionStateUpdate, db: AsyncSession = Depends(get_db)
+    session_id: uuid.UUID, payload: SessionStateUpdate, db: AsyncSession = Depends(get_db)
 ) -> ExperimentSession:
     session = await db.get(ExperimentSession, session_id)
     if session is None:
