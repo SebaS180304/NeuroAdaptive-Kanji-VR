@@ -7,8 +7,10 @@ services:
       POSTGRES_USER: neuroadaptive
       POSTGRES_PASSWORD: neuroadaptive_dev_password
       POSTGRES_DB: neuroadaptive_vr
+    # 127.0.0.1 only: the backend reaches it over Docker's network, and the
+    # password above is in the repo, so the LAN must not reach it.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
