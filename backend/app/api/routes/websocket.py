@@ -145,14 +145,20 @@ async def _handle_session_event(
         await websocket.send_json({"type": "ERROR", "detail": str(exc)})
         return
 
-    async with AsyncSessionLocal() as db:
-        event = SessionEventModel(**parsed.model_dump())
-        db.add(event)
-        await db.flush()  # assigns event.id
-        await _sync_current_state(db, session_id, parsed)
-        await _project(db, event.id)
-        await db.commit()
-        await db.refresh(event)
+    try:
+        async with AsyncSessionLocal() as db:
+            event = SessionEventModel(**parsed.model_dump())
+            db.add(event)
+            await db.flush()  # assigns event.id
+            await _sync_current_state(db, session_id, parsed)
+            await _project(db, event.id)
+            await db.commit()
+            await db.refresh(event)
+    except Exception:
+        # Keep the socket open; Unity does not resend, so the raw event in the log is the only copy.
+        logger.exception("SESSION_EVENT not stored (session=%s); raw event: %s", session_id, json.dumps(message))
+        await websocket.send_json({"type": "ERROR", "detail": "event not stored"})
+        return
 
     await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": str(event.id)})
 
@@ -313,11 +319,16 @@ async def _handle_validation_event(
         await websocket.send_json({"type": "ERROR", "detail": str(exc)})
         return
 
-    async with AsyncSessionLocal() as db:
-        event = SystemValidationEvent(**parsed.model_dump())
-        db.add(event)
-        await db.commit()
-        await db.refresh(event)
+    try:
+        async with AsyncSessionLocal() as db:
+            event = SystemValidationEvent(**parsed.model_dump())
+            db.add(event)
+            await db.commit()
+            await db.refresh(event)
+    except Exception:
+        logger.exception("VALIDATION_EVENT not stored (session=%s); raw event: %s", session_id, json.dumps(message))
+        await websocket.send_json({"type": "ERROR", "detail": "event not stored"})
+        return
 
     await websocket.send_json({"type": "ACK", "of": "VALIDATION_EVENT", "id": str(event.id)})
 
