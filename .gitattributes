@@ -7,4 +7,3 @@
 
 # The generated content contract: always LF, whatever writes it.
 unity-client/Assets/Resources/kanji_content.json   text eol=lf
-graphify-out/graph.json merge=graphify

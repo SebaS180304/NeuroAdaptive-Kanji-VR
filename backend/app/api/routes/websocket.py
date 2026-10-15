@@ -200,17 +200,23 @@ async def _send_decision(
     """Send first (Unity is waiting), then store with the latency measured at the send."""
     await websocket.send_json(pending.message())
     latency_ms = None if received_perf is None else (time.perf_counter() - received_perf) * 1000.0
-    async with AsyncSessionLocal() as db:
-        event = SessionEventModel(
-            session_id=session_id,
-            event_type=ADAPTATION_DECISION,
-            payload=pending.event_payload(latency_ms),
-            client_timestamp=None,
-        )
-        db.add(event)
-        await db.flush()
-        await _project(db, event.id)
-        await db.commit()
+    payload = pending.event_payload(latency_ms)
+    try:
+        async with AsyncSessionLocal() as db:
+            event = SessionEventModel(
+                session_id=session_id,
+                event_type=ADAPTATION_DECISION,
+                payload=payload,
+                client_timestamp=None,
+            )
+            db.add(event)
+            await db.flush()
+            await _project(db, event.id)
+            await db.commit()
+    except Exception:
+        # Unity already applied it, so the logged payload is the only record of the decision.
+        logger.exception("ADAPTATION_DECISION not stored (session=%s); payload: %s", session_id, json.dumps(payload, default=str))
+        return
     d = pending.decision
     logger.info("DECISION %s %s %s (%s, %.1f ms) session=%s", d.trial_id, d.action, d.reason_code,
                 pending.decision_id, latency_ms or -1, session_id)
@@ -218,14 +224,18 @@ async def _send_decision(
 
 async def _store_outcomes(session_id: uuid.UUID, outcomes: list[dict]) -> None:
     """O4: ADAPTATION_OUTCOME rows (backend only; nothing is sent to Unity)."""
-    async with AsyncSessionLocal() as db:
-        for payload in outcomes:
-            event = SessionEventModel(session_id=session_id, event_type=ADAPTATION_OUTCOME,
-                                      payload=payload, client_timestamp=None)
-            db.add(event)
-            await db.flush()
-            await _project(db, event.id)
-        await db.commit()
+    try:
+        async with AsyncSessionLocal() as db:
+            for payload in outcomes:
+                event = SessionEventModel(session_id=session_id, event_type=ADAPTATION_OUTCOME,
+                                          payload=payload, client_timestamp=None)
+                db.add(event)
+                await db.flush()
+                await _project(db, event.id)
+            await db.commit()
+    except Exception:
+        logger.exception("ADAPTATION_OUTCOME not stored (session=%s); payloads: %s", session_id, json.dumps(outcomes, default=str))
+        return
     for p in outcomes:
         logger.info("OUTCOME %s %s %s session=%s", p.get("decision_trial_id"), p.get("outcome"),
                     p.get("outcome_reason"), session_id)

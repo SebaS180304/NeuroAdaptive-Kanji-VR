@@ -13,11 +13,11 @@ def _clean_test_participants():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("method, path", [
-    ("GET", "/sessions/not-a-uuid"),
-    ("PATCH", "/sessions/not-a-uuid/state"),
-    ("GET", "/participants/not-a-uuid"),
+@pytest.mark.parametrize("method, path, body", [
+    ("GET", "/sessions/not-a-uuid", None),
+    ("PATCH", "/sessions/not-a-uuid/state", {"new_state": "S1_WELCOME_ORIENTATION"}),
+    ("GET", "/participants/not-a-uuid", None),
 ])
-async def test_malformed_id_is_422(client, method, path) -> None:
-    response = await client.request(method, path, json={"new_state": "S1_WELCOME_ORIENTATION"})
+async def test_malformed_id_is_422(client, method, path, body) -> None:
+    response = await client.request(method, path, json=body)
     assert response.status_code == 422

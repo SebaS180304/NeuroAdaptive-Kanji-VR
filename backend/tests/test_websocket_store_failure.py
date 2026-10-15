@@ -53,3 +53,38 @@ async def test_validation_event_store_failure_answers_error(monkeypatch) -> None
     await ws._handle_validation_event(socket, uuid.uuid4(), message)
 
     assert socket.sent == [{"type": "ERROR", "detail": "event not stored"}]
+
+
+class _FakeDecision:
+    trial_id, action, reason_code = "S7-004", "HOLD", "R0"
+
+
+class _FakePending:
+    decision_id = "d-S7-004"
+    decision = _FakeDecision()
+
+    def message(self) -> dict:
+        return {"type": "DECISION", "decision_id": self.decision_id}
+
+    def event_payload(self, decision_latency_ms) -> dict:
+        return {"decision_id": self.decision_id, "decision_latency_ms": decision_latency_ms}
+
+
+@pytest.mark.asyncio
+async def test_decision_store_failure_keeps_socket(monkeypatch, caplog) -> None:
+    monkeypatch.setattr(ws, "AsyncSessionLocal", _BrokenDb)
+    socket = _FakeSocket()
+
+    await ws._send_decision(socket, uuid.uuid4(), _FakePending(), None)
+
+    assert socket.sent == [{"type": "DECISION", "decision_id": "d-S7-004"}]
+    assert "d-S7-004" in caplog.text   # the decision Unity applied survives in the log
+
+
+@pytest.mark.asyncio
+async def test_outcome_store_failure_keeps_socket(monkeypatch, caplog) -> None:
+    monkeypatch.setattr(ws, "AsyncSessionLocal", _BrokenDb)
+
+    await ws._store_outcomes(uuid.uuid4(), [{"decision_trial_id": "S7-004", "outcome": "IMPROVED"}])
+
+    assert "S7-004" in caplog.text
