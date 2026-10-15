@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.git
+unity-client/Assets/Samples/
+unity-client/Assets/TextMesh Pro/
+unity-client/Packages/
