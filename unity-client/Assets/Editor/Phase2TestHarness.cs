@@ -35,7 +35,7 @@ namespace NeuroAdaptiveVR.EditorTools
     /// transcribi del spec. Comparte mi lectura del spec con el codigo que
     /// comprueba, asi que **no es verificacion independiente**: detecta que
     /// alguien cambie la tabla sin querer, no que la tabla este bien. La
-    /// comprobacion independiente es la de verify_trials.sql, que mira los
+    /// comprobacion independiente es la de verify_trials_v1.sql, que mira los
     /// cues que realmente se concedieron en una sesion.
     ///
     /// El caso L2 si es independiente: sale de la regla de 9.1 --"support is

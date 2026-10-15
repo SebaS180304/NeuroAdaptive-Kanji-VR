@@ -13,7 +13,7 @@ namespace NeuroAdaptiveVR.Controllers
     ///
     /// Es la SEGUNDA implementacion de la misma interfaz. DebugTrialPresenter se
     /// conserva a proposito: es el arnes que permite correr el ciclo sin escena
-    /// y es con el que se levantaron los datos que verifica verify_trials.sql.
+    /// y es con el que se levantaron los datos que verifica verify_trials_v1.sql.
     /// Dos presentadores contra una interfaz, y ResponseSystemController sin
     /// enterarse de cual esta conectado -- que es justamente lo que hace
     /// comparables los tiempos de S6 y S7 (spec 5.4).

@@ -1,6 +1,6 @@
 -- verify_assembly_v1.sql -- guided assembly telemetry (spec 5.3, decisions
--- D2/D4), over the schema v1 tables (F3.4). Same checks as
--- verify_assembly.sql (JSONB events); both are kept until Phase 3 closes.
+-- D2/D4), over the schema v1 tables (F3.4). Replaces verify_assembly.sql,
+-- which ran the same checks over the JSONB events and was removed in F5a.
 --
 -- Checks the MOST RECENT session, like the other verify_*.sql. The session
 -- must be projected (live in the backend, or SELECT project_session('<uuid>')).

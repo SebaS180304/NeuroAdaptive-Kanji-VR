@@ -1,7 +1,7 @@
 -- verify_reproducibility_v1.sql -- acceptance criterion 7 (Planteamiento_Fase2_M2
 -- sec. 6) and Phase 3 criterion 2 (Plan_Fase3 F3.2), over the schema v1
--- tables (F3.4). Same checks as verify_reproducibility.sql (JSONB events);
--- both are kept until Phase 3 closes and must agree.
+-- tables (F3.4). Replaces verify_reproducibility.sql, which ran the same
+-- checks over the JSONB events and was removed in F5a.
 --
 -- Two sessions with the same seed and set must produce the same trial
 -- sequences, the same options in the same order, the same room per ESL

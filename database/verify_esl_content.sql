@@ -2,7 +2,7 @@
 --
 -- Complementa a las otras dos:
 --   verify_events.sql   comprueba la FORMA del payload (que los campos esten)
---   verify_trials.sql   comprueba el COMPORTAMIENTO del trial y la matriz 9.1
+--   verify_trials_v1.sql comprueba el COMPORTAMIENTO del trial y la matriz 9.1
 --   este                comprueba el ENTORNO y QUE KANJI se usaron
 --
 -- Por que hace falta mirar la base y no basta con el arnes del Editor: el

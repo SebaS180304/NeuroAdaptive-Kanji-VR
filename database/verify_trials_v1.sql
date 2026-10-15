@@ -1,6 +1,6 @@
 -- verify_trials_v1.sql -- response system (T1/T2/T3), over the schema v1
--- tables (F3.4). Same checks as verify_trials.sql (which reads the JSONB
--- events); both are kept until Phase 3 closes and must agree.
+-- tables (F3.4). Replaces verify_trials.sql, which ran the same checks over
+-- the JSONB events and was removed in F5a.
 --
 -- Checks the MOST RECENT session, like the other verify_*.sql. The session
 -- must be projected: the backend does it live; for an older session run
