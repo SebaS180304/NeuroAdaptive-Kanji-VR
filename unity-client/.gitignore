@@ -21,6 +21,9 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+# Unity writes crash-recovered scenes here; they are local backups, never project assets.
+/[Aa]ssets/_Recovery/
+/[Aa]ssets/_Recovery.meta
 *.log
 
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.

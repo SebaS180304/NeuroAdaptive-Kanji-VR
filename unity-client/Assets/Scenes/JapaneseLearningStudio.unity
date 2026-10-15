@@ -5925,6 +5925,10 @@ MonoBehaviour:
   content: {fileID: 1019401276}
   telemetry: {fileID: 0}
   client: {fileID: 0}
+  adaptation: {fileID: 0}
+  stimulation: {fileID: 0}
+  assistance: {fileID: 0}
+  decisionWaitMs: 300
   board: {fileID: 621902239}
   learningBlockBehaviour: {fileID: 1019401298}
   viewRecenter: {fileID: 1019401297}
