@@ -52,3 +52,6 @@ desktop.ini
 .idea/
 *.swp
 Claude outputs/
+
+# graphify knowledge graph (rebuilt locally by git hooks)
+graphify-out/
