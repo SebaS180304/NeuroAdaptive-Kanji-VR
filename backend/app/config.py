@@ -29,11 +29,7 @@ class Settings(BaseSettings):
     # --- CORS / Dashboard (se usara desde Fase 7, pero se deja configurable) ---
     cors_allow_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
-    # --- WebSocket / Unity ---
-    # Umbral simple para el "walking skeleton" de M1: cuanto tiempo (segundos)
-    # toleramos sin recibir un PING de Unity antes de considerar la conexion
-    # caida. Los valores reales de latencia tolerada se validan en Fase 1.
-    websocket_heartbeat_timeout_seconds: int = 15
+    # WebSocket timeout: uvicorn's --ws-ping-timeout in docker-compose.yml and the Dockerfile.
 
     @property
     def database_url(self) -> str:
