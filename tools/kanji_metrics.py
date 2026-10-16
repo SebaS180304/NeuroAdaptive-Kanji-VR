@@ -439,7 +439,9 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
             "textbookLesson": k.lesson,
             "role": role,
             "experimentalSet": set_name,
-            "perimetricComplexity": round(g.perimetric_complexity(ch), 1),
+            # 4 decimals, not 1: the pre-test re-checks the ±8 % band from these
+            # values, and 学 for 門 sits at 8.01 % -- 0.1 rounding let it pass.
+            "perimetricComplexity": round(g.perimetric_complexity(ch), 4),
             "imageabilityGlyph": IMAGEABILITY_R1.get(ch),
             "imageabilityObject": IMAGEABILITY_R2.get(ch),
         }
@@ -470,6 +472,13 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
         "sets": {n: list(v) for n, v in SETS.items()},
         "reserve": list(RESERVE),
         "substitutionTable": table,
+        # Glyph similarity of every experimental/reserve pair, key = the two
+        # characters in kanji-list order. The pre-test (backend/app/pretest)
+        # needs it to re-check a set after more than one substitution, which
+        # the table above does not cover.
+        "similarity": {a + b: round(g.similarity(a, b), 4)
+                       for a, b in itertools.combinations(
+                           [c for v in SETS.values() for c in v] + list(RESERVE), 2)},
         "tutorial": list(TUTORIAL),
         "kanji": ([record(c, "Experimental", n)
                    for n, v in SETS.items() for c in v]

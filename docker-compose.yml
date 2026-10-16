@@ -35,6 +35,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      # The kanji content contract, read-only, at the same path relative to
+      # backend/app/ as in the repo: the pre-test reads it from there.
+      - ./unity-client/Assets/Resources:/unity-client/Assets/Resources:ro
     # No --reload (14 Oct). With the code mounted, uvicorn --reload restarted
     # the server on every .py change and closed every open WebSocket: that is
     # what dropped session 98752f4e on 7 Oct (profile.py written at 17:58:43,
