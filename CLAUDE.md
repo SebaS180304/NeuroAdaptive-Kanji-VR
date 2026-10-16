@@ -17,3 +17,12 @@ claude.ai Project. A read-only copy is exported to `Claude outputs/docs_proyecto
 `Plan_Fase5a.md` (criteria in §5, daily log in §9) and `Planteamiento_Tecnico_F5a.md`.
 The copy can be out of date: if it disagrees with the code, the code wins; ask Sebas
 before relying on a planning detail that looks stale.
+
+## Research Web Dashboard
+
+Before designing, implementing or planning anything for the research dashboard
+(read-only `/research` router in the backend, `dashboard/` frontend), load the
+project skill `.claude/skills/research-dashboard-conventions/`. Its context brief
+is `Claude outputs/docs_proyecto/Brief_Research_Dashboard_Dev_V1.md`. Visual
+values come only from the validated Design System artifact; until then the
+skill's `design-system.md` is marked PENDING and no colors or fonts are invented.
