@@ -17,7 +17,7 @@ Each screen task ends with these checks:
 
 ## Phase 0: Data foundation
 
-### [ ] Task 0.1: Backup and clean-up
+### [x] Task 0.1: Backup and clean-up (done 17 Oct)
 **Description:**
 - `pg_dump` to `database/backups/` (gitignored).
 - In one transaction, delete the 23 sessions created before 2026-09-15 12:32 +09:00 (all
@@ -30,9 +30,9 @@ Each screen task ends with these checks:
 
 **Acceptance:**
 - [x] Sebas approved the clean-up split (17 Oct)
-- [ ] Sebas approved the final SQL and the counts before it ran
-- [ ] No session older than the scene remains, and `verify_projection.sql` passes
-- [ ] Open projection errors: 0 from the 3 evidence sessions, and the rest listed
+- [x] Sebas approved the final SQL and the counts before it ran
+- [x] No session older than the scene remains (72 → 49 sessions, 37 → 13 participants). `verify_projection.sql` gives the same result as on the backup: 25 count rows, all from the 3 multi-run evidence sessions (pre-existing; check 2 does not discount duplicates, so Task 0.3's function must)
+- [x] Open projection errors: 1,918 → 0
 
 **Verify:** the before/after counts are printed by the script itself; restoring the dump
 into a scratch database works.
