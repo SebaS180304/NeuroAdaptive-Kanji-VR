@@ -42,3 +42,96 @@ def test_ranking_is_a_reordering_of_the_valid_list():
     ranked = ranked_substitutes("A", a, "月")
     assert sorted(ranked) == sorted(valid_substitutes("A", a, "月"))
     assert ranked != []
+
+
+# --------------------------------------------------------------------------- #
+# Classification, chain and auto-grading (Task 2)
+# --------------------------------------------------------------------------- #
+
+from app.pretest.rules import (  # noqa: E402
+    KNOWN, PARTIALLY_KNOWN, UNKNOWN, auto_grade, chain_state, classify,
+)
+
+PRIMARIES = [c for m in contract()["sets"].values() for c in m]
+
+
+def _walk(answer):
+    """Runs the chain to the end; `answer(char)` returns the classification."""
+    responses, asked = {}, []
+    while (state := chain_state(responses)).next is not None:
+        asked.append(state.next)
+        responses[state.next] = answer(state.next)
+    return asked, state
+
+
+def test_classify():
+    assert classify("NO", True, True) == UNKNOWN
+    assert classify("YES", False, False) == UNKNOWN
+    assert classify("UNSURE", True, False) == PARTIALLY_KNOWN
+    assert classify("YES", False, True) == PARTIALLY_KNOWN
+    assert classify("YES", True, True) == KNOWN
+
+
+def test_all_no_asks_the_fifteen_primaries_and_substitutes_nothing():
+    asked, state = _walk(lambda c: UNKNOWN)
+    assert asked == PRIMARIES
+    assert state.substitutions == [] and state.flagged == []
+
+
+def test_known_primary_walks_down_its_ranking_until_one_is_not_known():
+    a = contract()["sets"]["A"]
+    first, second = ranked_substitutes("A", a, "月")[:2]
+    answers = {"月": KNOWN, first: KNOWN}
+    asked, state = _walk(lambda c: answers.get(c, PARTIALLY_KNOWN))
+    assert asked[:3] == ["月", first, second]
+    assert state.substitutions == [("A", "月", second)]
+
+
+def test_a_reserve_kanji_is_asked_once_and_used_once():
+    asked, state = _walk(lambda c: KNOWN if c in PRIMARIES else UNKNOWN)
+    assert len(asked) == len(set(asked))
+    used = [s for _, _, s in state.substitutions]
+    assert len(used) == len(set(used))
+    # Every primary is either substituted or flagged.
+    assert len(state.substitutions) + len(state.flagged) == 15
+
+
+def test_original_stays_and_is_flagged_when_candidates_run_out():
+    asked, state = _walk(lambda c: KNOWN)
+    assert state.substitutions == []
+    assert len(state.flagged) == 15
+    assert all(c in PRIMARIES or c in contract()["reserve"] for c in asked)
+
+
+@pytest.mark.parametrize("typed", ["つき", "ツキ", "tsuki", "Tsuki ", "tuki"])
+def test_reading_accepts_kana_and_romaji(typed):
+    assert auto_grade("月", typed, "")[0]
+
+
+def test_reading_rejects_a_wrong_answer_and_handles_katakana_targets():
+    assert not auto_grade("月", "tsuka", "")[0]
+    assert auto_grade("学", "gaku", "")[0] and auto_grade("学", "がく", "")[0]
+    assert auto_grade("茶", "cha", "")[0] and auto_grade("茶", "tya", "")[0]
+
+
+@pytest.mark.parametrize("typed", ["foot", "Leg", " leg ", "a foot"])
+def test_meaning_accepts_any_listed_variant(typed):
+    assert auto_grade("足", "", typed)[1]
+
+
+def test_meaning_rejects_a_near_miss():
+    assert not auto_grade("田", "", "rice")[1]
+    assert auto_grade("田", "", "rice-field")[1]
+
+
+@pytest.mark.parametrize("typed,hepburn", [("shu", "shu"), ("chu", "chu"), ("syu", "shu"),
+                                           ("hune", "fune"), ("zya", "ja"), ("si", "shi")])
+def test_romaji_folding_keeps_hepburn_intact(typed, hepburn):
+    from app.pretest.rules import _fold_romaji
+    assert _fold_romaji(typed) == hepburn
+
+
+def test_every_target_reading_has_a_romaji_form():
+    from app.pretest.rules import _hiragana, _romaji
+    for k in contract()["kanji"]:
+        assert _romaji(_hiragana(k["targetReading"])).isascii(), k["kanji"]

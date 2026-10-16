@@ -32,7 +32,7 @@ unordered pair of experimental + reserve kanji, rounded to 3 decimals. Mount
 
 **Estimated scope:** Medium
 
-## [ ] Task 2: Pure chain and auto-grading
+## [x] Task 2: Pure chain and auto-grading
 
 **Description:** In `rules.py`, add three functions:
 - `classify(self_report, reading_ok, meaning_ok)`
@@ -43,14 +43,14 @@ unordered pair of experimental + reserve kanji, rounded to 3 decimals. Mount
   for the reading; any comma-separated meaning variant, case- and space-insensitive.
 
 **Acceptance criteria:**
-- [ ] All NO: 15 items asked, no substitutions
-- [ ] KNOWN primary: its best-fit substitute is asked next; KNOWN substitute: the next one; UNKNOWN or PARTIALLY_KNOWN substitute: accepted
-- [ ] A reserve kanji tested in one set's chain is not asked again in another set, and is never used twice
-- [ ] Candidates run out: the original stays and is flagged
-- [ ] `つき`, `ツキ`, `tsuki`, `Tsuki ` all pass for 月; `foot` and `leg` both pass for 足
+- [x] All NO: 15 items asked, no substitutions
+- [x] KNOWN primary: its best-fit substitute is asked next; KNOWN substitute: the next one; UNKNOWN or PARTIALLY_KNOWN substitute: accepted
+- [x] A reserve kanji tested in one set's chain is not asked again in another set, and is never used twice
+- [x] Candidates run out: the original stays and is flagged
+- [x] `つき`, `ツキ`, `tsuki`, `Tsuki ` all pass for 月; `foot` and `leg` both pass for 足
 
 **Verification:**
-- [ ] `docker compose exec backend pytest tests/test_pretest_rules.py`
+- [x] `docker compose exec backend pytest tests/test_pretest_rules.py`
 
 **Dependencies:** Task 1
 
