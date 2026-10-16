@@ -135,3 +135,40 @@ def test_every_target_reading_has_a_romaji_form():
     from app.pretest.rules import _hiragana, _romaji
     for k in contract()["kanji"]:
         assert _romaji(_hiragana(k["targetReading"])).isascii(), k["kanji"]
+
+
+# --------------------------------------------------------------------------- #
+# Checkpoint A: properties the plan promises that the cases above do not pin
+# --------------------------------------------------------------------------- #
+
+def test_ranking_puts_the_closest_set_first():
+    from app.pretest.rules import _distance_to_nominal
+    for name, members in contract()["sets"].items():
+        for e in members:
+            scores = [_distance_to_nominal(name, [r if c == e else c for c in members])
+                      for r in ranked_substitutes(name, members, e)]
+            assert scores == sorted(scores), (name, e)
+
+
+def test_every_effective_set_stays_valid_after_many_substitutions():
+    # Worst case for the bands: every primary KNOWN, every reserve kanji new.
+    from app.pretest.rules import _hard_clash, _in_band
+    _, state = _walk(lambda c: KNOWN if c in PRIMARIES else UNKNOWN)
+    for name, members in contract()["sets"].items():
+        effective = list(members)
+        for s, o, r in state.substitutions:
+            if s == name:
+                effective[effective.index(o)] = r
+        assert _in_band(effective), (name, effective)
+        assert not any(_hard_clash(a, b) for i, a in enumerate(effective) for b in effective[i + 1:]), effective
+
+
+def test_partially_known_primary_stays_and_triggers_no_extra_question():
+    asked, state = _walk(lambda c: PARTIALLY_KNOWN if c == "月" else UNKNOWN)
+    assert asked == PRIMARIES
+    assert state.substitutions == []
+
+
+def test_blank_answers_are_wrong():
+    assert auto_grade("月", "", "") == (False, False)
+    assert auto_grade("月", "   ", " ") == (False, False)

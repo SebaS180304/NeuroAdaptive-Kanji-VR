@@ -59,8 +59,8 @@ unordered pair of experimental + reserve kanji, rounded to 3 decimals. Mount
 **Estimated scope:** Small
 
 ## Checkpoint A
-- [ ] All backend tests green (`pytest`); no DB change yet
-- [ ] Review the ranking on the real contract with Sebas (print the ranked list per kanji)
+- [x] All backend tests green (`pytest`). 16 Oct: four property tests added (ranking order, bands after many substitutions, PARTIALLY_KNOWN stays, blank answers); each one fails on a deliberately broken copy of `rules.py`
+- [ ] Review the ranking: images and message sent for MIRAI approval (`Claude outputs/mirai_pretest/`), waiting for their answer
 
 ## [x] Task 3: Storage and API
 

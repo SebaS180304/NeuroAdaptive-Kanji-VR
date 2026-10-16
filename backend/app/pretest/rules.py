@@ -229,11 +229,10 @@ def auto_grade(char: str, typed_reading: str, typed_meaning: str) -> tuple[bool,
     k = _kanji()[char]
     target = _hiragana(k["targetReading"])
     reading = _hiragana(_clean(typed_reading or ""))
-    reading_ok = bool(reading) and (reading == target
-                                    or _fold_romaji(reading) == _romaji(target))
+    reading_ok = reading == target or _fold_romaji(reading) == _romaji(target)
 
     meaning = (typed_meaning or "").lower().strip()
     for article in ("a ", "an ", "the ", "to "):
         meaning = meaning.removeprefix(article)
-    meaning_ok = bool(meaning) and _clean(meaning) in {_clean(m) for m in k["meaning"].split(",")}
+    meaning_ok = _clean(meaning) in {_clean(m) for m in k["meaning"].split(",")}
     return reading_ok, meaning_ok
