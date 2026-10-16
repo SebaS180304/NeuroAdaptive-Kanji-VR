@@ -62,7 +62,7 @@ unordered pair of experimental + reserve kanji, rounded to 3 decimals. Mount
 - [ ] All backend tests green (`pytest`); no DB change yet
 - [ ] Review the ranking on the real contract with Sebas (print the ranked list per kanji)
 
-## [ ] Task 3: Storage and API
+## [x] Task 3: Storage and API
 
 **Description:**
 - Migration `0004`: `kanji_pretest_responses` and `kanji_substitutions`, FKs to
@@ -77,13 +77,13 @@ unordered pair of experimental + reserve kanji, rounded to 3 decimals. Mount
   transaction and sets `pretest_completed_at`.
 
 **Acceptance criteria:**
-- [ ] A scripted full run (one KNOWN primary, one KNOWN substitute) ends with one substitution row and the expected classifications
-- [ ] An out-of-order or repeated POST gets 409 and stores nothing
-- [ ] Migration up / down / up is clean
+- [x] A scripted full run (one KNOWN primary, one KNOWN substitute) ends with one substitution row and the expected classifications
+- [x] An out-of-order or repeated POST gets 409 and stores nothing
+- [x] Migration up / down / up is clean
 
 **Verification:**
-- [ ] `docker compose exec backend alembic upgrade head`, then `downgrade -1`, then `upgrade head`
-- [ ] `docker compose exec backend pytest tests/test_pretest_api.py`
+- [x] `docker compose exec backend alembic upgrade head`, then `downgrade -1`, then `upgrade head`
+- [x] `docker compose exec backend pytest tests/test_pretest_api.py`
 
 **Dependencies:** Task 2
 

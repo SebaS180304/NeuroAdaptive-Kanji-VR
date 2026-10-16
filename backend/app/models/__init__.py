@@ -19,11 +19,14 @@ segun el cronograma del anteproyecto):
 """
 
 from app.models.participant import Participant
+from app.models.pretest import KanjiPretestResponse, KanjiSubstitution
 from app.models.session import ExperimentSession, SessionConfigSnapshot
 from app.models.system_event import SessionEvent, SystemValidationEvent
 
 __all__ = [
     "Participant",
+    "KanjiPretestResponse",
+    "KanjiSubstitution",
     "ExperimentSession",
     "SessionConfigSnapshot",
     "SessionEvent",

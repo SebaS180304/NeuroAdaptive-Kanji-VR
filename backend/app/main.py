@@ -10,7 +10,7 @@ se agregan en fases posteriores sobre esta misma estructura modular.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, participants, sessions, websocket
+from app.api.routes import health, participants, pretest, sessions, websocket
 from app.config import get_settings
 from app.core.logging import configure_logging
 
@@ -34,6 +34,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(participants.router)
+    app.include_router(pretest.router)
     app.include_router(sessions.router)
     app.include_router(websocket.router)
 

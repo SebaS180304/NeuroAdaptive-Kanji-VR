@@ -21,7 +21,7 @@ from app.models.participant import Participant
 # corren contra la misma base configurada en .env (no una DB de test
 # aislada), hay que limpiarlos antes de cada corrida o una segunda
 # ejecucion de `pytest` choca con el UNIQUE de external_code (409).
-_TEST_EXTERNAL_CODES = ["TEST_P01", "TEST_P02"]
+_TEST_EXTERNAL_CODES = ["TEST_P01", "TEST_P02", "TEST_PRETEST"]
 
 
 @pytest.fixture(scope="session")
