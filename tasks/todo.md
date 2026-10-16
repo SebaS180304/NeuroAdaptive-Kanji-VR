@@ -39,7 +39,7 @@ into a scratch database works.
 
 **Deps:** none. **Scope:** S
 
-### [ ] Task 0.2: Abandoned sessions become ABORTED (migration 0005)
+### [x] Task 0.2: Abandoned sessions become ABORTED (migration 0005, done 17 Oct)
 **Description:**
 - SQL function `abort_stale_sessions(p_idle interval DEFAULT '30 minutes') RETURNS int`.
 - The backend lifespan runs it at startup and then every 5 min, and logs the count when
@@ -47,10 +47,10 @@ into a scratch database works.
 - Write the up and down SQL.
 
 **Acceptance:**
-- [ ] An `IN_PROGRESS` session with its last event more than 30 min ago → `ABORTED`; one with a recent event is untouched
-- [ ] `COMPLETED` and `CREATED` sessions are never touched
-- [ ] A later `PATCH .../state` does not revert `ABORTED` (existing rule, now tested)
-- [ ] The 31 stale `IN_PROGRESS` sessions in the dev DB become `ABORTED` on the first run
+- [x] An `IN_PROGRESS` session with its last event more than 30 min ago → `ABORTED`; one with a recent event is untouched (with no events, `updated_at` counts)
+- [x] `COMPLETED` and `CREATED` sessions are never touched
+- [x] A later `PATCH .../state` does not revert `ABORTED` (existing rule, now tested)
+- [x] The 31 stale `IN_PROGRESS` sessions in the dev DB became `ABORTED` on the first run; the restarted backend runs the rule at startup (log checked)
 
 **Verify:** pytest with backdated `server_received_at`; migration up / down / up.
 
