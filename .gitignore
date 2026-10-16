@@ -23,6 +23,28 @@ backend/.env
 .env
 *.env.local
 
+# --- Research Dashboard (Vite + React + TS, dashboard/) ---
+# Se versiona el codigo y package-lock.json; se ignora lo que genera npm, Vite,
+# TypeScript, Vitest y Playwright. Sin ancla para cubrir tambien la raiz.
+node_modules/
+dist/
+dist-ssr/
+.vite/
+vite.config.*.timestamp-*
+*.tsbuildinfo
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+# Variables locales de Vite (.env.local, .env.development.local, ...)
+.env.*.local
+
 # --- Base de datos ---
 # El esquema (schema.sql) y el ERD SI se versionan.
 # Lo que se ignora son dumps y datos locales.
