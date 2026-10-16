@@ -1202,31 +1202,130 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float crossThickness = 22f;
         [SerializeField] private Color crossColor = new Color(0.90f, 0.93f, 0.97f, 1f);
 
+        [SerializeField] private float eyeWidth = 420f;
+        [Tooltip("The eye is shown open this long before it starts to close.")]
+        [SerializeField] private float eyeOpenHoldSeconds = 0.5f;
+        [SerializeField] private float eyeCloseSeconds = 1f;
+
+        private const int EyeTexW = 512, EyeTexH = 256;   // 2:1, the eye's own aspect
+        private const float EyeLidHeight = 0.36f, EyeStroke = 0.06f, EyeIris = 0.22f, EyeLash = 0.12f;   // in half-widths
+        private static readonly float[] EyeLashX = { -0.6f, -0.2f, 0.2f, 0.6f };
+
         private RectTransform _cross;
+        private RawImage _eye;
+        private Texture2D _eyeTex;
+        private Color32[] _eyePx;
+        private Coroutine _eyeClose;
 
         /// <summary>
         /// S4: `instruction` above the centre and, in the centre, a static
-        /// fixation cross. Clear() removes it.
+        /// fixation cross (eyes open) or an eye that closes once and then holds
+        /// (eyes closed). Clear() removes both.
         /// </summary>
-        public void ShowBaseline(string instruction)
+        public void ShowBaseline(string instruction, bool eyesClosed = false)
         {
             Clear();
             SetQuestion(instruction);
             var board = promptLabel != null ? promptLabel.transform.parent as RectTransform : null;
             if (board == null) return;
-            if (_cross == null)
+            if (!eyesClosed)
             {
-                _cross = NewIcon("FixationCross", board, new Vector2(crossSize, crossSize));
-                CrossBar(new Vector2(crossSize, crossThickness));
-                CrossBar(new Vector2(crossThickness, crossSize));
+                if (_cross == null)
+                {
+                    _cross = NewIcon("FixationCross", board, new Vector2(crossSize, crossSize));
+                    CrossBar(new Vector2(crossSize, crossThickness));
+                    CrossBar(new Vector2(crossThickness, crossSize));
+                }
+                _cross.gameObject.SetActive(true);
+                return;
             }
-            _cross.gameObject.SetActive(true);
+            if (_eye == null)
+            {
+                _eye = NewIcon("BaselineEye", board, new Vector2(eyeWidth, eyeWidth / 2f)).gameObject.AddComponent<RawImage>();
+                _eye.raycastTarget = false;
+                _eye.color = crossColor;
+                _eyeTex = new Texture2D(EyeTexW, EyeTexH, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+                _eyePx = new Color32[EyeTexW * EyeTexH];
+                _eye.texture = _eyeTex;
+            }
+            _eye.gameObject.SetActive(true);
+            _eyeClose = StartCoroutine(CloseEye());
         }
 
         private void HideBaseline()
         {
+            if (_eyeClose != null) { StopCoroutine(_eyeClose); _eyeClose = null; }
             if (_cross != null) _cross.gameObject.SetActive(false);
+            if (_eye != null) _eye.gameObject.SetActive(false);
         }
+
+        private System.Collections.IEnumerator CloseEye()
+        {
+            float start = Time.realtimeSinceStartup, last = -1f;
+            while (true)
+            {
+                float t = Time.realtimeSinceStartup - start;
+                float o = EyeOpenness(t, eyeOpenHoldSeconds, eyeCloseSeconds);
+                if (o != last)
+                {
+                    PaintEye(_eyePx, EyeTexW, EyeTexH, o);
+                    _eyeTex.SetPixels32(_eyePx);
+                    _eyeTex.Apply(false);
+                    last = o;
+                }
+                if (o == 0f) { _eyeClose = null; yield break; }
+                yield return null;
+            }
+        }
+
+        /// <summary>How open the S4 eye is at `t` s: 1 for `hold` s, closing over `close` s, then 0 for good.</summary>
+        public static float EyeOpenness(float t, float hold, float close)
+            => close <= 0f ? (t < hold ? 1f : 0f) : 1f - Mathf.SmoothStep(0f, 1f, (t - hold) / close);
+
+        /// <summary>
+        /// Draws the eye into `px` (w x h, 2:1), white on transparent; the
+        /// RawImage colour tints it. The lower lid is fixed and the upper one
+        /// comes down with `openness`; at 0 they meet in a downward curve with
+        /// lashes (fading in over the second half of the close), the usual
+        /// closed-eye icon -- without them the curve reads as a smile. The iris
+        /// shows only between the lids.
+        /// </summary>
+        public static void PaintEye(Color32[] px, int w, int h, float openness)
+        {
+            float r = w / 2f / 1.06f;   // pixels per half-width, with a margin so the stroke ends are not cut
+            float H = EyeLidHeight, upH = EyeLidHeight * (2f * Mathf.Clamp01(openness) - 1f);
+            float lashAlpha = Mathf.Clamp01(1f - 2f * openness);
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                float X = (x + 0.5f - w / 2f) / r, Y = (y + 0.5f - h / 2f) / r;
+                float a = 0f;
+                float k = 1f - X * X;   // lid shape, 0 at the corners
+                if (k > 0f)
+                {
+                    float low = -H * k, up = upH * k;
+                    float dLow = Mathf.Abs(Y - low) / Mathf.Sqrt(1f + 4f * H * H * X * X);
+                    float dUp = Mathf.Abs(Y - up) / Mathf.Sqrt(1f + 4f * upH * upH * X * X);
+                    a = Mathf.Max(Edge(EyeStroke / 2f - dLow, r), Edge(EyeStroke / 2f - dUp, r));
+                    float between = Mathf.Min(Edge(up - Y, r), Edge(Y - low, r));
+                    a = Mathf.Max(a, Mathf.Min(between, Edge(EyeIris - Mathf.Sqrt(X * X + Y * Y), r)));
+                }
+                if (lashAlpha > 0f)
+                    foreach (float lx in EyeLashX)
+                    {
+                        // From the lower lid, along its downward normal.
+                        var p = new Vector2(lx, -H * (1f - lx * lx));
+                        var n = new Vector2(2f * H * lx, -1f).normalized;
+                        float s = Mathf.Clamp(Vector2.Dot(new Vector2(X, Y) - p, n), 0f, EyeLash);
+                        float d = Vector2.Distance(new Vector2(X, Y), p + n * s);
+                        a = Mathf.Max(a, lashAlpha * Edge(EyeStroke / 2f - d, r));
+                    }
+                px[y * w + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+            }
+        }
+
+        // One-pixel antialiased edge: `d` is the signed distance inside, in half-widths.
+        private static float Edge(float d, float r) => Mathf.Clamp01(d * r + 0.5f);
 
         private RectTransform NewIcon(string name, RectTransform parent, Vector2 size)
         {

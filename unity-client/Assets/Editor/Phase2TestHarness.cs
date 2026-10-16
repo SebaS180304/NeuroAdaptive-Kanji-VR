@@ -105,6 +105,7 @@ namespace NeuroAdaptiveVR.EditorTools
             AdaptationLoopCases();
             ReconnectionCases();
             SoundSetCases();
+            BaselineEyeCases();
 
             Report();
         }
@@ -1347,6 +1348,47 @@ namespace NeuroAdaptiveVR.EditorTools
 
             Check("X6", "Set de sonidos: 6 clips con su duracion y nivel; stage no comparte tono con el chime de S4",
                   q.Count == 0, q.Count == 0 ? Join(peaks) : Join(q));
+        }
+
+        /// <summary>
+        /// B1-B2. The S4 eye closes once and stays closed (an eye that reopens or
+        /// loops would put motion on the board for the whole closed segment), and
+        /// the drawing shows an iris when open and only the lid line when closed.
+        /// </summary>
+        private static void BaselineEyeCases()
+        {
+            const float hold = 0.5f, close = 1f;
+            var q = new List<string>();
+            if (StudioTrialPresenter.EyeOpenness(0f, hold, close) != 1f) q.Add("no empieza abierto");
+            if (StudioTrialPresenter.EyeOpenness(hold, hold, close) != 1f) q.Add("cierra antes de la pausa");
+            float prev = 1f;
+            for (float t = 0f; t <= 45f; t += 0.05f)
+            {
+                float o = StudioTrialPresenter.EyeOpenness(t, hold, close);
+                if (o > prev) { q.Add($"se reabre en t={t:0.00}"); break; }
+                prev = o;
+            }
+            if (StudioTrialPresenter.EyeOpenness(hold + close, hold, close) != 0f) q.Add("no termina cerrado");
+            if (StudioTrialPresenter.EyeOpenness(45f, hold, close) != 0f) q.Add("no sigue cerrado a los 45 s");
+            Check("B1", "El ojo de S4 empieza abierto, cierra una vez y se queda cerrado", q.Count == 0, Join(q));
+
+            q.Clear();
+            const int w = 256, h = 128;
+            var px = new Color32[w * h];
+            byte At(float x, float y) => px[(int)(y * (h - 1)) * w + (int)(x * (w - 1))].a;
+            // Middle of the lash at X=+0.2 half-widths, under the closed lid (256x128 texture).
+            bool Lash() { for (int y = 12; y <= 17; y++) for (int x = 150; x <= 155; x++) if (px[y * w + x].a > 200) return true; return false; }
+            StudioTrialPresenter.PaintEye(px, w, h, 1f);
+            if (At(0.5f, 0.5f) < 200) q.Add("abierto: el centro (iris) no se ve");
+            if (At(0.02f, 0.95f) > 0) q.Add("abierto: la esquina no es transparente");
+            if (Lash()) q.Add("abierto: ya tiene pestanas");
+            StudioTrialPresenter.PaintEye(px, w, h, 0f);
+            if (At(0.5f, 0.5f) > 0) q.Add("cerrado: el iris sigue visible");
+            bool lid = false;
+            for (int y = 0; y < h / 2; y++) lid |= px[y * w + w / 2].a > 200;
+            if (!lid) q.Add("cerrado: no hay linea del parpado bajo el centro");
+            if (!Lash()) q.Add("cerrado: no hay pestanas");
+            Check("B2", "El dibujo del ojo: iris visible abierto; cerrado, el parpado con pestanas", q.Count == 0, Join(q));
         }
 
         // ==================================================================

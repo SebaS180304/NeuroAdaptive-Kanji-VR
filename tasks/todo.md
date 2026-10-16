@@ -19,7 +19,7 @@ keeping the log fallback when `board` is null.
 **Verification:**
 - [x] Unity compiles, console clean (`Unity_GetConsoleLogs`)
 - [x] Phase2TestHarness passes (existing cases; S4 matrix case unchanged)
-- [ ] Manual: Play with `baselineTimeScale` 0.05, capture the board during S4 (`Unity_Camera_Capture`); revert the Inspector change
+- [x] Manual: Play with `baselineTimeScale` 0.05, capture the board during S4 (`Unity_Camera_Capture`); revert the Inspector change
 
 **Dependencies:** None
 
@@ -33,7 +33,7 @@ keeping the log fallback when `board` is null.
 - [ ] Compiles, harness green, capture shows the cross
 - [ ] Review with Sebas before Task 2
 
-## Task 2: Eyes-closed segment shows the instruction line + an eye that closes once and holds
+## [x] Task 2: Eyes-closed segment shows the instruction line + an eye that closes once and holds
 
 **Description:** In `ShowBaseline(..., eyesClosed: true)`, hide the cross and show an eye
 in the same spot: a procedural almond + iris `Texture2D` (made once) on a `RawImage`
@@ -42,14 +42,14 @@ the eye stays as a closed line until the board changes. `Clear()` stops the coro
 hides the eye. `RunBaseline` calls it for the eyes-closed segment, right before the first chime.
 
 **Acceptance criteria:**
-- [ ] When the closed segment starts the eye is open, closes in ~1 s, and then does not move
-- [ ] The animation never loops or restarts during the 45 s
-- [ ] Chimes, segment durations and BASELINE_STARTED/COMPLETED payloads are unchanged
-- [ ] After S4 the next board (S5 announcement) has no eye or cross
+- [x] When the closed segment starts the eye is open, closes in ~1 s, and then does not move
+- [x] The animation never loops or restarts during the 45 s
+- [x] Chimes, segment durations and BASELINE_STARTED/COMPLETED payloads are unchanged
+- [x] After S4 the next board (S5 announcement) has no eye or cross
 
 **Verification:**
-- [ ] Unity compiles, console clean; Phase2TestHarness passes
-- [ ] Manual: Play with `baselineTimeScale` 0.05, capture at the start and end of the closed segment; check `eyes_open_ms` / `eyes_closed_ms` in BASELINE_COMPLETED
+- [x] Unity compiles, console clean; Phase2TestHarness passes
+- [x] Manual: Play with `baselineTimeScale` 0.05, capture at the start and end of the closed segment; check `eyes_open_ms` / `eyes_closed_ms` in BASELINE_COMPLETED
 - [ ] Headset (Quest 2 via Link): full S4 at scale 1, cross and eye readable and centred; revert any Inspector tuning, do not save the scene in Play
 
 **Dependencies:** Task 1

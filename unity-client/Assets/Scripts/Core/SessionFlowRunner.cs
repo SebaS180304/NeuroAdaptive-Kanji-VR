@@ -559,7 +559,8 @@ namespace NeuroAdaptiveVR.Core
             // The participant cannot read the board with the eyes closed, so
             // the END of the closed segment has to be a sound. The chime marks
             // both edges so the two segments are symmetric for the participant.
-            Show("Close your eyes.\nOpen them when you hear the chime.");
+            if (board != null) board.ShowBaseline("Close your eyes. Open them at the chime.", eyesClosed: true);
+            else Show("Close your eyes. Open them at the chime.");
             PlayChime();
             yield return new WaitForSecondsRealtime(closed);
             PlayChime();
