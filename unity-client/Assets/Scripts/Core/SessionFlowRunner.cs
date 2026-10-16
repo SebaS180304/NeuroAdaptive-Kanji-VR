@@ -551,7 +551,8 @@ namespace NeuroAdaptiveVR.Core
             });
 
             float t0 = Time.realtimeSinceStartup;
-            Show("Relax and look forward.");
+            if (board != null) board.ShowBaseline("Look at the cross and relax.");
+            else Show("Look at the cross and relax.");
             yield return new WaitForSecondsRealtime(open);
             float t1 = Time.realtimeSinceStartup;
 

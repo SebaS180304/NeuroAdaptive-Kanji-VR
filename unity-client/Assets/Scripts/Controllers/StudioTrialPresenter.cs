@@ -496,6 +496,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (cueLabel != null) cueLabel.text = string.Empty;
             RestoreLabelStyle();
             HideAssemblySlots();
+            HideBaseline();
             if (hintButton != null) hintButton.gameObject.SetActive(false);
 
             if (cards != null)
@@ -1185,6 +1186,65 @@ namespace NeuroAdaptiveVR.Controllers
                 ShaderUtilities.UpdateShaderRatios(_mediumMaterial);
             }
             return _mediumMaterial;
+        }
+
+        // ------------------------------------------------------------------
+        // S4 baseline (16 October)
+        // ------------------------------------------------------------------
+        //
+        // The instruction on the question line and an icon at the centre of
+        // the board. Nothing moves while the eyes are open: those 60 s are the EEG
+        // reference, and motion near fixation adds a visual response to it
+        // (UI design v1, 7.1).
+
+        [Header("S4 baseline")]
+        [SerializeField] private float crossSize = 260f;
+        [SerializeField] private float crossThickness = 22f;
+        [SerializeField] private Color crossColor = new Color(0.90f, 0.93f, 0.97f, 1f);
+
+        private RectTransform _cross;
+
+        /// <summary>
+        /// S4: `instruction` above the centre and, in the centre, a static
+        /// fixation cross. Clear() removes it.
+        /// </summary>
+        public void ShowBaseline(string instruction)
+        {
+            Clear();
+            SetQuestion(instruction);
+            var board = promptLabel != null ? promptLabel.transform.parent as RectTransform : null;
+            if (board == null) return;
+            if (_cross == null)
+            {
+                _cross = NewIcon("FixationCross", board, new Vector2(crossSize, crossSize));
+                CrossBar(new Vector2(crossSize, crossThickness));
+                CrossBar(new Vector2(crossThickness, crossSize));
+            }
+            _cross.gameObject.SetActive(true);
+        }
+
+        private void HideBaseline()
+        {
+            if (_cross != null) _cross.gameObject.SetActive(false);
+        }
+
+        private RectTransform NewIcon(string name, RectTransform parent, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.layer = parent.gameObject.layer;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = size;
+            return rt;
+        }
+
+        private void CrossBar(Vector2 size)
+        {
+            var img = NewIcon("Bar", _cross, size).gameObject.AddComponent<Image>();
+            img.color = crossColor;
+            img.raycastTarget = false;
         }
 
         private RectTransform _stageChip;
