@@ -1,122 +1,142 @@
-# Implementation Plan: Kanji pre-test and per-participant substitution (spec §13.2)
+# Implementation Plan: Research Web Portal v1 (dashboard + kanji pre-test)
+
+Written 17 Oct 2026. Replaces the kanji pre-test plan (archived in
+`tasks/archive/kanji_pretest_{plan,todo}.md`; its Tasks 1–3 are done and its open
+tasks 3b, 4, 5 and 6 are folded in below).
+
+## Sources of truth
+- Skill `.claude/skills/research-dashboard-conventions/` (master copy): scope V1.1–V1.11,
+  data contract, stack, design system (validation log: every screen *Validated*),
+  design rules. The skill outranks the brief.
+- Mockups: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL` (22 artboards).
+  Design System: `https://claude.ai/artifact/NBVJKr7iEdfApEAFx1uZ4L`; its 45 color
+  tokens match `design-system.md` in both themes (checked 17 Oct).
+- Spec §13.1–13.2 and `Plan_Fase5a.md` D8: the inclusion criterion "no previous study
+  of Japanese" was **accepted by MIRAI on 9 Oct**.
 
 ## Overview
-Before the first visit, the researcher runs a pre-test on a web page served by the
-backend. For each primary kanji (sets A, B, C in contract order) the participant answers
-**NO / UNSURE / YES**. UNSURE and YES lead to two typed prompts (target reading, meaning).
-The answers are auto-checked, and the researcher can flip either result before saving:
+One local web app (`dashboard/`, Vite + React + TS) served on `127.0.0.1`, over the
+existing FastAPI backend. It has two parts with different deadlines:
+- **Pre-test (V1.10 + V1.11):** registration and the kanji pre-test. Needed **before
+  the pilot** (23 Nov), because no session can be created without it.
+- **Session review (V1.1–V1.9):** read-only screens over the projected data. F7 window
+  (16–20 Nov); the backend read router can go earlier.
 
-| Answer | Classification | Effect |
+## Architecture decisions
+- **Read-only, one exception.** `/research` router, `GET` only, Pydantic schemas in
+  `backend/app/schemas/research.py`, SQL views and functions called with `text()`.
+  The only writes are registration (`POST /participants`) and the pre-test routes.
+- **Missing data goes to the backend, never React** (skill rule 2). Three gaps found on
+  17 Oct are closed with SQL in a migration:
+  - V1.7 needs `verify_*` as **functions that return discrepancy rows**. Today they are
+    `psql` scripts with `\echo`, and two of them check a single hard-coded session.
+  - V1.7 shows when each projection error happened. `projection_errors` has no elapsed
+    time and `session_events` has it only inside `payload`, so a view
+    `v_projection_errors` extracts it in SQL.
+  - "Not projected" needs a rule: the session has events but no `session_states` rows.
+    A session with no events is shown as "No data".
+- **Abandoned sessions become `ABORTED` by a database rule (decided 17 Oct).**
+  - The rule is a SQL function, `abort_stale_sessions(p_idle interval DEFAULT
+    '30 minutes')`. It sets `IN_PROGRESS` → `ABORTED` when the last `session_events` row
+    (or `updated_at`, if there are no events) is older than `p_idle`, and returns how many
+    rows it changed.
+  - The `postgres:16` image has no `pg_cron`, so the backend runs the function once at
+    startup and then every 5 minutes. `shortcut:` an in-process loop, not a database
+    scheduler; move it to `pg_cron` if the backend stops being always on.
+  - Why 30 minutes: in the 13 normal completed sessions, the longest gap between two
+    events is 1.8 min, and a whole session takes 5–14 min.
+  - `PATCH /sessions/{id}/state` already never takes a session out of `ABORTED`.
+- **Data clean-up (decided 17 Oct), after a `pg_dump` backup:**
+  - **Delete** the 23 sessions created before `JapaneseLearningStudio.unity` existed (commit
+    `267d48a`, 15 Sep 12:32 +09:00). All are `CREATED`, with 323 events in total, and no
+    project document cites them. Also delete participants left with no sessions, no
+    pre-test answers and no consent, except `DEV_UNITY`.
+  - **Do not delete** the three sessions with the 1,918 open `DUPLICATE` errors
+    (`dc28e1ea`, `fc835228`, `d3f19117`). They are F3 evidence (`Evidencia_Criterios_F3.md`,
+    `Plan_Fase3.md`). The errors are known: several Editor runs were stored under one id,
+    and `Plan_Fase3.md` records the root-cause fix. Mark those errors resolved, with a
+    note in `detail`, so V1.7 shows real problems only. Sebas confirms this split before
+    anything runs (Task 0.1). **Approved by Sebas on 17 Oct.**
+- **Fonts: local, via Fontsource (decided 17 Oct).** The packages are
+  `@fontsource-variable/newsreader` (variable, for the optical-size axis),
+  `@fontsource/public-sans` (400/500/600), `@fontsource/jetbrains-mono` (400) and
+  `@fontsource/noto-serif-jp` (500). Noto Serif JP ships in `unicode-range` chunks, so the
+  browser downloads only the chunks that the shown kanji need. Added to the stack table.
+- **Export CSV is a menu (decided 17 Oct).** The CTA opens a popover with "Trials (CSV)"
+  and "Adaptations (CSV)". In a STATIC session, Adaptations is disabled with the reason
+  "No adaptations in a static session". It uses the elevated popover style that
+  `design-system.md` already defines.
+- **The Pause button on the kanji screen (decided 17 Oct)** goes back to the pre-test list
+  without saving the current kanji. A short status notice says "Paused at [n] answered".
+  Start or Resume continues at the right kanji, so the backend needs no change.
+- **Registration options** follow spec §13.1 and the accepted criterion. **Approved by
+  Sebas on 17 Oct** (table below). Each list is stored as a fixed `Literal` set in the API
+  schema.
+- **Theme:** light by default, with `[data-theme="dark"]` and `prefers-color-scheme`.
+  V1.1, V1.7 and V1.8 have no dark artboard, so their dark screenshots are built from the
+  tokens and are not compared to a mockup.
+- **Copy change:** the inclusion notice on registration says the criterion is
+  *accepted* (MIRAI, 9 Oct), not *proposed*. Same notice, same layout.
+
+### Registration options (approved by Sebas, 17 Oct)
+| Question (participant-facing) | Options shown | Stored value |
 | --- | --- | --- |
-| NO, or neither prompt correct | `UNKNOWN` | stays in the set |
-| exactly one of reading / meaning correct | `PARTIALLY_KNOWN` ("barely known") | stays in the set |
-| both correct | `KNOWN` | replaced: its best-fit valid reserve kanji is tested next, and so on down the ranking until one is `UNKNOWN` or `PARTIALLY_KNOWN` |
+| How old are you? | 18–24 · 25–34 · 35–44 · 45 or older · Prefer not to answer | `age_range`: `18-24`, `25-34`, `35-44`, `45+`, NULL |
+| Have you studied Japanese before (classes, courses or self-study)? | Yes · No · Prefer not to answer | `previous_japanese_experience`: true / false / NULL |
+| Have you studied kanji before? | Yes · No · Prefer not to answer | `previous_kanji_experience` |
+| Have you used a VR headset before? | Yes · No · Prefer not to answer | `previous_vr_experience` |
+| How often is it hard for you to keep your attention on study tasks? *(optional)* | Never · Rarely · Sometimes · Often · Very often · Prefer not to answer | `self_rated_attention_difficulty`: `NEVER`, `RARELY`, `SOMETIMES`, `OFTEN`, `VERY_OFTEN`, NULL |
 
-The result is a per-participant table of substitutions. Every session of that participant
-then gets its **effective** kanji list, and Unity uses that list instead of the
-nominal set.
-
-Previous plan (S4 baseline visuals) archived in `tasks/archive/s4_baseline_*.md`; its
-open items are the headset check and the checkpoint boxes.
-
-## Architecture Decisions
-- **Researcher web page, not VR.** There is no VR keyboard, and typing kana or romaji on
-  a PC is the easy route. One static HTML file with vanilla JS, served by FastAPI. No
-  frontend framework.
-- **The backend owns the chain logic as a pure function.**
-  `next_item(contract, responses) -> item | None` is recomputed from the stored responses
-  on every request. It is deterministic, needs no server-side session state, and can be
-  unit-tested without a DB. A POST for anything other than the expected next kanji gets
-  **409** (double submit, two tabs).
-- **Lazy chain (decided 16 Oct):** reserve kanji are tested only when they are next in
-  line. Results are cached per participant, so a reserve kanji is asked once at most even
-  if it is a candidate in several sets. This deviates from the spec §13.2 wording
-  ("screened against the 15 primary and 20 reserve"), so it needs a line in the Plan §9
-  log and in the spec.
-- **Substitution validity is recomputed against the *effective* set.** The exported
-  `substitutionTable` assumes one substitution per set with the other four nominal. With
-  two KNOWN kanji in one set, the second substitute has to be checked against the first.
-  The backend therefore re-applies the three §13.2 conditions to the current effective
-  set, plus two more: the candidate is not already used in any set of this participant,
-  and it is not KNOWN.
-  - Needed data: per-kanji metrics (already in the contract) and **pairwise glyph
-    similarity** (new; exported by `kanji_metrics.py --export` as a `similarity` map).
-  - Drift guard: a backend test applies the same rules with zero prior substitutions and
-    must reproduce the contract's `substitutionTable` exactly.
-- **"Fits the most" = closest to the nominal set (approved 16 Oct):**
-  `score = Σ |total(S') − total(S)| / tol` over strokes, morae and groups, plus perimetric
-  % deviation / 8. Lowest score wins; ties are broken by reserve order.
-- **Single source of the contract.** docker-compose mounts
-  `unity-client/Assets/Resources/kanji_content.json` read-only into the backend container.
-  No copy goes in `backend/`.
-- **Auto-grading:**
-  - Reading: accepted as hiragana, katakana or Hepburn romaji, built from targetReading
-    with a small kana table.
-  - Meaning: case- and space-insensitive, against any comma-separated variant of the
-    contract meaning ("leg, foot").
-  - The researcher's final booleans are stored next to the auto ones, so how often the
-    researcher overrode is measurable.
-  - The page **never shows the target answer** to the participant: a PARTIALLY_KNOWN item
-    stays in the set, and showing its answer would teach it.
-- **Storage:**
-  - `kanji_pretest_responses`, one row per participant × kanji: the self-report, the typed
-    text, auto and final correctness, and the classification.
-  - `kanji_substitutions`, written once in the same transaction as the response that
-    completes the chain.
-  - Once completed, the pre-test cannot be edited (no endpoint for it), so a session's
-    effective list never changes under it.
-- **No pre-test, no session (decided 16 Oct).** `participants.pretest_completed_at` is
-  set by the response that completes the chain. `POST /sessions` returns **409**
-  ("participant must complete the kanji pre-test at /pretest first") while it is null.
-  This applies to every visit, not only the first.
-  - Consequences: tests and `ws_smoke_test.py` need a participant with a completed
-    pre-test (a fixture). The Unity dev participant `DEV_UNITY` has to do the pre-test
-    once through the page. Participants already in the DB (the phase-test ones) cannot
-    get new sessions.
-- **Unity change is small.** `SessionRead` gains `kanji_items` (effective characters, each
-  substitute in its original's position so the seeded order is preserved).
-  `SessionFlowRunner.ResolveSetAndSeed` / `TrialDebugRunner` use `kanji_items` when
-  present, and `content.Set(name)` only for runs with no session. On a 409,
-  `SessionBootstrap` logs one clear error with the pre-test URL and does not start the
-  flow.
+How the answers are handled:
+- **Previous Japanese study, Yes:** the inclusion notice appears. **Prefer not to
+  answer:** the notice also appears, worded "not reported".
+- **The attention question has 5 options**, where the mockup shows 4 placeholders. The
+  pill group simply gets one more pill.
+- **The question about how the participant feels before a session** (spec §13.1,
+  "alertness/fatigue") is asked per session, not at registration. It is out of scope here.
 
 ## Dependency graph
 ```
-kanji_metrics.py --export (+similarity) ──► kanji_content.json ──► compose mount
-        │
-        └─► pretest rules (pure: validity, ranking, chain, grading)
-                    │
-                    ├─► migration 0004 + models + /participants/{id}/pretest API
-                    │           │
-                    │           └─► researcher page /pretest
-                    │
-                    └─► SessionRead.kanji_items ──► Unity SessionBootstrap → runners
+0.1 backup + clean-up ─┐
+0.2 abort rule (0005) ─┼─► 2.1 session list (ABORTED, not projected)
+0.3 read SQL (0006) ───┴─► 2.x session screens, 3.2 quality
+1.1 options (Sebas) ─► 1.2 registration rules ─► 1.5 register screen
+1.3 scaffold ─► 1.4 /research/participants + V1.11 ─► 1.5 pick/register ─► 1.6 kanji + done
+                                                                            │
+                     1.7 session gate + kanji_items (backend) ◄────────────┘ (merge after 1.6)
+                     1.8 Unity uses kanji_items
+1.3 ─► 2.1 ─► 2.2 summary ─► 2.3 timeline ─► 2.4 trials + inspector ─► 2.5 adaptations ─► 2.6 plan ─► 2.7 export
+1.4 ─► 3.1 participant view;  0.3 ─► 3.2 quality
 ```
 
-## Task List
-See `tasks/todo.md`.
-- Phase 1, pure logic (no DB): Tasks 1–2 → Checkpoint A
-- Phase 2, pre-test end to end: Tasks 3–4 → Checkpoint B
-- Phase 3, sessions use the result: Task 5 → Checkpoint C
-- Task 6: docs and graph
+## Phases
+- **Phase 0. Data foundation (backend and DB only):** Tasks 0.1–0.3 → Checkpoint 0.
+- **Phase 1. Pre-test, end to end, before the pilot:** Tasks 1.1–1.8 → Checkpoints A and B.
+- **Phase 2. Session review:** Tasks 2.1–2.7 → Checkpoint C.
+- **Phase 3. Participant and quality, closing v1:** Tasks 3.1–3.3 → Checkpoint D.
 
-## Risks and Mitigations
+## Risks and mitigations
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| **Reserve kanji have no assembly segments.** Only set A and 四 do (`tools/assembly_segments.py` G table), so a substituted kanji breaks S5 assembly | High | Out of scope here; content task before the dry run (Open question 1). Task 5 checks what S5 does with a missing segment and logs it, so it does not fail silently |
-| Backend validity rules drift from `kanji_metrics.py` | Med | Test that reproduces `substitutionTable` exactly from the exported data |
-| Greedy chain: an early substitution in a set can block a later one | Low | Logged as `shortcut:`; if a set runs out, the item stays KNOWN and is flagged |
-| The session gate breaks existing callers (tests, smoke script, Unity dev Play) | Med | A pytest fixture for a completed participant; one pre-test for `DEV_UNITY`; a clear 409 message |
-| Contract regeneration changes the sha in `seed_kanji_items.sql` | Low | Regenerate the seed in the same commit (`tools/kanji_seed_sql.py`) |
-| Today is the F5a delivery day | Med | Work on a new branch after the `phase5a-delivery-2026-10-16` tag; touch no adaptation thresholds |
+| A participant takes a break of more than 30 min, and the rule aborts a live session | High | 30 min is about 17 times the longest normal gap. `p_idle` is a parameter. The ABORTED status is shown, never hidden, so a false abort is visible. Pause in VR is not a feature today |
+| The clean-up deletes evidence | High | Only rows no document cites. `pg_dump` first (`*.dump` is gitignored). The SQL is shown to Sebas before it runs |
+| Reserve kanji have no assembly segments, so S5 breaks after a substitution | High | Task 1.8 logs it. The content task has no owner yet (open question) |
+| Timeline performance (hundreds of marks, ECharts) | Med | One ECharts instance with custom series; a Chrome DevTools profile only if it lags |
+| F7 is the schedule's only buffer | Med | Phase 1 goes first. Phase 2 can shrink to V1.1–V1.4, as the replan allows |
+| Design rules vs shadcn defaults (uniform radius, system font) | Med | Tokens override shadcn's CSS variables. The 5-tell audit runs at every checkpoint |
+| Unity Editor dev Play is blocked by the session gate | Med | `DEV_UNITY` gets consent and a pre-test via the API in Task 1.7 |
 
-## Decisions (16 Oct)
-- Best-fit score: approved as defined above.
-- KNOWN kanji with no valid substitute left: it stays in the set and the participant is
-  flagged; inclusion follows the MIRAI criterion (spec §13.1).
-- No completed pre-test: the backend refuses the session (409) and points to `/pretest`.
+## Decisions (17 Oct, Sebas)
+- Registration options: approved as in the table above.
+- Clean-up: delete the 23 pre-scene sessions and their orphan participants; for the 3 F3
+  evidence sessions, only resolve their `DUPLICATE` errors.
+- Branches: Phase 0 and Task 1.2 are committed on `feature/kanji-pretest`. Then
+  `phase/7-research-dashboard` is created from its tip, and every task from 1.3 on goes
+  there.
+- The abort rule (30 min, run by the backend every 5 min), Pause, Fontsource and the
+  Export menu are approved as described above.
 
-## Open Questions
-1. Assembly segments for the 20 reserve kanji: who draws the centre lines, and when?
-2. Meanings are checked in English (the contract language). Will participants answer in
-   English?
+## Open questions
+1. Assembly segments for the 20 reserve kanji: who draws them, and when? (carried over)
+2. MIRAI: how consent is recorded; review of the substitution ranking (carried over,
+   Checkpoint A of the old plan).
