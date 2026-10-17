@@ -56,7 +56,7 @@ into a scratch database works.
 
 **Deps:** 0.1. **Scope:** S
 
-### [ ] Task 0.3: Read-side SQL for the portal (migration 0006)
+### [x] Task 0.3: Read-side SQL for the portal (migration 0006, done 17 Oct)
 **Description:**
 - `v_session_overview`: one row per session with:
   - `projected` (events present but no `session_states` rows = not projected; no events
@@ -74,8 +74,8 @@ into a scratch database works.
   recorded in that session? Exposed as booleans in the overview view.
 
 **Acceptance:**
-- [ ] Each function returns 0 rows on a session that its `.sql` script passes, and finds a seeded discrepancy
-- [ ] The overview matches a hand query on 3 sessions (one STATIC, one BEHAVIOR_ADAPTIVE, one aborted)
+- [x] Each function returns 0 rows on a session that its `.sql` script passes, and finds a seeded discrepancy. On the dev DB all five return 0 rows; `verify_projection_fn()` no longer counts the 25 duplicate-run rows (an event with an error and no row pointing to it is not expected to project). `verify_reproducibility_fn` returns nothing when the session has no other session with its seed and set (the script reports every block as seen once)
+- [x] The overview matches a hand query on 3 sessions (one STATIC, one BEHAVIOR_ADAPTIVE, one aborted): `6eb2bd5c`, `a5748886`, `89ecef07`
 
 **Verify:** `pytest backend/tests/test_research_sql.py`; up / down / up.
 
