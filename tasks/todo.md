@@ -95,7 +95,8 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Acceptance:**
 - [x] Sebas approved the options (17 Oct)
-- [ ] Options recorded in `scope-and-roadmap.md`; note sent to the design chat
+- [x] Options recorded in `scope-and-roadmap.md` §V1.10 (17 Oct)
+- [ ] Note sent to the design chat (drafted 17 Oct; Sebas sends it)
 
 **Deps:** none. **Scope:** XS
 

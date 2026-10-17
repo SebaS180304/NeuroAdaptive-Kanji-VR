@@ -92,12 +92,28 @@ only in F7.
       - previous VR use;
       - self-rated attention difficulty, which is optional.
 
-      These are self-report, so the wording is plain and non-clinical.
+      These are self-report, so the wording is plain and non-clinical. Options
+      approved by Sebas on Oct 17 (`tasks/plan.md`); each list is a fixed
+      `Literal` set in the API schema:
+
+      | Question (participant-facing) | Options shown | Stored value |
+      | --- | --- | --- |
+      | How old are you? | 18–24 · 25–34 · 35–44 · 45 or older · Prefer not to answer | `age_range`: `18-24`, `25-34`, `35-44`, `45+`, NULL |
+      | Have you studied Japanese before (classes, courses or self-study)? | Yes · No · Prefer not to answer | `previous_japanese_experience`: true / false / NULL |
+      | Have you studied kanji before? | Yes · No · Prefer not to answer | `previous_kanji_experience` |
+      | Have you used a VR headset before? | Yes · No · Prefer not to answer | `previous_vr_experience` |
+      | How often is it hard for you to keep your attention on study tasks? *(optional)* | Never · Rarely · Sometimes · Often · Very often · Prefer not to answer | `self_rated_attention_difficulty`: `NEVER`, `RARELY`, `SOMETIMES`, `OFTEN`, `VERY_OFTEN`, NULL |
+
+      The attention question has 5 options; the mockup shows 4 placeholder pills,
+      so the pill group gets one more. How the participant feels before a session
+      (spec §13.1, "alertness/fatigue") is asked per session, not here.
    3. Both parts are sent as **one** `POST /participants`. There is no edit
       afterwards.
-   4. If the participant reports previous Japanese study, the researcher sees a
-      notice (proposed inclusion criterion, spec §13.1) and decides whether to
-      continue to the pre-test.
+   4. If the participant reports previous Japanese study, or prefers not to
+      answer, the researcher sees a notice (inclusion criterion "no previous
+      study of Japanese", spec §13.1, **accepted** by MIRAI on Oct 9; worded "not
+      reported" for Prefer not to answer) and decides whether to continue to the
+      pre-test.
 2. **One kanji at a time.** The participant sees the character and answers "Do you
    know this kanji?" with **No / Not sure / Yes**.
    - **No:** saved as unknown, and the next kanji appears.
