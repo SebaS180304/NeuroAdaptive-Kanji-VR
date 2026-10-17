@@ -120,14 +120,14 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** 1.1. **Scope:** S
 
-### [ ] Task 1.3: Dashboard scaffold and app shell
+### [x] Task 1.3: Dashboard scaffold and app shell (done 17 Oct)
 **Description:**
 - `dashboard/`: Vite, React, TS strict, Tailwind, `shadcn init`, TanStack Query, React
   Router and the Fontsource packages.
 - `styles/tokens.css` holds the exact values from `design-system.md` (light, dark,
   `prefers-color-scheme`). shadcn's variables are mapped onto the tokens; radius by role.
 - `npm run gen:api` (`openapi-typescript`).
-- Vite on `127.0.0.1:5173`, with a proxy to `:8000`.
+- Vite on `127.0.0.1:5300`, with a proxy to `:8000`.
 - The shell: a 240 px rail (Sessions, Participants, Pre-test, Data quality), a 16-column
   grid, and routes for every screen that render reserved placeholders.
 - Vitest, Testing Library and the Playwright config.
@@ -135,10 +135,10 @@ attention question has 5 options, and the inclusion notice says "accepted".
   `.mcp.json`. Add Fontsource to the skill's stack table.
 
 **Acceptance:**
-- [ ] `npm run dev` binds to 127.0.0.1 only; no outbound request in the Playwright network log (fonts included)
-- [ ] The tokens page renders both themes; contrast pairs as measured in `design-system.md`
-- [ ] Generated types include the pretest and participant schemas
-- [ ] 5-tell audit: none found
+- [x] `npm run dev` binds to 127.0.0.1 only; no outbound request in the Playwright network log (fonts included). Port 5300, not 5173: Windows reserves 5163–5262 (Sebas, 17 Oct)
+- [x] The tokens page renders both themes; contrast pairs as measured in `design-system.md` (two round differently there: 5.95 is written 5.9, 14.35 is written 14.4)
+- [x] Generated types include the pretest and participant schemas
+- [x] 5-tell audit: none found
 
 **Verify:** `npm run test`, `npx playwright test` (smoke); a screenshot of the rail against the *Session list* artboard.
 
@@ -214,7 +214,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 ### [ ] Task 1.7: Sessions require the pre-test (backend; was Task 5a)
 **Description:**
 - `POST /sessions` returns 409 ("participant must complete the kanji pre-test at
-  http://127.0.0.1:5173/pretest first") while `pretest_completed_at` is null.
+  http://127.0.0.1:5300/pretest first") while `pretest_completed_at` is null.
 - `SessionRead.kanji_items` gives the effective set, each substitute in its original's
   position.
 - A pytest fixture for a completed participant, used in `test_session_lifecycle.py`,

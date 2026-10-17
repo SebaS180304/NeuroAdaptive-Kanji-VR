@@ -1,0 +1,205 @@
+/*
+ * Design tokens, v1 (approved Oct 16 2026). Exact values from
+ * .claude/skills/research-dashboard-conventions/references/design-system.md;
+ * if the Design System artifact changes, that file changes first, then this one.
+ * Light is the default; dark applies with [data-theme="dark"], or with
+ * prefers-color-scheme: dark unless [data-theme="light"]. The attribute also
+ * works on any element, so one page can show both themes (the tokens page).
+ */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Base */
+  --color-bg: #f9f8f6;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-sidebar: #14171c;
+  --color-sidebar-text: #eceae5;
+  --color-sidebar-muted: #9aa0a8;
+  --color-text: #14171c;
+  --color-text-secondary: #2e333a;
+  --color-text-muted: #565b62;
+  --color-border: #e4e2dd;
+  --color-border-subtle: #efede8;
+  --color-border-strong: #c9cdd2;
+  --color-accent: #0b6a73;
+  --color-accent-hover: #084f56;
+  --color-on-accent: #ffffff;
+  --color-accent-tint: #dcebec;
+  --color-on-accent-tint: #0b4f56;
+  --color-selected-row: #e8f2f3;
+  --color-explain-bg: #f3f8f8;
+  --color-cta: #f2a93b;
+  --color-on-cta: #14171c;
+  --color-alert: #b83a22;
+  --color-alert-tint: #f4d9d2;
+  --color-on-alert-tint: #8a2a18;
+  --color-warn-tint: #fbebcf;
+  --color-on-dark-border: #6b7178;
+
+  /* Data */
+  --color-esl-low: #dcebec;
+  --color-esl-medium: #8dbfc4;
+  --color-esl-high: #0b6a73;
+  --color-lal-low: #fbebcf;
+  --color-lal-medium: #f2c46d;
+  --color-lal-high: #9a6414;
+  --color-trial-correct: #2e333a;
+  --color-condition-static: #8e9399;
+  --color-condition-behavior: #0b6a73;
+  --color-condition-multimodal: #9a6414;
+  --color-state-stable: #0b6a73;
+  --color-state-disengaged: #9a6414;
+  --color-state-overloaded: #b83a22;
+  --color-outcome-positive: #0b6a73;
+  --color-outcome-neutral: #c9cdd2;
+  --color-outcome-negative: #b83a22;
+  --color-headaway: #565b62;
+  --color-peripheral: #565b62;
+  --color-distractor: #8e9399;
+  --color-state-neutral: #e4e2dd;
+  --color-quality-ok: #0b6a73;
+  --color-quality-warn: #9a6414;
+  --color-quality-error: #b83a22;
+
+  /* Hatches: the only gradient-like fills allowed, and they encode data */
+  --hatch-trial-incorrect: repeating-linear-gradient(
+    45deg, var(--color-alert) 0 2px, var(--color-alert-tint) 2px 4px);
+  --hatch-outcome-uncertain: repeating-linear-gradient(
+    45deg, var(--color-text-muted) 0 1px, var(--color-surface) 1px 5px);
+
+  /* Shape */
+  --radius-panel: 2px;
+  --radius-table: 0;
+  --radius-input: 4px;
+  --radius-pill: 9999px;
+  --radius-bar: 1px;
+
+  /* Elevation: only the inspector and popovers */
+  --shadow-raised: 0 1px 1px rgba(20, 23, 28, 0.04), 0 4px 8px -2px rgba(20, 23, 28, 0.06),
+    0 16px 32px -12px rgba(11, 106, 115, 0.16);
+
+  /* Families */
+  --font-heading: 'Newsreader Variable', serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-kanji: 'Noto Serif JP', serif;
+
+  /* Layout */
+  --rail-width: 240px;
+}
+
+/* Dark: the same block twice, for the explicit choice and for the OS preference. */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #0f1115;
+  --color-surface: #181b21;
+  --color-surface-raised: #1e222a;
+  --color-sidebar: #08090c;
+  --color-sidebar-text: #eceae5;
+  --color-sidebar-muted: #9aa0a8;
+  --color-text: #eceae5;
+  --color-text-secondary: #c9cdd2;
+  --color-text-muted: #9aa0a8;
+  --color-border: #262a31;
+  --color-border-subtle: #1f232a;
+  --color-border-strong: #3a3f47;
+  --color-accent: #3fb7c2;
+  --color-accent-hover: #7fd3db;
+  --color-on-accent: #0f1115;
+  --color-accent-tint: #123a3f;
+  --color-on-accent-tint: #8fdde4;
+  --color-selected-row: #14343a;
+  --color-explain-bg: #132a2e;
+  --color-cta: #f2a93b;
+  --color-on-cta: #0f1115;
+  --color-alert: #e5694f;
+  --color-alert-tint: #3a1f19;
+  --color-on-alert-tint: #f4b3a4;
+  --color-warn-tint: #3a2e17;
+  --color-on-dark-border: #6b7178;
+  --color-esl-low: #123a3f;
+  --color-esl-medium: #1f6870;
+  --color-esl-high: #3fb7c2;
+  --color-lal-low: #3a2e17;
+  --color-lal-medium: #7a5719;
+  --color-lal-high: #f2c46d;
+  --color-trial-correct: #c9cdd2;
+  --color-condition-static: #6b7178;
+  --color-condition-behavior: #3fb7c2;
+  --color-condition-multimodal: #f2c46d;
+  --color-state-stable: #3fb7c2;
+  --color-state-disengaged: #f2c46d;
+  --color-state-overloaded: #e5694f;
+  --color-outcome-positive: #3fb7c2;
+  --color-outcome-neutral: #3a3f47;
+  --color-outcome-negative: #e5694f;
+  --color-headaway: #9aa0a8;
+  --color-peripheral: #9aa0a8;
+  --color-distractor: #6b7178;
+  --color-state-neutral: #262a31;
+  --color-quality-ok: #3fb7c2;
+  --color-quality-warn: #f2c46d;
+  --color-quality-error: #e5694f;
+  --shadow-raised: inset 0 1px 0 rgba(236, 234, 229, 0.05), 0 4px 8px -2px rgba(0, 0, 0, 0.28),
+    0 16px 32px -12px rgba(0, 0, 0, 0.36);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --color-bg: #0f1115;
+    --color-surface: #181b21;
+    --color-surface-raised: #1e222a;
+    --color-sidebar: #08090c;
+    --color-sidebar-text: #eceae5;
+    --color-sidebar-muted: #9aa0a8;
+    --color-text: #eceae5;
+    --color-text-secondary: #c9cdd2;
+    --color-text-muted: #9aa0a8;
+    --color-border: #262a31;
+    --color-border-subtle: #1f232a;
+    --color-border-strong: #3a3f47;
+    --color-accent: #3fb7c2;
+    --color-accent-hover: #7fd3db;
+    --color-on-accent: #0f1115;
+    --color-accent-tint: #123a3f;
+    --color-on-accent-tint: #8fdde4;
+    --color-selected-row: #14343a;
+    --color-explain-bg: #132a2e;
+    --color-cta: #f2a93b;
+    --color-on-cta: #0f1115;
+    --color-alert: #e5694f;
+    --color-alert-tint: #3a1f19;
+    --color-on-alert-tint: #f4b3a4;
+    --color-warn-tint: #3a2e17;
+    --color-on-dark-border: #6b7178;
+    --color-esl-low: #123a3f;
+    --color-esl-medium: #1f6870;
+    --color-esl-high: #3fb7c2;
+    --color-lal-low: #3a2e17;
+    --color-lal-medium: #7a5719;
+    --color-lal-high: #f2c46d;
+    --color-trial-correct: #c9cdd2;
+    --color-condition-static: #6b7178;
+    --color-condition-behavior: #3fb7c2;
+    --color-condition-multimodal: #f2c46d;
+    --color-state-stable: #3fb7c2;
+    --color-state-disengaged: #f2c46d;
+    --color-state-overloaded: #e5694f;
+    --color-outcome-positive: #3fb7c2;
+    --color-outcome-neutral: #3a3f47;
+    --color-outcome-negative: #e5694f;
+    --color-headaway: #9aa0a8;
+    --color-peripheral: #9aa0a8;
+    --color-distractor: #6b7178;
+    --color-state-neutral: #262a31;
+    --color-quality-ok: #3fb7c2;
+    --color-quality-warn: #f2c46d;
+    --color-quality-error: #e5694f;
+    --shadow-raised: inset 0 1px 0 rgba(236, 234, 229, 0.05), 0 4px 8px -2px rgba(0, 0, 0, 0.28),
+      0 16px 32px -12px rgba(0, 0, 0, 0.36);
+  }
+}

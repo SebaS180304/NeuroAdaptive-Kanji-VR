@@ -1,0 +1,179 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Fonts bundled by Vite (skill rule 7: no runtime CDN). Noto Serif JP ships in
+   unicode-range chunks, so only the chunks of the kanji on screen are fetched. */
+@import "@fontsource-variable/newsreader/opsz.css";
+@import "@fontsource/public-sans/400.css";
+@import "@fontsource/public-sans/500.css";
+@import "@fontsource/public-sans/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/noto-serif-jp/500.css";
+
+@import "./styles/tokens.css";
+
+/* `dark:` follows the same rule as the tokens: explicit choice, else the OS. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * shadcn's variables mapped onto the tokens. Components keep their class names
+ * (bg-primary, border-input...) and get our values. Our own code uses the tokens
+ * directly, e.g. bg-(--color-surface). `inline` makes each utility read the
+ * shadcn variable (bg-accent -> var(--accent)), so the Tailwind names here never
+ * replace a token of the same name (--color-accent stays Lagoon).
+ */
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  /* Radius by role (design-system.md "Shape"): shadcn's scale is the input radius;
+     panels, pills and tables use the role tokens. */
+  --radius-sm: var(--radius-panel);
+  --radius-md: var(--radius-input);
+  --radius-lg: var(--radius-input);
+  --radius-xl: var(--radius-input);
+}
+
+/* Also on [data-theme] so an element with its own theme re-resolves these. */
+:root,
+[data-theme] {
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface-raised);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-accent);
+  --primary-foreground: var(--color-on-accent);
+  --secondary: var(--color-surface);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-border-subtle);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-accent-tint);
+  --accent-foreground: var(--color-on-accent-tint);
+  --destructive: var(--color-alert);
+  --border: var(--color-border);
+  --input: var(--color-border-strong);
+  --ring: var(--color-accent);
+  --radius: var(--radius-input);
+}
+
+/* Type tokens (design-system.md "Typography"): exact size, line height, tracking, weight. */
+@utility type-display {
+  font-family: var(--font-heading);
+  font-size: 36px;
+  line-height: 40px;
+  letter-spacing: -0.72px;
+  font-weight: 500;
+}
+@utility type-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  line-height: 28px;
+  letter-spacing: -0.22px;
+  font-weight: 500;
+}
+@utility type-subtitle {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 24px;
+  letter-spacing: -0.18px;
+  font-weight: 500;
+}
+@utility type-lead {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility type-figure {
+  font-family: var(--font-body);
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.24px;
+  font-weight: 600;
+}
+@utility type-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.16px;
+  font-weight: 400;
+}
+@utility type-body-strong {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.16px;
+  font-weight: 600;
+}
+@utility type-caption {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.32px;
+  font-weight: 400;
+}
+@utility type-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility type-kanji-display {
+  font-family: var(--font-kanji);
+  font-size: 176px;
+  line-height: 192px;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-family: var(--font-body);
+    font-variant-numeric: tabular-nums;
+  }
+  body {
+    @apply type-body;
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+  /* Newsreader's optical-size axis on for headings. */
+  h1, h2, h3 {
+    font-optical-sizing: auto;
+  }
+}
