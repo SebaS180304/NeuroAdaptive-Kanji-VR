@@ -4,3 +4,24 @@ dist/
 unity-client/Assets/Samples/
 unity-client/Assets/TextMesh Pro/
 unity-client/Packages/
+
+# --- Research dashboard (dashboard/) ---
+# Config and lockfiles: one node per dependency or compiler option, no code.
+dashboard/package.json
+dashboard/package-lock.json
+dashboard/tsconfig*.json
+dashboard/components.json
+dashboard/.oxlintrc.json
+dashboard/index.html
+# Generated or vendored code: the OpenAPI types repeat the backend schemas,
+# and components/ui and lib/utils.ts come from the shadcn CLI.
+dashboard/src/api/schema.d.ts
+dashboard/src/components/ui/
+dashboard/src/lib/utils.ts
+# Build, cache and test output.
+.vite/
+*.tsbuildinfo
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
