@@ -27,7 +27,7 @@ async def main() -> None:
     async with httpx.AsyncClient(base_url=BASE_HTTP) as client:
         participant = await client.post(
             "/participants",
-            json={"external_code": f"SMOKE_{int(datetime.now().timestamp())}"},
+            json={"external_code": f"SMOKE_{int(datetime.now().timestamp())}", "consent_obtained": True},
         )
         participant.raise_for_status()
         participant_id = participant.json()["id"]

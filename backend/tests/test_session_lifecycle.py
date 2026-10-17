@@ -46,7 +46,7 @@ async def test_full_session_walking_skeleton(client) -> None:
 @pytest.mark.asyncio
 async def test_websocket_ping_and_events(client) -> None:
     participant_resp = await client.post(
-        "/participants", json={"external_code": "TEST_P02"}
+        "/participants", json={"external_code": "TEST_P02", "consent_obtained": True}
     )
     participant_id = participant_resp.json()["id"]
 

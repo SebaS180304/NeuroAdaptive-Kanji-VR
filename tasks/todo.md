@@ -100,7 +100,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** none. **Scope:** XS
 
-### [ ] Task 1.2: Registration rules in the backend (was Task 3b)
+### [x] Task 1.2: Registration rules in the backend (was Task 3b, done 17 Oct)
 **Description:**
 - `POST /participants` sets `consent_obtained_at` when consent is true.
 - The pre-test POST routes return 409 "consent not recorded" without consent.
@@ -114,6 +114,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 - [x] A pre-test answer without consent → 409, nothing stored (`/check` too)
 - [x] An unknown `age_range` → 422 (and an unknown attention option)
 - [x] Existing tests pass (172 passed, 17 Oct)
+- [x] `DEV_UNITY` has consent (UPDATE run 17 Oct); every caller that registers participants sends consent
 
 **Verify:** `docker compose run --rm backend pytest -q`
 
