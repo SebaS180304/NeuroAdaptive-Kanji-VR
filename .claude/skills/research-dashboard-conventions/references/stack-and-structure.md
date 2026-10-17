@@ -19,6 +19,7 @@
 | --- | --- |
 | Build | Vite + React + TypeScript (strict) |
 | Styles | Tailwind CSS + CSS token variables |
+| Fonts | Fontsource, bundled by Vite (decided Oct 17): `@fontsource-variable/newsreader` (optical-size axis), `@fontsource/public-sans` (400/500/600), `@fontsource/jetbrains-mono` (400), `@fontsource/noto-serif-jp` (500, in `unicode-range` chunks) |
 | Components | shadcn/ui (through the MCP) |
 | Data | TanStack Query |
 | Tables | TanStack Table |
@@ -49,7 +50,9 @@ backend/app/schemas/research.py
 backend/tests/test_research_api.py
 ```
 
-The dashboard runs outside Docker with `npm run dev` on `127.0.0.1:5173`. If it
+The dashboard runs outside Docker with `npm run dev` on `127.0.0.1:5300` (not Vite's
+default 5173: Windows reserves ports 5163–5262 on the lab PC, Oct 17). It calls the
+API as `/api/...` through Vite's proxy to `:8000`, so CORS is not involved. If it
 later moves into `docker-compose.yml`, publish it on `127.0.0.1`, like pgAdmin.
 
 ## Commands
@@ -59,7 +62,8 @@ later moves into `docker-compose.yml`, publish it on `127.0.0.1`, like pgAdmin.
 - **The backend has no `--reload`.** After changing Python code, apply it with
   `docker compose restart backend`, **never during a headset session** (it closes
   the WebSocket; that is how session `98752f4e` dropped on Oct 7).
-- Frontend: `npm run dev`, `npm run gen:api`, `npm run test`, `npx playwright test`.
+- Frontend (from `dashboard/`): `npm run dev`, `npm run gen:api` (backend must be up),
+  `npm run test`, `npx playwright test`.
 - After changing code: `graphify update .` (rule in `CLAUDE.md`).
 
 ## Repo workflow
