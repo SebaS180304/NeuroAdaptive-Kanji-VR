@@ -82,7 +82,7 @@ into a scratch database works.
 **Deps:** 0.1. **Scope:** M
 
 ### Checkpoint 0
-- [ ] Full `pytest` green; migrations clean; show Sebas the clean-up counts and the new statuses
+- [x] Full `pytest` green; migrations clean; show Sebas the clean-up counts and the new statuses (17 Oct: 167 passed; 0006 → 0004 → 0006 clean; 49 sessions, 13 participants, 0 open errors, 0 IN_PROGRESS. Sebas approved and kept the 12 remaining participants besides `DEV_UNITY`)
 
 ---
 
