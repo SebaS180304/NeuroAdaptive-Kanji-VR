@@ -40,6 +40,14 @@ async def _participant(db: AsyncSession, participant_id: uuid.UUID, lock: bool =
     return participant
 
 
+async def _consented(db: AsyncSession, participant_id: uuid.UUID, lock: bool = False) -> Participant:
+    """The participant, for a route that writes or grades: no pre-test without recorded consent."""
+    participant = await _participant(db, participant_id, lock)
+    if not participant.consent_obtained:
+        raise HTTPException(status_code=409, detail="consent not recorded")
+    return participant
+
+
 async def _responses(db: AsyncSession, participant_id: uuid.UUID) -> list[KanjiPretestResponse]:
     result = await db.execute(select(KanjiPretestResponse)
                               .where(KanjiPretestResponse.participant_id == participant_id)
@@ -87,7 +95,7 @@ async def get_pretest(participant_id: uuid.UUID, db: AsyncSession = Depends(get_
 async def check_answer(participant_id: uuid.UUID, payload: PretestCheck,
                        db: AsyncSession = Depends(get_db)) -> PretestGrade:
     """Auto-grade only; nothing is stored. The page shows it for the researcher to review."""
-    await _participant(db, participant_id)
+    await _consented(db, participant_id)
     _, char_of = _ids()
     if payload.kanji_id not in char_of:
         raise HTTPException(status_code=422, detail="unknown kanji_id")
@@ -98,7 +106,7 @@ async def check_answer(participant_id: uuid.UUID, payload: PretestCheck,
 @router.post("/responses", response_model=PretestState)
 async def answer(participant_id: uuid.UUID, payload: PretestAnswer,
                  db: AsyncSession = Depends(get_db)) -> PretestState:
-    participant = await _participant(db, participant_id, lock=True)
+    participant = await _consented(db, participant_id, lock=True)
     if participant.pretest_completed_at is not None:
         raise HTTPException(status_code=409, detail="pre-test already completed")
 

@@ -113,6 +113,8 @@ namespace NeuroAdaptiveVR.Core
                         JsonConvert.SerializeObject(new Dictionary<string, object>
                         {
                             { "external_code", devParticipantCode },
+                            // The pre-test refuses a participant without consent (409).
+                            { "consent_obtained", true },
                         }),
                         body => participantId = ReadField(body, "id"));
                 }

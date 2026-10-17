@@ -1,6 +1,7 @@
 """
 Kanji pre-test API (spec §13.2, tasks/plan.md Task 3): a scripted pre-test from
-the first kanji to the stored substitutions, plus the guards.
+the first kanji to the stored substitutions, plus the guards and the registration
+rules (Task 1.2 of the research portal plan).
 """
 
 import pytest
@@ -11,8 +12,8 @@ CODE = "TEST_PRETEST"
 ID = {k["kanji"]: k["id"] for k in contract()["kanji"]}
 
 
-async def _participant(client) -> str:
-    resp = await client.post("/participants", json={"external_code": CODE})
+async def _participant(client, consent: bool = True) -> str:
+    resp = await client.post("/participants", json={"external_code": CODE, "consent_obtained": consent})
     assert resp.status_code == 201
     return resp.json()["id"]
 
@@ -93,3 +94,39 @@ async def test_everything_known_stores_fifteen_flags(client):
     assert state["completed"] and state["substitutions"] == []
     assert len(state["flagged"]) == 15
     assert (await client.get(f"/participants/{pid}/pretest")).json() == state
+
+
+@pytest.mark.asyncio
+async def test_consent_sets_its_timestamp(client):
+    with_consent = (await client.post("/participants", json={"external_code": CODE, "consent_obtained": True})).json()
+    assert with_consent["consent_obtained"] is True and with_consent["consent_obtained_at"] is not None
+    without = await client.post("/participants", json={"external_code": CODE + "_NC"})
+    assert without.status_code == 201 and without.json()["consent_obtained_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_pretest_without_consent_is_409_and_stores_nothing(client):
+    pid = await _participant(client, consent=False)
+    resp = await _answer(client, pid, "月")
+    assert resp.status_code == 409 and resp.json()["detail"] == "consent not recorded"
+    resp = await client.post(f"/participants/{pid}/pretest/check",
+                             json={"kanji_id": ID["月"], "typed_reading": "tsuki", "typed_meaning": "moon"})
+    assert resp.status_code == 409
+    assert (await client.get(f"/participants/{pid}/pretest")).json()["answered"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field, value", [("age_range", "50-60"), ("self_rated_attention_difficulty", "ALWAYS")])
+async def test_unknown_registration_option_is_422(client, field, value):
+    resp = await client.post("/participants", json={"external_code": CODE, field: value})
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_approved_registration_options_are_stored(client):
+    body = {"external_code": CODE, "consent_obtained": True, "age_range": "45+",
+            "previous_japanese_experience": None, "previous_kanji_experience": False,
+            "previous_vr_experience": True, "self_rated_attention_difficulty": "VERY_OFTEN"}
+    resp = await client.post("/participants", json=body)
+    assert resp.status_code == 201
+    assert {k: resp.json()[k] for k in body} == body

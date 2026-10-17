@@ -88,7 +88,7 @@ into a scratch database works.
 
 ## Phase 1: Pre-test, end to end (before the pilot)
 
-### [ ] Task 1.1: Registration options (approved 17 Oct)
+### [x] Task 1.1: Registration options (approved 17 Oct, done 17 Oct)
 **Description:** Sebas approved the table in `plan.md`. Record it in the skill's
 `scope-and-roadmap.md` §V1.10. Send the design chat a copy-only note: the
 attention question has 5 options, and the inclusion notice says "accepted".
@@ -96,7 +96,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 **Acceptance:**
 - [x] Sebas approved the options (17 Oct)
 - [x] Options recorded in `scope-and-roadmap.md` §V1.10 (17 Oct)
-- [ ] Note sent to the design chat (drafted 17 Oct; Sebas sends it)
+- [x] Note sent to the design chat (17 Oct)
 
 **Deps:** none. **Scope:** XS
 
@@ -110,10 +110,10 @@ attention question has 5 options, and the inclusion notice says "accepted".
 - `DEV_UNITY` gets consent with one `UPDATE`, shown first.
 
 **Acceptance:**
-- [ ] Created with consent → `consent_obtained_at` is set; without → NULL
-- [ ] A pre-test answer without consent → 409, nothing stored
-- [ ] An unknown `age_range` → 422
-- [ ] Existing tests pass
+- [x] Created with consent → `consent_obtained_at` is set; without → NULL
+- [x] A pre-test answer without consent → 409, nothing stored (`/check` too)
+- [x] An unknown `age_range` → 422 (and an unknown attention option)
+- [x] Existing tests pass (172 passed, 17 Oct)
 
 **Verify:** `docker compose run --rm backend pytest -q`
 

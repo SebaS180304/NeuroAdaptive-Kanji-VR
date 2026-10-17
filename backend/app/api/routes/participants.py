@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -21,7 +22,8 @@ async def create_participant(
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=409, detail="external_code already exists")
 
-    participant = Participant(**payload.model_dump())
+    participant = Participant(**payload.model_dump(),
+                              consent_obtained_at=datetime.now(timezone.utc) if payload.consent_obtained else None)
     db.add(participant)
     await db.flush()
     await db.refresh(participant)
