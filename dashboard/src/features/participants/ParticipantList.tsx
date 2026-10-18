@@ -16,12 +16,12 @@ const CONDITION_LABEL: Record<Condition, string> = {
   BEHAVIOR_ADAPTIVE: 'Behavior-adaptive',
   MULTIMODAL_ADAPTIVE: 'Multimodal-adaptive',
 }
-// design-system.md "Condition chip". Multimodal has no chip of its own yet: it gets
-// the "unknown" dashed outline until the design chat draws one.
+// design-system.md "Condition chip" (multimodal drawn Oct 18).
 const CONDITION_CHIP: Record<Condition, string> = {
   STATIC: 'bg-(--color-border-subtle) text-(--color-text-secondary)',
   BEHAVIOR_ADAPTIVE: 'bg-(--color-accent-tint) text-(--color-on-accent-tint)',
-  MULTIMODAL_ADAPTIVE: 'border border-dashed border-(--color-border-strong) text-(--color-text-muted)',
+  MULTIMODAL_ADAPTIVE:
+    'border border-(--color-condition-multimodal) bg-(--color-condition-multimodal-tint) text-(--color-on-condition-multimodal-tint)',
 }
 
 const STATUS_LABEL: Record<PretestStatus, string> = {
