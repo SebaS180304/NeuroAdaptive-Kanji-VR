@@ -211,7 +211,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 ### Checkpoint A: the pre-test works
 - [x] `TEST_PRETEST` registered and pre-tested through the UI; DB matches; review with Sebas (18 Oct: 17 answers, A 車 -> 米 and B 山 -> 口, nothing flagged; API and list agree; deleted after)
 
-### [ ] Task 1.7: Sessions require the pre-test (backend; was Task 5a)
+### [x] Task 1.7: Sessions require the pre-test (backend; was Task 5a, done 18 Oct)
 **Description:**
 - `POST /sessions` returns 409 ("participant must complete the kanji pre-test at
   http://127.0.0.1:5300/pretest first") while `pretest_completed_at` is null.
@@ -222,9 +222,9 @@ attention question has 5 options, and the inclusion notice says "accepted".
 - `DEV_UNITY` completes a pre-test via the API.
 
 **Acceptance:**
-- [ ] No pre-test → 409 and no row, on every visit
-- [ ] A substituted participant gets the substituted list
-- [ ] Full pytest green; `ws_smoke_test.py` runs
+- [x] No pre-test → 409 and no row, on every visit (an unknown participant is now 404, not a database error)
+- [x] A substituted participant gets the substituted list (create, get, list and state update)
+- [x] Full pytest green (181); `ws_smoke_test.py` runs. `DEV_UNITY` completed a pre-test via the API (all No, set unchanged). `test_invalid_ids.py` creates no session, so it needed no fixture
 
 **Deps:** Task 3 of the old plan; merge after 1.6. **Scope:** M
 

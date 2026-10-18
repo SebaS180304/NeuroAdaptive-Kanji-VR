@@ -31,6 +31,9 @@ class SessionRead(BaseModel):
     random_seed: str | None
     session_clock_started_at: datetime | None
     created_at: datetime
+    # The effective set: the characters of assigned_kanji_set, each pre-test substitute
+    # in its original's position. None when no set is assigned.
+    kanji_items: list[str] | None = None
 
 
 class SessionStateUpdate(BaseModel):

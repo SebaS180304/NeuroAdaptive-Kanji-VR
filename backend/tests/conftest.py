@@ -22,7 +22,7 @@ from app.models.participant import Participant
 # aislada), hay que limpiarlos antes de cada corrida o una segunda
 # ejecucion de `pytest` choca con el UNIQUE de external_code (409).
 _TEST_EXTERNAL_CODES = ["TEST_P01", "TEST_P02", "TEST_PRETEST", "TEST_PRETEST_NC", "TEST_STALE",
-                        "TEST_RESEARCH_1", "TEST_RESEARCH_2", "TEST_RESEARCH_3"]
+                        "TEST_RESEARCH_1", "TEST_RESEARCH_2", "TEST_RESEARCH_3", "TEST_GATE"]
 
 
 @pytest.fixture(scope="session")
@@ -51,3 +51,28 @@ async def client() -> AsyncClient:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest_asyncio.fixture
+async def pretested(client):
+    """Registers a participant with consent and runs its kanji pre-test through the API.
+
+    Sessions require a completed pre-test (Task 1.7). Every kanji is answered "No"
+    except those in `known`, which are answered "Yes" and right, so the pre-test
+    tries reserves for them (each reserve gets "No" and becomes the substitute).
+    """
+    async def make(code: str, known: frozenset[str] | set[str] = frozenset()) -> str:
+        resp = await client.post("/participants", json={"external_code": code, "consent_obtained": True})
+        assert resp.status_code == 201, resp.text
+        pid = resp.json()["id"]
+        state = (await client.get(f"/participants/{pid}/pretest")).json()
+        while state["next"] is not None:
+            item = state["next"]
+            body = {"kanji_id": item["kanji_id"], "self_report": "NO"}
+            if item["kanji"] in known:
+                body = {**body, "self_report": "YES", "typed_reading": "x", "typed_meaning": "x",
+                        "reading_correct": True, "meaning_correct": True}
+            state = (await client.post(f"/participants/{pid}/pretest/responses", json=body)).json()
+        return pid
+
+    return make

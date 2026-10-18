@@ -440,6 +440,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Kanji Items */
+            kanji_items?: string[] | null;
         };
         /**
          * SessionStateUpdate

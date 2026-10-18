@@ -12,13 +12,8 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_full_session_walking_skeleton(client) -> None:
-    participant_resp = await client.post(
-        "/participants",
-        json={"external_code": "TEST_P01", "consent_obtained": True},
-    )
-    assert participant_resp.status_code == 201
-    participant_id = participant_resp.json()["id"]
+async def test_full_session_walking_skeleton(client, pretested) -> None:
+    participant_id = await pretested("TEST_P01")
 
     session_resp = await client.post(
         "/sessions",
@@ -44,11 +39,8 @@ async def test_full_session_walking_skeleton(client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_websocket_ping_and_events(client) -> None:
-    participant_resp = await client.post(
-        "/participants", json={"external_code": "TEST_P02", "consent_obtained": True}
-    )
-    participant_id = participant_resp.json()["id"]
+async def test_websocket_ping_and_events(client, pretested) -> None:
+    participant_id = await pretested("TEST_P02")
 
     session_resp = await client.post(
         "/sessions",

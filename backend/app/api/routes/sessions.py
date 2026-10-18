@@ -15,22 +15,49 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.models.participant import Participant
+from app.models.pretest import KanjiSubstitution
 from app.models.session import (
     ExperimentSession,
     GameFlowState,
     SessionConfigSnapshot,
     SessionStatus,
 )
+from app.pretest.rules import contract
 from app.schemas.session import SessionCreate, SessionRead, SessionStateUpdate
 from app.services.session_clock import now_utc
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
+PRETEST_URL = "http://127.0.0.1:5300/pretest"
+
+
+async def _read(db: AsyncSession, session: ExperimentSession) -> SessionRead:
+    """SessionRead plus kanji_items: the assigned set with the participant's substitutes."""
+    sets = contract()["sets"]
+    items = None
+    if session.assigned_kanji_set in sets:
+        char_of = {k["id"]: k["kanji"] for k in contract()["kanji"]}
+        rows = (await db.execute(select(KanjiSubstitution).where(
+            KanjiSubstitution.participant_id == session.participant_id,
+            KanjiSubstitution.substitute_kanji_id.is_not(None)))).scalars()
+        swap = {char_of[r.original_kanji_id]: char_of[r.substitute_kanji_id] for r in rows}
+        items = [swap.get(c, c) for c in sets[session.assigned_kanji_set]]
+    return SessionRead.model_validate(session).model_copy(update={"kanji_items": items})
+
 
 @router.post("", response_model=SessionRead, status_code=201)
 async def create_session(
     payload: SessionCreate, db: AsyncSession = Depends(get_db)
-) -> ExperimentSession:
+) -> SessionRead:
+    participant = await db.get(Participant, payload.participant_id)
+    if participant is None:
+        raise HTTPException(status_code=404, detail="participant not found")
+    # Every visit, not only the first: the session must use the participant's effective set.
+    if participant.pretest_completed_at is None:
+        raise HTTPException(status_code=409,
+                            detail=f"participant must complete the kanji pre-test at {PRETEST_URL} first")
+
     session = ExperimentSession(
         participant_id=payload.participant_id,
         condition=payload.condition,
@@ -50,23 +77,24 @@ async def create_session(
 
     await db.flush()
     await db.refresh(session)
-    return session
+    return await _read(db, session)
 
 
 @router.get("", response_model=list[SessionRead])
-async def list_sessions(db: AsyncSession = Depends(get_db)) -> list[ExperimentSession]:
+async def list_sessions(db: AsyncSession = Depends(get_db)) -> list[SessionRead]:
     result = await db.execute(
         select(ExperimentSession).order_by(ExperimentSession.created_at.desc())
     )
-    return list(result.scalars().all())
+    # shortcut: one substitution query per session; batch it if this list grows past a few hundred.
+    return [await _read(db, s) for s in result.scalars().all()]
 
 
 @router.get("/{session_id}", response_model=SessionRead)
-async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ExperimentSession:
+async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> SessionRead:
     session = await db.get(ExperimentSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
-    return session
+    return await _read(db, session)
 
 
 def _status_for(state: GameFlowState) -> SessionStatus:
@@ -94,7 +122,7 @@ def _status_for(state: GameFlowState) -> SessionStatus:
 @router.patch("/{session_id}/state", response_model=SessionRead)
 async def update_session_state(
     session_id: uuid.UUID, payload: SessionStateUpdate, db: AsyncSession = Depends(get_db)
-) -> ExperimentSession:
+) -> SessionRead:
     session = await db.get(ExperimentSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
@@ -109,4 +137,4 @@ async def update_session_state(
 
     await db.flush()
     await db.refresh(session)
-    return session
+    return await _read(db, session)

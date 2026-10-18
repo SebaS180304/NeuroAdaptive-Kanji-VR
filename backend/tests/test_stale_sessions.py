@@ -39,8 +39,8 @@ async def _status(sid: str) -> str:
 
 
 @pytest.mark.asyncio
-async def test_only_idle_in_progress_sessions_are_aborted(client):
-    pid = (await client.post("/participants", json={"external_code": "TEST_STALE", "consent_obtained": True})).json()["id"]
+async def test_only_idle_in_progress_sessions_are_aborted(client, pretested):
+    pid = await pretested("TEST_STALE")
 
     stale = await _session(client, pid, "S5_STANDARDIZED_LEARNING")
     await _event(stale, 31)
@@ -73,8 +73,8 @@ async def test_only_idle_in_progress_sessions_are_aborted(client):
 
 
 @pytest.mark.asyncio
-async def test_running_twice_changes_nothing_the_second_time(client):
-    pid = (await client.post("/participants", json={"external_code": "TEST_STALE", "consent_obtained": True})).json()["id"]
+async def test_running_twice_changes_nothing_the_second_time(client, pretested):
+    pid = await pretested("TEST_STALE")
     stale = await _session(client, pid, "S5_STANDARDIZED_LEARNING")
     await _event(stale, 45)
     await abort_stale_sessions()
