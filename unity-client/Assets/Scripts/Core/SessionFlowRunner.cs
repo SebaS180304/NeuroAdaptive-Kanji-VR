@@ -763,7 +763,12 @@ namespace NeuroAdaptiveVR.Core
                 Debug.LogWarning($"{Log} The session has no assigned_kanji_set; using the debug " +
                                  $"fallback '{fallbackSet}'. This run is NOT reconstructible.");
 
-            _set.AddRange(content.Set(_setName));
+            // The session's effective set: the backend puts each pre-test substitute in
+            // its original's position, so the seeded order still holds. The contract's
+            // set by name only for a run with no session.
+            _set.AddRange(fromSession && SessionContext.KanjiItems != null
+                ? content.Items(SessionContext.KanjiItems)
+                : content.Set(_setName));
             if (_set.Count == 0)
             {
                 Debug.LogError($"{Log} Set '{_setName}' came back empty from the contract.");

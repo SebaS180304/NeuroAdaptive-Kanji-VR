@@ -128,6 +128,7 @@ namespace NeuroAdaptiveVR.Core
 
                 // A complete session: with set and seed it is reconstructible
                 // (spec 6.1) and passes the same check as a researcher's one.
+                bool refusedForPretest = false;
                 string seed = string.IsNullOrWhiteSpace(newSessionSeed)
                     ? $"dev-{DateTime.UtcNow:yyyyMMdd-HHmmss}"
                     : newSessionSeed.Trim();
@@ -147,11 +148,23 @@ namespace NeuroAdaptiveVR.Core
                     {
                         sessionId = ReadField(body, "id");
                         InstallSessionData(body);
+                    },
+                    (status, body) =>
+                    {
+                        // 409: the participant has no completed kanji pre-test. One clear
+                        // error naming the page, and the flow does not start.
+                        if (status != 409) return false;
+                        refusedForPretest = true;
+                        Debug.LogError($"[SessionBootstrap] No session for '{devParticipantCode}': " +
+                                       $"{ReadField(body, "detail") ?? "the kanji pre-test is not complete"}. " +
+                                       "Run the pre-test in the research dashboard, then press Play again.");
+                        return true;
                     });
 
                 if (string.IsNullOrEmpty(sessionId))
                 {
-                    Debug.LogError("[SessionBootstrap] Could not create the session. Aborting.");
+                    if (!refusedForPretest)
+                        Debug.LogError("[SessionBootstrap] Could not create the session. Aborting.");
                     yield break;
                 }
                 Debug.Log($"[SessionBootstrap] NEW session {sessionId} · participant " +
@@ -228,7 +241,8 @@ namespace NeuroAdaptiveVR.Core
                 assignedKanjiSet:  ReadField(jsonBody, "assigned_kanji_set"),
                 randomSeedRaw:     ReadField(jsonBody, "random_seed"),
                 conditionWire:     ReadField(jsonBody, "condition"),
-                visitNumberRaw:    ReadField(jsonBody, "visit_number"));
+                visitNumberRaw:    ReadField(jsonBody, "visit_number"),
+                kanjiItems:        ReadKanjiItems(jsonBody));
         }
 
         private void OnEnable()
@@ -316,7 +330,10 @@ namespace NeuroAdaptiveVR.Core
             _flow.AdvanceToNextState();
         }
 
-        private IEnumerator PostJson(string url, string json, Action<string> onSuccess)
+        /// <param name="onFailure">Takes the HTTP status and body and returns true
+        /// if it handled the failure; otherwise the generic error is logged.</param>
+        private IEnumerator PostJson(string url, string json, Action<string> onSuccess,
+                                     Func<long, string, bool> onFailure = null)
         {
             using var request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
             request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
@@ -327,7 +344,8 @@ namespace NeuroAdaptiveVR.Core
 
             if (request.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"[SessionBootstrap] POST {url} fallo: {request.error} · {request.downloadHandler?.text}");
+                if (onFailure?.Invoke(request.responseCode, request.downloadHandler?.text) != true)
+                    Debug.LogError($"[SessionBootstrap] POST {url} fallo: {request.error} · {request.downloadHandler?.text}");
                 yield break;
             }
 
@@ -402,6 +420,26 @@ namespace NeuroAdaptiveVR.Core
                 Debug.LogError($"[SessionBootstrap] Could not read the participant list: {ex.Message}");
             }
             return null;
+        }
+
+        /// <summary>
+        /// kanji_items of a SessionRead: the effective set, substitutes in place.
+        /// Null when the field is missing or null (a session with no set).
+        /// </summary>
+        public static IReadOnlyList<string> ReadKanjiItems(string jsonBody)
+        {
+            try
+            {
+                var token = Newtonsoft.Json.Linq.JObject.Parse(jsonBody)["kanji_items"];
+                return token == null || token.Type == Newtonsoft.Json.Linq.JTokenType.Null
+                    ? null
+                    : token.ToObject<List<string>>();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SessionBootstrap] Could not read kanji_items: {ex.Message}");
+                return null;
+            }
         }
 
         private static string ReadField(string jsonBody, string key)

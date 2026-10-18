@@ -236,10 +236,10 @@ attention question has 5 options, and the inclusion notice says "accepted".
 - Log what S5 does with a kanji that has no assembly segments.
 
 **Acceptance:**
-- [ ] Unity Play without a pre-test: one clear error, and no flow
-- [ ] With a substitution: S5–S8 show the substitute, and `trials.kanji_id` is the substitute
-- [ ] Distractors stay within the effective set
-- [ ] Phase2TestHarness green
+- [x] Unity Play without a pre-test: one clear error, and no flow (Play as `OBS_01`, 19 Oct: one error naming the `/pretest` URL, flow stays in S0, no session row)
+- [ ] With a substitution: S5–S8 show the substitute, and `trials.kanji_id` is the substitute (needs a person in S1–S8; logic covered by harness K1–K4)
+- [x] Distractors stay within the effective set (harness K4: 20 S7 trials, targets and options only from the effective set)
+- [x] Phase2TestHarness green (84/84, with the new K1–K5)
 
 **Verify:** Unity console and harness; Play with low `baselineTimeScale`; a query on `trials`.
 

@@ -365,7 +365,11 @@ namespace NeuroAdaptiveVR.Core
             // validos y no lo son -- y hasta hoy eso no daba ninguna señal.
             if (!SessionContext.AgreesWithInspector(setName, "TrialDebugRunner")) return;
 
-            _items.AddRange(content.Set(EffectiveSet));
+            // With a session, its effective set (pre-test substitutes in place); the
+            // contract's set by name only for a run with no session.
+            _items.AddRange(SessionContext.IsInstalled && SessionContext.KanjiItems != null
+                ? content.Items(SessionContext.KanjiItems)
+                : content.Set(EffectiveSet));
 
             if (_items.Count == 0)
                 Debug.LogError($"[TrialDebugRunner] El set '{EffectiveSet}' vino vacio del contrato.");

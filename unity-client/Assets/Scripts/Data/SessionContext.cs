@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NeuroAdaptiveVR.Core;
 using UnityEngine;
 
@@ -59,9 +60,17 @@ namespace NeuroAdaptiveVR.Data
 
         public static bool IsInstalled { get; private set; }
 
+        /// <summary>
+        /// The effective set the backend sends (kanji_items): the characters of
+        /// AssignedKanjiSet, each pre-test substitute in its original's position.
+        /// Null when the session has no set; then nothing may be played from it.
+        /// </summary>
+        public static IReadOnlyList<string> KanjiItems { get; private set; }
+
         public static void Reset()
         {
             SessionId = null;
+            KanjiItems = null;
             AssignedKanjiSet = null;
             RandomSeedRaw = null;
             Seed = 0;
@@ -72,9 +81,11 @@ namespace NeuroAdaptiveVR.Data
         }
 
         public static void Install(string sessionId, string assignedKanjiSet, string randomSeedRaw,
-                                   string conditionWire, string visitNumberRaw)
+                                   string conditionWire, string visitNumberRaw,
+                                   IReadOnlyList<string> kanjiItems = null)
         {
             SessionId = sessionId;
+            KanjiItems = kanjiItems;
             AssignedKanjiSet = string.IsNullOrWhiteSpace(assignedKanjiSet) ? null : assignedKanjiSet.Trim();
             RandomSeedRaw = string.IsNullOrWhiteSpace(randomSeedRaw) ? null : randomSeedRaw.Trim();
             Seed = RandomSeedRaw == null ? 0 : StableHash.Of(RandomSeedRaw);
@@ -90,7 +101,8 @@ namespace NeuroAdaptiveVR.Data
 
             Debug.Log($"[SessionContext] {sessionId} · set {AssignedKanjiSet ?? "(sin asignar)"} · " +
                       $"seed \"{RandomSeedRaw ?? "(sin seed)"}\" -> {Seed} · " +
-                      $"{Condition.ToWireValue()} · visita {VisitNumber}" +
+                      $"{Condition.ToWireValue()} · visita {VisitNumber} · " +
+                      $"kanji {(KanjiItems == null ? "(sin kanji_items)" : string.Join(" ", KanjiItems))}" +
                       (IsFirstVisit ? " (primera: S2 corre)" : " (S2 se salta)"));
         }
 

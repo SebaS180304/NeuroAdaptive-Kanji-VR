@@ -198,6 +198,23 @@ namespace NeuroAdaptiveVR.Controllers
             return chars.Select(ByCharacter).Where(i => i != null).ToList();
         }
 
+        /// <summary>
+        /// The items for a list of characters, in that order: the session's
+        /// effective set (SessionContext.KanjiItems), substitutes included. A
+        /// character missing from the contract is logged and left out.
+        /// </summary>
+        public IReadOnlyList<KanjiItem> Items(IEnumerable<string> characters)
+        {
+            var items = new List<KanjiItem>();
+            foreach (var ch in characters)
+            {
+                var item = ByCharacter(ch);
+                if (item != null) items.Add(item);
+                else Debug.LogError($"{Log} '{ch}' is not in the contract.");
+            }
+            return items;
+        }
+
         public IReadOnlyList<KanjiItem> Tutorial =>
             _contract == null
                 ? System.Array.Empty<KanjiItem>()

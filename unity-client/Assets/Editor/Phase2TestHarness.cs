@@ -90,6 +90,7 @@ namespace NeuroAdaptiveVR.EditorTools
             ContentCases(content);
             SetCases(content);
             SubstitutionCases(content);
+            EffectiveSetCases(content);
             SequenceCases(content);
             AssociationCases(content);
             AssemblyCases(content);
@@ -295,6 +296,57 @@ namespace NeuroAdaptiveVR.EditorTools
         // ==================================================================
         // Generador de secuencia (spec 6.1)
         // ==================================================================
+
+        // ==================================================================
+        // Set efectivo (kanji_items, Task 1.8 del plan del portal)
+        // ==================================================================
+
+        /// <summary>
+        /// The backend sends the session's effective set: the assigned set with each
+        /// pre-test substitute in its original's position. Unity must play exactly
+        /// that list, in that order, and draw distractors only from it.
+        /// </summary>
+        private static void EffectiveSetCases(KanjiContentController c)
+        {
+            var setA = c.Set("A");
+            if (setA.Count < 5) { Check("K0", "El set A tiene cinco kanji", false, $"{setA.Count}"); return; }
+            var sub = c.SubstitutesFor("A", setA[1]).FirstOrDefault();
+            if (sub == null) { Check("K0", "El segundo kanji de A tiene un sustituto", false, "ninguno"); return; }
+
+            var chars = setA.Select(i => i.Character).ToList();
+            chars[1] = sub.Character;
+            string json = "{\"id\":\"s1\",\"assigned_kanji_set\":\"A\",\"random_seed\":\"777\"," +
+                          "\"condition\":\"STATIC\",\"visit_number\":1,\"kanji_items\":[" +
+                          string.Join(",", chars.Select(ch => $"\"{ch}\"")) + "]}";
+
+            var parsed = SessionBootstrap.ReadKanjiItems(json);
+            Check("K1", "El bootstrap lee kanji_items de la sesion, en orden",
+                  parsed != null && parsed.SequenceEqual(chars),
+                  parsed == null ? "null" : Join(parsed));
+            Check("K2", "Sin kanji_items (o null) el bootstrap no inventa una lista",
+                  SessionBootstrap.ReadKanjiItems("{\"id\":\"s1\"}") == null &&
+                  SessionBootstrap.ReadKanjiItems("{\"id\":\"s1\",\"kanji_items\":null}") == null,
+                  "ausente y null -> null");
+
+            SessionContext.Reset();
+            SessionContext.Install("s1", "A", "777", "STATIC", "1", parsed);
+            var items = c.Items(SessionContext.KanjiItems);
+            Check("K3", "El contenido devuelve el set efectivo con el sustituto en su posicion",
+                  items.Select(i => i.Character).SequenceEqual(chars) && items[1].KanjiId == sub.KanjiId,
+                  Join(items.Select(i => i.Character)));
+
+            var plan = TrialSequenceGenerator.Build(GameFlowState.S7_ExperimentalRetrieval, items, 20, 2, 777);
+            var ids = new HashSet<string>(items.Select(i => i.KanjiId));
+            var fuera = plan.Trials.SelectMany(t => t.Options.Select(o => o.OptionId).Prepend(t.Target.KanjiId))
+                            .Where(id => !ids.Contains(id)).Distinct().ToList();
+            Check("K4", "Objetivos y distractores salen solo del set efectivo",
+                  fuera.Count == 0 && plan.Trials.Any(t => t.Target.KanjiId == sub.KanjiId),
+                  fuera.Count == 0 ? $"{plan.Count} trials, el sustituto {sub.Character} aparece" : $"fuera del set: {Join(fuera)}");
+
+            SessionContext.Reset();
+            Check("K5", "Reset borra el set efectivo (no pasa de un Play al siguiente)",
+                  SessionContext.KanjiItems == null, "KanjiItems == null");
+        }
 
         private static void SequenceCases(KanjiContentController c)
         {

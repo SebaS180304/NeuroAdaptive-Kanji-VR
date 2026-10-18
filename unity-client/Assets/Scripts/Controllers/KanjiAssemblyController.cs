@@ -117,6 +117,12 @@ namespace NeuroAdaptiveVR.Controllers
             board.ShowAssembly(plan.Count, row, Instruction(0, plan.Count), item.KanjiId);
             Debug.Log($"{Log} {item} · {plan.Count} slots ({(plan.Authored ? "authored" : "placeholders from assemblyGroups")}) · " +
                       $"row {string.Join(" ", plan.RowSegmentIds)}");
+            // A pre-test substitute from the reserve has no drawn segments yet: S5 still
+            // runs it with labelled placeholders ("part 1"...), and the telemetry says so
+            // (segments_authored = false). Who draws them is an open question in the plan.
+            if (!plan.Authored)
+                Debug.LogWarning($"{Log} {item} has no authored segments: S5 assembles it from " +
+                                 $"{plan.Count} placeholder parts (segments_authored = false).");
 
             float t0 = Time.realtimeSinceStartup;
             int incorrect = 0, attempts = 0, hints = 0;
