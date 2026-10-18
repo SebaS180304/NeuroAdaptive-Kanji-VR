@@ -209,7 +209,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 **Deps:** 1.5. **Scope:** M
 
 ### Checkpoint A: the pre-test works
-- [ ] `TEST_PRETEST` registered and pre-tested through the UI; DB matches; review with Sebas
+- [x] `TEST_PRETEST` registered and pre-tested through the UI; DB matches; review with Sebas (18 Oct: 17 answers, A 車 -> 米 and B 山 -> 口, nothing flagged; API and list agree; deleted after)
 
 ### [ ] Task 1.7: Sessions require the pre-test (backend; was Task 5a)
 **Description:**
