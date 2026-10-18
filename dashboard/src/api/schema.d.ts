@@ -127,6 +127,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Participants */
+        get: operations["list_participants_research_participants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -326,6 +343,45 @@ export interface components {
             substitutions: components["schemas"]["Substitution"][];
             /** Flagged */
             flagged: components["schemas"]["Flagged"][];
+        };
+        /**
+         * ResearchParticipant
+         * @description One row of the participant list (V1.11).
+         */
+        ResearchParticipant: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** External Code */
+            external_code: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Pretest Status
+             * @enum {string}
+             */
+            pretest_status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
+            /** Pretest Answered */
+            pretest_answered: number;
+            /** Pretest Completed At */
+            pretest_completed_at: string | null;
+            /** Session Count */
+            session_count: number;
+            /** Conditions */
+            conditions: ("STATIC" | "BEHAVIOR_ADAPTIVE" | "MULTIMODAL_ADAPTIVE")[];
+            /** Last Session At */
+            last_session_at: string | null;
+            /** Last Session Accuracy */
+            last_session_accuracy: number | null;
+            /** Previous Japanese Experience */
+            previous_japanese_experience: boolean | null;
+            /** Flagged Count */
+            flagged_count: number | null;
         };
         /** SessionCreate */
         SessionCreate: {
@@ -647,6 +703,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_participants_research_participants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchParticipant"][];
                 };
             };
         };

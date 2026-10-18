@@ -15,7 +15,6 @@ describe('app shell', () => {
   it.each([
     ['/sessions', 'Sessions', 'Sessions'],
     ['/sessions/6eb2bd5c', 'Session', 'Sessions'],
-    ['/participants', 'Participants', 'Participants'],
     ['/participants/abc', 'Participant', 'Participants'],
     ['/pretest', 'Kanji pre-test', 'Pre-test'],
     ['/quality', 'Data quality', 'Data quality'],

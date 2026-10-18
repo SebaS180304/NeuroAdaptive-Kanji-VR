@@ -144,7 +144,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** none (do before 1.4). First task on `phase/7-research-dashboard`. **Scope:** M
 
-### [ ] Task 1.4: Participant list: `/research/participants` and V1.11
+### [x] Task 1.4: Participant list: `/research/participants` and V1.11 (done 18 Oct)
 **Description:**
 - **Endpoint:** create `research.py` with the first `GET`. Per participant: code,
   `created_at`, pre-test status and `answered`, session count, conditions, last session
@@ -156,9 +156,9 @@ attention question has 5 options, and the inclusion notice says "accepted".
   - the notes column ("Previous Japanese study reported", "Kanji kept with no substitute").
 
 **Acceptance:**
-- [ ] The figures match SQL for 3 participants
-- [ ] A code opens `/participants/:id` (placeholder until 3.1)
-- [ ] The screen checks pass
+- [x] The figures match SQL for 3 participants (`DEV_UNITY`, `OBS_01`, `M2_EVIDENCE_20260928_1503`)
+- [x] A code opens `/participants/:id` (placeholder until 3.1)
+- [x] The screen checks pass (screenshots light and dark, keyboard e2e, NULL as `—` with its reason, no clinical wording, 5-tell audit)
 
 **Verify:** `pytest tests/test_research_api.py`; Playwright against *V1.11 Participant list* (light and dark).
 
