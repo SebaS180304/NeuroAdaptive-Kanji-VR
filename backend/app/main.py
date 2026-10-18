@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, participants, pretest, sessions, websocket
+from app.api.routes import health, participants, pretest, research, sessions, websocket
 from app.config import get_settings
 from app.core.logging import configure_logging
 from app.services import stale_sessions
@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(participants.router)
     app.include_router(pretest.router)
+    app.include_router(research.router)
     app.include_router(sessions.router)
     app.include_router(websocket.router)
 
