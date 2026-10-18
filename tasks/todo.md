@@ -184,7 +184,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** 1.2, 1.4. **Scope:** M
 
-### [ ] Task 1.6: Pre-test, one kanji, done and pause (V1.10)
+### [x] Task 1.6: Pre-test, one kanji, done and pause (V1.10, done 18 Oct)
 **Description:**
 - **Focus mode:** no rail; the code, "[n] answered" (`aria-live`) and Pause.
 - **The kanji** in `kanji-display`.
@@ -198,11 +198,11 @@ attention question has 5 options, and the inclusion notice says "accepted".
   resumes.
 
 **Acceptance:**
-- [ ] A full pre-test runs by keyboard only
-- [ ] The correct reading or meaning, set names and the word "substitute" never appear in the DOM (Playwright check)
-- [ ] Pause then Resume continues at the same kanji
-- [ ] A double submit in a second tab triggers the 409 notice and the flow continues
-- [ ] The DB rows match what was answered
+- [x] A full pre-test runs by keyboard only
+- [x] The correct reading or meaning, set names and the word "substitute" never appear in the DOM (Playwright check against every reading and meaning in `kanji_content.json`, at each kanji and on the done screen)
+- [x] Pause then Resume continues at the same kanji
+- [x] A double submit in a second tab triggers the 409 notice and the flow continues
+- [x] The DB rows match what was answered (`kanji_pretest_responses` row by row; `kanji_substitutions` count against the API)
 
 **Verify:** Playwright e2e end to end; `select` on `kanji_pretest_responses` / `kanji_substitutions`; against *V1.10 One kanji*, *Complete* and *States*.
 

@@ -16,7 +16,6 @@ describe('app shell', () => {
     ['/sessions', 'Sessions', 'Sessions'],
     ['/sessions/6eb2bd5c', 'Session', 'Sessions'],
     ['/participants/abc', 'Participant', 'Participants'],
-    ['/pretest/abc', 'Kanji pre-test', 'Pre-test'],
     ['/quality', 'Data quality', 'Data quality'],
   ])('%s renders its reserved screen and marks its rail item', (path, title, item) => {
     renderApp(path)

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { getJson, type Schemas } from '@/api/client'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
 import { PretestChip } from '@/components/PretestChip'
@@ -24,6 +24,7 @@ export function PretestPick() {
     queryKey: ['research', 'participants'],
     queryFn: () => getJson<Participant[]>('/research/participants'),
   })
+  const pausedAt = (useLocation().state as { pausedAt?: number } | null)?.pausedAt
   const [code, setCode] = useState('')
   const query = code.trim()
   const rows = (data ?? []).filter((p) => p.external_code.toLowerCase().includes(query.toLowerCase()))
@@ -62,6 +63,7 @@ export function PretestPick() {
         A completed pre-test opens read-only. It can't be redone or edited.
       </p>
 
+      {pausedAt !== undefined && <Notice kind="info" title={`Paused at ${pausedAt} answered`} className="col-span-16" />}
       {isPending && <LoadingNotice title="Loading the pre-test…" className="col-span-16" />}
       {error && <OfflineNotice onRetry={() => void refetch()} className="col-span-16" />}
       {data && query && rows.length === 0 && (

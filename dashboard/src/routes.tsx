@@ -3,6 +3,7 @@ import { AppShell } from '@/components/shell/AppShell'
 import { ReservedScreen } from '@/components/shell/ReservedScreen'
 import { ParticipantList } from '@/features/participants/ParticipantList'
 import { PretestPick } from '@/features/pretest/PretestPick'
+import { PretestRun } from '@/features/pretest/PretestRun'
 import { RegisterParticipant } from '@/features/pretest/RegisterParticipant'
 import { TokensPage } from '@/features/tokens/TokensPage'
 
@@ -18,12 +19,13 @@ export const routes: RouteObject[] = [
       { path: 'participants', element: <ParticipantList /> },
       { path: 'participants/:participantId', element: <ReservedScreen title="Participant" thing="Participant View" /> },
       { path: 'pretest', element: <PretestPick /> },
-      { path: 'pretest/:participantId', element: <ReservedScreen title="Kanji pre-test" thing="One kanji at a time" /> },
       { path: 'quality', element: <ReservedScreen title="Data quality" thing="Data quality" /> },
     ],
   },
   // V1.10 Register has its own top bar and no rail.
   { path: 'pretest/register', element: <RegisterParticipant /> },
+  // V1.10 One kanji and Complete: focus mode, no rail (the participant looks at it).
+  { path: 'pretest/:participantId', element: <PretestRun /> },
   // Development reference, outside the rail: the tokens in both themes.
   { path: 'tokens', element: <TokensPage /> },
 ]

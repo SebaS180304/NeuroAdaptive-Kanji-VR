@@ -34,18 +34,23 @@ describe('pre-test, register a participant (V1.10)', () => {
   })
 
   it('sends both parts in one POST, "Prefer not to answer" as null', async () => {
-    const calls = mockApi({ 'POST /api/participants': created })
+    const calls = mockApi({
+      'POST /api/participants': created,
+      'GET /api/participants/new-id': () => json({ id: 'new-id', external_code: 'P07' }),
+      'GET /api/participants/new-id/pretest': () => json({ completed: false, completed_at: null, answered: 0,
+        next: { kanji_id: 'K', kanji: '月' }, substitutions: [], flagged: [] }),
+    })
     const user = userEvent.setup()
     renderApp('/pretest/register')
     await fill(user, 'No')
     await user.click(screen.getByRole('button', { name: 'Save registration' }))
-    expect(calls).toEqual([{ key: 'POST /api/participants', body: {
+    expect(calls[0]).toEqual({ key: 'POST /api/participants', body: {
       external_code: 'P07', consent_obtained: true, age_range: '25-34',
       previous_japanese_experience: false, previous_kanji_experience: false,
       previous_vr_experience: null, self_rated_attention_difficulty: 'VERY_OFTEN',
-    } }])
+    } })
     // No notice applies: straight to the pre-test.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Kanji pre-test' })).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: 'Kanji to answer' })).toBeInTheDocument()
   })
 
   it.each([
