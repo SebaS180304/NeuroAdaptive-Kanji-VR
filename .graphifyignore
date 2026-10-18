@@ -13,10 +13,10 @@ dashboard/tsconfig*.json
 dashboard/components.json
 dashboard/.oxlintrc.json
 dashboard/index.html
-# Generated or vendored code: the OpenAPI types repeat the backend schemas,
-# and components/ui and lib/utils.ts come from the shadcn CLI.
+# Generated code: the OpenAPI types repeat the backend schemas, and
+# lib/utils.ts is the shadcn CLI's one-line re-export. components/ui stays in:
+# those components get adapted to the design system.
 dashboard/src/api/schema.d.ts
-dashboard/src/components/ui/
 dashboard/src/lib/utils.ts
 # Build, cache and test output.
 .vite/
