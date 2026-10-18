@@ -1,7 +1,7 @@
 # Design system · v1 (approved Oct 16)
 
-> **Status:** tokens approved Oct 16 2026 (light 23:15, dark 23:18). V1.1–V1.11
-> validated by Oct 17 2026 (see the log).
+> **Status: v1 design COMPLETE.** Tokens approved Oct 16 2026 (light 23:15, dark
+> 23:18). Every screen, V1.1 to V1.11, validated by Oct 17 2026, 00:20 (see the log).
 > Implement these exact values. A screen is built only once its mockup appears as
 > *Validated* in the log below. Anything not covered here: flag it and ask; do not
 > invent a value. If a design needs data the API does not have, the dev chat says
@@ -34,7 +34,7 @@ the URL. Status *Pending* = do not build the screen yet.
 | V1.7 Data quality | *V1.7 Data quality* | Validated | Oct 17 2026, 00:02 |
 | V1.8 Participant View | *V1.8 Participant View* (Tweaks: `pretestDone` shows the "Open the pre-test" state) | Validated | Oct 17 2026, 00:02 |
 | V1.10 Kanji pre-test | *V1.10 …* row (pick, register, one kanji, complete, states) and its dark row; summary without substitutions (Sebas, Oct 16, 23:57) | Validated | Oct 17 2026, 00:02 |
-| V1.11 Participant list | *V1.11 Participant list (proposed)* and its dark artboard | Validated (Sebas, in the dev chat) | Oct 17 2026 |
+| V1.11 Participant list (needs a scope entry from the dev chat) | *V1.11 Participant list (proposed)* and its dark artboard | Validated | Oct 17 2026, 00:20 |
 
 All artboards: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL`.
 
@@ -72,7 +72,7 @@ Every color is a CSS variable. Light is the default; dark is applied with
 | `--color-text-muted` | `#565B62` (Slate) | `#9AA0A8` | Labels, captions, units |
 | `--color-border` | `#E4E2DD` | `#262A31` | Panel borders, table rules |
 | `--color-border-subtle` | `#EFEDE8` | `#1F232A` | Row rules, lane rules, bar tracks |
-| `--color-border-strong` | `#C9CDD2` | `#3A3F47` | Inputs, outline buttons |
+| `--color-border-strong` | `#8A8F96` | `#70767D` | Inputs, outline buttons, dashed chips. At least 3:1 on every surface (light 3.3:1 on white, 3.1:1 on Paper; dark 3.8:1 on surface, 3.5:1 on raised). Corrected Oct 18: the old `#C9CDD2` / `#3A3F47` measured 1.6:1 |
 | `--color-accent` | `#0B6A73` (Lagoon) | `#3FB7C2` | Active nav, links, focus, tabs, decisions |
 | `--color-accent-hover` | `#084F56` | `#7FD3DB` | Link hover |
 | `--color-on-accent` | `#FFFFFF` | `#0F1115` | Text on accent fill |
@@ -102,12 +102,14 @@ Every color is a CSS variable. Light is the default; dark is applied with
 | `--color-trial-incorrect` | hatch `--color-alert` / `--color-alert-tint`, 45°, 2 px | same | Incorrect trial |
 | `--color-condition-static` | `#8E9399` | `#6B7178` | Static |
 | `--color-condition-behavior` | `#0B6A73` | `#3FB7C2` | Behavior-adaptive |
-| `--color-condition-multimodal` | `#9A6414` | `#F2C46D` | Multimodal-adaptive (later) |
+| `--color-condition-multimodal` | `#9A6414` | `#F2C46D` | Multimodal-adaptive (border of its chip, marks) |
+| `--color-condition-multimodal-tint` | `#FBEBCF` | `#3A2E17` | Multimodal-adaptive chip fill |
+| `--color-on-condition-multimodal-tint` | `#6E4F17` | `#F2C46D` | Multimodal-adaptive chip text (6.4:1 light, 8.1:1 dark) |
 | `--color-state-stable` | `#0B6A73` | `#3FB7C2` | Estimated state: stable |
 | `--color-state-disengaged` | `#9A6414` | `#F2C46D` | Estimated state: disengaged |
 | `--color-state-overloaded` | `#B83A22` | `#E5694F` | Estimated state: overloaded |
 | `--color-outcome-positive` | `#0B6A73` | `#3FB7C2` | Outcome positive |
-| `--color-outcome-neutral` | `#C9CDD2` | `#3A3F47` | Outcome neutral |
+| `--color-outcome-neutral` | `#C9CDD2` | `#3A3F47` | Outcome neutral (a fill read with its legend, not a control border; own values since Oct 18) |
 | `--color-outcome-negative` | `#B83A22` | `#E5694F` | Outcome negative |
 | `--color-outcome-uncertain` | hatch `--color-text-muted` on surface, 45°, 1 px / 5 px | same | Outcome uncertain |
 | `--color-headaway` | `#565B62` | `#9AA0A8` | Head-away bars |
@@ -206,7 +208,7 @@ No blur, no glass, no glow.
 | Navigation rail | custom | `--color-sidebar`; items 40 px pills; active = accent fill + `--color-on-accent` |
 | Page header | custom | Breadcrumb (`caption`, link), `display` title with mono ID, `lead` summary sentence built from data |
 | Session facts | `<dl>` | 120 px label column, `body`; quality dot 8 px |
-| Condition chip | `badge` | 32 px (header) / 24 px (tables), pill, accent tint + on-accent-tint (behavior), border-subtle fill (static), dashed outline (unknown) |
+| Condition chip | `badge` | 32 px (header) / 24 px (tables), pill. Static: border-subtle fill + text-secondary. Behavior-adaptive: accent tint + on-accent-tint. Multimodal-adaptive (Oct 18): multimodal tint fill, multimodal text and a 1 px `--color-condition-multimodal` border, so it never reads as a warning notice. Unknown: dashed `--color-border-strong`, muted text. All four are drawn on the *Tokens* artboard |
 | Primary button | `button` | 32 px, pill, `--color-cta`, `--color-on-cta`, 600 |
 | Secondary button | `button` | 32–40 px, pill, 1 px `--color-border-strong`, surface |
 | Toggle chip (selected) | `toggle` | 32 px pill, accent tint, 1 px accent border |
@@ -254,7 +256,7 @@ Validated by Sebas on Oct 17 2026, 00:08.
 
 ## Participant list (V1.11) and navigation
 
-Validated by Sebas on Oct 17 2026 (recorded by the dev chat).
+Validated by Sebas on Oct 17 2026, 00:20.
 
 - **Participant list**: the normal shell. Title 1–9 with a lead sentence, and a
   pre-test status bar at 10–16 (segmented: completed, in progress, not started
@@ -296,6 +298,15 @@ Validated by Sebas on Oct 17 2026, 00:02.
   One "Save registration" CTA covers both parts. After it, the inclusion notice
   appears in `--color-warn-tint` with "Continue to the pre-test" and "Stop
   here".
+  - Wording (Oct 17): the attention question has six pills: Never, Rarely,
+    Sometimes, Often, Very often, Prefer not to answer.
+  - The notice says the criterion "no previous study of Japanese" was accepted
+    by MIRAI on Oct 9, not "proposed".
+  - "Have you studied Japanese before?" has three pills: No, Yes, Prefer not
+    to answer (added Oct 17, approved by Sebas).
+  - The same notice, with the same layout, also shows "previous Japanese study
+    not reported" when the participant picks Prefer not to answer on that
+    question. That state is in *V1.10 States*.
 - **One kanji (focus mode)**:
   - Top bar with the product name, the participant code, "[n] answered"
     (`aria-live`) and Pause.
