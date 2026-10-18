@@ -164,7 +164,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** 1.3. **Scope:** M
 
-### [ ] Task 1.5: Pre-test, pick and register (V1.10)
+### [x] Task 1.5: Pre-test, pick and register (V1.10, done 18 Oct)
 **Description:**
 - **The `/pretest` list** reuses the data from 1.4. Each row shows the status chip and its
   action: Start, Resume or View result.
@@ -176,9 +176,9 @@ attention question has 5 options, and the inclusion notice says "accepted".
   offline, participant not found.
 
 **Acceptance:**
-- [ ] A new participant can be registered by keyboard only
-- [ ] "Yes" or "Prefer not to answer" on Japanese study shows the notice
-- [ ] Nothing reveals a code-to-person link
+- [x] A new participant can be registered by keyboard only (Playwright, `TEST_PRETEST`, deleted after)
+- [x] "Yes" or "Prefer not to answer" on Japanese study shows the notice (an unanswered question is also null, so it shows "not reported" too)
+- [x] Nothing reveals a code-to-person link (the code is the only text field)
 
 **Verify:** Playwright with `TEST_PRETEST`; against *V1.10 Pick*, *Register* and *States*.
 
