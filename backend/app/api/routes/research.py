@@ -218,6 +218,9 @@ async def data_quality(db: AsyncSession = Depends(get_db)) -> dict:
     """Data quality (V1.7): open projection errors, the verify checks over every session,
     and the sessions with no projection."""
     # Called per projected session: with NULL, some functions check only the latest one.
+    # shortcut: every check on every session on each request, about 2 s for 45 sessions and
+    # more than linear (verify_reproducibility compares seed pairs); cache the result or run
+    # one check on demand if the page gets slow after the pilot.
     checks = [{"name": name, "rows": [dict(r._mapping) for r in await db.execute(text(
         f'SELECT v.session_id, v."check", v.detail FROM v_session_overview o '
         f"CROSS JOIN LATERAL {name}_fn(o.session_id) v WHERE o.projection_status = 'PROJECTED' "
