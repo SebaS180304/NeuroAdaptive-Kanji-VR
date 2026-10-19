@@ -469,7 +469,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Deps:** 2.4. **Scope:** S
 
-### [ ] Task 2.7: Export CSV menu (V1.9)
+### [x] Task 2.7: Export CSV menu (V1.9, done 19 Oct)
 **Description:**
 - **Endpoint:** `GET .../export.csv?kind=trials|adaptations`. NULL is exported as an
   empty cell, never 0.
@@ -477,8 +477,9 @@ the scene during Play. Restart the backend only between runs, never with `--relo
   Adaptations is disabled for STATIC, with its reason.
 
 **Acceptance:**
-- [ ] Both files open, and their headers match the API fields
-- [ ] Menu by keyboard (Enter, arrows, Esc)
+- [x] Both files open, and their headers match the API fields (e2e on `a5748886`: each download's header equals the JSON fields and its row count the API's; pytest checks the headers against the Pydantic models, NULL as an empty cell, booleans `true`/`false`, JSON as JSON)
+- [x] Menu by keyboard (Enter, arrows, Esc): Enter, Space or the arrows open it, the arrows wrap, Home and End, Esc returns focus to the button; Tab or a click outside closes it
+- [x] Screen checks: screenshots light and dark, Adaptations disabled in a static session with "No adaptations in a static session", no clinical wording, 5-tell audit clean. The adaptations file keeps every decision, NO_CHANGE included. Decision confidence now reads as stored (0.8, not 0.800000011920929) in the API and the CSV
 
 **Verify:** pytest on the CSV; Playwright download.
 

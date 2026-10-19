@@ -158,3 +158,30 @@ test('the Plan tab shows where an aborted session stopped, and no gap in a compl
   await expect(page.getByRole('complementary', { name: 'Where the session stopped' }))
     .toContainText('Every planned trial was completed, in every block.')
 })
+
+// V1.9: both CSV files download from the keyboard menu, with the API's fields as headers.
+test('Export CSV downloads trials and adaptations with the API fields as headers', async ({ page, request }) => {
+  const sessions = await (await request.get('/api/research/sessions?condition=BEHAVIOR_ADAPTIVE&status=COMPLETED')).json()
+  test.skip(sessions.length === 0, 'no completed adaptive session')
+  const id = sessions[0].session_id
+  await page.goto(`/sessions/${id}`)
+  const button = page.getByRole('button', { name: 'Export CSV' })
+
+  for (const [kind, nth] of [['trials', 0], ['adaptations', 1]] as const) {
+    await button.focus()
+    await page.keyboard.press('Enter')
+    for (let i = 0; i < nth; i++) await page.keyboard.press('ArrowDown')
+    const [download] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')])
+    expect(download.suggestedFilename()).toBe(`session-${id.slice(0, 8)}-${kind}.csv`)
+    const text = await (await import('node:fs/promises')).readFile((await download.path())!, 'utf-8')
+    const header = text.split('\n')[0]!.split(',')
+    const api = await (await request.get(`/api/research/sessions/${id}/${kind}${kind === 'adaptations' ? '?include_no_change=true' : ''}`)).json()
+    expect(header).toEqual(Object.keys(api[0]))
+    expect(text.trim().split('\n').length - 1).toBe(api.length)
+  }
+  await button.focus()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('menu')).toHaveCount(0)
+  await expect(button).toBeFocused()
+})

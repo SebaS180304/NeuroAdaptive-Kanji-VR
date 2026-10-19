@@ -6,6 +6,7 @@ import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
 import { formatDate, formatDuration, formatPercent, formatTime } from '@/lib/format'
+import { ExportMenu } from './ExportMenu'
 import { Timeline } from './timeline/Timeline'
 import { SessionTables } from './trials/SessionTables'
 
@@ -82,6 +83,7 @@ function Facts({ s }: { s: Detail }) {
         <span className={`type-body inline-flex h-8 items-center rounded-(--radius-pill) px-4 font-medium ${CONDITION_PILL[s.condition]}`}>
           {CONDITION_LABEL[s.condition]}
         </span>
+        <ExportMenu sessionId={s.session_id} condition={s.condition} />
       </div>
     </aside>
   )
