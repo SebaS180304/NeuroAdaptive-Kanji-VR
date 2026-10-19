@@ -171,6 +171,20 @@ Sentence case everywhere. No all-caps labels.
   View tables) / 48 px (session list); header row 40 px.
 - Timeline: label column 184 px; Game Flow lane 40 px, other lanes 32 px; bars
   16 px tall (Game Flow 24 px), 8 px from the lane top.
+- Timeline marks beyond the three levels (Oct 19, drawn on the *Tokens* artboard):
+  - ESL Minimal and Baseline: `--color-state-neutral` fill with the level name.
+  - ESL Focus: `--color-surface` fill, 1 px inside border `--color-esl-high`,
+    label "Focus".
+  - LAL Off: no bar. A 1 px `--color-border-strong` line through the middle of
+    the bar slot, with "Off" in 12 px `--color-text-muted` at the start of each
+    run of at least 48 px. A gap with no data has no line.
+  - Trial not answered: 1 px solid `--color-border-strong` outline, no fill.
+    Not completed (the session ended): the same outline, dashed. Legend:
+    "Correct", "Incorrect", "Not answered", "Not completed (session ended)". If
+    the API cannot tell the two apart, the solid outline and one entry, "Not
+    answered or not completed".
+  - "Whole session" and "Only S7" are pressed while the view matches them;
+    neither is pressed after a free zoom or pan.
 - Target width: lab monitor ≥ 1440 px. Below 1056 px the 16-column spans
   collapse to full width in source order; tables and timeline scroll inside
   their own box.
