@@ -245,6 +245,51 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** 1.7. **Scope:** M
 
+### [ ] Task 1.9: Assembly segments for sets B and C (C1 of `Plan_Fase5a.md` §10)
+**Description:**
+- Today only set A (and the tutorial's 四) has real segments; every session with set B or
+  C assembles all five kanji from placeholder parts. The replan (risk 6) puts this before
+  the behavioural dry run at the end of October.
+- Cut the 10 kanji of B and C with `tools/assembly_segments.py`: centre lines per group
+  in `G`, following the "Assembly" column of `Tabla_Autoria_Kanji_Fase2.md` (山 門 女 手 雨,
+  人 足 牛 肉 花). Resolve ambiguous cases from the preview, as with 火 (two near-identical
+  symmetric pieces).
+- Add the segments to each kanji's asset in Unity, so `AssemblyPlan.For` uses them.
+- The group count must stay the contract's `assemblyGroups`: it is part of the set
+  balance band (12 ± 2), and the tool refuses a mismatch.
+
+**Acceptance:**
+- [ ] `tools/assembly_preview.png` reviewed by Sebas for the 10 kanji
+- [ ] Phase2TestHarness green; S5 logs "authored" for every kanji of B and C
+- [ ] One kanji of B and one of C assembled in the headset; each group can be grasped
+
+**Verify:** harness; Play with set B and set C; `assemblies.segment_count` and
+`segments_authored = true` in the DB.
+
+**Deps:** none (content). **Scope:** M
+
+### [ ] Task 1.10: Assembly segments for the reserve kanji that can be a first substitute
+**Description:**
+- The pre-test asks the reserve in rank order (`ranked_substitutes`). Only 10 of the 20
+  are the first choice for some original: 土 米 木 耳 口 貝 金 川 水 糸. 日 田 子 目 学 物 茶 are
+  only second or later choices, and 馬 魚 鳥 can replace none of the 15 (checked 19 Oct).
+- The substitution rule fixes how many groups each reserve kanji has (`assemblyGroups`,
+  hand-entered in `tools/kanji_metrics.py` and checked against the balance band), but
+  nothing defines which strokes form each group. Define them from the textbook stroke
+  order, as for the 15, and record them in the authoring table; then cut and add them as
+  in Task 1.9.
+- The rest of the reserve only if a real pre-test asks for it. Until then the placeholder
+  fallback stays, flagged by `segments_authored = false` and the S5 warning.
+
+**Acceptance:**
+- [ ] Groups of the 10 kanji written down and reviewed by Sebas
+- [ ] Preview reviewed; harness green; S5 logs "authored" for each of the 10
+- [ ] A participant with a substitution assembles the substitute from real segments
+
+**Verify:** harness; Play with a substituted participant (as in Task 1.8).
+
+**Deps:** 1.9 (same procedure). **Scope:** M
+
 ### Checkpoint B: the pre-test feeds the VR loop
 - [ ] A participant registered and pre-tested in the portal runs a Unity session with their effective set
 
