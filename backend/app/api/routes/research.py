@@ -14,7 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.research import ResearchParticipant, ResearchSession, ResearchSessionDetail
+from app.schemas.research import ResearchParticipant, ResearchSession, ResearchSessionDetail, SessionTimeline
 
 router = APIRouter(prefix="/research", tags=["research"])
 
@@ -131,3 +131,48 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     if row is None:
         raise HTTPException(status_code=404, detail="session not found")
     return dict(row._mapping)
+
+
+# Assistance has no interval table: LAL is set on each state entry and by each applied
+# LAL change, and holds until the next one (runs of the same level are merged).
+_TIMELINE = text("""
+WITH ev AS (
+    SELECT bool_or(e.event_type = 'STATE_ENTERED') AS states,
+           bool_or(e.event_type = 'ENVIRONMENT_APPLIED') AS env,
+           bool_or(e.event_type = 'TRIAL_STARTED') AS trials,
+           max(CASE WHEN jsonb_typeof(e.payload -> 'session_elapsed_ms') = 'number'
+                    THEN (e.payload ->> 'session_elapsed_ms')::numeric END)::int AS end_ms
+    FROM session_events e WHERE e.session_id = :session_id),
+lal AS (
+    SELECT ms, level, level IS DISTINCT FROM lag(level) OVER (ORDER BY ms, src) AS changed
+    FROM (SELECT x.entered_elapsed_ms AS ms, x.lal::text AS level, 0 AS src FROM session_states x
+           WHERE x.session_id = :session_id AND x.lal IS NOT NULL
+          UNION ALL
+          SELECT a.elapsed_ms, a.lal_after::text, 1 FROM adaptation_applications a
+           WHERE a.session_id = :session_id AND a.result = 'APPLIED' AND a.lal_after IS NOT NULL) c),
+lal_runs AS (
+    SELECT level, ms AS start_ms, lead(ms) OVER (ORDER BY ms) AS end_ms FROM lal WHERE changed)
+SELECT EXISTS (SELECT 1 FROM experiment_sessions WHERE id = :session_id) AS found,
+       ev.end_ms AS session_end_ms,
+       CASE WHEN ev.states THEN (SELECT COALESCE(json_agg(json_build_object(
+                'state', x.state, 'start_ms', x.entered_elapsed_ms, 'end_ms', x.exited_elapsed_ms)
+                ORDER BY x.visit_seq), '[]') FROM session_states x WHERE x.session_id = :session_id) END AS states,
+       CASE WHEN ev.env THEN (SELECT COALESCE(json_agg(json_build_object(
+                'level', v.esl, 'start_ms', v.elapsed_ms, 'end_ms', v.valid_to_ms)
+                ORDER BY v.elapsed_ms), '[]') FROM v_environment_intervals v WHERE v.session_id = :session_id) END AS environment,
+       CASE WHEN EXISTS (SELECT 1 FROM lal_runs) THEN (SELECT json_agg(json_build_object(
+                'level', r.level, 'start_ms', r.start_ms, 'end_ms', r.end_ms) ORDER BY r.start_ms) FROM lal_runs r) END AS assistance,
+       CASE WHEN ev.trials THEN (SELECT COALESCE(json_agg(json_build_object(
+                'trial_id', t.trial_id, 'block_state', t.block_state, 'start_ms', t.started_elapsed_ms,
+                'end_ms', t.completed_elapsed_ms, 'is_correct', t.is_correct)
+                ORDER BY t.started_elapsed_ms), '[]') FROM trials t WHERE t.session_id = :session_id) END AS trials
+FROM ev
+""")
+
+
+@router.get("/sessions/{session_id}/timeline", response_model=SessionTimeline)
+async def get_timeline(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    row = dict((await db.execute(_TIMELINE, {"session_id": session_id})).one()._mapping)
+    if not row.pop("found"):
+        raise HTTPException(status_code=404, detail="session not found")
+    return row

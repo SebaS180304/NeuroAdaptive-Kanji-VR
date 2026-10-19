@@ -8,6 +8,8 @@ them projected from the fixture with two answered S5 trials (one correct).
 GET /research/sessions (V1.1): one row per session, filters combined. A projected
 STATIC session and an adaptive one with no events at all.
 
+GET /research/sessions/{id}/timeline (V1.3): lanes 1-4 on the same two sessions.
+
 GET /research/sessions/{id} (V1.2): the summary, checked against trial_timeline()
 and v_adaptations on the STATIC fixture session and on the adaptive S7 of
 test_projection_adaptation.py.
@@ -192,6 +194,49 @@ async def test_session_summary_adaptive():
 @pytest.mark.asyncio
 async def test_session_summary_unknown_id(client):
     assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_timeline_lanes_adaptive():
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+
+    await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+    sid = await adaptive._new_session()
+    await adaptive._insert_and_project(sid, adaptive._events())
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            body = (await client.get(f"/research/sessions/{sid}/timeline")).json()
+        assert body["session_end_ms"] == 14600                                   # last event
+        assert body["states"] == [{"state": "S7_EXPERIMENTAL_RETRIEVAL", "start_ms": 0, "end_ms": None}]
+        assert body["environment"] is None                                       # no ENVIRONMENT_APPLIED
+        # LAL from the state entry, then the applied change MEDIUM -> HIGH.
+        assert body["assistance"] == [{"level": "MEDIUM", "start_ms": 0, "end_ms": 9600},
+                                      {"level": "HIGH", "start_ms": 9600, "end_ms": None}]
+        assert body["trials"] == [
+            {"trial_id": "S7-001", "block_state": "S7_EXPERIMENTAL_RETRIEVAL", "start_ms": 1000, "end_ms": 4500, "is_correct": True},
+            {"trial_id": "S7-002", "block_state": "S7_EXPERIMENTAL_RETRIEVAL", "start_ms": 6000, "end_ms": 9500, "is_correct": False},
+            {"trial_id": "S7-003", "block_state": "S7_EXPERIMENTAL_RETRIEVAL", "start_ms": 11000, "end_ms": 14500, "is_correct": True},
+        ]
+    finally:
+        await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+
+
+@pytest.mark.asyncio
+async def test_timeline_lanes_static(client):
+    pid = await _register(client, CODES[0])
+    sid = await _projected_session(pid)
+    body = (await client.get(f"/research/sessions/{sid}/timeline")).json()
+    env = await _exec("SELECT esl::text, elapsed_ms, valid_to_ms FROM v_environment_intervals "
+                      "WHERE session_id = :s ORDER BY elapsed_ms", s=sid)
+    assert [tuple(e.values()) for e in body["environment"]] == [tuple(r) for r in env]
+    assert len(body["trials"]) == await _scalar("SELECT count(*) FROM trials WHERE session_id = :s", s=sid)
+    assert len(body["states"]) == await _scalar("SELECT count(*) FROM session_states WHERE session_id = :s", s=sid)
+    empty = str(await _scalar("INSERT INTO experiment_sessions (participant_id, condition) VALUES (:p, 'STATIC') "
+                              "RETURNING id", p=pid))
+    body = (await client.get(f"/research/sessions/{empty}/timeline")).json()
+    assert body == {"session_end_ms": None, "states": None, "environment": None, "assistance": None, "trials": None}
+    assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/timeline")).status_code == 404
 
 
 def test_research_router_is_read_only():

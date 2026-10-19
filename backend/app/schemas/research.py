@@ -90,3 +90,36 @@ class ResearchSessionDetail(ResearchSession):
     head_away_ms: int | None
     # None when no decision was recorded (every STATIC session).
     adaptations: AdaptationSummary | None
+
+
+class TimelineState(BaseModel):
+    state: str
+    start_ms: int
+    end_ms: int | None          # None: the session stopped in this state
+
+
+class TimelineLevel(BaseModel):
+    level: str
+    start_ms: int
+    end_ms: int | None          # None: in force until the end of the session
+
+
+class TimelineTrial(BaseModel):
+    trial_id: str
+    block_state: str
+    start_ms: int
+    end_ms: int | None          # None: never completed
+    is_correct: bool | None     # None: not answered
+
+
+class SessionTimeline(BaseModel):
+    """Lanes of the Session View timeline (V1.3), in session_elapsed_ms.
+
+    A lane is None when its event type never appears in the session (not recorded),
+    and an empty list when it was recorded but has nothing to draw.
+    """
+    session_end_ms: int | None  # the last event; None with no events
+    states: list[TimelineState] | None
+    environment: list[TimelineLevel] | None
+    assistance: list[TimelineLevel] | None
+    trials: list[TimelineTrial] | None
