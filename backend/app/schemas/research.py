@@ -26,3 +26,22 @@ class ResearchParticipant(BaseModel):
     previous_japanese_experience: bool | None
     # Kanji kept with no substitute; None until the pre-test is complete.
     flagged_count: int | None
+
+
+class ResearchSession(BaseModel):
+    """One row of the session list (V1.1), from v_session_overview."""
+    session_id: uuid.UUID
+    participant_id: uuid.UUID
+    external_code: str
+    condition: Literal["STATIC", "BEHAVIOR_ADAPTIVE", "MULTIMODAL_ADAPTIVE"]
+    status: Literal["CREATED", "IN_PROGRESS", "COMPLETED", "ABORTED"]
+    visit_number: int
+    created_at: datetime
+    # NO_DATA: no events; NOT_PROJECTED: events but no session_states rows.
+    projection_status: Literal["NO_DATA", "NOT_PROJECTED", "PROJECTED"]
+    # None when the event type was never recorded in the session (0.3 criterion), not zero.
+    trial_count: int | None
+    decision_count: int | None
+    # Answered S5-S8 trials; None when none was answered.
+    accuracy: float | None
+    open_error_count: int
