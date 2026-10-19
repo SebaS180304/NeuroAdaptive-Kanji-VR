@@ -14,7 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.research import ResearchParticipant, ResearchSession, ResearchSessionDetail, SessionTimeline
+from app.schemas.research import ResearchParticipant, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionTimeline
 
 router = APIRouter(prefix="/research", tags=["research"])
 
@@ -213,3 +213,46 @@ async def get_timeline(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)
     if not row.pop("found"):
         raise HTTPException(status_code=404, detail="session not found")
     return row
+
+
+# trial_timeline() COALESCEs the head-away, peripheral and dwell columns to 0; here they are
+# NULL when their event type never appears in the session (data-contract.md, 0.3 criterion).
+_TRIALS = text("""
+WITH ev AS (
+    SELECT COALESCE(bool_or(e.event_type = 'HEAD_AWAY'), false) AS head_away,
+           COALESCE(bool_or(e.event_type = 'PERIPHERAL_EVENT'), false) AS peripherals,
+           COALESCE(bool_or(e.event_type = 'DISTRACTOR_INTERACTION'), false) AS distractors
+    FROM session_events e WHERE e.session_id = :session_id)
+SELECT t.trial_id, t.block_state::text, t.trial_sequence, t.trial_type::text, t.kanji_id, t.kanji_char,
+       t.is_primary_analysis, t.started_elapsed_ms, t.esl::text, t.lal::text, t.env_profile,
+       t.prop_count, t.mover_count, t.is_correct, t.response_time_ms, t.timed_out, t.hint_count,
+       t.cue_trigger, t.idle_ms,
+       CASE WHEN ev.head_away THEN t.head_away_count END AS head_away_count,
+       CASE WHEN ev.head_away THEN t.head_away_ms END AS head_away_ms,
+       CASE WHEN ev.peripherals THEN t.peripheral_event_count END AS peripheral_event_count,
+       CASE WHEN ev.distractors THEN t.distractor_dwell_ms END AS distractor_dwell_ms,
+       t.window_n, t.window_accuracy::float, t.window_rt_mean::float, t.window_rt_cv::float,
+       t.learner_state, d.cause, t.decision_confidence, t.decision_action, d.reason_code, d.explanation,
+       d.dimension, d.from_level::text, d.to_level::text, v.unity_result, v.skip_reason,
+       v.applied_before_trial_id, d.cooldown_until_trial,
+       (SELECT c.trial_id FROM trials c WHERE c.session_id = t.session_id AND c.block_state = t.block_state
+           AND c.trial_sequence = d.cooldown_until_trial) AS cooldown_until_trial_id,
+       d.outcome, d.estimator_version, d.rules_version, d.indicators, d.thresholds
+FROM trial_timeline(:session_id, :window_n) t
+CROSS JOIN ev
+LEFT JOIN adaptation_decisions d ON d.session_id = t.session_id AND d.trial_id = t.trial_id
+LEFT JOIN v_adaptations v ON v.session_id = d.session_id AND v.decision_id = d.decision_id
+ORDER BY t.started_elapsed_ms, t.trial_id
+""")
+
+
+@router.get("/sessions/{session_id}/trials", response_model=list[ResearchTrial])
+async def list_trials(
+    session_id: uuid.UUID,
+    window_n: int = Query(3, ge=3, le=5),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    if not (await db.execute(text("SELECT 1 FROM experiment_sessions WHERE id = :s"), {"s": session_id})).first():
+        raise HTTPException(status_code=404, detail="session not found")
+    rows = await db.execute(_TRIALS, {"session_id": session_id, "window_n": window_n})
+    return [dict(r._mapping) for r in rows]

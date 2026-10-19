@@ -171,3 +171,55 @@ class SessionTimeline(BaseModel):
     distractors: list[TimelineDistractor] | None
     head_away: list[TimelineHeadAway] | None
     adaptations: list[TimelineAdaptation] | None
+
+
+class ResearchTrial(BaseModel):
+    """One row of the Trials tab and its inspector (V1.4): trial_timeline() plus the decision."""
+    trial_id: str
+    block_state: str
+    trial_sequence: int | None
+    trial_type: str | None
+    kanji_id: str | None
+    kanji_char: str | None
+    is_primary_analysis: bool | None      # False: the S2 tutorial
+    started_elapsed_ms: int | None
+    esl: str | None
+    lal: str | None
+    env_profile: str | None
+    prop_count: int | None
+    mover_count: int | None
+    is_correct: bool | None
+    response_time_ms: int | None
+    timed_out: bool | None
+    hint_count: int | None
+    cue_trigger: str | None
+    idle_ms: int | None
+    # None when the event type was never recorded in the session (trial_timeline() says 0).
+    head_away_count: int | None
+    head_away_ms: int | None
+    peripheral_event_count: int | None
+    distractor_dwell_ms: int | None
+    window_n: int | None
+    window_accuracy: float | None
+    window_rt_mean: float | None
+    window_rt_cv: float | None
+    # The decision made after this trial (adaptive S7); None when there was none.
+    learner_state: str | None
+    cause: str | None
+    decision_confidence: float | None
+    decision_action: str | None
+    reason_code: str | None
+    explanation: str | None
+    dimension: str | None
+    from_level: str | None
+    to_level: str | None
+    unity_result: str | None
+    skip_reason: str | None
+    applied_before_trial_id: str | None
+    cooldown_until_trial: int | None
+    cooldown_until_trial_id: str | None   # None when that trial never ran
+    outcome: str | None
+    estimator_version: str | None
+    rules_version: str | None
+    indicators: dict | None
+    thresholds: dict | None

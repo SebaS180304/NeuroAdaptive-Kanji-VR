@@ -10,6 +10,9 @@ STATIC session and an adaptive one with no events at all.
 
 GET /research/sessions/{id}/timeline (V1.3): the eight lanes on the same two sessions.
 
+GET /research/sessions/{id}/trials (V1.4): trial_timeline() rows with the decision
+details of the inspector, on the adaptive S7.
+
 GET /research/sessions/{id} (V1.2): the summary, checked against trial_timeline()
 and v_adaptations on the STATIC fixture session and on the adaptive S7 of
 test_projection_adaptation.py.
@@ -254,6 +257,65 @@ async def test_timeline_lanes_static(client):
     assert body == {"session_end_ms": None, "states": None, "environment": None, "assistance": None, "trials": None,
                     "hints": None, "peripherals": None, "distractors": None, "head_away": None, "adaptations": None}
     assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/timeline")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_trials_rows_adaptive():
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+
+    await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+    sid = await adaptive._new_session()
+    await adaptive._insert_and_project(sid, adaptive._events())
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            rows = (await client.get(f"/research/sessions/{sid}/trials")).json()
+            assert (await client.get(f"/research/sessions/{sid}/trials", params={"window_n": 9})).status_code == 422
+            assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/trials")).status_code == 404
+        assert [r["trial_id"] for r in rows] == ["S7-001", "S7-002", "S7-003"]
+        tl = await adaptive._exec("SELECT trial_id, window_n, window_accuracy::float, response_time_ms, idle_ms, "
+                                  "distractor_dwell_ms FROM trial_timeline(:s, 3) ORDER BY started_elapsed_ms", s=sid)
+        assert [(r["trial_id"], r["window_n"], r["window_accuracy"], r["response_time_ms"], r["idle_ms"],
+                 r["distractor_dwell_ms"]) for r in rows] == [tuple(x) for x in tl]
+        # Not recorded in this session: NULL, not trial_timeline()'s COALESCE zero (data-contract.md).
+        assert {(r["head_away_ms"], r["head_away_count"], r["peripheral_event_count"]) for r in rows} == {(None, None, None)}
+        no_change, change, none = rows
+        assert (no_change["decision_action"], no_change["explanation"]) == ("NO_CHANGE", "Stable at the current levels.")
+        assert {k: change[k] for k in ["decision_action", "dimension", "from_level", "to_level", "unity_result",
+                                         "applied_before_trial_id", "cooldown_until_trial_id", "outcome", "indicators"]} == {
+            "decision_action": "CHANGE_ASSISTANCE", "dimension": "LAL", "from_level": "MEDIUM", "to_level": "HIGH",
+            "unity_result": "APPLIED", "applied_before_trial_id": "S7-003", "cooldown_until_trial_id": None,
+            "outcome": None, "indicators": {"n": 3},
+        }
+        assert change["cooldown_until_trial"] == 5                                # trial 5 never ran
+        assert none["decision_action"] is None and none["explanation"] is None
+        assert none["cue_trigger"] == "PROACTIVE"
+    finally:
+        await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+
+
+@pytest.mark.asyncio
+async def test_trials_window_changes_the_aggregates():
+    """Five S7 trials, every other one wrong: the window size shows in window_n and the accuracy."""
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+
+    await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+    sid = await adaptive._new_session()
+    events = [adaptive._ev("STATE_ENTERED", 0, transition_sound_lead_ms=None)]
+    for i in range(5):
+        events += adaptive._trial(f"S7-00{i + 1}", i + 1, 1000 + 5000 * i, correct=i % 2 == 0)
+    await adaptive._insert_and_project(sid, events)
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            got = {n: (await client.get(f"/research/sessions/{sid}/trials", params={"window_n": n})).json() for n in (3, 5)}
+        for n, rows in got.items():
+            expected = await adaptive._exec("SELECT window_n, window_accuracy::float FROM trial_timeline(:s, :n) "
+                                            "ORDER BY started_elapsed_ms", s=sid, n=n)
+            assert [(r["window_n"], r["window_accuracy"]) for r in rows] == [tuple(x) for x in expected]
+        assert [r["window_n"] for r in got[3]][-1] == 3 and [r["window_n"] for r in got[5]][-1] == 5
+    finally:
+        await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
 
 
 def test_research_router_is_read_only():
