@@ -1,4 +1,4 @@
-# PostgreSQL schema — Phase 1 + schema v1 (Phase 3)
+# PostgreSQL schema — Phase 1, schema v1 (Phase 3) and later migrations
 
 Entity-relationship diagrams of the foundational schema (migration 0001) and
 of schema v1 (migration 0002, F3.4, [below](#schema-v1--phase-3-migration-0002)).
@@ -246,3 +246,46 @@ after it), `learner_state`, `decision_confidence`, `decision_action`,
 per answered adaptive S7 trial, every APPLIED between its two trials, the D9
 window and the latency. `check_loop.sql` lists the latest adaptive session's
 decisions, applies, D9 cues and O4 outcomes, for a look after a headset run.
+
+## Kanji pre-test — migration 0004
+
+Added on 16 October 2026 (spec §13.2). Not a projection of `session_events`: the
+pre-test runs before any session, through `/participants/{id}/pretest`.
+
+```mermaid
+erDiagram
+    PARTICIPANTS ||--o{ KANJI_PRETEST_RESPONSES : "one per kanji asked"
+    PARTICIPANTS ||--o{ KANJI_SUBSTITUTIONS : "written once, at the end"
+    KANJI_ITEMS ||--o{ KANJI_PRETEST_RESPONSES : "kanji_id"
+    KANJI_ITEMS ||--o{ KANJI_SUBSTITUTIONS : "original / substitute"
+```
+
+| Table or column | What it holds | Key |
+|---|---|---|
+| `kanji_pretest_responses` | The self-report (`NO`, `UNSURE`, `YES`), the typed reading and meaning, the auto grade and the researcher's final grade, and the classification (`UNKNOWN`, `PARTIALLY_KNOWN`, `KNOWN`) | `(participant_id, kanji_id)`; unique `(participant_id, seq)` |
+| `kanji_substitutions` | Each `KNOWN` kanji of a set and the reserve kanji used instead. A NULL substitute means none was left: the kanji is kept and the participant is flagged | `(participant_id, original_kanji_id)`; unique `(participant_id, substitute_kanji_id)` |
+| `participants.pretest_completed_at` | Set in the same transaction as the substitutions. No session is created while it is NULL | — |
+
+The pre-test has no fixed length: a `KNOWN` kanji is followed by its ranked
+substitutes until one is not known (`app/pretest/rules.py`).
+
+## Abandoned sessions — migration 0005
+
+Added on 17 October 2026. `abort_stale_sessions(p_idle interval DEFAULT '30
+minutes')` sets an `IN_PROGRESS` session to `ABORTED` when its last
+`session_events` row (its `updated_at`, if it has no events) is older than
+`p_idle`, and returns how many sessions changed. The backend runs it at startup
+and every 5 minutes (`app/services/stale_sessions.py`). No table changes.
+
+## Research read side — migration 0006
+
+Added on 17 October 2026 for the read-only `/research` router. No table changes.
+
+| Object | What it returns |
+|---|---|
+| `v_session_overview` | One row per session: `projection_status` (`NO_DATA` with no events, `NOT_PROJECTED` with events but no `session_states` rows, `PROJECTED`), counts with their `*_recorded` flags, accuracy over answered S5–S8 trials and open errors |
+| `v_projection_errors` | `projection_errors` plus the `session_elapsed_ms` of the failed event (NULL when the payload has none) |
+| `verify_projection_fn`, `verify_adaptation_fn`, `verify_trials_fn`, `verify_assembly_fn`, `verify_reproducibility_fn` | One `(session_id, check, detail)` row per discrepancy. Each takes a session id. With NULL, each does what its `database/verify_*.sql` script does, and for some that is the latest session only, so V1.7 calls them once per projected session |
+
+The `verify_*.sql` scripts stay for `psql` use: a change to a check goes in both
+places.
