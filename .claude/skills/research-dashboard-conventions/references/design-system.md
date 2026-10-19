@@ -31,8 +31,8 @@ the URL. Status *Pending* = do not build the screen yet.
 | V1.2–V1.4 Session View, dark | *Session View, dark theme* | Validated | Oct 16 2026, 23:18 |
 | V1.5 Adaptations tab | *V1.5 Session View, Adaptations tab* and its dark artboard | Validated | Oct 17 2026, 00:08 |
 | V1.6 Plan and execution tab | *V1.6 Session View, Plan and execution tab* and its dark artboard | Validated | Oct 17 2026, 00:08 |
-| V1.7 Data quality | *V1.7 Data quality* | Validated | Oct 17 2026, 00:02 |
-| V1.8 Participant View | *V1.8 Participant View* (Tweaks: `pretestDone` shows the "Open the pre-test" state) | Validated | Oct 17 2026, 00:02 |
+| V1.7 Data quality | *V1.7 Data quality* (Tweaks: `noErrors`), dark variant | Validated; revised from real data and re-validated | Oct 17 2026, 00:02; Oct 19 2026, 23:54 |
+| V1.8 Participant View | *V1.8 Participant View* (Tweaks: `pretestDone` shows the "Open the pre-test" state), dark variant | Validated; revised from real data and re-validated | Oct 17 2026, 00:02; Oct 19 2026, 23:54 |
 | V1.10 Kanji pre-test | *V1.10 …* row (pick, register, one kanji, complete, states) and its dark row; summary without substitutions (Sebas, Oct 16, 23:57) | Validated | Oct 17 2026, 00:02 |
 | V1.11 Participant list (needs a scope entry from the dev chat) | *V1.11 Participant list (proposed)* and its dark artboard | Validated | Oct 17 2026, 00:20 |
 
@@ -171,41 +171,58 @@ Sentence case everywhere. No all-caps labels.
   View tables) / 48 px (session list); header row 40 px.
 - Timeline: label column 184 px; Game Flow lane 40 px, other lanes 32 px; bars
   16 px tall (Game Flow 24 px), 8 px from the lane top.
-- Timeline marks beyond the three levels (Oct 19, drawn on the *Tokens* artboard):
-  - ESL Minimal and Baseline: `--color-state-neutral` fill with the level name.
-  - ESL Focus: `--color-surface` fill, 1 px inside border `--color-esl-high`,
-    label "Focus".
-  - LAL Off: no bar. A 1 px `--color-border-strong` line through the middle of
-    the bar slot, with "Off" in 12 px `--color-text-muted` at the start of each
-    run of at least 48 px. A gap with no data has no line.
-  - Trial not answered: 1 px solid `--color-border-strong` outline, no fill.
-    Not completed (the session ended): the same outline, dashed. Legend:
-    "Correct", "Incorrect", "Not answered", "Not completed (session ended)". If
-    the API cannot tell the two apart, the solid outline and one entry, "Not
-    answered or not completed".
-  - "Whole session" and "Only S7" are pressed while the view matches them;
-    neither is pressed after a free zoom or pan.
-- Lanes 5–8 marks (Oct 19, drawn on the *Tokens* artboard):
-  - Hints: a requested hint is an 8 px filled `--color-lal-high` dot; a
-    proactive cue is the same dot as a 2 px `--color-lal-high` ring.
-  - Peripherals: event ticks 2 × 8 px `--color-peripheral` in the upper half
-    of the slot; orienting ticks 2 × 8 px `--color-distractor` in the lower
-    half; dwell bars 4 px `--color-distractor` at the bottom.
-  - Head-away with no return: dashed `--color-headaway` outline, no fill, up to
-    the session end; tooltip "No return recorded before the session ended".
-  - Decision with no answer from Unity: the 2 px outlined diamond, dashed, and
-    no link line; tooltip "No answer from Unity recorded".
-  - Decision → Unity's answer: a 1 px `--color-accent` line ending in a
-    2 × 12 px accent tick at the answer.
-  - Outcome badge: 6 px at the diamond's upper right, in the shapes of the
-    outcome chips (positive filled circle, neutral outlined circle, negative
-    filled square, uncertain outlined square), with a 1 px `--color-surface`
-    ring around it. Not recorded: no badge; the tooltip says "Outcome: not
-    recorded".
-  - Legend: every mark, in the caption, grouped by lane in lane order and
-    wrapping as needed. Tooltips repeat it; they do not replace it.
-  - Lane labels: label 14 / 16 px over hint 12 / 16 px, so both fit a 32 px
-    lane. Lanes stay 32 px (the artboards were corrected).
+- Timeline marks beyond the three levels (decided Oct 19 2026, from real data;
+  drawn on the Tokens artboard). No new tokens; every mark has its name on it
+  or in the legend, never color alone:
+  - **ESL MINIMAL (S3) and BASELINE (S4)**: protocol states, not experimental
+    levels. Fill `--color-state-neutral`, name on the bar ("Minimal",
+    "Baseline") in `--color-text`. The dev chat's treatment is confirmed.
+  - **ESL FOCUS (S8)**: the same ESL mechanism at zero props and zero peripheral
+    events (spec §7.9), so it stays on the Lagoon scale, below low. Fill
+    `--color-surface`, 1 px inside border `--color-esl-high`, name "Focus".
+  - **LAL OFF**: no assistance, not a level. No bar: a 1 px `--color-border-strong`
+    line through the middle of the bar slot, with "Off" in 12 px
+    `--color-text-muted` at the start of each run at least 48 px wide.
+    This keeps OFF (recorded, no assistance) distinct from a gap (nothing
+    recorded), which has no line.
+  - **Trial not answered**: 1 px solid `--color-border-strong` outline, no fill.
+  - **Trial not completed (session ended)**: 1 px dashed `--color-border-strong`
+    outline, no fill. Dashed means incomplete across the dashboard.
+  - Trial legend, in this order: "Correct", "Incorrect", "Not answered",
+    "Not completed (session ended)". If the API can't tell the last two apart,
+    draw the solid outline and use one entry, "Not answered or not completed".
+- Lanes 5–8 marks (decided Oct 19 2026, drawn on the Tokens artboard). They
+  follow the outcome-chip shape language; every one is in the legend:
+  - **Hints**: requested hint, 8 px dot filled `--color-lal-high`; proactive cue,
+    the same dot as a 2 px `--color-lal-high` ring, no fill.
+  - **Peripherals**: event tick 2×8 px `--color-peripheral` in the upper half of
+    the slot; orienting tick 2×8 px `--color-distractor` in the lower half; dwell
+    bar 4 px tall at the bottom. Position separates them, not only color.
+  - **Head-away with no return before the session ended**: 1 px dashed
+    `--color-headaway` outline, no fill, running to the session end. Tooltip:
+    "No return recorded before the session ended".
+  - **Decision Unity never answered**: the skipped diamond with a 2 px dashed
+    border. Tooltip: "No answer from Unity recorded".
+  - **Decision → Unity's answer**: 1 px `--color-accent` line from the diamond to
+    the applied or skipped time, ending in a 2×12 px `--color-accent` tick. No
+    line when there is no answer.
+  - **Outcome badge**: 6 px, at the diamond's upper right with a 1 px
+    `--color-surface` ring so it separates from the diamond. Positive: filled
+    circle `--color-outcome-positive`. Neutral: circle outlined
+    `--color-text-muted`. Negative: filled square `--color-outcome-negative`.
+    Uncertain: square outlined `--color-text-muted` (the chip's hatch is
+    unreadable at 6 px). Not recorded: no badge, and the tooltip says
+    "Outcome: not recorded" (the row in V1.5 shows the dashed chip).
+  - **Legend**: lists every mark, not only the levels and trials. It sits in the
+    `caption`, grouped by lane in lane order and wrapping to as many lines as it
+    needs; tooltips repeat it but don't replace it, because tooltips don't show
+    in screenshots or exports.
+  - **Lane labels**: lanes stay 32 px. Label 14/16 px, hint 12/16 px, no gap,
+    vertically centered (the artboards were corrected to this on Oct 19).
+- Range buttons "Whole session" / "Only S7": the button whose range matches the
+  current view takes the accent-tint pressed style and `aria-pressed="true"`.
+  After a free zoom or pan, neither is pressed; that is intended. Pressing one
+  again restores its range.
 - Target width: lab monitor ≥ 1440 px. Below 1056 px the 16-column spans
   collapse to full width in source order; tables and timeline scroll inside
   their own box.
@@ -258,34 +275,43 @@ No blur, no glass, no glow.
 
 ## Trials tab and inspector (V1.4): cases from real data
 
-Decided Oct 19 by the design chat.
+Decided Oct 19 2026, after the dev chat built V1.4 against session a5748886.
 
-- **NO_CHANGE decision**: the box is titled "Why the system made no change"
-  and shows the explanation, "Estimated state" (with confidence) and
-  "Change: None"; no In Unity, Cooldown until or Outcome rows. It is quieter
-  than the change box: `--color-surface-raised` fill with a 1 px
-  `--color-border` outline, no `--color-explain-bg`.
-- **No decision**: "No decision recorded after this trial." In a static
-  session: "Static session: the system makes no decisions." Nothing selected:
-  "Select a trial in the table or the timeline to see its details." The
-  inspector keeps its width in every case.
-- **Tutorial tag** (S2 rows, when shown): a 12 / 16 px pill with
-  `--color-state-neutral` fill and `--color-text-secondary` text. No dashed
-  outline: dashed means incomplete or unknown.
-- **Hints column**: the count, then the timeline's 8 px `--color-lal-high`
-  ring for a proactive cue, with a visually hidden "proactive cue".
-- **Indicators and thresholds**: stacked (reason code and versions, then
-  Indicators, then Thresholds). Keys in mono, nested keys dotted, and keys may
-  break after a dot. Arrays and objects go as JSON on their own line under the
-  key, left-aligned.
-- **Trial id column**: sticky when the table scrolls sideways.
-- **Answer column**: the legend words. "Correct", "Incorrect", "Not answered"
-  (a timeout is "Not answered" with the tooltip "Timed out"), "Not completed
-  (session ended)".
-- Confirmed as built: key-value lists with labels at natural width and values
-  right-aligned and wrapping; kanji at 20 px Noto Serif JP; the estimated-state
-  dot; the selected row; "Selected trial" in the timeline legend; "Window
-  accuracy (n trials)".
+- **NO_CHANGE decision**: box titled "Why the system made no change", with the
+  explanation, "Estimated state" (with confidence) and "Change: None". No In
+  Unity, Cooldown until or Outcome rows. Because most S7 trials end this way, it
+  is quieter than the change box: `--color-surface-raised` fill with a 1 px
+  `--color-border` outline, no `--color-explain-bg`. The tinted box stays for
+  real changes, so they stand out when stepping through trials.
+- **Trial with no decision**: one `body` line in `--color-text-muted` where the
+  box would be: "No decision recorded after this trial." In a static session:
+  "Static session: the system makes no decisions."
+- **Nothing selected**: the inspector keeps its width and shows, at its top,
+  "Select a trial in the table or the timeline to see its details." in
+  `--color-text-muted`. The table doesn't reflow when a trial is selected.
+- **Tutorial tag (S2 rows)**: 12/16 px pill, `--color-state-neutral` fill,
+  `--color-text-secondary` text, no border. Not dashed: dashed means
+  incomplete or unknown across the dashboard.
+- **Hints column**: the requested-hint count, then, when the trial started with
+  the proactive cue, the timeline's 8 px `--color-lal-high` ring after it with
+  the accessible name "proactive cue" (visually hidden text). The column
+  header's tooltip and the timeline legend explain the ring.
+- **Answer column**: the same words as the timeline legend: "Correct",
+  "Incorrect", "Not answered", "Not completed (session ended)". A timeout is a
+  "Not answered" whose tooltip says "Timed out".
+- **Indicators and thresholds in the inspector**: stacked, as built. A caption
+  line with the reason code, estimator and rules versions (mono), then
+  "Indicators" and "Thresholds" as `caption` headings over key-value lists.
+  Keys in mono, nested keys dotted (`rules.cooldown_trials`), allowed to break
+  after a dot. Scalar values right-aligned; arrays and objects shown as JSON in
+  mono on their own line under the key, left-aligned. The button reads "Hide
+  indicators and thresholds" when open.
+- **Key-value lists**: labels take their natural width, values take the rest,
+  right-aligned and wrapping; trial ids never break (confirmed).
+- **Table width**: the 12 columns may scroll sideways inside the 1–11 panel at
+  1440 px, but the trial id column is sticky on the left so the row can always
+  be identified and selected.
+- **Kanji in the table**: 20 px Noto Serif JP (`kanji-inline`), confirmed.
 
 ## Session View tabs V1.5 and V1.6
 
@@ -319,6 +345,87 @@ Validated by Sebas on Oct 17 2026, 00:08.
   - The side note "Where the session stopped" has a 2 px top rule. It gives one
     sentence naming the last completed trial, a `<dl>` with the last state,
     status and kanji set, and a caption.
+
+## V1.7 and V1.8: cases from real data
+
+Decided Oct 19 2026 (23:45 questions), from the Oct 19 data. Validated by
+Sebas on Oct 19 2026, 23:54, on the redrawn artboards (canvas version 27):
+*V1.7 Data quality* (Tweak `noErrors` shows the empty state) and *V1.8
+Participant View*, both with dark variants.
+
+### V1.8 Participant View
+
+- **Trend x-axis**: session order by start time, not `visit_number`. Ticks are the
+  session numbers from the table, with the date in the tooltip, plus the visit
+  number when it is above 1.
+  - Only COMPLETED sessions are drawn (decided by Sebas, Oct 19): filled
+    points joined by a 1 px line in `--color-border-strong`. ABORTED, CREATED
+    and IN_PROGRESS sessions stay out of the chart; the table lists them and
+    the facts count them. The ticks use the session's number in the table
+    ("1, 2, 4, 5, 6" when session 3 was aborted), evenly spaced; axis title
+    "Completed sessions, numbered as in the table".
+  - With more than 12 sessions the chart keeps its width: ticks every 5, points
+    6 px, no point labels. Only test participants such as DEV_UNITY reach that.
+- **Point shape by condition** (shape + color, never color alone):
+  - Static: square, `--color-condition-static`.
+  - Behavior-adaptive: circle, `--color-condition-behavior`.
+  - Multimodal-adaptive: triangle, `--color-condition-multimodal`.
+  - Unknown: × cross, `--color-text-muted`.
+  - No diamonds: the diamond belongs to timeline decisions. The latest session
+    keeps its condition's shape and gets a "Latest" text label beside it.
+  - The legend lists only the conditions present, then the caption
+    "Completed sessions only; aborted ones are listed in the table below."
+- **Y axes**: accuracy from 0 to 100 %, gridlines at 0, 25, 50, 75 and 100.
+  Response time in ms from 0, top at the next round value above the largest
+  mean (500 ms steps), 4 or 5 gridlines.
+- **Sessions fact**: "[n] completed, [n] aborted", then ", [n] in progress"
+  (IN_PROGRESS) and ", [n] not started" (CREATED), each only when above 0.
+- **Head-away column**: episode count, then the total time in
+  `--color-text-muted`: "3 (12.4 s)". "—" when not recorded, never 0.
+- **Lead sentence**, by case:
+  - All sessions after the pre-test, nothing replaced: "Every session used the
+    kanji set confirmed by the pre-test. No kanji needed replacing."
+  - All after, with replacements: "Every session used the kanji set confirmed
+    by the pre-test, with [n] kanji replaced."
+  - Some sessions before the pre-test: "[n] of [n] sessions were recorded
+    before the pre-test and used the default set. Later sessions used the
+    confirmed set."
+  - Pre-test not started: "The pre-test hasn't been started. Sessions use the
+    default kanji set until it is completed." with the "Open the pre-test"
+    action.
+  - Pre-test in progress: "The pre-test is in progress ([n] of [n] kanji
+    answered). Sessions use the default set until it is completed."
+  - No sessions yet: "No sessions recorded yet." (appended to whichever
+    pre-test sentence applies).
+- **Notes in the facts**: the same notes and component as V1.11 (warn icon +
+  text), plus "[n] sessions recorded before the pre-test" when that applies.
+
+### V1.7 Data quality
+
+- **Lead sentence**: no fixed date. "[n] of [n] projected sessions have no open
+  errors and pass every check. [n] sessions are not projected; they are listed
+  at the end."
+- **Sessions not projected**: a fourth section, last on the page, "Sessions
+  not projected": a table with session (mono link), participant, recorded,
+  status in words ("Not projected", "No events recorded" for NO_DATA) and the
+  reason when the API has one ("—" otherwise). Same table style as "Errors to
+  resolve". When there are none, the section is one muted line: "Every
+  recorded session is projected."
+- **Open errors by code**: always the 5 known codes, in a fixed order; a code
+  with no open errors shows an empty track and "0". A code outside the five is
+  appended at the end. Under the bars, always: "[n] resolved by
+  re-projection so far" in `caption`.
+- **Empty state**: with no open errors the bars stay (all at 0) and "Errors to
+  resolve" replaces its table with one line: "No errors to resolve. [n]
+  resolved by re-projection so far."
+- **Many open errors**: paged, 50 rows a page, with "Showing 1–50 of [n]" and
+  previous / next under the table. The code filter applies before paging.
+- **Needs review**: the check row expands, as in V1.5, using
+  `--color-explain-bg`. The expanded row lists the affected sessions (mono
+  link to the Session View) with the discrepancy detail for each, 10 at a
+  time with "Show all [n]".
+- **Check names**: the function name without its suffix, in mono:
+  `verify_trials`, not `verify_trials_fn` or a file name.
 
 ## Participant list (V1.11) and navigation
 
