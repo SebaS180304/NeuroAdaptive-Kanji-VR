@@ -13,13 +13,18 @@ const DATA: Timeline = {
   ],
   environment: [
     { level: 'LOW', start_ms: 0, end_ms: 100_000 },
-    { level: 'BASELINE', start_ms: 100_000, end_ms: null },
+    { level: 'FOCUS', start_ms: 100_000, end_ms: 200_000 },
+    { level: 'BASELINE', start_ms: 200_000, end_ms: null },
   ],
-  assistance: [],
+  assistance: [
+    { level: 'OFF', start_ms: 0, end_ms: 100_000 },
+    { level: 'MEDIUM', start_ms: 100_000, end_ms: null },
+  ],
   trials: [
     { trial_id: 'S7-001', block_state: 'S7_EXPERIMENTAL_RETRIEVAL', start_ms: 110_000, end_ms: 115_000, is_correct: true },
     { trial_id: 'S7-002', block_state: 'S7_EXPERIMENTAL_RETRIEVAL', start_ms: 120_000, end_ms: 125_000, is_correct: false },
-    { trial_id: 'S7-003', block_state: 'S7_EXPERIMENTAL_RETRIEVAL', start_ms: 130_000, end_ms: null, is_correct: null },
+    { trial_id: 'S7-003', block_state: 'S7_EXPERIMENTAL_RETRIEVAL', start_ms: 130_000, end_ms: 135_000, is_correct: null },
+    { trial_id: 'S7-004', block_state: 'S7_EXPERIMENTAL_RETRIEVAL', start_ms: 140_000, end_ms: null, is_correct: null },
   ],
 }
 
@@ -34,24 +39,40 @@ describe('timeline lanes', () => {
   it('draws an open interval up to the last event', () => {
     const [states, env] = buildLanes(DATA)
     expect(states!.bars!.at(-1)).toMatchObject({ start: 300_000, end: 400_000, label: 'S9' })
-    expect(env!.bars!.at(-1)).toMatchObject({ start: 100_000, end: 400_000, label: 'Baseline' })
+    expect(env!.bars!.at(-1)).toMatchObject({ start: 200_000, end: 400_000, label: 'Baseline' })
   })
 
-  it('S7 stands out; levels use their tokens, and levels with no token the neutral fill', () => {
+  it('S7 stands out; levels use their tokens, Minimal and Baseline the neutral fill', () => {
     const [states, env] = buildLanes(DATA)
     expect(states!.bars!.map((b) => b.fill)).toEqual(['--color-state-neutral', '--color-text', '--color-state-neutral'])
-    expect(env!.bars!.map((b) => b.fill)).toEqual(['--color-esl-low', '--color-state-neutral'])
+    expect(env!.bars!.map((b) => b.fill)).toEqual(['--color-esl-low', '--color-surface', '--color-state-neutral'])
   })
 
-  it('tells correct, incorrect and unfinished trials apart by more than colour', () => {
+  it('ESL Focus is the surface with an esl-high inside border (design-system.md, Oct 19)', () => {
+    const focus = buildLanes(DATA)[1]!.bars![1]!
+    expect(focus).toMatchObject({ mark: 'bar', fill: '--color-surface', stroke: '--color-esl-high', label: 'Focus' })
+  })
+
+  it('LAL Off is a line through the slot, not a bar (design-system.md, Oct 19)', () => {
+    const [off, medium] = buildLanes(DATA)[2]!.bars!
+    expect(off).toMatchObject({ mark: 'line', stroke: '--color-border-strong', label: 'Off', labelColor: '--color-text-muted' })
+    expect(medium).toMatchObject({ mark: 'bar', fill: '--color-lal-medium' })
+  })
+
+  it('tells correct, incorrect, not answered and not completed trials apart by more than colour', () => {
     const trials = buildLanes(DATA)[3]!.bars!
-    expect(trials.map((b) => b.pattern)).toEqual(['solid', 'hatch', 'outline'])
-    expect(trials[2]).toMatchObject({ end: 400_000 })
+    expect(trials.map((b) => [b.mark, b.fill, b.stroke, b.dashed ?? false])).toEqual([
+      ['bar', '--color-trial-correct', undefined, false],
+      ['hatch', '--color-alert', undefined, false],
+      ['bar', null, '--color-border-strong', false],                // not answered
+      ['bar', null, '--color-border-strong', true],                 // not completed: the session ended
+    ])
+    expect(trials[3]).toMatchObject({ end: 400_000 })
     expect(trials[1]!.tip).toBe('S7-002, incorrect, 02:00.000 to 02:05.000')
   })
 
   it('says whether an empty lane was recorded or not', () => {
-    const lanes = buildLanes({ ...DATA, environment: null })
+    const lanes = buildLanes({ ...DATA, environment: null, assistance: [] })
     expect(lanes[1]!.bars).toBeNull()
     expect(lanes[1]!.note).toBe('Not recorded in this session')
     expect(lanes[2]!.bars).toEqual([])

@@ -94,9 +94,10 @@ function Lanes({ data }: { data: Timeline }) {
       </div>
 
       <div className="type-caption flex flex-wrap gap-6 text-(--color-text-muted)">
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 bg-(--color-trial-correct)" />Correct trial</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4" style={{ background: 'var(--hatch-trial-incorrect)' }} />Incorrect trial</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 border border-(--color-border-strong)" />Not answered or not completed</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 bg-(--color-trial-correct)" />Correct</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4" style={{ background: 'var(--hatch-trial-incorrect)' }} />Incorrect</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 border border-(--color-border-strong)" />Not answered</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 border border-dashed border-(--color-border-strong)" />Not completed (session ended)</span>
       </div>
     </>
   )

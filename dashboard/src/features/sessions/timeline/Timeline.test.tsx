@@ -45,6 +45,8 @@ describe('timeline (V1.3, lanes 1-4)', () => {
       .toEqual(['Game Flow', 'Environment', 'Assistance', 'Trials'])
     expect(t).toHaveTextContent('Not recorded in this session')     // environment
     expect(t).toHaveTextContent('Nothing in this session')          // assistance
+    expect(within(t).getAllByText(/^(Correct|Incorrect|Not answered|Not completed \(session ended\))$/).map((e) => e.textContent))
+      .toEqual(['Correct', 'Incorrect', 'Not answered', 'Not completed (session ended)'])
   })
 
   it('switches between the whole session and S7 from the keyboard', async () => {

@@ -81,18 +81,36 @@ function option(lanes: Lane[], end: number, w: [number, number], color: (n: stri
           { x: cs.x, y: cs.y, width: cs.width, height },
         )
         if (!rect) return null
-        const fill = bar.pattern === 'hatch' ? pattern : bar.pattern === 'outline' ? 'transparent' : color(bar.fill)
-        const stroke = bar.pattern === 'outline' ? color(bar.fill) : undefined
-        const children: object[] = [{ type: 'rect', shape: { ...rect, r: 1 }, style: { fill, stroke, lineWidth: 1 } }]
-        if (bar.label && rect.width > 8 * bar.label.length + 12)
+        const mid = rect.y + rect.height / 2
+        const text = (label: string, x: number, style: object) => ({
+          type: 'text',
+          style: { text: label, x, y: mid, verticalAlign: 'middle', fill: color(bar.labelColor ?? '--color-text'), ...style },
+        })
+        const children: object[] = []
+        if (bar.mark === 'line') {
+          // LAL Off: a line through the slot, its name at the start of a run of 48 px or more.
+          children.push({ type: 'line', shape: { x1: rect.x, y1: mid, x2: rect.x + rect.width, y2: mid }, style: { stroke: color(bar.stroke!), lineWidth: 1 } })
+          if (bar.label && rect.width >= 48)
+            children.push(text(bar.label, rect.x, {
+              align: 'left', font: '12px "Public Sans"', backgroundColor: color('--color-surface'), padding: [0, 4, 0, 0],
+            }))
+        } else {
+          const inset = bar.stroke ? 0.5 : 0      // a 1 px border drawn inside the bar
           children.push({
-            type: 'text',
+            type: 'rect',
+            shape: { x: rect.x + inset, y: rect.y + inset, width: Math.max(rect.width - 2 * inset, 1), height: rect.height - 2 * inset, r: 1 },
             style: {
-              text: bar.label, x: rect.x + (lane.key === 'states' ? rect.width / 2 : 8), y: rect.y + rect.height / 2,
-              align: lane.key === 'states' ? 'center' : 'left', verticalAlign: 'middle',
-              fill: color(bar.labelColor ?? '--color-text'), font: `${lane.key === 'states' ? 12 : 11}px "JetBrains Mono"`,
+              fill: bar.mark === 'hatch' ? pattern : bar.fill ? color(bar.fill) : 'transparent',
+              stroke: bar.stroke ? color(bar.stroke) : undefined,
+              lineWidth: 1,
+              lineDash: bar.dashed ? [3, 2] : undefined,
             },
           })
+          if (bar.label && rect.width > 8 * bar.label.length + 12)
+            children.push(text(bar.label, rect.x + (lane.key === 'states' ? rect.width / 2 : 8), {
+              align: lane.key === 'states' ? 'center' : 'left', font: `${lane.key === 'states' ? 12 : 11}px "JetBrains Mono"`,
+            }))
+        }
         return { type: 'group', children }
       },
     }],
