@@ -195,6 +195,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}/trials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Trials */
+        get: operations["list_trials_research_sessions__session_id__trials_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -577,6 +594,104 @@ export interface components {
             head_away_ms: number | null;
             adaptations: components["schemas"]["AdaptationSummary"] | null;
         };
+        /**
+         * ResearchTrial
+         * @description One row of the Trials tab and its inspector (V1.4): trial_timeline() plus the decision.
+         */
+        ResearchTrial: {
+            /** Trial Id */
+            trial_id: string;
+            /** Block State */
+            block_state: string;
+            /** Trial Sequence */
+            trial_sequence: number | null;
+            /** Trial Type */
+            trial_type: string | null;
+            /** Kanji Id */
+            kanji_id: string | null;
+            /** Kanji Char */
+            kanji_char: string | null;
+            /** Is Primary Analysis */
+            is_primary_analysis: boolean | null;
+            /** Started Elapsed Ms */
+            started_elapsed_ms: number | null;
+            /** Esl */
+            esl: string | null;
+            /** Lal */
+            lal: string | null;
+            /** Env Profile */
+            env_profile: string | null;
+            /** Prop Count */
+            prop_count: number | null;
+            /** Mover Count */
+            mover_count: number | null;
+            /** Is Correct */
+            is_correct: boolean | null;
+            /** Response Time Ms */
+            response_time_ms: number | null;
+            /** Timed Out */
+            timed_out: boolean | null;
+            /** Hint Count */
+            hint_count: number | null;
+            /** Cue Trigger */
+            cue_trigger: string | null;
+            /** Idle Ms */
+            idle_ms: number | null;
+            /** Head Away Count */
+            head_away_count: number | null;
+            /** Head Away Ms */
+            head_away_ms: number | null;
+            /** Peripheral Event Count */
+            peripheral_event_count: number | null;
+            /** Distractor Dwell Ms */
+            distractor_dwell_ms: number | null;
+            /** Window N */
+            window_n: number | null;
+            /** Window Accuracy */
+            window_accuracy: number | null;
+            /** Window Rt Mean */
+            window_rt_mean: number | null;
+            /** Window Rt Cv */
+            window_rt_cv: number | null;
+            /** Learner State */
+            learner_state: string | null;
+            /** Cause */
+            cause: string | null;
+            /** Decision Confidence */
+            decision_confidence: number | null;
+            /** Decision Action */
+            decision_action: string | null;
+            /** Reason Code */
+            reason_code: string | null;
+            /** Explanation */
+            explanation: string | null;
+            /** Dimension */
+            dimension: string | null;
+            /** From Level */
+            from_level: string | null;
+            /** To Level */
+            to_level: string | null;
+            /** Unity Result */
+            unity_result: string | null;
+            /** Skip Reason */
+            skip_reason: string | null;
+            /** Applied Before Trial Id */
+            applied_before_trial_id: string | null;
+            /** Cooldown Until Trial */
+            cooldown_until_trial: number | null;
+            /** Cooldown Until Trial Id */
+            cooldown_until_trial_id: string | null;
+            /** Outcome */
+            outcome: string | null;
+            /** Estimator Version */
+            estimator_version: string | null;
+            /** Rules Version */
+            rules_version: string | null;
+            /** Indicators */
+            indicators: Record<string, unknown> | null;
+            /** Thresholds */
+            thresholds: Record<string, unknown> | null;
+        };
         /** SessionCreate */
         SessionCreate: {
             /**
@@ -604,7 +719,7 @@ export interface components {
              * Config
              * @default {}
              */
-            config: Record<string, never>;
+            config: Record<string, unknown>;
         };
         /** SessionRead */
         SessionRead: {
@@ -838,7 +953,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": Record<string, unknown>;
                 };
             };
         };
@@ -858,7 +973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": Record<string, unknown>;
                 };
             };
         };
@@ -1152,6 +1267,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionTimeline"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_trials_research_sessions__session_id__trials_get: {
+        parameters: {
+            query?: {
+                window_n?: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchTrial"][];
                 };
             };
             /** @description Validation Error */

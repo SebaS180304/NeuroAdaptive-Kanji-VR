@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { getJson, type Schemas } from '@/api/client'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
-import { buildLanes, clock, s7Window } from './lanes'
+import { buildLanes, clock, clockMs, s7Window } from './lanes'
 import { AXIS_HEIGHT, PLOT_INSET, TimelineChart } from './TimelineChart'
 
 // V1.3 Timeline, artboard *Session View*: lanes 1-4 (Game Flow, environment,
@@ -16,7 +16,9 @@ const pill = (on = false) =>
     ? 'border-(--color-accent) bg-(--color-accent-tint) font-medium text-(--color-on-accent-tint)'
     : 'border-(--color-border-strong) bg-(--color-surface) text-(--color-text)'}`
 
-export function Timeline({ sessionId, condition }: { sessionId: string; condition: string }) {
+type Selection = { selected: string | null; onSelect: (trialId: string) => void }
+
+export function Timeline({ sessionId, condition, selected, onSelect }: { sessionId: string; condition: string } & Selection) {
   const { data, error, isPending, refetch } = useQuery({
     queryKey: ['research', 'sessions', sessionId, 'timeline'],
     queryFn: () => getJson<Timeline>(`/research/sessions/${sessionId}/timeline`),
@@ -28,16 +30,28 @@ export function Timeline({ sessionId, condition }: { sessionId: string; conditio
     >
       {isPending && <LoadingNotice title="Loading the timeline…" />}
       {error && <OfflineNotice onRetry={() => void refetch()} />}
-      {data && <Lanes data={data} condition={condition} />}
+      {data && <Lanes data={data} condition={condition} selected={selected} onSelect={onSelect} />}
     </section>
   )
 }
 
-function Lanes({ data, condition }: { data: Timeline; condition: string }) {
+function Lanes({ data, condition, selected, onSelect }: { data: Timeline; condition: string } & Selection) {
   const lanes = useMemo(() => buildLanes(data, condition), [data, condition])
   const end = data.session_end_ms ?? 0
   const s7 = s7Window(data)
   const [w, setW] = useState<[number, number]>([0, end])
+  const picked = data.trials?.find((t) => t.trial_id === selected) ?? null
+
+  // A trial selected in the table and out of view: keep the span, centre it on the trial.
+  const [shown, setShown] = useState<string | null>(null)
+  if (picked && picked.trial_id !== shown) {
+    setShown(picked.trial_id)
+    if (picked.start_ms < w[0] || picked.start_ms > w[1]) {
+      const span = w[1] - w[0]
+      const from = Math.min(Math.max(picked.start_ms - span / 2, 0), end - span)
+      setW([from, from + span])
+    }
+  }
   const same = (a: [number, number], b: [number, number] | null) => !!b && Math.abs(a[0] - b[0]) < 1 && Math.abs(a[1] - b[1]) < 1
 
   // Halve or double the shown span around its middle, within the session.
@@ -72,7 +86,10 @@ function Lanes({ data, condition }: { data: Timeline; condition: string }) {
         </div>
       </div>
 
-      <p className="sr-only" aria-live="polite">Showing {clock(w[0])} to {clock(w[1])} of the session.</p>
+      <p className="sr-only" aria-live="polite">
+        Showing {clock(w[0])} to {clock(w[1])} of the session.
+        {picked && ` Selected trial ${picked.trial_id} at ${clockMs(picked.start_ms)}.`}
+      </p>
 
       <div className="grid grid-cols-[184px_minmax(0,1fr)]">
         <div>
@@ -90,7 +107,7 @@ function Lanes({ data, condition }: { data: Timeline; condition: string }) {
               {l.note}
             </div>
           ))}
-          {end > 0 && <TimelineChart lanes={lanes} end={end} window={w} onWindow={setW} />}
+          {end > 0 && <TimelineChart lanes={lanes} end={end} window={w} onWindow={setW} cursor={picked?.start_ms ?? null} onPick={onSelect} />}
         </div>
       </div>
 
@@ -116,6 +133,7 @@ const LEGEND: [string, [string, string, object?][]][] = [
     ['Correct', 'h-2 w-4 bg-(--color-trial-correct)'], ['Incorrect', 'h-2 w-4', HATCH],
     ['Not answered', 'h-2 w-4 border border-(--color-border-strong)'],
     ['Not completed (session ended)', 'h-2 w-4 border border-dashed border-(--color-border-strong)'],
+    ['Selected trial', 'h-4 w-0.5 bg-(--color-text)'],
   ]],
   ['Hints', [['Hint requested', 'size-2 rounded-full bg-(--color-lal-high)'], ['Proactive cue', 'size-2 rounded-full border-2 border-(--color-lal-high)']]],
   ['Peripherals', [

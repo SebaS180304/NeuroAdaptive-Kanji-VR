@@ -28,6 +28,8 @@ export type Mark = {
   label?: string
   labelColor?: string
   tip: string
+  /** The trial a click on this mark selects. */
+  ref?: string
 }
 
 export type Lane = {
@@ -140,7 +142,7 @@ function adaptationMarks(t: Timeline): Mark[] | null {
     if (a.unity_result !== null && a.result_ms !== null)
       links.push({ start: a.decided_ms, end: a.result_ms, mark: 'link', fill: null, stroke: '--color-accent', tip })
     diamonds.push({
-      ...point(a.decided_ms), mark: 'diamond', tip,
+      ...point(a.decided_ms), mark: 'diamond', tip, ref: a.trial_id,
       ...(a.unity_result === 'APPLIED' ? { fill: '--color-accent' }
         : { fill: null, stroke: '--color-accent', ...(a.unity_result === null ? { dashed: true } : {}) }),
     })
@@ -170,7 +172,7 @@ export function buildLanes(t: Timeline, condition?: string): Lane[] {
           : tr.is_correct ? (['bar', 'correct'] as const) : (['hatch', 'incorrect'] as const)
     const unfinished = tr.end_ms === null || tr.is_correct === null
     return {
-      start: tr.start_ms, end: to, mark,
+      start: tr.start_ms, end: to, mark, ref: tr.trial_id,
       fill: unfinished ? null : mark === 'hatch' ? '--color-alert' : '--color-trial-correct',
       ...(unfinished ? { stroke: '--color-border-strong' } : {}),
       ...(tr.end_ms === null ? { dashed: true } : {}),

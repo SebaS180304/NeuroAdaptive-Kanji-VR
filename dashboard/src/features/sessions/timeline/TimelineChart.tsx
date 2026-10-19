@@ -16,6 +16,9 @@ type Props = {
   end: number
   window: [number, number]
   onWindow: (w: [number, number]) => void
+  /** Start of the selected trial: the 2 px cursor across every lane. */
+  cursor: number | null
+  onPick: (trialId: string) => void
 }
 
 /** A token's value in the current theme (the canvas cannot read CSS variables). */
@@ -42,7 +45,7 @@ function hatch(color: (n: string) => string): { image: HTMLCanvasElement; repeat
   return { image: c, repeat: 'repeat' }
 }
 
-function option(lanes: Lane[], end: number, w: [number, number], color: (n: string) => string): echarts.EChartsCoreOption {
+function option(lanes: Lane[], end: number, w: [number, number], cursor: number | null, color: (n: string) => string): echarts.EChartsCoreOption {
   // Each lane's top edge, in px from the top of the plot.
   const tops = lanes.map((_, i) => lanes.slice(0, i).reduce((h, l) => h + l.height, 0))
   const height = tops.at(-1)! + lanes.at(-1)!.height
@@ -69,6 +72,7 @@ function option(lanes: Lane[], end: number, w: [number, number], color: (n: stri
     dataZoom: [{ type: 'inside', xAxisIndex: 0, filterMode: 'weakFilter', startValue: w[0], endValue: w[1], minValueSpan: 5000 }],
     series: [{
       type: 'custom',
+      cursor: 'pointer',
       data,
       encode: { x: [2, 3] },
       clip: true,
@@ -157,15 +161,29 @@ function option(lanes: Lane[], end: number, w: [number, number], color: (n: stri
         }
         return { type: 'group', children }
       },
+    }, {
+      // design-system.md "Timeline": the selected trial, a 2 px --color-text cursor.
+      type: 'custom',
+      silent: true,
+      data: cursor === null ? [] : [[cursor]],
+      encode: { x: 0 },
+      renderItem: (params: { coordSys: { y: number } }, api: { value: (i: number) => number; coord: (v: number[]) => number[] }) => ({
+        type: 'rect',
+        shape: { x: api.coord([api.value(0), 0])[0]! - 1, y: params.coordSys.y, width: 2, height },
+        style: { fill: color('--color-text') },
+      }),
     }],
   }
 }
 
-export function TimelineChart({ lanes, end, window: w, onWindow }: Props) {
+export function TimelineChart({ lanes, end, window: w, onWindow, cursor, onPick }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const chart = useRef<echarts.ECharts | null>(null)
+  const lanesRef = useRef(lanes)
+  useEffect(() => { lanesRef.current = lanes }, [lanes])
   const report = useRef(onWindow)
-  useEffect(() => { report.current = onWindow }, [onWindow])
+  const pick = useRef(onPick)
+  useEffect(() => { report.current = onWindow; pick.current = onPick }, [onWindow, onPick])
 
   useEffect(() => {
     const c = echarts.init(el.current!)
@@ -174,6 +192,12 @@ export function TimelineChart({ lanes, end, window: w, onWindow }: Props) {
       const dz = (c.getOption().dataZoom as { startValue: number; endValue: number }[])[0]!
       report.current([dz.startValue, dz.endValue])
     })
+    // A click on a trial bar or a decision diamond selects its trial.
+    c.on('click', (p) => {
+      const [li, mi] = p.value as number[]
+      const ref = lanesRef.current[li!]?.marks?.[mi!]?.ref
+      if (p.seriesIndex === 0 && ref) pick.current(ref)
+    })
     const resize = new ResizeObserver(() => c.resize())
     resize.observe(el.current!)
     return () => { resize.disconnect(); c.dispose() }
@@ -181,12 +205,12 @@ export function TimelineChart({ lanes, end, window: w, onWindow }: Props) {
 
   // Redrawn on a theme change, so the canvas follows the tokens.
   useEffect(() => {
-    const draw = () => chart.current!.setOption(option(lanes, end, w, tokenReader(el.current!)), { replaceMerge: ['series'] })
+    const draw = () => chart.current!.setOption(option(lanes, end, w, cursor, tokenReader(el.current!)), { replaceMerge: ['series'] })
     draw()
     const media = matchMedia('(prefers-color-scheme: dark)')
     media.addEventListener('change', draw)
     return () => media.removeEventListener('change', draw)
-  }, [lanes, end, w])
+  }, [lanes, end, w, cursor])
 
   return <div ref={el} aria-hidden="true" className="absolute inset-0" />
 }

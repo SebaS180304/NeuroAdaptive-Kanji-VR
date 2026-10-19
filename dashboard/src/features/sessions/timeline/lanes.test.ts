@@ -142,6 +142,13 @@ describe('timeline lanes', () => {
     expect(marks.find((m) => m.mark === 'badge')).toMatchObject({ fill: '--color-outcome-negative', shape: 'square' })
   })
 
+  it('trial bars and decision diamonds name their trial, so a click can select it', () => {
+    const lanes = buildLanes(DATA)
+    expect(lanes[3]!.marks!.map((m) => m.ref)).toEqual(['S7-001', 'S7-002', 'S7-003', 'S7-004'])
+    expect(lanes[7]!.marks!.filter((m) => m.mark === 'diamond').map((m) => m.ref)).toEqual(['S7-006', 'S7-011', 'S7-015'])
+    expect(lanes[7]!.marks!.filter((m) => m.mark !== 'diamond').every((m) => m.ref === undefined)).toBe(true)
+  })
+
   it('a static session has no adaptations lane data, and says why', () => {
     const lane = buildLanes({ ...DATA, adaptations: null }, 'STATIC')[7]!
     expect(lane.marks).toBeNull()

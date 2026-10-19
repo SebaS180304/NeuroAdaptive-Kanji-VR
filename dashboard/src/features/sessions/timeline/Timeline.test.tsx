@@ -55,7 +55,7 @@ describe('timeline (V1.3)', () => {
     ])
     const group = (lane: string) => within(legend).getByRole('heading', { name: lane }).closest('li')!
     expect(within(group('Trials')).getAllByRole('listitem').map((e) => e.textContent))
-      .toEqual(['Correct', 'Incorrect', 'Not answered', 'Not completed (session ended)'])
+      .toEqual(['Correct', 'Incorrect', 'Not answered', 'Not completed (session ended)', 'Selected trial'])
     expect(within(group('Hints')).getAllByRole('listitem').map((e) => e.textContent)).toEqual(['Hint requested', 'Proactive cue'])
     expect(within(group('Adaptations')).getAllByRole('listitem').map((e) => e.textContent)).toEqual([
       'Change applied', 'Change skipped by Unity', 'No answer from Unity', 'Cooldown',

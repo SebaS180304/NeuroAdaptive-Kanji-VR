@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ApiError, getJson, type Schemas } from '@/api/client'
 import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
-import { ReservedSlot } from '@/components/reserved/ReservedSlot'
 import { formatDate, formatDuration, formatPercent, formatTime } from '@/lib/format'
 import { Timeline } from './timeline/Timeline'
+import { SessionTables } from './trials/SessionTables'
 
 // V1.2 Session View header and summary, artboard *Session View* (light and dark).
 
@@ -277,6 +277,8 @@ export function SessionView() {
     queryKey: ['research', 'sessions', sessionId],
     queryFn: () => getJson<Detail>(`/research/sessions/${sessionId}`),
   })
+  // The selected trial, shared by the timeline, the Trials table and the inspector.
+  const [selected, setSelected] = useState<string | null>(null)
   const notFound = error instanceof ApiError && (error.status === 404 || error.status === 422)
 
   return (
@@ -302,8 +304,8 @@ export function SessionView() {
         <>
           <TimeSection s={data} />
           <AdaptationsSection s={data} />
-          <Timeline sessionId={data.session_id} condition={data.condition} />
-          <ReservedSlot thing="Session tables" className="col-span-16" />
+          <Timeline sessionId={data.session_id} condition={data.condition} selected={selected} onSelect={setSelected} />
+          <SessionTables sessionId={data.session_id} condition={data.condition} selected={selected} onSelect={setSelected} />
         </>
       )}
     </>

@@ -412,7 +412,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 - [x] Lanes 1–4 (19 Oct): `GET .../timeline` with states, environment (`v_environment_intervals`), assistance (built from state entries plus applied LAL changes; no table holds it) and trials. One ECharts instance (canvas, custom series), zoom and pan, "Whole session / Only S7", `mm:ss` ticks, `mm:ss.SSS` tooltips. The real session `a5748886` draws in under 1 s with no long task over 200 ms (e2e). Levels beyond the three, and trials not answered or not completed, follow the design decision of 19 Oct (`design-system.md`, Layout and spacing)
 - [x] Lanes 5–8 (19 Oct): hints, peripherals with dwell and orienting, head-away, adaptations (decisions that changed something; NO_CHANGE stays in the V1.5 table). `cooldown_until_trial` becomes the start of that trial, or the block's last trial end. Marks, tooltips and the grouped legend follow the design decision of 19 Oct (`design-system.md`, "Lanes 5–8 marks"). Lane label set to 16 px leading so label and hint fit a 32 px lane
 
-### [ ] Task 2.4: Trials table and inspector (V1.4)
+### [x] Task 2.4: Trials table and inspector (V1.4, done 19 Oct)
 **Description:**
 - **Endpoint:** `GET /research/sessions/{id}/trials?window_n=`.
 - **Screen:** a table with the mockup's 12 columns, "Hide tutorial (S2)" and window
@@ -420,9 +420,10 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 - Selection is synced with the timeline in both directions.
 
 **Acceptance:**
-- [ ] Clicking a trial in the timeline selects its row, and vice versa
-- [ ] S2 is marked and can be filtered
-- [ ] The window parameter changes the aggregates
+- [x] Clicking a trial in the timeline selects its row, and vice versa (e2e on `a5748886`: a row by keyboard draws the cursor and is announced; a click on a trial bar selects its row and fills the inspector; a decision diamond selects its trial too; a trial out of view recentres the timeline)
+- [x] S2 is marked ("Tutorial") and can be filtered ("Hide tutorial (S2)", on by default as in the artboard)
+- [x] The window parameter changes the aggregates (3, 4 or 5 trials; pytest against `trial_timeline()` on a five-trial S7; the inspector's window accuracy follows)
+- [x] Screen checks: screenshots light and dark, keyboard (rows, tabs with arrows, window, indicators toggle), NULL as `—` with its reason (head-away, peripheral and dwell are null when their event type was never recorded, not `trial_timeline()`'s 0), no clinical wording, 5-tell audit clean. The Adaptations and Plan tabs are reserved slots until 2.5 and 2.6. Indicators and thresholds list nested values under dotted keys, as stored. `gen:api` now passes `--empty-objects-unknown`, so free-form JSON is `unknown`, not `never`
 
 **Verify:** pytest; Playwright against *Session View* (Trials tab).
 
