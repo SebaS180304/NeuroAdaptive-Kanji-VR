@@ -256,6 +256,37 @@ No blur, no glass, no glow.
 | Reserved slot | custom | Sentence in `caption`: "[Thing]: available in a later version." |
 | Filters | `input`, `select` | 40 px, radius 4 px, label above in `caption` |
 
+## Trials tab and inspector (V1.4): cases from real data
+
+Decided Oct 19 by the design chat.
+
+- **NO_CHANGE decision**: the box is titled "Why the system made no change"
+  and shows the explanation, "Estimated state" (with confidence) and
+  "Change: None"; no In Unity, Cooldown until or Outcome rows. It is quieter
+  than the change box: `--color-surface-raised` fill with a 1 px
+  `--color-border` outline, no `--color-explain-bg`.
+- **No decision**: "No decision recorded after this trial." In a static
+  session: "Static session: the system makes no decisions." Nothing selected:
+  "Select a trial in the table or the timeline to see its details." The
+  inspector keeps its width in every case.
+- **Tutorial tag** (S2 rows, when shown): a 12 / 16 px pill with
+  `--color-state-neutral` fill and `--color-text-secondary` text. No dashed
+  outline: dashed means incomplete or unknown.
+- **Hints column**: the count, then the timeline's 8 px `--color-lal-high`
+  ring for a proactive cue, with a visually hidden "proactive cue".
+- **Indicators and thresholds**: stacked (reason code and versions, then
+  Indicators, then Thresholds). Keys in mono, nested keys dotted, and keys may
+  break after a dot. Arrays and objects go as JSON on their own line under the
+  key, left-aligned.
+- **Trial id column**: sticky when the table scrolls sideways.
+- **Answer column**: the legend words. "Correct", "Incorrect", "Not answered"
+  (a timeout is "Not answered" with the tooltip "Timed out"), "Not completed
+  (session ended)".
+- Confirmed as built: key-value lists with labels at natural width and values
+  right-aligned and wrapping; kanji at 20 px Noto Serif JP; the estimated-state
+  dot; the selected row; "Selected trial" in the timeline legend; "Window
+  accuracy (n trials)".
+
 ## Session View tabs V1.5 and V1.6
 
 Validated by Sebas on Oct 17 2026, 00:08.
