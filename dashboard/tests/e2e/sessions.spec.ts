@@ -105,3 +105,30 @@ test('selecting a trial in the table or the timeline selects it in the other', a
   await expect(table.getByRole('button', { name: longest.trial_id })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('complementary', { name: 'Selected trial' })).toContainText(`Trial ${longest.trial_id}`)
 })
+
+// V1.5: every decision of the real session is listed, and a row expands by keyboard.
+test('the Adaptations tab lists every decision and expands a row by keyboard', async ({ page, request }) => {
+  const sessions = await (await request.get('/api/research/sessions?condition=BEHAVIOR_ADAPTIVE&status=COMPLETED')).json()
+  test.skip(sessions.length === 0, 'no completed adaptive session')
+  const id = sessions[0].session_id
+  const every = await (await request.get(`/api/research/sessions/${id}/adaptations?include_no_change=true`)).json()
+  const detail = await (await request.get(`/api/research/sessions/${id}`)).json()
+  expect(every.length).toBe(detail.decision_count)                     // the API lists every decision row
+
+  await page.goto(`/sessions/${id}`)
+  const tab = page.getByRole('tab', { name: 'Adaptations' })
+  await tab.focus()
+  await page.keyboard.press('Enter')
+  const table = page.getByRole('table', { name: 'Adaptations', exact: true })
+  await table.waitFor()
+  const changes = every.filter((a: { action: string }) => a.action !== 'NO_CHANGE').length
+  await expect(table.getByRole('rowheader')).toHaveCount(changes)
+  await page.getByLabel('Show decisions with no change').check()
+  await expect(table.getByRole('rowheader')).toHaveCount(every.length)
+
+  const first = table.getByRole('button', { name: /^Show indicators for / }).first()
+  await first.focus()
+  await page.keyboard.press('Enter')
+  await expect(first).toHaveAttribute('aria-expanded', 'true')
+  await expect(table.getByRole('region', { name: /^Decision after S7-\d{3}$/ })).toContainText('Reason code')
+})

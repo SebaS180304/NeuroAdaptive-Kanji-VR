@@ -429,7 +429,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Deps:** 2.3. **Scope:** M
 
-### [ ] Task 2.5: Adaptations tab (V1.5)
+### [x] Task 2.5: Adaptations tab (V1.5, done 19 Oct)
 **Description:**
 - **Endpoint:** `GET .../adaptations?include_no_change=`, which is `v_adaptations` joined
   with `adaptation_decisions` for the cooldown, the versions, the indicators and the
@@ -441,8 +441,9 @@ the scene during Play. Restart the backend only between runs, never with `--relo
   - the key-value lists exactly as stored.
 
 **Acceptance:**
-- [ ] Every decision of the real session is listed
-- [ ] An outcome not yet recorded shows "Not recorded"
+- [x] Every decision of the real session is listed (`a5748886`: 20 decisions, 2 changes, as in `adaptation_decisions`; e2e counts the rows against the API with "Show decisions with no change" on and off)
+- [x] An outcome not yet recorded shows "Not recorded" (dashed chip; a NO_CHANGE row has no outcome and shows "—" with its reason)
+- [x] Screen checks: screenshots light and dark, keyboard (tab, checkbox, expand), NULL as `—` with its reason, no clinical wording, 5-tell audit clean. Full width with no inspector, as in the artboard. The expanded row reuses the V1.4 key-value rules for indicators and thresholds. A TIMEOUT skip with no decision id is not a decision and is not listed
 
 **Verify:** pytest; Playwright against *V1.5*.
 

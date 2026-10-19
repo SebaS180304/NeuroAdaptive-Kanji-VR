@@ -212,6 +212,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}/adaptations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Adaptations */
+        get: operations["list_adaptations_research_sessions__session_id__adaptations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -435,6 +452,58 @@ export interface components {
             substitutions: components["schemas"]["Substitution"][];
             /** Flagged */
             flagged: components["schemas"]["Flagged"][];
+        };
+        /**
+         * ResearchAdaptation
+         * @description One decision of the Adaptations tab (V1.5): v_adaptations plus adaptation_decisions.
+         */
+        ResearchAdaptation: {
+            /** Decision Id */
+            decision_id: string;
+            /** Trial Id */
+            trial_id: string;
+            /** Decided Elapsed Ms */
+            decided_elapsed_ms: number;
+            /** Learner State */
+            learner_state: string;
+            /** Cause */
+            cause: string | null;
+            /** Confidence */
+            confidence: number;
+            /** Action */
+            action: string;
+            /** Dimension */
+            dimension: string | null;
+            /** From Level */
+            from_level: string | null;
+            /** To Level */
+            to_level: string | null;
+            /** Proactive Cues */
+            proactive_cues: boolean;
+            /** Reason Code */
+            reason_code: string;
+            /** Explanation */
+            explanation: string;
+            /** Unity Result */
+            unity_result: string | null;
+            /** Skip Reason */
+            skip_reason: string | null;
+            /** Applied Before Trial Id */
+            applied_before_trial_id: string | null;
+            /** Cooldown Until Trial */
+            cooldown_until_trial: number | null;
+            /** Cooldown Until Trial Id */
+            cooldown_until_trial_id: string | null;
+            /** Outcome */
+            outcome: string | null;
+            /** Estimator Version */
+            estimator_version: string | null;
+            /** Rules Version */
+            rules_version: string | null;
+            /** Indicators */
+            indicators: Record<string, unknown> | null;
+            /** Thresholds */
+            thresholds: Record<string, unknown> | null;
         };
         /**
          * ResearchParticipant
@@ -1302,6 +1371,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchTrial"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_adaptations_research_sessions__session_id__adaptations_get: {
+        parameters: {
+            query?: {
+                include_no_change?: boolean;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchAdaptation"][];
                 };
             };
             /** @description Validation Error */

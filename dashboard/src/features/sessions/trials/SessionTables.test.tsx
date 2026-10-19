@@ -171,16 +171,16 @@ describe('Trials tab and inspector (V1.4)', () => {
     expect(await within(screen.getByRole('complementary', { name: 'Selected trial' })).findByText('80.0 %')).toBeInTheDocument()
   })
 
-  it('the other tabs are reserved until their tasks, and tabs move with the arrow keys', async () => {
+  it('the Plan tab is reserved until its task, and tabs move with the arrow keys', async () => {
     const user = userEvent.setup()
     show()
     const trialsTab = await screen.findByRole('tab', { name: 'Trials' })
     expect(trialsTab).toHaveAttribute('aria-selected', 'true')
     trialsTab.focus()
-    await user.keyboard('{ArrowRight}')
-    const adaptations = screen.getByRole('tab', { name: 'Adaptations' })
-    expect(adaptations).toHaveAttribute('aria-selected', 'true')
-    expect(adaptations).toHaveFocus()
+    await user.keyboard('{ArrowLeft}')                                 // wraps to the last tab
+    const plan = screen.getByRole('tab', { name: 'Plan and execution' })
+    expect(plan).toHaveAttribute('aria-selected', 'true')
+    expect(plan).toHaveFocus()
     expect(screen.getByRole('tabpanel')).toHaveTextContent('available in a later version')
   })
 })

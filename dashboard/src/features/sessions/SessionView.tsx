@@ -34,7 +34,9 @@ function lead(s: Detail): string {
     `${CONDITION_LABEL[s.condition]} session, visit ${s.visit_number}${s.kanji_set ? `, kanji set ${s.kanji_set}` : ''}.`,
     s.trial_count === null
       ? 'No trials recorded.'
-      : `${s.trial_count} trials from ${code(s.first_block!)} to ${code(s.last_block!)}.`,
+      : s.first_block && s.last_block
+        ? `${s.trial_count} trials from ${code(s.first_block)} to ${code(s.last_block)}.`
+        : `${s.trial_count} trials.`,
   ]
   const a = s.adaptations
   if (a)

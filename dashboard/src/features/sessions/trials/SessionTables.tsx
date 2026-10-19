@@ -6,7 +6,9 @@ import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { ReservedSlot } from '@/components/reserved/ReservedSlot'
 import { formatPercent } from '@/lib/format'
 import { clockMs } from '../timeline/lanes'
-import { flatten } from './flatten'
+import { AdaptationsTab } from './AdaptationsTab'
+import { EstimatedState } from './EstimatedState'
+import { KeyValues } from './KeyValues'
 
 // V1.4 Trials tab and inspector, artboard *Session View*: tables 1-11, inspector 12-16.
 
@@ -20,9 +22,6 @@ const TYPE_LABEL: Record<string, string> = {
 const ACTION_LABEL: Record<string, string> = {
   NO_CHANGE: 'No change', CHANGE_ENVIRONMENT: 'Change environment', CHANGE_ASSISTANCE: 'Change assistance',
 }
-const STATE_DOT: Record<string, string> = {
-  STABLE: 'bg-(--color-state-stable)', DISENGAGED: 'bg-(--color-state-disengaged)', OVERLOADED: 'bg-(--color-state-overloaded)',
-}
 const title = (v: string) => v[0] + v.slice(1).toLowerCase().replace(/_/g, ' ')
 
 function answer(t: Trial): ReactNode {
@@ -32,15 +31,6 @@ function answer(t: Trial): ReactNode {
   return t.is_correct ? 'Correct' : 'Incorrect'
 }
 
-function EstimatedState({ t, reason }: { t: Trial; reason: string }) {
-  if (!t.learner_state) return <Missing reason={reason} />
-  return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span aria-hidden="true" className={`size-2.5 rounded-full ${STATE_DOT[t.learner_state] ?? 'bg-(--color-text-muted)'}`} />
-      {title(t.learner_state)}
-    </span>
-  )
-}
 
 const COLUMNS: [string, 'left' | 'right'][] = [
   ['Trial', 'left'], ['Type', 'left'], ['Kanji', 'left'], ['ESL', 'left'], ['LAL', 'left'], ['RT (ms)', 'right'],
@@ -53,6 +43,7 @@ type Props = { sessionId: string; condition: string; selected: string | null; on
 export function SessionTables({ sessionId, condition, selected, onSelect }: Props) {
   const [tab, setTab] = useState<(typeof TABS)[number]>('Trials')
   const [hideTutorial, setHideTutorial] = useState(true)
+  const [showNoChange, setShowNoChange] = useState(false)
   const [windowN, setWindowN] = useState(3)
   const tabs = useRef<(HTMLButtonElement | null)[]>([])
   const { data, error, isPending, refetch } = useQuery({
@@ -77,7 +68,7 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
     <>
       <section
         aria-label="Session tables"
-        className="col-span-16 flex min-w-0 flex-col rounded-(--radius-panel) border bg-(--color-surface) min-[1056px]:col-span-11"
+        className={`col-span-16 flex min-w-0 flex-col rounded-(--radius-panel) border bg-(--color-surface) ${tab === 'Trials' ? 'min-[1056px]:col-span-11' : 'min-[1056px]:col-span-16'}`}
       >
         <div className="type-body flex flex-wrap items-center gap-2 border-b px-6">
           <div role="tablist" aria-label="Session tables" className="flex gap-2">
@@ -100,6 +91,12 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
             ))}
           </div>
           <div className="flex-1" />
+          {tab === 'Adaptations' && (
+            <label className="flex items-center gap-2 text-(--color-text-secondary)">
+              <input type="checkbox" checked={showNoChange} onChange={(e) => setShowNoChange(e.target.checked)} className="accent-(--color-accent)" />
+              Show decisions with no change
+            </label>
+          )}
           {tab === 'Trials' && (
             <>
               <label className="flex items-center gap-2 text-(--color-text-secondary)">
@@ -121,7 +118,9 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
         </div>
 
         <div role="tabpanel" id="session-tabpanel" aria-labelledby={`tab-${TABS.indexOf(tab)}`} className="min-w-0">
-          {tab !== 'Trials' ? (
+          {tab === 'Adaptations' ? (
+            <AdaptationsTab sessionId={sessionId} condition={condition} showNoChange={showNoChange} />
+          ) : tab !== 'Trials' ? (
             <ReservedSlot thing={`${tab} tab`} className="m-6" />
           ) : (
             <>
@@ -183,7 +182,7 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
                                 </>
                               )}
                             </td>
-                            <td className="px-4"><EstimatedState t={t} reason={noDecision} /></td>
+                            <td className="px-4"><EstimatedState state={t.learner_state} reason={noDecision} /></td>
                             <td className="px-4 whitespace-nowrap">
                               {t.decision_action ? ACTION_LABEL[t.decision_action] ?? t.decision_action : <Missing reason={noDecision} />}
                             </td>
@@ -199,7 +198,8 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
           )}
         </div>
       </section>
-      <Inspector t={current} windowN={windowN} noDecision={noDecision} />
+      {/* The Adaptations tab spans all 16 columns, with no inspector (design-system.md V1.5). */}
+      {tab === 'Trials' && <Inspector t={current} windowN={windowN} noDecision={noDecision} />}
     </>
   )
 }
@@ -220,27 +220,6 @@ function Group({ title: heading, items }: { title: string; items: Record<string,
   )
 }
 
-function KeyValues({ heading, values }: { heading: string; values: Record<string, unknown> | null }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <h4 className="type-caption m-0 font-medium text-(--color-text-secondary)">{heading}</h4>
-      {values ? (
-        <dl className="type-body m-0 grid grid-cols-[fit-content(60%)_minmax(0,1fr)] gap-x-4 gap-y-1">
-          {flatten(values).map(([k, v, block]) => (
-            <div key={k} className="contents">
-              <dt className={`type-mono text-(--color-text-muted) ${block ? 'col-span-2' : ''}`}>
-                {k.split('.').map((part, i) => <span key={i}>{i > 0 && <>.<wbr /></>}{part}</span>)}
-              </dt>
-              <dd className={`type-mono m-0 break-all ${block ? 'col-span-2 text-left' : 'text-right'}`}>{v}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : (
-        <Missing reason="Not recorded for this decision" />
-      )}
-    </div>
-  )
-}
 
 function Inspector({ t, windowN, noDecision }: { t: Trial | null; windowN: number; noDecision: string }) {
   const [details, setDetails] = useState(false)
