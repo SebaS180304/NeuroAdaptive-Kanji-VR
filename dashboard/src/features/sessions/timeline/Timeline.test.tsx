@@ -5,7 +5,7 @@ import type { Schemas } from '@/api/client'
 import { json, mockApi } from '@/test/api'
 import { renderApp } from '@/test/render'
 
-vi.mock('./TimelineChart', () => ({ AXIS_HEIGHT: 28, TimelineChart: () => null }))   // no canvas in jsdom
+vi.mock('./TimelineChart', () => ({ AXIS_HEIGHT: 28, PLOT_INSET: 24, TimelineChart: () => null }))   // no canvas in jsdom
 
 const ID = 'a5748886-55f2-408b-9779-d88b935773e9'
 const DETAIL = {
@@ -34,15 +34,17 @@ const BASE: Schemas['SessionTimeline'] = {
   environment: null,
   assistance: [],
   trials: [{ trial_id: 'S7-001', block_state: 'S7_EXPERIMENTAL_RETRIEVAL', start_ms: 110_000, end_ms: 115_000, is_correct: true }],
+  hints: [], peripherals: null, distractors: null, head_away: null, adaptations: null,
 }
 
-describe('timeline (V1.3, lanes 1-4)', () => {
+describe('timeline (V1.3)', () => {
   it('labels the lanes in order and says why a lane is empty', async () => {
     show(BASE)
     const t = await screen.findByRole('region', { name: 'Session timeline' })
     expect(await within(t).findByRole('heading', { name: 'Timeline' })).toBeInTheDocument()
-    expect(within(t).getAllByText(/^(Game Flow|Environment|Assistance|Trials)$/).map((e) => e.textContent))
-      .toEqual(['Game Flow', 'Environment', 'Assistance', 'Trials'])
+    expect(within(t).getAllByText(/^(Game Flow|Environment|Assistance|Trials|Hints|Peripherals|Head-away|Adaptations)$/).map((e) => e.textContent))
+      .toEqual(['Game Flow', 'Environment', 'Assistance', 'Trials', 'Hints', 'Peripherals', 'Head-away', 'Adaptations'])
+    expect(t).toHaveTextContent('No adaptations in a static session')   // DETAIL is STATIC
     expect(t).toHaveTextContent('Not recorded in this session')     // environment
     expect(t).toHaveTextContent('Nothing in this session')          // assistance
     expect(within(t).getAllByText(/^(Correct|Incorrect|Not answered|Not completed \(session ended\))$/).map((e) => e.textContent))

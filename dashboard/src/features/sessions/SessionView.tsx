@@ -302,7 +302,7 @@ export function SessionView() {
         <>
           <TimeSection s={data} />
           <AdaptationsSection s={data} />
-          <Timeline sessionId={data.session_id} />
+          <Timeline sessionId={data.session_id} condition={data.condition} />
           <ReservedSlot thing="Session tables" className="col-span-16" />
         </>
       )}

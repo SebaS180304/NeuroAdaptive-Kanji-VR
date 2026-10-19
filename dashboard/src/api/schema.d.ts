@@ -681,6 +681,16 @@ export interface components {
             assistance: components["schemas"]["TimelineLevel"][] | null;
             /** Trials */
             trials: components["schemas"]["TimelineTrial"][] | null;
+            /** Hints */
+            hints: components["schemas"]["TimelineHint"][] | null;
+            /** Peripherals */
+            peripherals: components["schemas"]["TimelinePeripheral"][] | null;
+            /** Distractors */
+            distractors: components["schemas"]["TimelineDistractor"][] | null;
+            /** Head Away */
+            head_away: components["schemas"]["TimelineHeadAway"][] | null;
+            /** Adaptations */
+            adaptations: components["schemas"]["TimelineAdaptation"][] | null;
         };
         /** Substitution */
         Substitution: {
@@ -691,6 +701,70 @@ export interface components {
             /** Substitute */
             substitute: string;
         };
+        /**
+         * TimelineAdaptation
+         * @description A decision that changed something (NO_CHANGE is in the Adaptations tab).
+         */
+        TimelineAdaptation: {
+            /** Decision Id */
+            decision_id: string;
+            /** Trial Id */
+            trial_id: string;
+            /** Decided Ms */
+            decided_ms: number;
+            /** Action */
+            action: string;
+            /** Dimension */
+            dimension: string;
+            /** From Level */
+            from_level: string | null;
+            /** To Level */
+            to_level: string;
+            /** Learner State */
+            learner_state: string;
+            /** Unity Result */
+            unity_result: ("APPLIED" | "SKIPPED") | null;
+            /** Skip Reason */
+            skip_reason: string | null;
+            /** Result Ms */
+            result_ms: number | null;
+            /** Cooldown Until Ms */
+            cooldown_until_ms: number | null;
+            /** Outcome */
+            outcome: string | null;
+        };
+        /** TimelineDistractor */
+        TimelineDistractor: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "DWELL" | "ORIENTING";
+            /** Start Ms */
+            start_ms: number;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Object Name */
+            object_name: string;
+        };
+        /** TimelineHeadAway */
+        TimelineHeadAway: {
+            /** Start Ms */
+            start_ms: number;
+            /** End Ms */
+            end_ms: number | null;
+            /** Limit Crossed */
+            limit_crossed: string;
+        };
+        /** TimelineHint */
+        TimelineHint: {
+            /** Ms */
+            ms: number;
+            /** Trial Id */
+            trial_id: string;
+            /** Proactive */
+            proactive: boolean;
+        };
         /** TimelineLevel */
         TimelineLevel: {
             /** Level */
@@ -699,6 +773,15 @@ export interface components {
             start_ms: number;
             /** End Ms */
             end_ms: number | null;
+        };
+        /** TimelinePeripheral */
+        TimelinePeripheral: {
+            /** Ms */
+            ms: number;
+            /** Event Index */
+            event_index: number;
+            /** Object Name */
+            object_name: string;
         };
         /** TimelineState */
         TimelineState: {

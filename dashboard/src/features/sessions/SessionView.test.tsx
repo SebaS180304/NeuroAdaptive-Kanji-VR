@@ -6,7 +6,7 @@ import { renderApp } from '@/test/render'
 
 type Detail = Schemas['ResearchSessionDetail']
 
-vi.mock('./timeline/TimelineChart', () => ({ AXIS_HEIGHT: 28, TimelineChart: () => null }))   // no canvas in jsdom
+vi.mock('./timeline/TimelineChart', () => ({ AXIS_HEIGHT: 28, PLOT_INSET: 24, TimelineChart: () => null }))   // no canvas in jsdom
 
 const ID = 'a5748886-55f2-408b-9779-d88b935773e9'
 const ADAPTIVE: Detail = {

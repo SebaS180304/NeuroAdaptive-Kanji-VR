@@ -6,16 +6,25 @@ import type { Schemas } from '@/api/client'
 
 type Timeline = Schemas['SessionTimeline']
 
-export type Bar = {
+export type Mark = {
   start: number
+  /** Equal to start for a point mark (dot, tick, diamond, badge). */
   end: number
-  /** Shape as well as colour: a bar, the incorrect-trial hatch, or a line through the slot. */
-  mark: 'bar' | 'hatch' | 'line'
-  /** Token; null leaves the bar unfilled. */
+  /**
+   * Shape as well as colour. Spans: bar, hatch (incorrect trial), line (through the slot),
+   * band (cooldown), link (decision to Unity's answer). Points: dot, tick, diamond, badge.
+   */
+  mark: 'bar' | 'hatch' | 'line' | 'band' | 'link' | 'dot' | 'tick' | 'diamond' | 'badge'
+  /** Token; null leaves the mark unfilled. */
   fill: string | null
-  /** 1 px inside border (bar) or the line itself (line). */
+  /** 1 px inside border, a 2 px diamond outline, or the line itself. */
   stroke?: string
   dashed?: boolean
+  /** Offset and height inside the lane's bar slot, in px; the whole slot by default. */
+  y?: number
+  h?: number
+  /** Badge shape (outcome chips of design-system.md: circle for positive and neutral, square otherwise). */
+  shape?: 'circle' | 'square'
   label?: string
   labelColor?: string
   tip: string
@@ -28,7 +37,7 @@ export type Lane = {
   height: 40 | 32
   barHeight: 24 | 16
   /** null: the lane's event type was never recorded in the session. */
-  bars: Bar[] | null
+  marks: Mark[] | null
   note: string | null
 }
 
@@ -44,7 +53,7 @@ const title = (level: string) => level[0] + level.slice(1).toLowerCase()
 const span = (start: number, end: number) => `${clockMs(start)} to ${clockMs(end)}`
 
 // design-system.md "Timeline marks beyond the three levels" (Oct 19).
-function levelMark(level: string, prefix: 'esl' | 'lal'): Pick<Bar, 'mark' | 'fill' | 'stroke' | 'labelColor'> {
+function levelMark(level: string, prefix: 'esl' | 'lal'): Pick<Mark, 'mark' | 'fill' | 'stroke' | 'labelColor'> {
   if (['LOW', 'MEDIUM', 'HIGH'].includes(level))
     return { mark: 'bar', fill: `--color-${prefix}-${level.toLowerCase()}`, labelColor: level === 'HIGH' ? '--color-on-accent' : '--color-text' }
   if (level === 'FOCUS') return { mark: 'bar', fill: '--color-surface', stroke: '--color-esl-high', labelColor: '--color-text' }
@@ -52,7 +61,7 @@ function levelMark(level: string, prefix: 'esl' | 'lal'): Pick<Bar, 'mark' | 'fi
   return { mark: 'bar', fill: '--color-state-neutral', labelColor: '--color-text' }      // Minimal, Baseline
 }
 
-function levelBars(levels: Timeline['environment'], prefix: 'esl' | 'lal', name: string, end: number): Bar[] | null {
+function levelBars(levels: Timeline['environment'], prefix: 'esl' | 'lal', name: string, end: number): Mark[] | null {
   if (!levels) return null
   return levels.map((l) => {
     const to = l.end_ms ?? end
@@ -63,18 +72,86 @@ function levelBars(levels: Timeline['environment'], prefix: 'esl' | 'lal', name:
   })
 }
 
-function lane(key: string, label: string, hint: string, bars: Bar[] | null, gameFlow = false): Lane {
+function lane(key: string, label: string, hint: string, marks: Mark[] | null, gameFlow = false, missing = 'Not recorded in this session'): Lane {
   return {
-    key, label, hint, bars,
+    key, label, hint, marks,
     height: gameFlow ? 40 : 32,
     barHeight: gameFlow ? 24 : 16,
-    note: bars === null ? 'Not recorded in this session' : bars.length === 0 ? 'Nothing in this session' : null,
+    note: marks === null ? missing : marks.length === 0 ? 'Nothing in this session' : null,
   }
 }
 
-export function buildLanes(t: Timeline): Lane[] {
+const point = (ms: number) => ({ start: ms, end: ms })
+
+// TODO(design): proactive cues, orienting, a head-away with no return, a decision Unity
+// never answered, the decision-to-answer link and the outcome badge have no rule in
+// design-system.md yet; these use existing tokens and the shape language of the chips.
+function hintMarks(t: Timeline): Mark[] | null {
+  return t.hints?.map((h): Mark => ({
+    ...point(h.ms), mark: 'dot', y: 4, h: 8,
+    ...(h.proactive ? { fill: null, stroke: '--color-lal-high' } : { fill: '--color-lal-high' }),
+    tip: `${h.trial_id}, ${h.proactive ? 'proactive cue' : 'hint requested'} at ${clockMs(h.ms)}`,
+  })) ?? null
+}
+
+function peripheralMarks(t: Timeline): Mark[] | null {
+  if (!t.peripherals && !t.distractors) return null
+  const events = (t.peripherals ?? []).map((p): Mark => ({
+    ...point(p.ms), mark: 'tick', y: 0, h: 8, fill: '--color-peripheral',
+    tip: `Peripheral event ${p.event_index}, ${p.object_name}, at ${clockMs(p.ms)}`,
+  }))
+  const distractors = (t.distractors ?? []).map((d): Mark =>
+    d.kind === 'DWELL'
+      ? { start: d.start_ms, end: d.start_ms + d.duration_ms, mark: 'bar', y: 12, h: 4, fill: '--color-distractor',
+          tip: `Dwell on ${d.object_name}, ${span(d.start_ms, d.start_ms + d.duration_ms)}` }
+      : { ...point(d.start_ms), mark: 'tick', y: 8, h: 8, fill: '--color-distractor',
+          tip: `Orienting to ${d.object_name} at ${clockMs(d.start_ms)}, ${d.duration_ms} ms` })
+  return [...events, ...distractors].sort((a, b) => a.start - b.start)
+}
+
+function headAwayMarks(t: Timeline, end: number): Mark[] | null {
+  return t.head_away?.map((a): Mark => ({
+    start: a.start_ms, end: a.end_ms ?? end, mark: 'bar',
+    ...(a.end_ms === null ? { fill: null, stroke: '--color-headaway', dashed: true } : { fill: '--color-headaway' }),
+    tip: `Head-away (${title(a.limit_crossed).replace('_', ' ')}), ${span(a.start_ms, a.end_ms ?? end)}${a.end_ms === null ? ', no return before the session ended' : ''}`,
+  })) ?? null
+}
+
+const OUTCOME_BADGE: Record<string, Pick<Mark, 'fill' | 'stroke' | 'shape'>> = {
+  POSITIVE: { fill: '--color-outcome-positive', shape: 'circle' },
+  NEUTRAL: { fill: null, stroke: '--color-text-muted', shape: 'circle' },
+  NEGATIVE: { fill: '--color-outcome-negative', shape: 'square' },
+  UNCERTAIN: { fill: null, stroke: '--color-text-muted', shape: 'square' },
+}
+
+function adaptationMarks(t: Timeline): Mark[] | null {
+  if (!t.adaptations) return null
+  const bands: Mark[] = [], links: Mark[] = [], diamonds: Mark[] = [], badges: Mark[] = []
+  for (const a of t.adaptations) {
+    const change = `${a.dimension === 'ESL' ? 'environment' : 'assistance'} ${a.from_level ? `${title(a.from_level)} to ` : 'to '}${title(a.to_level)}`
+    const unity = a.unity_result === 'APPLIED' ? `applied at ${clockMs(a.result_ms!)}`
+      : a.unity_result === 'SKIPPED' ? `skipped by Unity (${a.skip_reason}) at ${clockMs(a.result_ms!)}`
+        : 'no answer from Unity recorded'
+    const tip = `${a.trial_id}, estimated state ${title(a.learner_state)}: ${change}, ${unity}`
+    if (a.cooldown_until_ms !== null)
+      bands.push({ start: a.decided_ms, end: a.cooldown_until_ms, mark: 'band', y: 2, h: 12, fill: '--color-accent-tint',
+        tip: `Cooldown after ${a.trial_id}, until ${clockMs(a.cooldown_until_ms)}` })
+    if (a.result_ms !== null)
+      links.push({ start: a.decided_ms, end: a.result_ms, mark: 'link', fill: null, stroke: '--color-accent', tip })
+    diamonds.push({
+      ...point(a.decided_ms), mark: 'diamond', tip,
+      ...(a.unity_result === 'APPLIED' ? { fill: '--color-accent' }
+        : { fill: null, stroke: '--color-accent', ...(a.unity_result === null ? { dashed: true } : {}) }),
+    })
+    if (a.outcome && OUTCOME_BADGE[a.outcome])
+      badges.push({ ...point(a.decided_ms), mark: 'badge', ...OUTCOME_BADGE[a.outcome]!, tip: `${a.trial_id}, outcome ${a.outcome.toLowerCase()}` })
+  }
+  return [...bands, ...links, ...diamonds, ...badges]
+}
+
+export function buildLanes(t: Timeline, condition?: string): Lane[] {
   const end = t.session_end_ms ?? 0
-  const states = t.states?.map((s): Bar => {
+  const states = t.states?.map((s): Mark => {
     const to = s.end_ms ?? end
     const key = code(s.state) === 'S7'
     return {
@@ -84,7 +161,7 @@ export function buildLanes(t: Timeline): Lane[] {
       tip: `${s.state}, ${span(s.start_ms, to)}${s.end_ms === null ? ', no exit recorded' : ''}`,
     }
   }) ?? null
-  const trials = t.trials?.map((tr): Bar => {
+  const trials = t.trials?.map((tr): Mark => {
     const to = tr.end_ms ?? end
     const [mark, word] =
       tr.end_ms === null ? (['bar', 'not completed (session ended)'] as const)
@@ -104,6 +181,13 @@ export function buildLanes(t: Timeline): Lane[] {
     lane('environment', 'Environment', 'ESL level', levelBars(t.environment, 'esl', 'ESL', end)),
     lane('assistance', 'Assistance', 'LAL level', levelBars(t.assistance, 'lal', 'LAL', end)),
     lane('trials', 'Trials', 'Start to completion', trials),
+    lane('hints', 'Hints', 'On request or proactive', hintMarks(t)),
+    lane('peripherals', 'Peripherals',
+      t.distractors === null && t.peripherals !== null ? 'Events; dwell not recorded' : 'Events, dwell, orienting',
+      peripheralMarks(t)),
+    lane('head_away', 'Head-away', 'Episodes', headAwayMarks(t, end)),
+    lane('adaptations', 'Adaptations', 'Decisions and cooldown', adaptationMarks(t), false,
+      condition === 'STATIC' ? 'No adaptations in a static session' : 'Not recorded in this session'),
   ]
 }
 

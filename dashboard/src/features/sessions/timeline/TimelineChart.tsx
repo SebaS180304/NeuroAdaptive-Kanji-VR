@@ -8,6 +8,8 @@ import { clock, type Lane } from './lanes'
 echarts.use([CustomChart, GridComponent, TooltipComponent, DataZoomComponent, CanvasRenderer])
 
 export const AXIS_HEIGHT = 28
+/** Room at each side of the plot for the first and last tick label. */
+export const PLOT_INSET = 24
 
 type Props = {
   lanes: Lane[]
@@ -45,16 +47,16 @@ function option(lanes: Lane[], end: number, w: [number, number], color: (n: stri
   const tops = lanes.map((_, i) => lanes.slice(0, i).reduce((h, l) => h + l.height, 0))
   const height = tops.at(-1)! + lanes.at(-1)!.height
   const pattern = hatch(color)
-  const data = lanes.flatMap((l, li) => (l.bars ?? []).map((b, bi) => [li, bi, b.start, b.end]))
+  const data = lanes.flatMap((l, li) => (l.marks ?? []).map((m, mi) => [li, mi, m.start, m.end]))
   return {
     animation: false,
-    grid: { left: 0, right: 0, top: 0, height },
+    grid: { left: PLOT_INSET, right: PLOT_INSET, top: 0, height, outerBoundsMode: 'none' },
     tooltip: {
       trigger: 'item',
       backgroundColor: color('--color-surface-raised'),
       borderColor: color('--color-border'),
       textStyle: { color: color('--color-text'), fontFamily: 'Public Sans', fontSize: 12 },
-      formatter: (p: { value: number[] }) => echarts.format.encodeHTML(lanes[p.value[0]!]!.bars![p.value[1]!]!.tip),
+      formatter: (p: { value: number[] }) => echarts.format.encodeHTML(lanes[p.value[0]!]!.marks![p.value[1]!]!.tip),
     },
     xAxis: {
       type: 'value', min: 0, max: end,
@@ -72,42 +74,76 @@ function option(lanes: Lane[], end: number, w: [number, number], color: (n: stri
       clip: true,
       renderItem: (params: { coordSys: { x: number; y: number; width: number } }, api: { value: (i: number) => number; coord: (v: number[]) => number[] }) => {
         const lane = lanes[api.value(0)]!
-        const bar = lane.bars![api.value(1)]!
+        const m = lane.marks![api.value(1)]!
+        const cs = params.coordSys
         const x0 = api.coord([api.value(2), 0])[0]!
         const x1 = api.coord([api.value(3), 0])[0]!
-        const cs = params.coordSys
+        const slot = cs.y + tops[api.value(0)]! + 8          // bars sit 8 px from the lane top
+        const y = slot + (m.y ?? 0)
+        const h = m.h ?? lane.barHeight
+        const mid = y + h / 2
+        const stroke = m.stroke ? color(m.stroke) : undefined
+        const fill = m.mark === 'hatch' ? pattern : m.fill ? color(m.fill) : 'transparent'
+        const dash = m.dashed ? [3, 2] : undefined
+        const visible = (x: number) => x >= cs.x - 8 && x <= cs.x + cs.width + 8
+
+        // Point marks: drawn at their time, kept whole near the edges.
+        if (m.start === m.end && m.mark !== 'bar') {
+          if (!visible(x0)) return null
+          if (m.mark === 'tick') return { type: 'rect', shape: { x: x0 - 1, y, width: 2, height: h }, style: { fill } }
+          if (m.mark === 'dot')
+            return { type: 'circle', shape: { cx: x0, cy: mid, r: h / 2 - (stroke ? 0.75 : 0) }, style: { fill, stroke, lineWidth: 1.5 } }
+          if (m.mark === 'diamond') {
+            // design-system.md: a 12 px square rotated 45°, filled = applied, 2 px outline = skipped.
+            const r = stroke ? 7.5 : 8.5
+            return {
+              type: 'polygon',
+              shape: { points: [[x0, slot + 8 - r], [x0 + r, slot + 8], [x0, slot + 8 + r], [x0 - r, slot + 8]] },
+              style: { fill: stroke ? color('--color-surface') : fill, stroke, lineWidth: 2, lineDash: dash },
+            }
+          }
+          // badge: the outcome, 6 px, at the diamond's upper right.
+          const style = { fill, stroke, lineWidth: 1 }
+          return m.shape === 'circle'
+            ? { type: 'circle', shape: { cx: x0 + 8, cy: slot - 2, r: 3 }, style }
+            : { type: 'rect', shape: { x: x0 + 5, y: slot - 5, width: 6, height: 6 }, style }
+        }
+
         const rect = echarts.graphic.clipRectByRect(
-          { x: x0, y: cs.y + tops[api.value(0)]! + 8, width: Math.max(x1 - x0 - 1, 1), height: lane.barHeight },
+          { x: x0, y, width: Math.max(x1 - x0 - (m.mark === 'link' ? 0 : 1), 1), height: h },
           { x: cs.x, y: cs.y, width: cs.width, height },
         )
         if (!rect) return null
-        const mid = rect.y + rect.height / 2
+        if (m.mark === 'link')
+          // Decision to Unity's answer: a line ending in a 2 px tick at the answer.
+          return {
+            type: 'group',
+            children: [
+              { type: 'line', shape: { x1: rect.x, y1: slot + 8, x2: rect.x + rect.width, y2: slot + 8 }, style: { stroke, lineWidth: 1 } },
+              ...(visible(x1) ? [{ type: 'rect', shape: { x: x1 - 1, y: slot + 2, width: 2, height: 12 }, style: { fill: stroke } }] : []),
+            ],
+          }
         const text = (label: string, x: number, style: object) => ({
           type: 'text',
-          style: { text: label, x, y: mid, verticalAlign: 'middle', fill: color(bar.labelColor ?? '--color-text'), ...style },
+          style: { text: label, x, y: mid, verticalAlign: 'middle', fill: color(m.labelColor ?? '--color-text'), ...style },
         })
         const children: object[] = []
-        if (bar.mark === 'line') {
+        if (m.mark === 'line') {
           // LAL Off: a line through the slot, its name at the start of a run of 48 px or more.
-          children.push({ type: 'line', shape: { x1: rect.x, y1: mid, x2: rect.x + rect.width, y2: mid }, style: { stroke: color(bar.stroke!), lineWidth: 1 } })
-          if (bar.label && rect.width >= 48)
-            children.push(text(bar.label, rect.x, {
+          children.push({ type: 'line', shape: { x1: rect.x, y1: mid, x2: rect.x + rect.width, y2: mid }, style: { stroke, lineWidth: 1 } })
+          if (m.label && rect.width >= 48)
+            children.push(text(m.label, rect.x, {
               align: 'left', font: '12px "Public Sans"', backgroundColor: color('--color-surface'), padding: [0, 4, 0, 0],
             }))
         } else {
-          const inset = bar.stroke ? 0.5 : 0      // a 1 px border drawn inside the bar
+          const inset = stroke ? 0.5 : 0      // a 1 px border drawn inside the bar
           children.push({
             type: 'rect',
             shape: { x: rect.x + inset, y: rect.y + inset, width: Math.max(rect.width - 2 * inset, 1), height: rect.height - 2 * inset, r: 1 },
-            style: {
-              fill: bar.mark === 'hatch' ? pattern : bar.fill ? color(bar.fill) : 'transparent',
-              stroke: bar.stroke ? color(bar.stroke) : undefined,
-              lineWidth: 1,
-              lineDash: bar.dashed ? [3, 2] : undefined,
-            },
+            style: { fill, stroke, lineWidth: 1, lineDash: dash },
           })
-          if (bar.label && rect.width > 8 * bar.label.length + 12)
-            children.push(text(bar.label, rect.x + (lane.key === 'states' ? rect.width / 2 : 8), {
+          if (m.label && rect.width > 8 * m.label.length + 12)
+            children.push(text(m.label, rect.x + (lane.key === 'states' ? rect.width / 2 : 8), {
               align: lane.key === 'states' ? 'center' : 'left', font: `${lane.key === 'states' ? 12 : 11}px "JetBrains Mono"`,
             }))
         }

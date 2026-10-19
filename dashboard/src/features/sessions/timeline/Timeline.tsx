@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { getJson, type Schemas } from '@/api/client'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { buildLanes, clock, s7Window } from './lanes'
-import { AXIS_HEIGHT, TimelineChart } from './TimelineChart'
+import { AXIS_HEIGHT, PLOT_INSET, TimelineChart } from './TimelineChart'
 
 // V1.3 Timeline, artboard *Session View*: lanes 1-4 (Game Flow, environment,
 // assistance, trials) over session_elapsed_ms, with zoom and pan.
@@ -16,7 +16,7 @@ const pill = (on = false) =>
     ? 'border-(--color-accent) bg-(--color-accent-tint) font-medium text-(--color-on-accent-tint)'
     : 'border-(--color-border-strong) bg-(--color-surface) text-(--color-text)'}`
 
-export function Timeline({ sessionId }: { sessionId: string }) {
+export function Timeline({ sessionId, condition }: { sessionId: string; condition: string }) {
   const { data, error, isPending, refetch } = useQuery({
     queryKey: ['research', 'sessions', sessionId, 'timeline'],
     queryFn: () => getJson<Timeline>(`/research/sessions/${sessionId}/timeline`),
@@ -28,13 +28,13 @@ export function Timeline({ sessionId }: { sessionId: string }) {
     >
       {isPending && <LoadingNotice title="Loading the timeline…" />}
       {error && <OfflineNotice onRetry={() => void refetch()} />}
-      {data && <Lanes data={data} />}
+      {data && <Lanes data={data} condition={condition} />}
     </section>
   )
 }
 
-function Lanes({ data }: { data: Timeline }) {
-  const lanes = useMemo(() => buildLanes(data), [data])
+function Lanes({ data, condition }: { data: Timeline; condition: string }) {
+  const lanes = useMemo(() => buildLanes(data, condition), [data, condition])
   const end = data.session_end_ms ?? 0
   const s7 = s7Window(data)
   const [w, setW] = useState<[number, number]>([0, end])
@@ -78,14 +78,15 @@ function Lanes({ data }: { data: Timeline }) {
         <div>
           {lanes.map((l) => (
             <div key={l.key} style={{ height: l.height }} className="flex flex-col justify-center border-t border-(--color-border-subtle) pr-4">
-              <span className="type-body font-medium">{l.label}</span>
+              {/* 16 px leading: label and hint fit a 32 px lane. */}
+              <span className="type-body leading-4 font-medium">{l.label}</span>
               <span className="type-caption text-(--color-text-muted)">{l.hint}</span>
             </div>
           ))}
         </div>
         <div className="relative" style={{ height: height + AXIS_HEIGHT }}>
           {lanes.map((l) => (
-            <div key={l.key} style={{ height: l.height }} className="type-caption flex items-center border-t border-(--color-border-subtle) text-(--color-text-muted)">
+            <div key={l.key} style={{ height: l.height, paddingLeft: PLOT_INSET }} className="type-caption flex items-center border-t border-(--color-border-subtle) text-(--color-text-muted)">
               {l.note}
             </div>
           ))}
@@ -98,6 +99,9 @@ function Lanes({ data }: { data: Timeline }) {
         <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4" style={{ background: 'var(--hatch-trial-incorrect)' }} />Incorrect</span>
         <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 border border-(--color-border-strong)" />Not answered</span>
         <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 border border-dashed border-(--color-border-strong)" />Not completed (session ended)</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="size-2.5 rotate-45 bg-(--color-accent)" />Change applied</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="size-2.5 rotate-45 border-2 border-(--color-accent)" />Change skipped by Unity</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-6 bg-(--color-accent-tint)" />Cooldown</span>
       </div>
     </>
   )

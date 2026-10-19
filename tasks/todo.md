@@ -390,7 +390,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Deps:** 2.1. **Scope:** M
 
-### [ ] Task 2.3: Timeline (V1.3)
+### [x] Task 2.3: Timeline (V1.3, done 19 Oct)
 **Description:**
 - **Endpoint:** `GET /research/sessions/{id}/timeline`, all 8 lanes.
 - **Screen:** ECharts, with:
@@ -401,8 +401,8 @@ the scene during Play. Restart the backend only between runs, never with `--relo
   - `mm:ss` ticks and `mm:ss.SSS` tooltips.
 
 **Acceptance:**
-- [ ] The full real F5a session renders without lag
-- [ ] A lane with no data says whether it was empty or not recorded
+- [x] The full real F5a session renders without lag (`a5748886`, all eight lanes: under 1 s, no long task over 200 ms, e2e)
+- [x] A lane with no data says whether it was empty or not recorded ("Nothing in this session" / "Not recorded in this session"; adaptations in a static session: "No adaptations in a static session")
 
 **Verify:** Playwright; a DevTools profile only if it lags.
 
@@ -410,7 +410,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Progress:**
 - [x] Lanes 1–4 (19 Oct): `GET .../timeline` with states, environment (`v_environment_intervals`), assistance (built from state entries plus applied LAL changes; no table holds it) and trials. One ECharts instance (canvas, custom series), zoom and pan, "Whole session / Only S7", `mm:ss` ticks, `mm:ss.SSS` tooltips. The real session `a5748886` draws in under 1 s with no long task over 200 ms (e2e). Levels beyond the three, and trials not answered or not completed, follow the design decision of 19 Oct (`design-system.md`, Layout and spacing)
-- [ ] Lanes 5–8: hints, peripherals and distractors, head-away, adaptations (decision → application line, cooldown band, skipped shape, outcome badge)
+- [x] Lanes 5–8 (19 Oct): hints, peripherals with dwell and orienting, head-away, adaptations (decisions that changed something; NO_CHANGE stays in the V1.5 table). `cooldown_until_trial` becomes the start of that trial, or the block's last trial end. TODO(design), to send to the design chat: proactive cue (outlined dot), orienting (lower tick in `--color-distractor`), head-away with no return (dashed outline), decision with no answer from Unity (dashed diamond), the decision → answer link (1 px accent line ending in a 2 px tick) and the outcome badge (6 px, chip shapes). Lane label set to 16 px leading so label and hint fit a 32 px lane
 
 ### [ ] Task 2.4: Trials table and inspector (V1.4)
 **Description:**
