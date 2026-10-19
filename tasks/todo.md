@@ -257,10 +257,17 @@ attention question has 5 options, and the inclusion notice says "accepted".
 - Add the segments to each kanji's asset in Unity, so `AssemblyPlan.For` uses them.
 - The group count must stay the contract's `assemblyGroups`: it is part of the set
   balance band (12 ± 2), and the tool refuses a mismatch.
+- Found 19 Oct: set A's assets never listed their segments either, so every assembly in
+  the DB so far has `segments_authored = false` (85 rows of set A included) although the
+  board drew the real PNGs. The tool now writes the list into every kanji's asset it cuts,
+  set A and 四 included. Those old rows are not corrected.
+- Cut 19 Oct: 10 kanji, 58 PNGs (import settings copied from set A). Where a diagonal
+  crosses a bar (女, 肉) the bar stays whole; where a vertical crosses bars (手, 雨, 牛) the
+  vertical stays whole, as with 車.
 
 **Acceptance:**
 - [ ] `tools/assembly_preview.png` reviewed by Sebas for the 10 kanji
-- [ ] Phase2TestHarness green; S5 logs "authored" for every kanji of B and C
+- [ ] Phase2TestHarness green; S5 logs "authored" for every kanji of B and C (harness 84/84 and `AssemblyPlan` authored for the 15 + 四, 19 Oct; the S5 log is checked in Play)
 - [ ] One kanji of B and one of C assembled in the headset; each group can be grasped
 
 **Verify:** harness; Play with set B and set C; `assemblies.segment_count` and

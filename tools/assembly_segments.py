@@ -18,11 +18,12 @@ Output (written where Unity reads it, like the contract):
 White ink, alpha = coverage, 512x512, full frame: the presenter tints them.
 
     python tools/assembly_segments.py            # write PNGs + preview
-Covers set A and the tutorial example 四. Add a kanji by adding its groups to G
+It also lists the segments in Resources/kanji/{KANJI_ID}.asset.
+Covers sets A, B and C and the tutorial example 四. Add a kanji by adding its groups to G
 (and to IDS) and checking tools/assembly_preview.png.
 """
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np, json, sys
+import numpy as np, json, re, sys
 import pathlib
 REPO=pathlib.Path(__file__).resolve().parent.parent
 F=str(REPO/'unity-client'/'Assets'/'Fonts'/'NotoSansCJKjp-Regular.otf')
@@ -43,12 +44,43 @@ G={
        ('right',[[(308,96),(238,268)],[(300,188),(438,188)],[(364,188),(364,440),(290,455)]])],
  '石':[('top',[[(82,138),(430,138)],[(220,138),(185,215),(150,280),(78,356)]]),
        ('mouth',[[(169,256),(169,460)],[(169,270),(390,270),(390,460)],[(169,416),(390,416)]])],
+ # Sets B and C (Task 1.9, 19 October): groups from the "Assembly" column of
+ # Tabla_Autoria_Kanji_Fase2.md
+ '山':[('centre peak',[[(256,100),(256,380)]]),
+       ('base with sides',[[(112,190),(112,450)],[(112,398),(400,398)],[(400,190),(400,450)]])],
+ '門':[('left leaf',[[(107,122),(107,455)],[(107,122),(230,122),(230,252)],[(107,182),(230,182)],[(107,250),(230,250)]]),
+       ('right leaf',[[(288,122),(288,252)],[(288,122),(412,122),(412,435),(335,452)],[(288,182),(412,182)],[(288,250),(412,250)]])],
+ '女':[('く',[[(237,100),(150,330)],[(165,320),(416,448)]]),
+       ('ノ',[[(371,211),(335,305),(256,384),(90,448)]]),
+       ('一',[[(77,205),(435,205)]])],
+ '手':[('three horizontals',[[(109,134),(390,102)],[(102,220),(416,220)],[(77,316),(435,316)]]),
+       ('hooked vertical',[[(257,141),(257,442),(166,454)]])],
+ '雨':[('top bar',[[(77,132),(435,132)]]),
+       ('frame',[[(113,205),(113,458)],[(113,205),(413,205),(413,442),(333,454)],[(253,141),(253,454)]]),
+       ('four drops',[[(147,262),(224,307)],[(147,343),(218,390)],[(294,262),(369,307)],[(288,343),(365,390)]])],
+ '人':[('left stroke',[[(250,109),(235,260),(180,360),(77,442)]]),
+       ('right stroke',[[(262,230),(320,350),(435,442)]])],
+ '足':[('口 upper',[[(128,115),(128,243)],[(128,115),(397,115),(397,243)],[(128,243),(397,243)]]),
+       ('middle',[[(260,243),(260,415)],[(260,326),(407,326)]]),
+       ('foot',[[(160,284),(140,370),(77,448)],[(160,340),(200,400),(256,428),(435,437)]])],
+ '牛':[('horns',[[(160,109),(130,200),(102,256)],[(134,179),(410,179)]]),
+       ('body',[[(77,326),(435,326)],[(259,96),(259,460)]])],
+ '肉':[('冂 outer',[[(109,154),(109,461)],[(109,154),(406,154),(406,435),(333,450)]]),
+       ('inner strokes',[[(271,96),(240,200),(154,275)],[(236,205),(352,282)],[(269,269),(230,350),(147,403)],[(250,333),(352,403)]])],
+ '花':[('艹 grass',[[(79,143),(430,143)],[(192,96),(192,198)],[(323,96),(323,198)]]),
+       ('亻',[[(198,211),(150,280),(70,339)],[(156,256),(156,461)]]),
+       ('匕',[[(416,250),(275,320)],[(275,205),(275,420),(300,430),(400,430),(430,371)]])],
 }
 # Hard overrides: (kanji, group index, x0, y0, x1, y1) -- pixels inside the box go to that group.
 OVR=[('車',2,241,0,269,512),          # the vertical stays whole through the bars
      ('月',0,130,100,182,470),         # left stroke of the frame
      ('月',0,352,100,400,470),         # right stroke of the frame
-     ('石',0,140,0,200,255)]           # the slash crosses the mouth's top-left corner
+     ('石',0,140,0,200,255),           # the slash crosses the mouth's top-left corner
+     ('手',1,243,140,272,470),         # the vertical stays whole through the horizontals
+     ('雨',1,240,140,267,460),         # the centre vertical stays whole through the top bar
+     ('牛',1,243,90,275,470),          # the vertical stays whole through the horns' bar
+     ('女',2,0,189,512,219),           # 一 stays whole where く and ノ cross it
+     ('肉',0,94,155,418,187)]          # the frame's top bar stays whole where the inner ノ crosses it
 # at crossings (equal distance) the LAST group listed wins, so verticals stay whole
 def glyph(ch):
     im=Image.new('L',(SIZE,SIZE),0); ImageDraw.Draw(im).text((SIZE//2,SIZE//2),ch,font=ImageFont.truetype(F,400),fill=255,anchor='mm')
@@ -76,7 +108,21 @@ def split(ch):
         m=np.zeros_like(a); sel=idx==g; m[ys[sel],xs[sel]]=a[ys[sel],xs[sel]]; masks.append(m)
     return a,masks,D.min(0).max()
 
-IDS={'月':'KANJI_TSUKI','車':'KANJI_KURUMA','火':'KANJI_HI','竹':'KANJI_TAKE','石':'KANJI_ISHI','四':'KANJI_YON'}
+IDS={'月':'KANJI_TSUKI','車':'KANJI_KURUMA','火':'KANJI_HI','竹':'KANJI_TAKE','石':'KANJI_ISHI','四':'KANJI_YON',
+     '山':'KANJI_YAMA','門':'KANJI_MON','女':'KANJI_ONNA','手':'KANJI_TE','雨':'KANJI_AME',
+     '人':'KANJI_HITO','足':'KANJI_ASHI','牛':'KANJI_USHI','肉':'KANJI_NIKU','花':'KANJI_HANA'}
+
+def write_asset(kid,names):
+    """List the segments in the kanji's asset: AssemblyPlan only counts a kanji
+    as authored (segments_authored) when its asset lists them."""
+    path=REPO/'unity-client'/'Assets'/'Resources'/'kanji'/f'{kid}.asset'
+    text=path.read_text(encoding='utf-8')
+    block='  assemblySegments:\n'+''.join(
+        f'  - segmentId: {kid}_SEG{i+1}\n    description: {n}\n'
+        f'    slotPosition: {{x: 0, y: 0, z: 0}}\n    segmentAsset: {{fileID: 0}}\n' for i,n in enumerate(names))
+    new,count=re.subn(r'  assemblySegments:.*?\n(?=  targetReadingAudio:)',lambda _:block,text,flags=re.S)
+    if count!=1: raise SystemExit(f'{path.name}: assemblySegments not found')
+    path.write_text(new,encoding='utf-8',newline='\n')
 
 def main():
     import os
@@ -104,6 +150,7 @@ def main():
             box=[int(cx-half),int(cy-half),int(cx+half),int(cy+half)]
             rgba=np.zeros((SIZE,SIZE,4),np.uint8); rgba[...,:3]=255; rgba[...,3]=m
             Image.fromarray(rgba,'RGBA').crop(box).resize((256,256),Image.LANCZOS).save(out/f'{kid}_SEG{i+1}_CARD.png',optimize=True)
+        write_asset(kid,[n for n,_ in G[ch]])
         rgb=np.full((SIZE,SIZE,3),255,np.uint8)
         for g,m in enumerate(masks):
             al=(m/255.0)[...,None]; rgb=(rgb*(1-al)+np.array(cols[g])*al).astype(np.uint8)

@@ -19,7 +19,19 @@ MonoBehaviour:
   exampleWords: []
   contextExamples: []
   visualAssociation: 
-  assemblySegments: []
+  assemblySegments:
+  - segmentId: KANJI_HI_SEG1
+    description: left dot
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  - segmentId: KANJI_HI_SEG2
+    description: right dot
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  - segmentId: KANJI_HI_SEG3
+    description: person
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
   targetReadingAudio: {fileID: 8300000, guid: e9eee534280307746b20e2e10a4f3fbe, type: 3}
   anchorObjectPrefab: {fileID: 0}
   transformationAnimation: {fileID: 0}

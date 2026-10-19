@@ -119,7 +119,7 @@ namespace NeuroAdaptiveVR.Controllers
                       $"row {string.Join(" ", plan.RowSegmentIds)}");
             // A pre-test substitute from the reserve has no drawn segments yet: S5 still
             // runs it with labelled placeholders ("part 1"...), and the telemetry says so
-            // (segments_authored = false). Who draws them is an open question in the plan.
+            // (segments_authored = false). tools/assembly_segments.py cuts them (Task 1.10).
             if (!plan.Authored)
                 Debug.LogWarning($"{Log} {item} has no authored segments: S5 assembles it from " +
                                  $"{plan.Count} placeholder parts (segments_authored = false).");
