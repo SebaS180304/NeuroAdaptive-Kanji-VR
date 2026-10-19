@@ -24,3 +24,8 @@ export function formatDuration(ms: number): string {
   const s = Math.round(ms / 1000)
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
+
+/** A Game Flow state's code: "S7_EXPERIMENTAL_RETRIEVAL" → "S7", "S10_HCI_SELF_REPORT" → "S10". */
+export function stateCode(state: string): string {
+  return state.split('_')[0]!
+}

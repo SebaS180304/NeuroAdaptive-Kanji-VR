@@ -5,6 +5,7 @@ describe('session status words (design-system.md, V1.8)', () => {
   it('names the last state of an aborted session, when recorded', () => {
     expect(sessionStatusText('ABORTED', 'S7_EXPERIMENTAL_RETRIEVAL')).toBe('Aborted in S7')
     expect(sessionStatusText('ABORTED', null)).toBe('Aborted')
+    expect(sessionStatusText('ABORTED', 'S10_HCI_SELF_REPORT')).toBe('Aborted in S10')   // two digits
   })
 
   it('uses the shared words for the other statuses', () => {

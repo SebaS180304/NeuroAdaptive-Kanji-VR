@@ -6,7 +6,7 @@ import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { Missing } from '@/components/Missing'
 import { sessionStatusText } from '@/components/SessionStatus'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
-import { formatDate, formatDuration, formatPercent, formatTime } from '@/lib/format'
+import { formatDate, formatDuration, formatPercent, formatTime, stateCode as code } from '@/lib/format'
 import { ExportMenu } from './ExportMenu'
 import { Timeline } from './timeline/Timeline'
 import { SessionTables } from './trials/SessionTables'
@@ -24,8 +24,6 @@ const CONDITION_PILL: Record<Condition, string> = {
     'border border-(--color-condition-multimodal) bg-(--color-condition-multimodal-tint) text-(--color-on-condition-multimodal-tint)',
 }
 
-/** "S7_EXPERIMENTAL_RETRIEVAL" → "S7". */
-const code = (state: string) => state.slice(0, 2)
 const times = (n: number) => `${n} ${n === 1 ? 'time' : 'times'}`
 
 function lead(s: Detail): string {

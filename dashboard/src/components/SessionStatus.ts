@@ -1,4 +1,5 @@
 import type { Schemas } from '@/api/client'
+import { stateCode } from '@/lib/format'
 
 export type SessionStatus = Schemas['ResearchSession']['status']
 
@@ -13,5 +14,5 @@ export const SESSION_STATUS_LABEL: Record<SessionStatus, string> = {
 
 /** "Aborted in S7" when the last state is recorded, else the plain word. */
 export function sessionStatusText(status: SessionStatus, lastState: string | null): string {
-  return status === 'ABORTED' && lastState ? `Aborted in ${lastState.slice(0, 2)}` : SESSION_STATUS_LABEL[status]
+  return status === 'ABORTED' && lastState ? `Aborted in ${stateCode(lastState)}` : SESSION_STATUS_LABEL[status]
 }

@@ -3,6 +3,7 @@ import { getJson, type Schemas } from '@/api/client'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { SESSION_STATUS_LABEL, type SessionStatus } from '@/components/SessionStatus'
+import { stateCode as code } from '@/lib/format'
 import { clockMs } from '../timeline/lanes'
 
 // V1.6 Plan and execution tab, artboard *V1.6 Session View, Plan and execution tab*:
@@ -13,7 +14,6 @@ type Block = Plan['blocks'][number]
 type Status = Block['trials'][number]['status']
 
 const EXPECTED = ['S2', 'S5', 'S6', 'S7', 'S8']
-const code = (state: string) => state.slice(0, 2)
 const STATUS_LABEL: Record<Status, string> = { COMPLETED: 'completed', STARTED: 'started, not completed', NEVER_SHOWN: 'planned, never shown' }
 
 // design-system.md V1.6: completed solid, started hatched, never shown outlined.
