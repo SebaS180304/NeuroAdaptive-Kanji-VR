@@ -183,6 +183,7 @@ class ResearchTrial(BaseModel):
     kanji_char: str | None
     is_primary_analysis: bool | None      # False: the S2 tutorial
     started_elapsed_ms: int | None
+    completed_elapsed_ms: int | None  # None: not completed (the session ended)
     esl: str | None
     lal: str | None
     env_profile: str | None

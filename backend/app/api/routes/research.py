@@ -224,7 +224,7 @@ WITH ev AS (
            COALESCE(bool_or(e.event_type = 'DISTRACTOR_INTERACTION'), false) AS distractors
     FROM session_events e WHERE e.session_id = :session_id)
 SELECT t.trial_id, t.block_state::text, t.trial_sequence, t.trial_type::text, t.kanji_id, t.kanji_char,
-       t.is_primary_analysis, t.started_elapsed_ms, t.esl::text, t.lal::text, t.env_profile,
+       t.is_primary_analysis, t.started_elapsed_ms, t.completed_elapsed_ms, t.esl::text, t.lal::text, t.env_profile,
        t.prop_count, t.mover_count, t.is_correct, t.response_time_ms, t.timed_out, t.hint_count,
        t.cue_trigger, t.idle_ms,
        CASE WHEN ev.head_away THEN t.head_away_count END AS head_away_count,

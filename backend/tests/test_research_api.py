@@ -290,6 +290,7 @@ async def test_trials_rows_adaptive():
         assert change["cooldown_until_trial"] == 5                                # trial 5 never ran
         assert none["decision_action"] is None and none["explanation"] is None
         assert none["cue_trigger"] == "PROACTIVE"
+        assert [r["completed_elapsed_ms"] for r in rows] == [4500, 9500, 14500]   # the Answer column's "Not completed"
     finally:
         await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
 
