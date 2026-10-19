@@ -26,13 +26,19 @@ function lead(p: Detail): string {
   if (p.pretest_status === 'NOT_STARTED')
     return `The pre-test hasn't been started. Sessions use the default kanji set until it is completed.${none}`
   if (p.pretest_status === 'IN_PROGRESS')
-    // shortcut: no "of [n]" as drawn, since the pre-test has no fixed length (each known kanji
-    // pulls in reserves); add it if the design chat settles what the total is.
+    // No "of [n]": the pre-test has no fixed length (each known kanji pulls in reserves).
     return `The pre-test is in progress (${p.pretest_answered} kanji answered). Sessions use the default set until it is completed.${none}`
-  if (n === 0) return 'No sessions recorded yet.'
+  if (n === 0)
+    return replaced > 0
+      ? `The pre-test is complete, with ${replaced} kanji replaced. No sessions recorded yet.`
+      : 'The pre-test is complete and no kanji needed replacing. No sessions recorded yet.'
+  // "Later sessions" only when there are some: a participant can have none after the pre-test.
+  if (before === n)
+    return n === 1
+      ? 'The only session was recorded before the pre-test and used the default set.'
+      : `All ${n} sessions were recorded before the pre-test and used the default set.`
   if (before > 0)
-    // "Later sessions" only when there are some: a participant can have none after the pre-test.
-    return `${before} of ${n} sessions ${before === 1 ? 'was' : 'were'} recorded before the pre-test and used the default set.${before < n ? ' Later sessions used the confirmed set.' : ''}`
+    return `${before} of ${n} sessions ${before === 1 ? 'was' : 'were'} recorded before the pre-test and used the default set. Later sessions used the confirmed set.`
   return replaced > 0
     ? `Every session used the kanji set confirmed by the pre-test, with ${replaced} kanji replaced.`
     : 'Every session used the kanji set confirmed by the pre-test. No kanji needed replacing.'

@@ -663,10 +663,14 @@ only `COMPLETED` sessions are drawn in the trend.
       Session View's summary; e2e on `DEV_UNITY`, 34 sessions, 10 points)
 - [x] Screen checks: screenshots light and dark against *V1.8* and its dark artboard,
       keyboard (measure toggle), NULL as `—` with its reason, no clinical wording, 5-tell
-      audit clean. Three gaps, for the design chat: the pre-test has no fixed length, so
-      "in progress ([n] of [n] kanji answered)" shows "([n] kanji answered)"; when every
-      session predates the pre-test the lead drops "Later sessions used the confirmed
-      set."; the Unknown × shape is not built, since the API's condition is never unknown
+      audit clean. Four gaps, answered by the design chat on 20 Oct: "in progress ([n]
+      kanji answered)" confirmed (the pre-test has no fixed length); every session
+      before the pre-test reads "All [n] sessions were…" or "The only session was…";
+      pre-test complete with no sessions reads "The pre-test is complete, with [n] kanji
+      replaced. No sessions recorded yet." (or "…and no kanji needed replacing…"); the
+      Unknown × shape is dropped from the spec. Its note that unprojected sessions keep a
+      dashed "Unknown" chip "as in V1.1" does not match the code: V1.1 has no such chip,
+      and every session has a condition
 
 **Verify:** pytest; Playwright against *V1.8* (both states of `pretestDone`).
 

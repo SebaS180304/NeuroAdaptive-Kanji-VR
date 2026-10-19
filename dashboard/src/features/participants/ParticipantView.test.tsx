@@ -115,8 +115,28 @@ describe('participant view, pre-test not complete', () => {
 describe('participant view, every session before the pre-test', () => {
   it('names no later sessions', async () => {
     show({ ...DONE, sessions: DONE.sessions.map((s) => ({ ...s, before_pretest: true })) })
-    expect(await screen.findByText(/^3 of 3 sessions were recorded before the pre-test and used the default set\.$/))
+    expect(await screen.findByText(/^All 3 sessions were recorded before the pre-test and used the default set\.$/))
       .toBeInTheDocument()
+  })
+
+  it('with a single session', async () => {
+    show({ ...DONE, sessions: [{ ...DONE.sessions[0]!, before_pretest: true }] })
+    expect(await screen.findByText(/^The only session was recorded before the pre-test and used the default set\.$/))
+      .toBeInTheDocument()
+  })
+})
+
+describe('participant view, pre-test completed and no sessions', () => {
+  it('says how many kanji were replaced', async () => {
+    show({ ...DONE, sessions: [] })
+    expect(await screen.findByText(/^The pre-test is complete, with 1 kanji replaced\. No sessions recorded yet\.$/))
+      .toBeInTheDocument()
+  })
+
+  it('or that none needed replacing', async () => {
+    show({ ...DONE, sessions: [], substitutions: [] })
+    expect(await screen.findByText(
+      /^The pre-test is complete and no kanji needed replacing\. No sessions recorded yet\.$/)).toBeInTheDocument()
   })
 })
 
