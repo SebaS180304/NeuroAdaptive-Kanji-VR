@@ -13,7 +13,6 @@ describe('app shell', () => {
   })
 
   it.each([
-    ['/sessions/6eb2bd5c', 'Session', 'Sessions'],
     ['/participants/abc', 'Participant', 'Participants'],
     ['/quality', 'Data quality', 'Data quality'],
   ])('%s renders its reserved screen and marks its rail item', (path, title, item) => {

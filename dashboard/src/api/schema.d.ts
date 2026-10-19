@@ -161,6 +161,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session */
+        get: operations["get_session_research_sessions__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -217,6 +234,30 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AdaptationSummary
+         * @description Decisions of the adaptive S7 (v_adaptations, adaptation_applications).
+         */
+        AdaptationSummary: {
+            /** Decisions */
+            decisions: number;
+            /** Environment Changes */
+            environment_changes: number;
+            /** Assistance Changes */
+            assistance_changes: number;
+            /** Skipped By Unity */
+            skipped_by_unity: number;
+            /** Outcome Positive */
+            outcome_positive: number;
+            /** Outcome Neutral */
+            outcome_neutral: number;
+            /** Outcome Negative */
+            outcome_negative: number;
+            /** Outcome Uncertain */
+            outcome_uncertain: number;
+            /** Outcome Not Recorded */
+            outcome_not_recorded: number;
+        };
         /**
          * ExperimentalCondition
          * @description Seccion 10 del Game Flow v1: las tres condiciones comparten flujo
@@ -448,6 +489,77 @@ export interface components {
             /** Open Error Count */
             open_error_count: number;
         };
+        /**
+         * ResearchSessionDetail
+         * @description Session View header and summary (V1.2).
+         */
+        ResearchSessionDetail: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** External Code */
+            external_code: string;
+            /**
+             * Condition
+             * @enum {string}
+             */
+            condition: "STATIC" | "BEHAVIOR_ADAPTIVE" | "MULTIMODAL_ADAPTIVE";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "ABORTED";
+            /** Visit Number */
+            visit_number: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Projection Status
+             * @enum {string}
+             */
+            projection_status: "NO_DATA" | "NOT_PROJECTED" | "PROJECTED";
+            /** Trial Count */
+            trial_count: number | null;
+            /** Decision Count */
+            decision_count: number | null;
+            /** Accuracy */
+            accuracy: number | null;
+            /** Open Error Count */
+            open_error_count: number;
+            /** Kanji Set */
+            kanji_set: string | null;
+            /** Started At */
+            started_at: string | null;
+            /** First Block */
+            first_block: string | null;
+            /** Last Block */
+            last_block: string | null;
+            /** States */
+            states: components["schemas"]["SessionStateVisit"][];
+            /** Mean Rt Ms */
+            mean_rt_ms: number | null;
+            /** Rt Cv Mean */
+            rt_cv_mean: number | null;
+            /** Hint Requests */
+            hint_requests: number | null;
+            /** Proactive Hints */
+            proactive_hints: number | null;
+            /** Head Away Count */
+            head_away_count: number | null;
+            /** Head Away Ms */
+            head_away_ms: number | null;
+            adaptations: components["schemas"]["AdaptationSummary"] | null;
+        };
         /** SessionCreate */
         SessionCreate: {
             /**
@@ -516,6 +628,18 @@ export interface components {
             new_state: components["schemas"]["GameFlowState"];
             /** Client Timestamp */
             client_timestamp?: string | null;
+        };
+        /**
+         * SessionStateVisit
+         * @description One visit to a Game Flow state, in order (session_states).
+         */
+        SessionStateVisit: {
+            /** State */
+            state: string;
+            /** Entered Elapsed Ms */
+            entered_elapsed_ms: number;
+            /** Exited Elapsed Ms */
+            exited_elapsed_ms: number | null;
         };
         /**
          * SessionStatus
@@ -816,6 +940,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchSession"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_research_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchSessionDetail"];
                 };
             };
             /** @description Validation Error */

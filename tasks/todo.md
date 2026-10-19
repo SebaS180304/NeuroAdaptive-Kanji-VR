@@ -373,7 +373,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Deps:** 0.2, 0.3, 1.3. **Scope:** M
 
-### [ ] Task 2.2: Session View header and summary (V1.2)
+### [x] Task 2.2: Session View header and summary (V1.2, done 19 Oct)
 **Description:**
 - **Endpoint:** `GET /research/sessions/{id}`.
 - **Screen:** the page header with a lead sentence built from the data, the session facts,
@@ -382,8 +382,9 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 - The S6 profile is a reserved slot. The adaptations block is empty-state for STATIC.
 
 **Acceptance:**
-- [ ] The figures match `trial_timeline()` / `v_adaptations` for one BEHAVIOR_ADAPTIVE and one STATIC session
-- [ ] Not-recorded values follow the criterion from 0.3
+- [x] The figures match `trial_timeline()` / `v_adaptations` for one BEHAVIOR_ADAPTIVE and one STATIC session (19 Oct, `a5748886` and `6eb2bd5c`: trials, mean RT, RT CV, head-away, proactive hints, decisions by action, outcomes; also in pytest on the fixtures). Head-away counts over answered trials, as `trial_timeline()` does, not every episode of the session (`a5748886`: 14 and 37.6 s, against 17 and 45.8 s)
+- [x] Not-recorded values follow the criterion from 0.3 (head-away null without a `HEAD_AWAY` event; adaptations null without decisions; hints null without trials)
+- [x] Screen checks: screenshots light and dark (both sessions), keyboard e2e, NULL as `—` with its reason, no clinical wording, 5-tell audit clean. Export CSV is Task 2.7; the timeline and tabs are a reserved slot until 2.3–2.6. S9 has no exit in a completed session, so the strip leaves it out instead of drawing a cut
 
 **Verify:** pytest; Playwright against *Session View*.
 

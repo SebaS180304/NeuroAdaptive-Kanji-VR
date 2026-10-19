@@ -26,3 +26,21 @@ test('keyboard reaches the filters, then the first session, and opens it', async
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/sessions\/[0-9a-f-]{36}$/)
 })
+
+// Screen check: the Session View header works from the keyboard alone, on a real adaptive session.
+test('Session View: keyboard reaches the back link and the participant', async ({ page, request }) => {
+  const sessions = await (await request.get('/api/research/sessions?condition=BEHAVIOR_ADAPTIVE&status=COMPLETED')).json()
+  test.skip(sessions.length === 0, 'no completed adaptive session')
+  const s = sessions[0]
+  await page.goto(`/sessions/${s.session_id}`)
+  await page.getByRole('region', { name: 'Adaptations' }).waitFor()
+  const reached: string[] = []
+  for (let i = 0; i < 8; i++) {
+    await page.keyboard.press('Tab')
+    reached.push(await page.evaluate(() => document.activeElement?.textContent?.trim() ?? ''))
+  }
+  expect(reached.slice(4, 6)).toEqual(['Sessions', s.external_code])           // after the 4 rail items
+  await page.getByRole('main').getByRole('link', { name: 'Sessions' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(/\/sessions$/)
+})
