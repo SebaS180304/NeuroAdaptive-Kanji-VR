@@ -58,7 +58,9 @@ SELECT o.session_id, o.participant_id, p.external_code, o.condition, o.status, o
        o.created_at, o.projection_status,
        CASE WHEN o.trials_recorded THEN o.trial_count END AS trial_count,
        CASE WHEN o.decisions_recorded THEN o.decision_count END AS decision_count,
-       o.accuracy::float AS accuracy, o.open_error_count"""
+       o.accuracy::float AS accuracy, o.open_error_count,
+       (SELECT x.state::text FROM session_states x WHERE x.session_id = o.session_id
+         ORDER BY x.visit_seq DESC LIMIT 1) AS last_state"""
 
 _SESSIONS = text(_SESSION_COLUMNS + """
 FROM v_session_overview o

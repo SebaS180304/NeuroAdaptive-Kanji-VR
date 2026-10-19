@@ -119,18 +119,21 @@ async def test_session_list_rows_and_filters(client):
     rows = (await client.get("/research/sessions", params={"participant_id": pid})).json()
     assert [r["session_id"] for r in rows] == [str(static), empty]          # newest first
     trials = await _scalar("SELECT count(*) FROM trials WHERE session_id = :s", s=static)
+    last = await _scalar("SELECT state::text FROM session_states WHERE session_id = :s "
+                         "ORDER BY visit_seq DESC LIMIT 1", s=static)
+    assert last is not None
     assert rows[0] | {"created_at": None} == {
         "session_id": str(static), "participant_id": pid, "external_code": CODES[0],
         "condition": "STATIC", "status": "COMPLETED", "visit_number": 1, "created_at": None,
         "projection_status": "PROJECTED", "trial_count": trials, "decision_count": None,
-        "accuracy": 0.5, "open_error_count": 0,
+        "accuracy": 0.5, "open_error_count": 0, "last_state": last,
     }
     # No events: counts are "not recorded" (None), not zero.
     assert rows[1] | {"created_at": None} == {
         "session_id": empty, "participant_id": pid, "external_code": CODES[0],
         "condition": "BEHAVIOR_ADAPTIVE", "status": "ABORTED", "visit_number": 2, "created_at": None,
         "projection_status": "NO_DATA", "trial_count": None, "decision_count": None,
-        "accuracy": None, "open_error_count": 0,
+        "accuracy": None, "open_error_count": 0, "last_state": None,
     }
 
     assert await ids(condition="STATIC") == [str(static)]

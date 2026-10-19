@@ -45,6 +45,9 @@ class ResearchSession(BaseModel):
     # Answered S5-S8 trials; None when none was answered.
     accuracy: float | None
     open_error_count: int
+    # Last Game Flow state recorded (session_states), not experiment_sessions.current_state,
+    # which can disagree with the events. None when no state was projected.
+    last_state: str | None
 
 
 class SessionStateVisit(BaseModel):
