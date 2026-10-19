@@ -515,40 +515,152 @@ in the F5a log, `a5748886` the latest).** No pgAdmin open.
 
 ## Phase 3: Participant, quality and close
 
+### [ ] Task 3.0: Design questions for V1.7 and V1.8 (design chat)
+**Description:** The V1.7 and V1.8 artboards were validated on 17 Oct, before there was
+real data to check them against. The data of 19 Oct raises the questions below. Sebas
+takes them to the design chat; its answers update Tasks 3.1 and 3.2 and
+`design-system.md`. No code until then.
+
+**V1.8 Participant View**
+1. **Trend x-axis.** The artboard says "Visit 1–4", but `visit_number` is 1 for almost
+   every session (`DEV_UNITY`: 34 sessions, 32 of them visit 1). Is the axis the
+   session order by date, or `visit_number`? Which sessions are points: completed only,
+   or aborted ones too, with their partial accuracy? How does the chart read with 30 or
+   more points?
+2. **Point shape per condition.** The legend draws a circle for both conditions, but the
+   last point is a diamond, and the diamond is already the decision mark on the timeline.
+   Which shape for Static, Behavior-adaptive, Multimodal-adaptive and Unknown?
+3. **Y axes.** The accuracy axis is labeled 100 %, 50 %, 25 % on uneven gridlines. Does it
+   start at 0? For Response time: unit ms, from 0 or fitted to the data?
+4. **Sessions fact.** "[n] completed, [n] aborted": what about `CREATED` and
+   `IN_PROGRESS` sessions?
+5. **Head-away column.** A count of episodes or the total time away?
+6. **Lead sentence.** "Every session used the effective set" is false for sessions
+   recorded before the pre-test gate (`DEV_UNITY` has 30 of them, before 19 Oct). Wording
+   for: some sessions before the pre-test, pre-test not started, pre-test in progress,
+   no kanji replaced, no sessions yet.
+7. **Flags.** Which flags go in the facts? The same notes as V1.11 ("Previous Japanese
+   study reported", "Kanji kept with no substitute")?
+
+**V1.7 Data quality**
+8. **Sessions not projected.** The lead says they "are listed apart", but the artboard
+   has no place for them. Today there are 3 `NOT_PROJECTED` and 1 `NO_DATA`. Where do
+   they go? The date "Sep 7" is stale: the oldest session is from 15 Sep.
+9. **No open errors.** Today all 9,810 errors are resolved (`DUPLICATE`, `FK_VIOLATION`,
+   `ORPHAN_EVENT`). Empty state for the bars and for "Errors to resolve"? Is the
+   resolved count shown anywhere? With many open errors, is the table paged or capped?
+10. **Codes in the bars.** Always the 5 known codes, with 0 where there are none, or only
+    the codes present?
+11. **"Needs review".** The table shows only the discrepancy count. Where does the
+    researcher see which sessions and what detail (`verify_*_fn` returns session,
+    check and detail)? An expandable row, as in V1.5?
+12. **Check names.** The artboard shows file names (`verify_trials_v1`); the real checks
+    are SQL functions (`verify_trials_fn`). Proposal: show `verify_trials`, without
+    the suffix.
+
+**Answers (design chat; V1.7 and V1.8 validated by Sebas on 19 Oct, 23:54, canvas
+version 27, with dark artboards `QualityDark` and `ParticipantDark`):**
+1. Only `COMPLETED` sessions are points. Aborted, created and in-progress sessions stay out
+   of the chart; the table lists them and the facts count them. Ticks are each session's
+   `#` in the table (session 3 aborted: "1, 2, 4, 5, 6"). Axis title "Completed sessions,
+   numbered as in the table". Caption: "Completed sessions only; aborted ones are listed
+   in the table below." The tooltip gives the date and the visit number. The newest point
+   is labeled "Latest". The line is 1 px `--color-border-strong`.
+2. Static: 10 px square, `--color-condition-static`. Behavior-adaptive: 10 px circle,
+   `--color-condition-behavior`. Multimodal-adaptive: triangle,
+   `--color-condition-multimodal`. The legend repeats them.
+3. Accuracy runs from 0 % to 100 %, with gridlines at 25 % steps and a stronger 0 line.
+   Response time: not drawn (open, see below).
+4. Facts: "5 completed, 1 aborted" (open for `CREATED` and `IN_PROGRESS`, see below).
+5. Head-away: the count, then the total time in muted text: "[n] ([nn.n] s)".
+6. Lead sentence, pre-test done: "2 of 6 sessions were recorded before the pre-test and
+   used the default set. Later sessions used the confirmed set, with 1 kanji replaced."
+   Pre-test not started: "The pre-test hasn't been started. Sessions use the default kanji
+   set until it is completed." Rows recorded before the pre-test carry "Before the
+   pre-test" under the date. The table's first column is `#`, not "Visit".
+7. The fact is called "Notes": one line each, with the warning icon
+   (`--color-lal-high`), e.g. "2 sessions recorded before the pre-test", "Kanji kept with
+   no substitute". Conditions lists the participant's conditions.
+8. New full-width section at the end, "Sessions not projected": "They have no rows in the
+   analysis tables, so the checks above don't cover them." Columns: session, participant
+   (mono links), recorded, status ("Not projected" / "No events recorded"), reason (`—`
+   when the API has none). The lead says "[n] sessions are not projected; they are listed
+   at the end." Approved as drawn.
+9. Empty state: the bars show 0, and the table is replaced by "No errors to resolve.
+   9,810 resolved by re-projection so far." Under the bars, always: "[n] resolved by
+   re-projection so far". Lead with nothing open: "Every projected session has no open
+   errors and passes every check." The errors table is paged, 50 per page, "Showing 1–50
+   of [n]", with Previous and Next.
+10. Always the 5 known codes, with 0 where there are none.
+11. A "Needs review" row expands (24 px chevron button, "Show affected sessions") into an
+    `--color-explain-bg` row: "Affected sessions, 10 at a time", session id link + detail,
+    and "Show all [n]".
+12. `verify_trials` etc., without the suffix.
+
+**Still open (not in the artboards; asked of Sebas on 19 Oct):** the text of
+`design-system.md` → "V1.7 and V1.8: cases from real data", which the design chat cites
+but which is not in the repo copy. It should settle: the Response time axis; how the
+facts count `CREATED` and `IN_PROGRESS`; the lead for a pre-test in progress, no kanji
+replaced and no sessions; the status words in the table ("Aborted after S7").
+
+**Acceptance:**
+- [x] Every question has an answer from the design chat, written down here (open items above)
+- [x] Tasks 3.1 and 3.2 are updated to the answers
+- [ ] `design-system.md` has the section "V1.7 and V1.8: cases from real data"
+
+**Deps:** Checkpoint C. **Scope:** XS
+
 ### [ ] Task 3.1: Participant View (V1.8)
 **Description:**
 - **Endpoint:** `GET /research/participants/{id}`.
 - **Screen:**
-  - the facts: pre-test, session counts, conditions, flags;
+  - the lead sentence, with the cases of Task 3.0 (sessions before the pre-test,
+    pre-test not started);
+  - the facts: pre-test, session counts, conditions, notes;
   - "Open the pre-test" while the pre-test is incomplete;
-  - the trend across visits, accuracy or response time, with points shaped by condition;
+  - the trend over **completed sessions only**, accuracy or response time, ticked by the
+    table's `#`, points shaped by condition (square, circle, triangle), "Latest" label;
   - "Kanji replaced by the pre-test", including flagged kanji;
-  - sessions in order;
+  - "Sessions in order": `#`, session, condition, recorded (+ "Before the pre-test"),
+    status, accuracy, mean RT, adaptations, head-away "[n] ([nn.n] s)";
   - the Learner Profile as a reserved slot.
 
 **Acceptance:**
-- [ ] Substitutions and flags show only here
-- [ ] The trend values match `trial_timeline()` per session
+- [ ] Substitutions and notes show only here
+- [ ] The trend values match `trial_timeline()` per session; only `COMPLETED` sessions
+      are points, and their ticks match the table's `#`
+- [ ] Screen checks: screenshots light and dark against *V1.8* and its dark artboard,
+      keyboard (measure toggle), NULL as `—` with its reason, no clinical wording, 5-tell
+      audit clean
 
 **Verify:** pytest; Playwright against *V1.8* (both states of `pretestDone`).
 
-**Deps:** 1.4, 2.1. **Scope:** M
+**Deps:** 1.4, 2.1, 3.0. **Scope:** M
 
 ### [ ] Task 3.2: Data quality (V1.7)
 **Description:**
 - **Endpoint:** `GET /research/quality` over `v_projection_errors` and the `verify_*_fn()`.
 - **Screen:**
-  - open errors by code;
-  - the verification table: check, what it compares, discrepancies, result;
-  - the errors to resolve, with a code filter and the event, session, detail and time.
+  - open errors by code (always the 5 codes) and the resolved count;
+  - the verification table: check (`verify_trials`, no suffix), what it compares,
+    discrepancies, result; a "Needs review" row expands to its affected sessions, 10 at
+    a time, with "Show all [n]";
+  - the errors to resolve, with a code filter and the event, session, detail and time,
+    50 per page, and the empty state "No errors to resolve. [n] resolved by
+    re-projection so far.";
+  - "Sessions not projected" (`NOT_PROJECTED` and `NO_DATA` in `v_session_overview`).
 
 **Acceptance:**
-- [ ] After 0.1, the counts match SQL
-- [ ] A seeded discrepancy appears as "Needs review"
+- [ ] After 0.1, the counts match SQL (today: 0 open, 9,810 resolved, 3 not projected,
+      1 with no data)
+- [ ] A seeded discrepancy appears as "Needs review" and expands to its session
+- [ ] Screen checks: screenshots light and dark against *V1.7* and its dark artboard (both
+      states of `noErrors`), keyboard (expand, filter, paging), no clinical wording,
+      5-tell audit clean
 
 **Verify:** pytest; Playwright against *V1.7*.
 
-**Deps:** 0.3, 1.3. **Scope:** M
+**Deps:** 0.3, 1.3, 3.0. **Scope:** M
 
 ### [ ] Task 3.3: Docs and graph (was Task 6)
 **Description:**

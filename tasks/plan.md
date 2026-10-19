@@ -73,8 +73,8 @@ existing FastAPI backend. It has two parts with different deadlines:
   Sebas on 17 Oct** (table below). Each list is stored as a fixed `Literal` set in the API
   schema.
 - **Theme:** light by default, with `[data-theme="dark"]` and `prefers-color-scheme`.
-  V1.1, V1.7 and V1.8 have no dark artboard, so their dark screenshots are built from the
-  tokens and are not compared to a mockup.
+  V1.1 has no dark artboard, so its dark screenshot is built from the tokens and is not
+  compared to a mockup. V1.7 and V1.8 got theirs on 19 Oct (canvas version 27).
 - **Copy change:** the inclusion notice on registration says the criterion is
   *accepted* (MIRAI, 9 Oct), not *proposed*. Same notice, same layout.
 
@@ -107,7 +107,7 @@ How the answers are handled:
                      1.8 Unity uses kanji_items
                      1.9 assembly B and C ─► 1.10 assembly of the first-choice reserve
 1.3 ─► 2.1 ─► 2.2 summary ─► 2.3 timeline ─► 2.4 trials + inspector ─► 2.5 adaptations ─► 2.6 plan ─► 2.7 export
-1.4 ─► 3.1 participant view;  0.3 ─► 3.2 quality
+1.4 + 3.0 design questions ─► 3.1 participant view;  0.3 + 3.0 ─► 3.2 quality
 ```
 
 ## Phases
@@ -117,7 +117,8 @@ How the answers are handled:
   `23a6a18`). What is left of them, and Checkpoint B, is the headset: they run together
   on Tue 20 Oct, with the step-by-step script "Headset session, Tue 20 Oct" in `todo.md`.
 - **Phase 2. Session review:** Tasks 2.1–2.7 → Checkpoint C.
-- **Phase 3. Participant and quality, closing v1:** Tasks 3.1–3.3 → Checkpoint D.
+- **Phase 3. Participant and quality, closing v1:** Task 3.0 (design questions), then
+  Tasks 3.1–3.3 → Checkpoint D. Checkpoint C passed on 19 Oct (session `099690e1`).
 
 ## Risks and mitigations
 | Risk | Impact | Mitigation |
@@ -153,3 +154,13 @@ How the answers are handled:
 1. ~~Assembly segments for the 20 reserve kanji: who draws them, and when?~~ Decided 19 Oct: Tasks 1.9 (B and C) and 1.10 (the 10 first-choice reserve kanji), both cut and committed the same day. The other 10 only if a real pre-test asks for them
 2. MIRAI: how consent is recorded; review of the substitution ranking (carried over,
    Checkpoint A of the old plan).
+3. Design chat, before Tasks 3.1 and 3.2: twelve questions on V1.7 and V1.8 against the
+   real data of 19 Oct (Task 3.0 in `todo.md`). Answered on 19 Oct by the redrawn artboards
+   (canvas version 27, validated by Sebas at 23:54). Still open: the text of
+   `design-system.md` → "V1.7 and V1.8: cases from real data", which is not in the repo.
+
+## Decisions (19 Oct, design chat, validated by Sebas)
+- V1.8 trend: completed sessions only, ticked by the table's `#`; shapes square (Static),
+  circle (Behavior-adaptive), triangle (Multimodal-adaptive).
+- V1.7: a "Sessions not projected" section, an empty state with the resolved count, a
+  paged errors table and expandable "Needs review" rows.
