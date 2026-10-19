@@ -224,3 +224,30 @@ class ResearchTrial(BaseModel):
     rules_version: str | None
     indicators: dict | None
     thresholds: dict | None
+
+
+class ResearchAdaptation(BaseModel):
+    """One decision of the Adaptations tab (V1.5): v_adaptations plus adaptation_decisions."""
+    decision_id: str
+    trial_id: str
+    decided_elapsed_ms: int
+    learner_state: str
+    cause: str | None
+    confidence: float
+    action: str
+    dimension: str | None
+    from_level: str | None
+    to_level: str | None
+    proactive_cues: bool
+    reason_code: str
+    explanation: str
+    unity_result: str | None              # None: Unity has not answered (pending or lost)
+    skip_reason: str | None
+    applied_before_trial_id: str | None
+    cooldown_until_trial: int | None
+    cooldown_until_trial_id: str | None   # None when that trial never ran
+    outcome: str | None                   # None: not recorded yet
+    estimator_version: str | None
+    rules_version: str | None
+    indicators: dict | None
+    thresholds: dict | None

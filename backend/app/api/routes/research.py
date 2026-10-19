@@ -14,7 +14,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.research import ResearchParticipant, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionTimeline
+from app.schemas.research import (
+    ResearchAdaptation, ResearchParticipant, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionTimeline,
+)
 
 router = APIRouter(prefix="/research", tags=["research"])
 
@@ -215,6 +217,11 @@ async def get_timeline(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)
     return row
 
 
+async def _require_session(db: AsyncSession, session_id: uuid.UUID) -> None:
+    if not (await db.execute(text("SELECT 1 FROM experiment_sessions WHERE id = :s"), {"s": session_id})).first():
+        raise HTTPException(status_code=404, detail="session not found")
+
+
 # trial_timeline() COALESCEs the head-away, peripheral and dwell columns to 0; here they are
 # NULL when their event type never appears in the session (data-contract.md, 0.3 criterion).
 _TRIALS = text("""
@@ -252,7 +259,32 @@ async def list_trials(
     window_n: int = Query(3, ge=3, le=5),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
-    if not (await db.execute(text("SELECT 1 FROM experiment_sessions WHERE id = :s"), {"s": session_id})).first():
-        raise HTTPException(status_code=404, detail="session not found")
+    await _require_session(db, session_id)
     rows = await db.execute(_TRIALS, {"session_id": session_id, "window_n": window_n})
+    return [dict(r._mapping) for r in rows]
+
+
+_ADAPTATIONS = text("""
+SELECT v.decision_id, v.trial_id, v.decided_elapsed_ms, v.learner_state, v.cause, v.confidence, v.action,
+       v.dimension, v.from_level::text, v.to_level::text, v.proactive_cues, v.reason_code, v.explanation,
+       v.unity_result, v.skip_reason, v.applied_before_trial_id, d.cooldown_until_trial,
+       (SELECT c.trial_id FROM trials t JOIN trials c ON c.session_id = t.session_id AND c.block_state = t.block_state
+         WHERE t.session_id = v.session_id AND t.trial_id = v.trial_id
+           AND c.trial_sequence = d.cooldown_until_trial) AS cooldown_until_trial_id,
+       v.outcome, d.estimator_version, d.rules_version, d.indicators, d.thresholds
+FROM v_adaptations v
+JOIN adaptation_decisions d ON d.session_id = v.session_id AND d.decision_id = v.decision_id
+WHERE v.session_id = :session_id AND (:include_no_change OR v.action <> 'NO_CHANGE')
+ORDER BY v.decided_elapsed_ms
+""")
+
+
+@router.get("/sessions/{session_id}/adaptations", response_model=list[ResearchAdaptation])
+async def list_adaptations(
+    session_id: uuid.UUID,
+    include_no_change: bool = False,
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    await _require_session(db, session_id)
+    rows = await db.execute(_ADAPTATIONS, {"session_id": session_id, "include_no_change": include_no_change})
     return [dict(r._mapping) for r in rows]

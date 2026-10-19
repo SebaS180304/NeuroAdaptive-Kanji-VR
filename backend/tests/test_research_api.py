@@ -13,6 +13,9 @@ GET /research/sessions/{id}/timeline (V1.3): the eight lanes on the same two ses
 GET /research/sessions/{id}/trials (V1.4): trial_timeline() rows with the decision
 details of the inspector, on the adaptive S7.
 
+GET /research/sessions/{id}/adaptations (V1.5): the decisions of the adaptive S7, with or
+without NO_CHANGE.
+
 GET /research/sessions/{id} (V1.2): the summary, checked against trial_timeline()
 and v_adaptations on the STATIC fixture session and on the adaptive S7 of
 test_projection_adaptation.py.
@@ -315,6 +318,39 @@ async def test_trials_window_changes_the_aggregates():
                                             "ORDER BY started_elapsed_ms", s=sid, n=n)
             assert [(r["window_n"], r["window_accuracy"]) for r in rows] == [tuple(x) for x in expected]
         assert [r["window_n"] for r in got[3]][-1] == 3 and [r["window_n"] for r in got[5]][-1] == 5
+    finally:
+        await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+
+
+@pytest.mark.asyncio
+async def test_adaptations_rows():
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+
+    await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+    sid = await adaptive._new_session()
+    await adaptive._insert_and_project(sid, adaptive._events())
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            changes = (await client.get(f"/research/sessions/{sid}/adaptations")).json()
+            every = (await client.get(f"/research/sessions/{sid}/adaptations", params={"include_no_change": True})).json()
+            assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/adaptations")).status_code == 404
+        assert [r["trial_id"] for r in changes] == ["S7-002"]
+        assert [r["trial_id"] for r in every] == ["S7-001", "S7-002"]                  # every decision, in time order
+        assert len(every) == await adaptive._scalar("SELECT count(*) FROM adaptation_decisions WHERE session_id = :s", s=sid)
+        assert {k: changes[0][k] for k in [
+            "decision_id", "learner_state", "cause", "confidence", "action", "dimension", "from_level", "to_level",
+            "proactive_cues", "reason_code", "explanation", "unity_result", "skip_reason", "applied_before_trial_id",
+            "cooldown_until_trial", "cooldown_until_trial_id", "outcome", "estimator_version", "rules_version",
+            "indicators", "thresholds"]} == {
+            "decision_id": "d-S7-002", "learner_state": "OVERLOADED", "cause": None, "confidence": pytest.approx(0.8),
+            "action": "CHANGE_ASSISTANCE", "dimension": "LAL", "from_level": "MEDIUM", "to_level": "HIGH",
+            "proactive_cues": True, "reason_code": "OVERLOADED", "explanation": "Raised the assistance from MEDIUM to HIGH.",
+            "unity_result": "APPLIED", "skip_reason": None, "applied_before_trial_id": "S7-003",
+            "cooldown_until_trial": 5, "cooldown_until_trial_id": None, "outcome": None,
+            "estimator_version": "behavior-v1", "rules_version": "rules-v1",
+            "indicators": {"n": 3}, "thresholds": {"rules": {"cooldown_trials": 3}},
+        }
     finally:
         await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
 
