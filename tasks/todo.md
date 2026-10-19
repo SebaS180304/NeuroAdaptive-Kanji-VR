@@ -300,6 +300,35 @@ attention question has 5 options, and the inclusion notice says "accepted".
 ### Checkpoint B: the pre-test feeds the VR loop
 - [ ] A participant registered and pre-tested in the portal runs a Unity session with their effective set
 
+### Headset session, Tue 20 Oct: every pending VR check
+Everything Phase 1 still needs from the headset, in one sitting. Code is committed
+(`a520817`). Quest 2 via Link in the Editor; Inspector changes on `SessionBootstrap`
+(`devParticipantCode`, `newSessionKanjiSet`) are temporary: revert them after. Never save
+the scene during Play. Restart the backend only between runs, never with `--reload`.
+
+**Run 1: set B with a substitution (Task 1.8, Task 1.9 for B, Checkpoint B)**
+- [ ] Portal `/pretest`: register `TEST_VR_B` with consent; answer "Yes" with the right
+      reading on one set B kanji (on 18 Oct, 山 → 口), "No" on the rest. Note the substitute
+- [ ] `SessionBootstrap`: `devParticipantCode = TEST_VR_B`, `newSessionKanjiSet = B`; Play
+      through S5–S8 (low `baselineTimeScale` is fine)
+- [ ] S5–S8 show the substitute in the original's place
+- [ ] S5: the 4 kept B kanji log "authored" and assemble from real strokes; every group can
+      be grasped. The substitute logs the placeholder warning (expected until Task 1.10)
+
+**Run 2: set C (Task 1.9 for C)**
+- [ ] `devParticipantCode = DEV_UNITY` (pre-test all No, set unchanged), `newSessionKanjiSet = C`;
+      Play through S5
+- [ ] S5: all 5 C kanji log "authored"; every group can be grasped (look at 花's three
+      pieces and 足's foot)
+
+**After both runs, in the DB** (`<id>` = each session id from the Unity log):
+- [ ] `select kanji_id, segment_count, segments_authored from assemblies where session_id = '<id>';`
+      → `true` for every B and C kanji, `false` only for the substitute
+- [ ] `select block_state, kanji_id, count(*) from trials where session_id = '<id>' group by 1, 2 order by 1, 2;`
+      → run 1: the substitute appears and its original never does
+- [ ] Tick Task 1.8 (substitution), Task 1.9 (headset) and Checkpoint B; delete `TEST_VR_B`
+      with Sebas's OK
+
 ---
 
 ## Phase 2: Session review

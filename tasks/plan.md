@@ -113,6 +113,8 @@ How the answers are handled:
 ## Phases
 - **Phase 0. Data foundation (backend and DB only):** Tasks 0.1–0.3 → Checkpoint 0.
 - **Phase 1. Pre-test, end to end, before the pilot:** Tasks 1.1–1.10 → Checkpoints A and B.
+  The headset checks of Tasks 1.8 and 1.9 and Checkpoint B run together on Tue 20 Oct;
+  the step-by-step script is "Headset session, Tue 20 Oct" in `todo.md`.
 - **Phase 2. Session review:** Tasks 2.1–2.7 → Checkpoint C.
 - **Phase 3. Participant and quality, closing v1:** Tasks 3.1–3.3 → Checkpoint D.
 
