@@ -26,8 +26,9 @@ const STATE_DOT: Record<string, string> = {
 const title = (v: string) => v[0] + v.slice(1).toLowerCase().replace(/_/g, ' ')
 
 function answer(t: Trial): ReactNode {
-  if (t.timed_out) return 'Timed out'
-  if (t.is_correct === null) return <Missing reason="Not answered" />
+  if (t.completed_elapsed_ms === null) return 'Not completed (session ended)'
+  if (t.timed_out) return <span title="Timed out">Not answered</span>
+  if (t.is_correct === null) return 'Not answered'
   return t.is_correct ? 'Correct' : 'Incorrect'
 }
 
@@ -59,7 +60,7 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
     queryFn: () => getJson<Trial[]>(`/research/sessions/${sessionId}/trials?window_n=${windowN}`),
     placeholderData: keepPreviousData,
   })
-  const noDecision = condition === 'STATIC' ? 'No decisions in a static session' : 'No decision after this trial'
+  const noDecision = condition === 'STATIC' ? 'Static session: the system makes no decisions' : 'No decision recorded after this trial'
   const rows = (data ?? []).filter((t) => !hideTutorial || t.is_primary_analysis !== false)
   const current = data?.find((t) => t.trial_id === selected) ?? null
 
@@ -135,7 +136,7 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
                           <th
                             key={label}
                             scope="col"
-                            className={`type-caption h-10 border-b px-4 font-medium whitespace-nowrap text-(--color-text-muted) ${align === 'right' ? 'text-right' : 'text-left'}`}
+                            className={`type-caption h-10 border-b px-4 font-medium whitespace-nowrap text-(--color-text-muted) ${align === 'right' ? 'text-right' : 'text-left'} ${label === 'Trial' ? 'sticky left-0 z-[1] bg-(--color-surface)' : ''}`}
                           >
                             {label}
                           </th>
@@ -147,7 +148,10 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
                         const on = t.trial_id === selected
                         return (
                           <tr key={t.trial_id} className={`border-b border-(--color-border-subtle) ${on ? 'bg-(--color-selected-row)' : ''}`}>
-                            <th scope="row" className="h-10 px-4 text-left font-normal whitespace-nowrap">
+                            <th
+                              scope="row"
+                              className={`sticky left-0 z-[1] h-10 px-4 text-left font-normal whitespace-nowrap ${on ? 'bg-(--color-selected-row)' : 'bg-(--color-surface)'}`}
+                            >
                               <button
                                 type="button"
                                 aria-pressed={on}
@@ -157,7 +161,7 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
                                 {t.trial_id}
                               </button>
                               {t.is_primary_analysis === false && (
-                                <span className="type-caption ml-2 rounded-(--radius-pill) border border-dashed border-(--color-border-strong) px-2 text-(--color-text-muted)">
+                                <span className="type-caption ml-2 rounded-(--radius-pill) bg-(--color-state-neutral) px-2 text-(--color-text-secondary)">
                                   Tutorial
                                 </span>
                               )}
@@ -172,7 +176,12 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
                             <td className="px-4 text-right">{t.head_away_ms ?? <Missing reason="Head-away was not recorded in this session" />}</td>
                             <td className="px-4 text-right whitespace-nowrap">
                               {t.hint_count ?? <Missing reason="Not recorded" />}
-                              {t.cue_trigger === 'PROACTIVE' && ' (proactive)'}
+                              {t.cue_trigger === 'PROACTIVE' && (
+                                <>
+                                  <span aria-hidden="true" className="ml-2 inline-block size-2 rounded-full border-2 border-(--color-lal-high) align-middle" />
+                                  <span className="sr-only">proactive cue</span>
+                                </>
+                              )}
                             </td>
                             <td className="px-4"><EstimatedState t={t} reason={noDecision} /></td>
                             <td className="px-4 whitespace-nowrap">
@@ -216,11 +225,13 @@ function KeyValues({ heading, values }: { heading: string; values: Record<string
     <div className="flex flex-col gap-2">
       <h4 className="type-caption m-0 font-medium text-(--color-text-secondary)">{heading}</h4>
       {values ? (
-        <dl className="type-body m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
-          {flatten(values).map(([k, v]) => (
+        <dl className="type-body m-0 grid grid-cols-[fit-content(60%)_minmax(0,1fr)] gap-x-4 gap-y-1">
+          {flatten(values).map(([k, v, block]) => (
             <div key={k} className="contents">
-              <dt className="type-mono text-(--color-text-muted)">{k}</dt>
-              <dd className="type-mono m-0 text-right break-all">{v}</dd>
+              <dt className={`type-mono text-(--color-text-muted) ${block ? 'col-span-2' : ''}`}>
+                {k.split('.').map((part, i) => <span key={i}>{i > 0 && <>.<wbr /></>}{part}</span>)}
+              </dt>
+              <dd className={`type-mono m-0 break-all ${block ? 'col-span-2 text-left' : 'text-right'}`}>{v}</dd>
             </div>
           ))}
         </dl>
@@ -266,7 +277,10 @@ function Inspector({ t, windowN, noDecision }: { t: Trial | null; windowN: numbe
             [`Window accuracy (${windowN} trials)`]: t.window_accuracy !== null ? formatPercent(t.window_accuracy) : <Missing reason="No answered trials in the window" />,
           }} />
           {t.decision_action ? (
-            <div className="flex flex-col gap-2 rounded-(--radius-panel) bg-(--color-explain-bg) p-4">
+            <div
+              className={`flex flex-col gap-2 rounded-(--radius-panel) p-4 ${t.decision_action === 'NO_CHANGE'
+                ? 'border border-(--color-border) bg-(--color-surface-raised)' : 'bg-(--color-explain-bg)'}`}
+            >
               <h3 className="type-subtitle m-0">{t.decision_action === 'NO_CHANGE' ? 'Why the system made no change' : 'Why the system changed'}</h3>
               <p className="type-body m-0 text-(--color-text-secondary)">{t.explanation}</p>
               <dl className="type-body m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
@@ -277,7 +291,7 @@ function Inspector({ t, windowN, noDecision }: { t: Trial | null; windowN: numbe
                 </dd>
                 <dt className="text-(--color-text-muted)">Change</dt>
                 <dd className="m-0 text-right">
-                  {t.dimension && t.to_level ? `${t.dimension} ${t.from_level ? `${title(t.from_level)} to ` : 'to '}${title(t.to_level)}` : 'No change'}
+                  {t.dimension && t.to_level ? `${t.dimension} ${t.from_level ? `${title(t.from_level)} to ` : 'to '}${title(t.to_level)}` : 'None'}
                 </dd>
                 {t.decision_action !== 'NO_CHANGE' && (
                   <>

@@ -615,6 +615,8 @@ export interface components {
             is_primary_analysis: boolean | null;
             /** Started Elapsed Ms */
             started_elapsed_ms: number | null;
+            /** Completed Elapsed Ms */
+            completed_elapsed_ms: number | null;
             /** Esl */
             esl: string | null;
             /** Lal */
