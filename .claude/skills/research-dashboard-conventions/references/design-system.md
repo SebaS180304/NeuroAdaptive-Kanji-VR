@@ -185,6 +185,27 @@ Sentence case everywhere. No all-caps labels.
     answered or not completed".
   - "Whole session" and "Only S7" are pressed while the view matches them;
     neither is pressed after a free zoom or pan.
+- Lanes 5–8 marks (Oct 19, drawn on the *Tokens* artboard):
+  - Hints: a requested hint is an 8 px filled `--color-lal-high` dot; a
+    proactive cue is the same dot as a 2 px `--color-lal-high` ring.
+  - Peripherals: event ticks 2 × 8 px `--color-peripheral` in the upper half
+    of the slot; orienting ticks 2 × 8 px `--color-distractor` in the lower
+    half; dwell bars 4 px `--color-distractor` at the bottom.
+  - Head-away with no return: dashed `--color-headaway` outline, no fill, up to
+    the session end; tooltip "No return recorded before the session ended".
+  - Decision with no answer from Unity: the 2 px outlined diamond, dashed, and
+    no link line; tooltip "No answer from Unity recorded".
+  - Decision → Unity's answer: a 1 px `--color-accent` line ending in a
+    2 × 12 px accent tick at the answer.
+  - Outcome badge: 6 px at the diamond's upper right, in the shapes of the
+    outcome chips (positive filled circle, neutral outlined circle, negative
+    filled square, uncertain outlined square), with a 1 px `--color-surface`
+    ring around it. Not recorded: no badge; the tooltip says "Outcome: not
+    recorded".
+  - Legend: every mark, in the caption, grouped by lane in lane order and
+    wrapping as needed. Tooltips repeat it; they do not replace it.
+  - Lane labels: label 14 / 16 px over hint 12 / 16 px, so both fit a 32 px
+    lane. Lanes stay 32 px (the artboards were corrected).
 - Target width: lab monitor ≥ 1440 px. Below 1056 px the 16-column spans
   collapse to full width in source order; tables and timeline scroll inside
   their own box.
