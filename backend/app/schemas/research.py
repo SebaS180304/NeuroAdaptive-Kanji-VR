@@ -45,3 +45,47 @@ class ResearchSession(BaseModel):
     # Answered S5-S8 trials; None when none was answered.
     accuracy: float | None
     open_error_count: int
+
+
+class SessionStateVisit(BaseModel):
+    """One visit to a Game Flow state, in order (session_states)."""
+    state: str
+    entered_elapsed_ms: int
+    # None when the session was cut in this state.
+    exited_elapsed_ms: int | None
+
+
+class AdaptationSummary(BaseModel):
+    """Decisions of the adaptive S7 (v_adaptations, adaptation_applications)."""
+    decisions: int
+    environment_changes: int
+    assistance_changes: int
+    # Every SKIPPED application, TIMEOUT skips with no decision id included.
+    skipped_by_unity: int
+    # Outcomes of the changes (NO_CHANGE has none); not_recorded = no ADAPTATION_OUTCOME yet.
+    outcome_positive: int
+    outcome_neutral: int
+    outcome_negative: int
+    outcome_uncertain: int
+    outcome_not_recorded: int
+
+
+class ResearchSessionDetail(ResearchSession):
+    """Session View header and summary (V1.2)."""
+    kanji_set: str | None
+    # When the session clock started; None if it never did.
+    started_at: datetime | None
+    first_block: str | None
+    last_block: str | None
+    states: list[SessionStateVisit]
+    # Over answered trials (trial_timeline, window of 3); None when none was answered.
+    mean_rt_ms: float | None
+    rt_cv_mean: float | None
+    # None when no trial was recorded.
+    hint_requests: int | None
+    proactive_hints: int | None
+    # None when the session has no HEAD_AWAY event (0.3 criterion: never recorded, not zero).
+    head_away_count: int | None
+    head_away_ms: int | None
+    # None when no decision was recorded (every STATIC session).
+    adaptations: AdaptationSummary | None

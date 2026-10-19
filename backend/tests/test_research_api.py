@@ -7,11 +7,16 @@ them projected from the fixture with two answered S5 trials (one correct).
 
 GET /research/sessions (V1.1): one row per session, filters combined. A projected
 STATIC session and an adaptive one with no events at all.
+
+GET /research/sessions/{id} (V1.2): the summary, checked against trial_timeline()
+and v_adaptations on the STATIC fixture session and on the adaptive S7 of
+test_projection_adaptation.py.
 """
 
 import pytest
 
 from tests.test_projection import _exec, _scalar
+from tests import test_projection_adaptation as adaptive
 from tests.test_research_sql import _projected_session
 
 CODES = ["TEST_RESEARCH_1", "TEST_RESEARCH_2", "TEST_RESEARCH_3"]
@@ -121,6 +126,71 @@ async def test_session_list_rows_and_filters(client):
     assert await ids(**{"from": yesterday}) == [str(static)]
     assert await ids(to=yesterday) == [empty]
     assert (await client.get("/research/sessions", params={"status": "PAUSED"})).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_session_summary_static(client):
+    pid = await _register(client, CODES[0])
+    sid = await _projected_session(pid)
+    resp = await client.get(f"/research/sessions/{sid}")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    states = await _exec("SELECT state::text, entered_elapsed_ms, exited_elapsed_ms FROM session_states "
+                         "WHERE session_id = :s ORDER BY visit_seq", s=sid)
+    assert [tuple(x.values()) for x in body["states"]] == [tuple(r) for r in states]
+    tl = (await _exec("SELECT count(*), avg(response_time_ms), avg(window_rt_cv), min(block_state)::text, "
+                      "max(block_state)::text FROM trial_timeline(:s, 3)", s=sid))[0]
+    answered = (await _exec("SELECT avg(response_time_ms), avg(window_rt_cv) FROM trial_timeline(:s, 3) "
+                            "WHERE response_time_ms IS NOT NULL", s=sid))[0]
+    assert body["trial_count"] == tl[0]
+    assert (body["first_block"], body["last_block"]) == (tl[3], tl[4])
+    assert body["mean_rt_ms"] == pytest.approx(float(answered[0]))
+    assert body["rt_cv_mean"] == (None if answered[1] is None else pytest.approx(float(answered[1])))
+    assert body["hint_requests"] == await _scalar("SELECT count(*) FROM hint_requests WHERE session_id = :s", s=sid)
+    assert body["condition"] == "STATIC"
+    assert body["adaptations"] is None                                     # no decisions recorded
+    away = await _scalar("SELECT count(*) FROM session_events WHERE session_id = :s AND event_type = 'HEAD_AWAY'", s=sid)
+    if away == 0:
+        assert (body["head_away_count"], body["head_away_ms"]) == (None, None)
+    else:
+        assert body["head_away_count"] == await _scalar(
+            "SELECT count(*) FROM head_away_episodes WHERE session_id = :s", s=sid)
+
+
+@pytest.mark.asyncio
+async def test_session_summary_adaptive():
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+
+    await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+    sid = await adaptive._new_session()
+    await adaptive._insert_and_project(sid, adaptive._events())
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            body = (await client.get(f"/research/sessions/{sid}")).json()
+        assert body["states"] == [{"state": "S7_EXPERIMENTAL_RETRIEVAL", "entered_elapsed_ms": 0,
+                                   "exited_elapsed_ms": None}]                 # cut: no exit
+        assert (body["trial_count"], body["first_block"], body["last_block"]) ==             (3, "S7_EXPERIMENTAL_RETRIEVAL", "S7_EXPERIMENTAL_RETRIEVAL")
+        assert body["accuracy"] == pytest.approx(2 / 3)
+        assert body["mean_rt_ms"] == 2000
+        assert (body["hint_requests"], body["proactive_hints"]) == (0, 1)
+        assert (body["head_away_count"], body["head_away_ms"]) == (None, None)   # no HEAD_AWAY event
+        assert body["adaptations"] == {
+            "decisions": 2, "environment_changes": 0, "assistance_changes": 1, "skipped_by_unity": 1,
+            "outcome_positive": 0, "outcome_neutral": 0, "outcome_negative": 0, "outcome_uncertain": 0,
+            "outcome_not_recorded": 1,
+        }
+        v = (await adaptive._exec("SELECT count(*), count(*) FILTER (WHERE action = 'CHANGE_ASSISTANCE') "
+                                  "FROM v_adaptations WHERE session_id = :s", s=sid))[0]
+        assert (body["adaptations"]["decisions"], body["adaptations"]["assistance_changes"]) == tuple(v)
+    finally:
+        await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+
+
+@pytest.mark.asyncio
+async def test_session_summary_unknown_id(client):
+    assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000")).status_code == 404
 
 
 def test_research_router_is_read_only():
