@@ -378,6 +378,16 @@ Participant View*, both with dark variants.
 - **Y axes**: accuracy from 0 to 100 %, gridlines at 0, 25, 50, 75 and 100.
   Response time in ms from 0, top at the next round value above the largest
   mean (500 ms steps), 4 or 5 gridlines.
+- **Session status words** (decided Oct 20; one shared rule for the V1.1 list and
+  the V1.8 "Sessions in order" table, so reuse one component). Plain text in
+  `--color-text`, no chip and no color; the condition column already carries
+  chips.
+  - COMPLETED: "Completed".
+  - ABORTED: "Aborted in [state]" with the last state reached (e.g. "Aborted
+    in S7"); just "Aborted" when the last state isn't recorded.
+  - IN_PROGRESS: "In progress".
+  - CREATED: "Not started". The V1.1 status filter uses the same four words.
+  - V1.1 keeps "Not projected" for sessions without projection, as drawn.
 - **Sessions fact**: "[n] completed, [n] aborted", then ", [n] in progress"
   (IN_PROGRESS) and ", [n] not started" (CREATED), each only when above 0.
 - **Head-away column**: episode count, then the total time in
