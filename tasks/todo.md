@@ -287,10 +287,25 @@ attention question has 5 options, and the inclusion notice says "accepted".
   in Task 1.9.
 - The rest of the reserve only if a real pre-test asks for it. Until then the placeholder
   fallback stays, flagged by `segments_authored = false` and the S5 warning.
+- Groups proposed 19 Oct (stroke order; same rules as the 15), cut and pending review.
+  For the authoring table in the project docs:
+
+  | Kanji | Groups | Assembly |
+  |---|---|---|
+  | 土 | 2 | 十, base |
+  | 米 | 3 | two dots, cross, two sweeps |
+  | 木 | 2 | cross, two sweeps |
+  | 耳 | 2 | frame (top bar, two verticals), bars (two inner bars, rising bottom stroke) |
+  | 口 | 2 | left, top and right (strokes 1+2), bottom (Sebas, 19 Oct) |
+  | 貝 | 2 | 目 box, legs |
+  | 金 | 3 | roof, body (三 bars + vertical), two dots |
+  | 川 | 3 | one per stroke |
+  | 水 | 2 | centre hook, side strokes |
+  | 糸 | 2 | 幺 top, 小 bottom |
 
 **Acceptance:**
-- [ ] Groups of the 10 kanji written down and reviewed by Sebas
-- [ ] Preview reviewed; harness green; S5 logs "authored" for each of the 10
+- [x] Groups of the 10 kanji written down and reviewed by Sebas (19 Oct; 口 regrouped by Sebas)
+- [ ] Preview reviewed; harness green; S5 logs "authored" for each of the 10 (harness 84/84 and `AssemblyPlan` authored for all 10, 19 Oct)
 - [ ] A participant with a substitution assembles the substitute from real segments
 
 **Verify:** harness; Play with a substituted participant (as in Task 1.8).
@@ -313,7 +328,8 @@ the scene during Play. Restart the backend only between runs, never with `--relo
       through S5–S8 (low `baselineTimeScale` is fine)
 - [ ] S5–S8 show the substitute in the original's place
 - [ ] S5: the 4 kept B kanji log "authored" and assemble from real strokes; every group can
-      be grasped. The substitute logs the placeholder warning (expected until Task 1.10)
+      be grasped. A first-choice substitute (口 for 山) also logs "authored" (Task 1.10);
+      any other substitute logs the placeholder warning, as expected
 
 **Run 2: set C (Task 1.9 for C)**
 - [ ] `devParticipantCode = DEV_UNITY` (pre-test all No, set unchanged), `newSessionKanjiSet = C`;
@@ -323,10 +339,11 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **After both runs, in the DB** (`<id>` = each session id from the Unity log):
 - [ ] `select kanji_id, segment_count, segments_authored from assemblies where session_id = '<id>';`
-      → `true` for every B and C kanji, `false` only for the substitute
+      → `true` for every kanji, the substitute included if it is one of the 10 of Task 1.10
 - [ ] `select block_state, kanji_id, count(*) from trials where session_id = '<id>' group by 1, 2 order by 1, 2;`
       → run 1: the substitute appears and its original never does
-- [ ] Tick Task 1.8 (substitution), Task 1.9 (headset) and Checkpoint B; delete `TEST_VR_B`
+- [ ] Tick Task 1.8 (substitution), Task 1.9 (headset), Task 1.10 (substitute from real
+      segments) and Checkpoint B; delete `TEST_VR_B`
       with Sebas's OK
 
 ---

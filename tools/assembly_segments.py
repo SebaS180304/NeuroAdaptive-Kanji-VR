@@ -70,6 +70,31 @@ G={
  '花':[('艹 grass',[[(79,143),(430,143)],[(192,96),(192,198)],[(323,96),(323,198)]]),
        ('亻',[[(198,211),(150,280),(70,339)],[(156,256),(156,461)]]),
        ('匕',[[(416,250),(275,320)],[(275,205),(275,420),(300,430),(400,430),(430,371)]])],
+ # The 10 reserve kanji that are a first substitute (Task 1.10, 19 October):
+ # groups defined here from stroke order, pending Sebas's review
+ '土':[('十',[[(102,237),(410,237)],[(256,96),(256,420)]]),
+       ('base',[[(77,429),(435,429)]])],
+ '米':[('two dots',[[(115,122),(173,211)],[(397,122),(339,218)]]),
+       ('cross',[[(79,262),(433,262)],[(256,96),(256,461)]]),
+       ('two sweeps',[[(250,280),(165,370),(77,429)],[(262,280),(345,370),(435,429)]])],
+ '木':[('cross',[[(83,207),(429,207)],[(256,96),(256,461)]]),
+       ('two sweeps',[[(250,240),(170,340),(70,403)],[(262,240),(345,340),(435,403)]])],
+ '耳':[('frame',[[(83,131),(429,131)],[(160,147),(160,372)],[(352,147),(352,461)]]),
+       ('bars',[[(175,218),(337,218)],[(175,307),(337,307)],[(77,407),(435,378)]])],
+ '口':[('left, top and right',[[(122,134),(122,448)],[(122,150),(390,150),(390,448)]]),
+       ('bottom',[[(140,402),(372,402)]])],
+ '貝':[('目 box',[[(143,122),(143,355)],[(143,122),(371,122),(371,355)],[(143,201),(371,201)],[(143,276),(371,276)],[(143,348),(371,348)]]),
+       ('legs',[[(211,384),(90,448)],[(294,384),(422,448)]])],
+ '金':[('roof',[[(252,100),(220,140),(155,200),(85,248)],[(260,100),(288,140),(358,200),(425,245)]]),
+       ('body',[[(180,230),(345,230)],[(105,307),(407,307)],[(256,230),(256,435)],[(86,435),(426,435)]]),
+       ('two dots',[[(147,339),(185,410)],[(365,339),(320,410)]])],
+ '川':[('left',[[(134,115),(134,330),(110,410),(77,454)]]),
+       ('middle',[[(262,134),(262,422)]]),
+       ('right',[[(397,115),(397,461)]])],
+ '水':[('centre hook',[[(256,96),(256,429),(171,442)]]),
+       ('side strokes',[[(79,208),(211,198),(170,290),(77,410)],[(416,173),(307,256)],[(266,170),(290,215),(311,260),(335,330),(380,380),(435,422)]])],
+ '糸':[('幺 top',[[(224,96),(115,179),(205,243)],[(346,141),(205,280)],[(83,296),(384,282)],[(326,230),(435,333)]]),
+       ('小 bottom',[[(256,325),(256,461)],[(186,352),(83,435)],[(320,352),(429,435)]])],
 }
 # Hard overrides: (kanji, group index, x0, y0, x1, y1) -- pixels inside the box go to that group.
 OVR=[('車',2,241,0,269,512),          # the vertical stays whole through the bars
@@ -80,7 +105,16 @@ OVR=[('車',2,241,0,269,512),          # the vertical stays whole through the ba
      ('雨',1,240,140,267,460),         # the centre vertical stays whole through the top bar
      ('牛',1,243,90,275,470),          # the vertical stays whole through the horns' bar
      ('女',2,0,189,512,219),           # 一 stays whole where く and ノ cross it
-     ('肉',0,94,155,418,187)]          # the frame's top bar stays whole where the inner ノ crosses it
+     ('肉',0,94,155,418,187),          # the frame's top bar stays whole where the inner ノ crosses it
+     ('米',1,241,90,271,465),          # the vertical stays whole where the sweeps leave it
+     ('木',0,241,90,271,465),
+     ('水',0,239,90,274,440),
+     ('水',1,275,160,300,290),         # the right stroke where it leaves the vertical
+     ('耳',0,145,140,177,378),         # both verticals of the frame stay whole
+     ('耳',0,333,140,369,465),
+     ('土',1,0,413,512,446),           # the base stays whole under the vertical
+     ('口',0,104,130,139,450),         # both sides of 口 stay whole; the bottom fits between them
+     ('口',0,372,130,408,450)]
 # at crossings (equal distance) the LAST group listed wins, so verticals stay whole
 def glyph(ch):
     im=Image.new('L',(SIZE,SIZE),0); ImageDraw.Draw(im).text((SIZE//2,SIZE//2),ch,font=ImageFont.truetype(F,400),fill=255,anchor='mm')
@@ -110,7 +144,9 @@ def split(ch):
 
 IDS={'月':'KANJI_TSUKI','車':'KANJI_KURUMA','火':'KANJI_HI','竹':'KANJI_TAKE','石':'KANJI_ISHI','四':'KANJI_YON',
      '山':'KANJI_YAMA','門':'KANJI_MON','女':'KANJI_ONNA','手':'KANJI_TE','雨':'KANJI_AME',
-     '人':'KANJI_HITO','足':'KANJI_ASHI','牛':'KANJI_USHI','肉':'KANJI_NIKU','花':'KANJI_HANA'}
+     '人':'KANJI_HITO','足':'KANJI_ASHI','牛':'KANJI_USHI','肉':'KANJI_NIKU','花':'KANJI_HANA',
+     '土':'KANJI_TSUCHI','米':'KANJI_KOME','木':'KANJI_KI','耳':'KANJI_MIMI','口':'KANJI_KUCHI',
+     '貝':'KANJI_KAI','金':'KANJI_KIN','川':'KANJI_KAWA','水':'KANJI_MIZU','糸':'KANJI_ITO'}
 
 def write_asset(kid,names):
     """List the segments in the kanji's asset: AssemblyPlan only counts a kanji
