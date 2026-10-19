@@ -5,11 +5,14 @@ projected tables with one SQL query; what the screens need and the database lack
 goes into a migration, not into the frontend.
 """
 
+import csv
+import io
+import json
 import uuid
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -323,3 +326,41 @@ SELECT (SELECT x.state::text FROM session_states x WHERE x.session_id = :session
 async def get_plan(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
     await _require_session(db, session_id)
     return dict((await db.execute(_PLAN, {"session_id": session_id})).one()._mapping)
+
+
+def _cell(value) -> str:
+    """CSV cell: NULL is empty, never 0; booleans lower case; stored JSON stays JSON."""
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (dict, list)):
+        return json.dumps(value)
+    return str(value)
+
+
+@router.get("/sessions/{session_id}/export.csv")
+async def export_csv(
+    session_id: uuid.UUID,
+    kind: Literal["trials", "adaptations"],
+    window_n: int = Query(3, ge=3, le=5),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """The Trials or Adaptations tab as CSV (V1.9): the API's fields as headers, every
+    decision included (NO_CHANGE too). Rows go through the API's own model."""
+    await _require_session(db, session_id)
+    if kind == "trials":
+        model = ResearchTrial
+        rows = await db.execute(_TRIALS, {"session_id": session_id, "window_n": window_n})
+    else:
+        model = ResearchAdaptation
+        rows = await db.execute(_ADAPTATIONS, {"session_id": session_id, "include_no_change": True})
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(model.model_fields)
+    for r in rows:
+        values = model.model_validate(dict(r._mapping)).model_dump(mode="json")
+        writer.writerow(_cell(v) for v in values.values())
+    filename = f"session-{str(session_id)[:8]}-{kind}.csv"
+    return Response(out.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})

@@ -19,6 +19,9 @@ without NO_CHANGE.
 GET /research/sessions/{id}/plan (V1.6): planned against executed trials per block, on
 the projected fixture, then cut by hand.
 
+GET /research/sessions/{id}/export.csv (V1.9): the trials and adaptations as CSV, headers
+equal to the API fields, NULL as an empty cell.
+
 GET /research/sessions/{id} (V1.2): the summary, checked against trial_timeline()
 and v_adaptations on the STATIC fixture session and on the adaptive S7 of
 test_projection_adaptation.py.
@@ -390,6 +393,42 @@ async def test_plan_complete_then_cut(client):
     block = (await client.get(url)).json()["blocks"][0]
     assert (block["min_lag_achieved"], block["kanji_repeats"]) == (None, False)
     assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/plan")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_export_csv():
+    import csv
+    import io
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+    from app.schemas.research import ResearchAdaptation, ResearchTrial
+
+    await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+    sid = await adaptive._new_session()
+    await adaptive._insert_and_project(sid, adaptive._events())
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            trials = await client.get(f"/research/sessions/{sid}/export.csv", params={"kind": "trials"})
+            adaptations = await client.get(f"/research/sessions/{sid}/export.csv", params={"kind": "adaptations"})
+            api = (await client.get(f"/research/sessions/{sid}/trials")).json()
+            assert (await client.get(f"/research/sessions/{sid}/export.csv", params={"kind": "events"})).status_code == 422
+            assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/export.csv",
+                                     params={"kind": "trials"})).status_code == 404
+        assert trials.headers["content-type"].startswith("text/csv")
+        assert trials.headers["content-disposition"] == f'attachment; filename="session-{str(sid)[:8]}-trials.csv"'
+        rows = list(csv.DictReader(io.StringIO(trials.text)))
+        assert list(rows[0]) == list(ResearchTrial.model_fields)                 # headers are the API fields
+        assert [r["trial_id"] for r in rows] == [r["trial_id"] for r in api]
+        first = rows[0]
+        assert first["head_away_ms"] == ""                                       # NULL: empty, never 0
+        assert first["is_correct"] == "true" and first["idle_ms"] == "500"
+        assert first["indicators"] == '{"n": 3}'                                 # stored JSON stays JSON
+        decisions = list(csv.DictReader(io.StringIO(adaptations.text)))
+        assert list(decisions[0]) == list(ResearchAdaptation.model_fields)
+        assert [d["trial_id"] for d in decisions] == ["S7-001", "S7-002"]       # NO_CHANGE included
+        assert decisions[0]["unity_result"] == "" and decisions[1]["unity_result"] == "APPLIED"
+    finally:
+        await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
 
 
 def test_research_router_is_read_only():
