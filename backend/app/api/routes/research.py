@@ -364,5 +364,7 @@ async def export_csv(
         values = model.model_validate(dict(r._mapping)).model_dump(mode="json")
         writer.writerow(_cell(v) for v in values.values())
     filename = f"session-{str(session_id)[:8]}-{kind}.csv"
-    return Response(out.getvalue(), media_type="text/csv; charset=utf-8",
+    # utf-8-sig writes the byte order mark: without it Excel reads the file in the Windows
+    # code page and kanji turn to mojibake. pandas and R skip it with encoding "utf-8-sig".
+    return Response(out.getvalue().encode("utf-8-sig"), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'})

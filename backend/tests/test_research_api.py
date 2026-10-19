@@ -397,6 +397,7 @@ async def test_plan_complete_then_cut(client):
 
 @pytest.mark.asyncio
 async def test_export_csv():
+    import codecs
     import csv
     import io
     from httpx import ASGITransport, AsyncClient
@@ -415,15 +416,18 @@ async def test_export_csv():
             assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/export.csv",
                                      params={"kind": "trials"})).status_code == 404
         assert trials.headers["content-type"].startswith("text/csv")
+        # Excel reads a CSV as UTF-8 only with the byte order mark; without it kanji turn to mojibake.
+        assert trials.content.startswith(codecs.BOM_UTF8) and adaptations.content.startswith(codecs.BOM_UTF8)
         assert trials.headers["content-disposition"] == f'attachment; filename="session-{str(sid)[:8]}-trials.csv"'
-        rows = list(csv.DictReader(io.StringIO(trials.text)))
+        rows = list(csv.DictReader(io.StringIO(trials.content.decode("utf-8-sig"))))
         assert list(rows[0]) == list(ResearchTrial.model_fields)                 # headers are the API fields
         assert [r["trial_id"] for r in rows] == [r["trial_id"] for r in api]
         first = rows[0]
+        assert first["kanji_char"] == "山"                                       # survives the round trip
         assert first["head_away_ms"] == ""                                       # NULL: empty, never 0
         assert first["is_correct"] == "true" and first["idle_ms"] == "500"
         assert first["indicators"] == '{"n": 3}'                                 # stored JSON stays JSON
-        decisions = list(csv.DictReader(io.StringIO(adaptations.text)))
+        decisions = list(csv.DictReader(io.StringIO(adaptations.content.decode("utf-8-sig"))))
         assert list(decisions[0]) == list(ResearchAdaptation.model_fields)
         assert [d["trial_id"] for d in decisions] == ["S7-001", "S7-002"]       # NO_CHANGE included
         assert decisions[0]["unity_result"] == "" and decisions[1]["unity_result"] == "APPLIED"
