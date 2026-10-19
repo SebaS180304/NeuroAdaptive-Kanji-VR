@@ -35,6 +35,8 @@ F7.
 | What Unity did with each decision | `adaptation_applications`, `v_adaptations` (`0003`) | F5a |
 | Outcome of each adaptation (O4) | `adaptation_decisions.outcome` (`0003`) | F6, filled by `ADAPTATION_OUTCOME` |
 | Kanji pre-test and per-participant substitutions | `kanji_pretest_responses`, `kanji_substitutions`, `participants.pretest_completed_at` (`0004`) | Oct 16 |
+| Abandoned sessions set to `ABORTED` | `abort_stale_sessions()` (`0005`) | Oct 17 |
+| Session overview, projection errors with session time, verify checks as functions | `v_session_overview`, `v_projection_errors`, `verify_*_fn()` (`0006`) | Oct 17 |
 | S6 calibration profile | Computed in memory (`backend/app/adaptation/profile.py`); **not persisted** | — |
 | Cross-session Learner Profile v1 | Does not exist yet | F6 |
 | EEG | Does not exist yet | F4 |
@@ -50,11 +52,14 @@ F7.
 | V1.4 | Session View · Trials | `trial_timeline()` rows, including the decision columns (`learner_state`, `decision_action`, `decision_reason`, `adaptation_result`) | `trial_timeline(session_id)` |
 | V1.5 | Session View · Adaptations | One row per decision with a change (optionally `NO_CHANGE`): state, cause, confidence, from → to, explanation, what Unity did (`APPLIED` / `SKIPPED` + reason), cooldown and outcome | `v_adaptations`, `adaptation_decisions` |
 | V1.6 | Session View · Plan vs execution | Planned against executed trials per block | `planned_trials` vs `trials` |
-| V1.7 | Data quality | Open `projection_errors` by code and the result of the `verify_*.sql` queries | `projection_errors`, `database/verify_projection.sql`, `verify_adaptation.sql` |
+| V1.7 | Data quality | Open `projection_errors` by code and the result of the `verify_*.sql` queries | `v_projection_errors`, the five `verify_*_fn()` (`0006`) |
 | V1.8 | Minimal Participant View | Sessions in order, accuracy and RT trend, pre-test status, substitutions and flagged kanji (the only place they are shown) | `experiment_sessions`, `trial_timeline()`, `kanji_substitutions` |
 | V1.9 | CSV export | Trials (`trial_timeline`) and adaptations of one session | same endpoints |
 | V1.10 | Kanji pre-test (capture) | Runs the spec §13.2 pre-test with the participant before their first session. **The only screen that writes** (see below) | `/participants/{id}/pretest` (existing, `0004`) |
 | V1.11 | Participant list | Added by Sebas, Oct 17. Reached from the rail's "Participants" item; each code opens V1.8. One row per participant: code and registration date, pre-test status (not started / in progress with n answered / completed), number of sessions and the conditions used, last session date and its accuracy, and notes for the researcher: previous Japanese study reported (spec §13.1) and kanji kept with no substitute. Filters: code, pre-test status, condition, only with notes | `participants` (`created_at`, `previous_japanese_experience`, `pretest_completed_at`), `kanji_pretest_responses` (count), `experiment_sessions`, `trial_timeline()`, `kanji_substitutions` (`substitute_kanji_id` NULL) |
+
+**Status (Oct 20):** every screen V1.1–V1.11 is built (`tasks/todo.md`, Phases 1–3).
+Checkpoint C passed on Oct 19 on session `099690e1`; Checkpoint D (v1 done) is next.
 
 **Definition of done:** with a real F5a `BEHAVIOR_ADAPTIVE` session, the screen
 reconstructs what happened, in what order, with which environment, and what the
@@ -186,7 +191,8 @@ stays `GET`-only.
 
 **Open.**
 - MIRAI confirms who records consent and how.
-- The answer options for age range and attention difficulty.
+- ~~The answer options for age range and attention difficulty.~~ Decided by Sebas on
+  Oct 17 (`tasks/plan.md`, "Registration options").
 
 **Done when.** A Playwright run of a `TEST_PRETEST` participant goes end to end, and
 `kanji_pretest_responses` and `kanji_substitutions` match what was answered.

@@ -65,8 +65,16 @@ trial answered at or after it, back to the previous answer of the block (same
 attribution as `backend/app/adaptation/trials.py`). The observation window is per
 block.
 
-Sessions before Sep 7 are not projected: they appear in the list as "not
-projected", they are not hidden.
+A session with no projection is listed, never hidden. `v_session_overview.projection_status`
+says which: `NO_DATA` (no events), `NOT_PROJECTED` (events but no `session_states` rows) or
+`PROJECTED`. V1.1 shows the first two as "not projected"; V1.7 lists them apart.
+
+**Abandoned sessions become `ABORTED`** (migration `0005`, decided Oct 17): the backend
+runs `abort_stale_sessions()` at startup and every 5 minutes, and an `IN_PROGRESS`
+session whose last event (or last update, with no events) is older than 30 minutes is
+set to `ABORTED`. `PATCH /sessions/{id}/state` never takes a session out of `ABORTED`.
+The dashboard shows the status as stored, with the last recorded state ("Aborted in S7",
+`last_state` from `session_states`, not `experiment_sessions.current_state`).
 
 ## v1 endpoints (proposal, `GET` only)
 
@@ -83,10 +91,10 @@ not mix with the endpoints Unity uses.
 | `GET /research/sessions/{session_id}/trials?window_n=3` | `trial_timeline()` rows |
 | `GET /research/sessions/{session_id}/adaptations?include_no_change=false` | `v_adaptations` rows + `indicators`/`thresholds` |
 | `GET /research/sessions/{session_id}/plan` | Planned vs executed per block |
-| `GET /research/sessions/{session_id}/quality` | `projection_errors` + verify results |
 | `GET /research/sessions/{session_id}/export.csv?kind=trials\|adaptations` | CSV |
 | `GET /research/participants` | V1.11: one row per participant with `external_code`, `created_at`, pre-test status and `answered`, session count, conditions, last session date and accuracy (NULL if no answered trials), `previous_japanese_experience`, `flagged_count` |
-| `GET /research/participants/{participant_id}` | Sessions in order, trend, pre-test status, substitutions and flagged kanji |
+| `GET /research/participants/{participant_id}` | V1.8: the V1.11 row, the sessions oldest first with the Session View's aggregates and `before_pretest`, and the substitutions (a NULL substitute is a kanji kept and flagged) |
+| `GET /research/quality` | V1.7: open `projection_errors` by code and in full, the resolved count, each `verify_*_fn` run on every projected session, and the sessions with no projection |
 
 Rules:
 - Responses in `snake_case`, like the database, with Pydantic models in

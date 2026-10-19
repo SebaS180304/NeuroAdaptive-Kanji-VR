@@ -24,14 +24,14 @@ The rules are fixed. The **values** (exact colors, sizes) come from
 | Token | Concept |
 | --- | --- |
 | `--color-condition-static` / `-behavior` / `-multimodal` | Conditions |
-| `--color-trial-correct` / `-incorrect` / `-open` | Trial result |
+| `--color-trial-correct` / `-incorrect` | Trial result (not answered: a `--color-border-strong` outline, no token of its own) |
 | `--color-esl-*` | ESL levels (sequential scale) |
 | `--color-lal-*` | LAL levels (a different sequential scale) |
 | `--color-state-stable` / `-disengaged` / `-overloaded` | Estimated state |
 | `--color-outcome-positive` / `-neutral` / `-negative` / `-uncertain` | Adaptation outcome |
-| `--color-head-away` | Head-away |
+| `--color-headaway` | Head-away |
 | `--color-peripheral` / `--color-distractor` | Peripheral events / distractor interactions |
-| `--color-hint` | Hints (on request vs proactive, told apart by shape) |
+| `--color-lal-high` | Hints (on request vs proactive, told apart by shape: dot vs ring) |
 | `--color-reserved` | Reserved slots |
 | `--color-quality-ok` / `-warn` / `-error` | Data quality |
 

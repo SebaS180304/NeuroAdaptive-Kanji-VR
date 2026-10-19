@@ -9,7 +9,7 @@ A web app that lets a researcher review, **after** a session, what happened in
 the NeuroAdaptive VR prototype (kanji learning in Unity/Quest): trials,
 environment, behavior, and the decisions of the F5a adaptive loop. It runs
 **only on the lab machine**. v1 is **read-only** over what migrations
-`0002`–`0004` project. It is built in **F7 (Nov 16–20)**, towards M4.
+`0002`–`0006` project. It is built in **F7 (Nov 16–20)**, towards M4.
 
 Full context brief (Spanish, copy of the claude.ai Project):
 `Claude outputs/docs_proyecto/Brief_Research_Dashboard_Dev_V1.md`.
