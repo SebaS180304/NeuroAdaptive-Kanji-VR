@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { getJson, type Schemas } from '@/api/client'
+import { CONDITION_LABEL, ConditionChip, type Condition } from '@/components/ConditionChip'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { PretestChip } from '@/components/PretestChip'
@@ -11,20 +12,6 @@ import { formatDate, formatPercent } from '@/lib/format'
 
 type Participant = Schemas['ResearchParticipant']
 type PretestStatus = Participant['pretest_status']
-type Condition = Participant['conditions'][number]
-
-const CONDITION_LABEL: Record<Condition, string> = {
-  STATIC: 'Static',
-  BEHAVIOR_ADAPTIVE: 'Behavior-adaptive',
-  MULTIMODAL_ADAPTIVE: 'Multimodal-adaptive',
-}
-// design-system.md "Condition chip" (multimodal drawn Oct 18).
-const CONDITION_CHIP: Record<Condition, string> = {
-  STATIC: 'bg-(--color-border-subtle) text-(--color-text-secondary)',
-  BEHAVIOR_ADAPTIVE: 'bg-(--color-accent-tint) text-(--color-on-accent-tint)',
-  MULTIMODAL_ADAPTIVE:
-    'border border-(--color-condition-multimodal) bg-(--color-condition-multimodal-tint) text-(--color-on-condition-multimodal-tint)',
-}
 
 const STATUS_LABEL: Record<PretestStatus, string> = {
   COMPLETED: 'Completed',
@@ -38,9 +25,6 @@ function notes(p: Participant): string[] {
     ...(p.flagged_count ? ['Kanji kept with no substitute'] : []),
   ]
 }
-
-const chip =
-  'type-caption inline-flex items-center gap-2 rounded-(--radius-pill) whitespace-nowrap font-medium'
 
 function StatusBar({ participants }: { participants: Participant[] }) {
   const count = (s: PretestStatus) => participants.filter((p) => p.pretest_status === s).length
@@ -187,7 +171,7 @@ export function ParticipantList() {
                       <td className="px-4">
                         <span className="inline-flex flex-wrap gap-1">
                           {p.conditions.map((c) => (
-                            <span key={c} className={`${chip} h-6 px-2.5 ${CONDITION_CHIP[c]}`}>{CONDITION_LABEL[c]}</span>
+                            <ConditionChip key={c} c={c} />
                           ))}
                         </span>
                       </td>
