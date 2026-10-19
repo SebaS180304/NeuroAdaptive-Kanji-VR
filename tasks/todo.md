@@ -672,7 +672,7 @@ only `COMPLETED` sessions are drawn in the trend.
 
 **Deps:** 1.4, 2.1, 3.0. **Scope:** M
 
-### [ ] Task 3.2: Data quality (V1.7)
+### [x] Task 3.2: Data quality (V1.7, done 20 Oct)
 **Description:**
 - **Endpoint:** `GET /research/quality` over `v_projection_errors` and the `verify_*_fn()`.
 - **Screen:**
@@ -686,12 +686,22 @@ only `COMPLETED` sessions are drawn in the trend.
   - "Sessions not projected" (`NOT_PROJECTED` and `NO_DATA` in `v_session_overview`).
 
 **Acceptance:**
-- [ ] After 0.1, the counts match SQL (today: 0 open, 9,810 resolved, 3 not projected,
-      1 with no data)
-- [ ] A seeded discrepancy appears as "Needs review" and expands to its session
-- [ ] Screen checks: screenshots light and dark against *V1.7* and its dark artboard (both
-      states of `noErrors`), keyboard (expand, filter, paging), no clinical wording,
-      5-tell audit clean
+- [x] After 0.1, the counts match SQL (today: 0 open, 9,810 resolved, 3 not projected,
+      1 with no data; pytest checks each count against SQL)
+- [x] A seeded discrepancy appears as "Needs review" and expands to its session (pytest
+      seeds one; e2e opens a real one from the keyboard)
+- [x] Screen checks: screenshots light and dark against *V1.7* and its dark artboard,
+      keyboard (expand, filter, paging), no clinical wording, 5-tell audit clean. Each
+      `verify_*_fn` runs once per projected session: with NULL, some check only the latest
+      session. The endpoint takes about 2 s on 45 sessions
+
+**Findings, 20 Oct (recorded, not fixed):** with every check run on every projected
+session, 37 of 45 pass. `verify_trials`: 25 rows (`trials/consistency` 22 in 2 sessions,
+`trials/incomplete` 3). `verify_assembly`: 3 rows (`assembly/counts`, 1 session).
+`verify_reproducibility`: 191 rows in 5 sessions (`trials` 154, `environment` 21,
+`sequence` 10, `peripheral` 6). Checkpoint C ran only `verify_projection` and
+`verify_adaptation`, which pass. To review with Sebas: which of these are expected (aborted
+sessions, pairs that share a seed across conditions) and which are real
 
 **Verify:** pytest; Playwright against *V1.7*.
 

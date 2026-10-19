@@ -12,14 +12,11 @@ describe('app shell', () => {
     expect(within(rail).getByText('Runs locally on the lab machine')).toBeInTheDocument()
   })
 
-  it.each([
-    ['/quality', 'Data quality', 'Data quality'],
-  ])('%s renders its reserved screen and marks its rail item', (path, title, item) => {
-    renderApp(path)
-    expect(screen.getByRole('heading', { level: 1, name: title })).toBeInTheDocument()
-    expect(screen.getByText(/available in a later version\.$/)).toBeInTheDocument()
+  it('marks the rail item of the current section', () => {
+    renderApp('/quality')
+    expect(screen.getByRole('heading', { level: 1, name: 'Data quality' })).toBeInTheDocument()
     const rail = screen.getByRole('navigation', { name: 'Main' })
-    expect(within(rail).getByRole('link', { current: 'page' })).toHaveTextContent(item)
+    expect(within(rail).getByRole('link', { current: 'page' })).toHaveTextContent('Data quality')
   })
 
   it('opens on the session list', () => {

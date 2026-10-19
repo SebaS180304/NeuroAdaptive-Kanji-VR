@@ -198,6 +198,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Data Quality
+         * @description Data quality (V1.7): open projection errors, the verify checks over every session,
+         *     and the sessions with no projection.
+         */
+        get: operations["data_quality_research_quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/sessions/{session_id}/timeline": {
         parameters: {
             query?: never;
@@ -366,6 +387,28 @@ export interface components {
             outcome_uncertain: number;
             /** Outcome Not Recorded */
             outcome_not_recorded: number;
+        };
+        /**
+         * DataQuality
+         * @description Data quality (V1.7).
+         */
+        DataQuality: {
+            /** Projected Sessions */
+            projected_sessions: number;
+            /** Clean Sessions */
+            clean_sessions: number;
+            /** Open By Code */
+            open_by_code: {
+                [key: string]: number;
+            };
+            /** Resolved Errors */
+            resolved_errors: number;
+            /** Checks */
+            checks: components["schemas"]["QualityCheck"][];
+            /** Open Errors */
+            open_errors: components["schemas"]["QualityError"][];
+            /** Not Projected */
+            not_projected: components["schemas"]["UnprojectedSession"][];
         };
         /**
          * ExperimentalCondition
@@ -613,6 +656,51 @@ export interface components {
             original: string;
             /** Substitute */
             substitute: string | null;
+        };
+        /** QualityCheck */
+        QualityCheck: {
+            /** Name */
+            name: string;
+            /** Rows */
+            rows: components["schemas"]["QualityCheckRow"][];
+        };
+        /**
+         * QualityCheckRow
+         * @description One discrepancy returned by a verify_*_fn().
+         */
+        QualityCheckRow: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Check */
+            check: string;
+            /** Detail */
+            detail: string | null;
+        };
+        /**
+         * QualityError
+         * @description An open projection error (v_projection_errors).
+         */
+        QualityError: {
+            /** Id */
+            id: number;
+            /** Event Id */
+            event_id: number;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Event Type */
+            event_type: string;
+            /** Error Code */
+            error_code: string;
+            /** Detail */
+            detail: string | null;
+            /** Session Elapsed Ms */
+            session_elapsed_ms: number | null;
         };
         /**
          * ResearchAdaptation
@@ -1211,6 +1299,31 @@ export interface components {
             /** Is Correct */
             is_correct: boolean | null;
         };
+        /** UnprojectedSession */
+        UnprojectedSession: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** External Code */
+            external_code: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Projection Status
+             * @enum {string}
+             */
+            projection_status: "NO_DATA" | "NOT_PROJECTED";
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1567,6 +1680,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    data_quality_research_quality_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataQuality"];
                 };
             };
         };
