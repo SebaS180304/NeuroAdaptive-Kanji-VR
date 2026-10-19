@@ -630,7 +630,7 @@ only `COMPLETED` sessions are drawn in the trend.
 
 **Deps:** Checkpoint C. **Scope:** XS
 
-### [ ] Task 3.1: Participant View (V1.8)
+### [x] Task 3.1: Participant View (V1.8, done 20 Oct)
 **Description:**
 - **First slice, shared status words (V1.1 too):** one status component used by V1.1,
   V1.8 and the Session View facts, replacing the three `STATUS_LABEL` copies
@@ -657,12 +657,16 @@ only `COMPLETED` sessions are drawn in the trend.
       20 Oct: `components/SessionStatus.ts`; the last state is the last `session_states`
       row, not `current_state`, which disagrees with the events in 2 aborted sessions
       (S3 vs S1, S6 vs S9). The "Where the session stopped" note uses the same words
-- [ ] Substitutions and notes show only here
-- [ ] The trend values match `trial_timeline()` per session; only `COMPLETED` sessions
-      are points, and their ticks match the table's `#`
-- [ ] Screen checks: screenshots light and dark against *V1.8* and its dark artboard,
+- [x] Substitutions and notes show only here
+- [x] The trend values match `trial_timeline()` per session; only `COMPLETED` sessions
+      are points, and their ticks match the table's `#` (pytest: each row equals the
+      Session View's summary; e2e on `DEV_UNITY`, 34 sessions, 10 points)
+- [x] Screen checks: screenshots light and dark against *V1.8* and its dark artboard,
       keyboard (measure toggle), NULL as `—` with its reason, no clinical wording, 5-tell
-      audit clean
+      audit clean. Three gaps, for the design chat: the pre-test has no fixed length, so
+      "in progress ([n] of [n] kanji answered)" shows "([n] kanji answered)"; when every
+      session predates the pre-test the lead drops "Later sessions used the confirmed
+      set."; the Unknown × shape is not built, since the API's condition is never unknown
 
 **Verify:** pytest; Playwright against *V1.8* (both states of `pretestDone`).
 

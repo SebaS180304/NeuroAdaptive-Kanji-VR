@@ -178,6 +178,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/participants/{participant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Participant
+         * @description Participant View (V1.8): the V1.11 row, the sessions in order and the pre-test result.
+         */
+        get: operations["get_participant_research_participants__participant_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/sessions/{session_id}/timeline": {
         parameters: {
             query?: never;
@@ -422,6 +442,64 @@ export interface components {
             created_at: string;
         };
         /**
+         * ParticipantSession
+         * @description One row of "Sessions in order" (V1.8), with the Session View's own aggregates.
+         */
+        ParticipantSession: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** External Code */
+            external_code: string;
+            /**
+             * Condition
+             * @enum {string}
+             */
+            condition: "STATIC" | "BEHAVIOR_ADAPTIVE" | "MULTIMODAL_ADAPTIVE";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "ABORTED";
+            /** Visit Number */
+            visit_number: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Projection Status
+             * @enum {string}
+             */
+            projection_status: "NO_DATA" | "NOT_PROJECTED" | "PROJECTED";
+            /** Trial Count */
+            trial_count: number | null;
+            /** Decision Count */
+            decision_count: number | null;
+            /** Accuracy */
+            accuracy: number | null;
+            /** Open Error Count */
+            open_error_count: number;
+            /** Last State */
+            last_state: string | null;
+            /** Mean Rt Ms */
+            mean_rt_ms: number | null;
+            /** Head Away Count */
+            head_away_count: number | null;
+            /** Head Away Ms */
+            head_away_ms: number | null;
+            /** Before Pretest */
+            before_pretest: boolean;
+        };
+        /**
          * PlanBlock
          * @description One generated block: its plan (planned_trials) against what ran (trials).
          */
@@ -527,6 +605,15 @@ export interface components {
             /** Flagged */
             flagged: components["schemas"]["Flagged"][];
         };
+        /** PretestSubstitution */
+        PretestSubstitution: {
+            /** Set Name */
+            set_name: string;
+            /** Original */
+            original: string;
+            /** Substitute */
+            substitute: string | null;
+        };
         /**
          * ResearchAdaptation
          * @description One decision of the Adaptations tab (V1.5): v_adaptations plus adaptation_decisions.
@@ -617,6 +704,49 @@ export interface components {
             previous_japanese_experience: boolean | null;
             /** Flagged Count */
             flagged_count: number | null;
+        };
+        /**
+         * ResearchParticipantDetail
+         * @description Participant View (V1.8). Substitutions are empty until the pre-test is complete.
+         */
+        ResearchParticipantDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** External Code */
+            external_code: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Pretest Status
+             * @enum {string}
+             */
+            pretest_status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
+            /** Pretest Answered */
+            pretest_answered: number;
+            /** Pretest Completed At */
+            pretest_completed_at: string | null;
+            /** Session Count */
+            session_count: number;
+            /** Conditions */
+            conditions: ("STATIC" | "BEHAVIOR_ADAPTIVE" | "MULTIMODAL_ADAPTIVE")[];
+            /** Last Session At */
+            last_session_at: string | null;
+            /** Last Session Accuracy */
+            last_session_accuracy: number | null;
+            /** Previous Japanese Experience */
+            previous_japanese_experience: boolean | null;
+            /** Flagged Count */
+            flagged_count: number | null;
+            /** Sessions */
+            sessions: components["schemas"]["ParticipantSession"][];
+            /** Substitutions */
+            substitutions: components["schemas"]["PretestSubstitution"][];
         };
         /**
          * ResearchSession
@@ -1397,6 +1527,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchSessionDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_participant_research_participants__participant_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchParticipantDetail"];
                 };
             };
             /** @description Validation Error */

@@ -7,6 +7,7 @@ import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { PretestChip } from '@/components/PretestChip'
 import { formatDate, formatPercent } from '@/lib/format'
+import { NoteList, participantNotes } from './notes'
 
 // V1.11 Participant list, artboard *V1.11 Participant list (proposed)*, light and dark.
 
@@ -17,13 +18,6 @@ const STATUS_LABEL: Record<PretestStatus, string> = {
   COMPLETED: 'Completed',
   IN_PROGRESS: 'In progress',
   NOT_STARTED: 'Not started',
-}
-
-function notes(p: Participant): string[] {
-  return [
-    ...(p.previous_japanese_experience ? ['Previous Japanese study reported'] : []),
-    ...(p.flagged_count ? ['Kanji kept with no substitute'] : []),
-  ]
 }
 
 function StatusBar({ participants }: { participants: Participant[] }) {
@@ -76,7 +70,7 @@ export function ParticipantList() {
       p.external_code.toLowerCase().includes(code.trim().toLowerCase()) &&
       (!status || p.pretest_status === status) &&
       (!condition || p.conditions.includes(condition)) &&
-      (!onlyNotes || notes(p).length > 0),
+      (!onlyNotes || participantNotes(p).length > 0),
   )
 
   return (
@@ -186,17 +180,7 @@ export function ParticipantList() {
                         )}
                       </td>
                       <td className="px-4 text-(--color-text-secondary)">
-                        <span className="flex flex-col gap-1">
-                          {notes(p).map((n) => (
-                            <span key={n} className="inline-flex items-center gap-2">
-                              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--color-lal-high)" strokeWidth="1.6">
-                                <path d="M8 1.8L15 14H1z" />
-                                <path d="M8 6.2v3.8M8 11.6v.3" />
-                              </svg>
-                              {n}
-                            </span>
-                          ))}
-                        </span>
+                        <NoteList notes={participantNotes(p)} />
                       </td>
                     </tr>
                   )
