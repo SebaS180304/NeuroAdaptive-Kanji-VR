@@ -3,6 +3,7 @@ import { DataZoomComponent, GridComponent, TooltipComponent } from 'echarts/comp
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
+import { tokenReader } from '@/lib/tokens'
 import { clock, type Lane } from './lanes'
 
 echarts.use([CustomChart, GridComponent, TooltipComponent, DataZoomComponent, CanvasRenderer])
@@ -19,12 +20,6 @@ type Props = {
   /** Start of the selected trial: the 2 px cursor across every lane. */
   cursor: number | null
   onPick: (trialId: string) => void
-}
-
-/** A token's value in the current theme (the canvas cannot read CSS variables). */
-function tokenReader(el: HTMLElement) {
-  const style = getComputedStyle(el)
-  return (name: string) => style.getPropertyValue(name).trim()
 }
 
 // --color-trial-incorrect: 45°, 2 px alert on alert-tint (design-system.md).
