@@ -485,7 +485,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Deps:** 2.5. **Scope:** S
 
-### [x] Checkpoint C: session review (passed 19 Oct)
+### [x] Checkpoint C: session review (passed 19 Oct, reviewed with Sebas on `099690e1`)
 - [x] A real BEHAVIOR_ADAPTIVE F5a session can be rebuilt on screen without pgAdmin; what the UI shows matches `verify_projection` and `verify_adaptation` (0 discrepancies). Review with Sebas
 
 **Automated check (19 Oct, green):** `npx playwright test checkpoint-c` (in `dashboard/`, backend and
