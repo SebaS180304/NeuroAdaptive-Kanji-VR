@@ -184,6 +184,54 @@ async def test_session_list_rows_and_filters(client):
 
 
 @pytest.mark.asyncio
+async def test_data_quality(client):
+    pid = await _register(client, CODES[0])
+    clean = await _projected_session(pid)
+    bad = await _projected_session(pid)
+    await _exec("UPDATE assemblies SET incorrect_attempts = incorrect_attempts + 1 WHERE session_id = :s", s=bad)
+    event = await _scalar("SELECT min(id) FROM session_events WHERE session_id = :s", s=bad)
+    await _exec("INSERT INTO projection_errors (event_id, session_id, event_type, error_code, detail) "
+                "VALUES (:e, :s, 'STATE_ENTERED', 'UNKNOWN_ENUM', 'seeded')", e=event, s=bad)
+    empty = str(await _scalar("INSERT INTO experiment_sessions (participant_id, condition) "
+                              "VALUES (:p, 'STATIC') RETURNING id", p=pid))
+
+    resp = await client.get("/research/quality")
+    assert resp.status_code == 200
+    q = resp.json()
+
+    # The five checks, in order, each with its discrepancy rows as the SQL function returns them.
+    assert [c["name"] for c in q["checks"]] == [
+        "verify_projection", "verify_adaptation", "verify_trials", "verify_assembly", "verify_reproducibility"]
+    assembly = next(c for c in q["checks"] if c["name"] == "verify_assembly")
+    assert {(r["session_id"], r["check"]) for r in assembly["rows"]} >= {(str(bad), "assembly/counts")}
+    for c in q["checks"]:
+        assert str(clean) not in {r["session_id"] for r in c["rows"]}, c["name"]
+
+    # Open errors: the seeded one with its elapsed time, counted under its code.
+    seeded = next(e for e in q["open_errors"] if e["event_id"] == event)
+    assert (seeded["session_id"], seeded["error_code"], seeded["detail"]) == (str(bad), "UNKNOWN_ENUM", "seeded")
+    assert seeded["session_elapsed_ms"] == await _scalar(
+        "SELECT session_elapsed_ms FROM v_projection_errors WHERE event_id = :e", e=event)
+    assert q["open_by_code"]["UNKNOWN_ENUM"] == await _scalar(
+        "SELECT count(*) FROM projection_errors WHERE resolved_at IS NULL AND error_code = 'UNKNOWN_ENUM'")
+    assert q["resolved_errors"] == await _scalar("SELECT count(*) FROM projection_errors WHERE resolved_at IS NOT NULL")
+
+    # Counts match SQL: a clean session passes everything and has no open error.
+    assert q["projected_sessions"] == await _scalar(
+        "SELECT count(*) FROM v_session_overview WHERE projection_status = 'PROJECTED'")
+    dirty = {r["session_id"] for c in q["checks"] for r in c["rows"]} | {e["session_id"] for e in q["open_errors"]}
+    projected = {str(r[0]) for r in await _exec(
+        "SELECT session_id FROM v_session_overview WHERE projection_status = 'PROJECTED'")}
+    assert q["clean_sessions"] == len(projected - dirty)
+    assert str(clean) in projected - dirty
+
+    # Sessions with no projection are listed apart.
+    row = next(s for s in q["not_projected"] if s["session_id"] == empty)
+    assert (row["external_code"], row["projection_status"]) == (CODES[0], "NO_DATA")
+    assert str(clean) not in {s["session_id"] for s in q["not_projected"]}
+
+
+@pytest.mark.asyncio
 async def test_session_summary_static(client):
     pid = await _register(client, CODES[0])
     sid = await _projected_session(pid)

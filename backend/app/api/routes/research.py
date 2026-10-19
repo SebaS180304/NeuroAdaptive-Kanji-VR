@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.research import (
-    ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
+    DataQuality, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
     SessionTimeline,
 )
 
@@ -182,6 +182,56 @@ async def get_participant(participant_id: uuid.UUID, db: AsyncSession = Depends(
     return dict(row._mapping) | {
         "sessions": [dict(r._mapping) for r in await db.execute(_PARTICIPANT_SESSIONS, params)],
         "substitutions": [dict(r._mapping) for r in await db.execute(_SUBSTITUTIONS, params)],
+    }
+
+
+# The verify_*_fn() of migration 0006, in the order V1.7 lists them.
+_CHECKS = ["verify_projection", "verify_adaptation", "verify_trials", "verify_assembly", "verify_reproducibility"]
+
+# shortcut: every open error in one response, paged by the page; page in SQL if open
+# errors ever reach the tens of thousands (today 0, 9,810 resolved).
+_OPEN_ERRORS = text("""
+SELECT id, event_id, session_id, event_type, error_code, detail, session_elapsed_ms
+FROM v_projection_errors WHERE resolved_at IS NULL
+ORDER BY occurred_at DESC, id DESC
+""")
+
+_QUALITY_COUNTS = text("""
+SELECT (SELECT count(*) FROM projection_errors WHERE resolved_at IS NOT NULL) AS resolved_errors,
+       COALESCE((SELECT json_object_agg(error_code, n) FROM (
+           SELECT error_code, count(*) AS n FROM projection_errors
+           WHERE resolved_at IS NULL GROUP BY error_code) c), '{}') AS open_by_code
+""")
+
+_PROJECTED = text("SELECT session_id FROM v_session_overview WHERE projection_status = 'PROJECTED'")
+
+_NOT_PROJECTED = text("""
+SELECT o.session_id, o.participant_id, p.external_code, o.created_at, o.projection_status
+FROM v_session_overview o JOIN participants p ON p.id = o.participant_id
+WHERE o.projection_status <> 'PROJECTED'
+ORDER BY o.created_at DESC
+""")
+
+
+@router.get("/quality", response_model=DataQuality)
+async def data_quality(db: AsyncSession = Depends(get_db)) -> dict:
+    """Data quality (V1.7): open projection errors, the verify checks over every session,
+    and the sessions with no projection."""
+    # Called per projected session: with NULL, some functions check only the latest one.
+    checks = [{"name": name, "rows": [dict(r._mapping) for r in await db.execute(text(
+        f'SELECT v.session_id, v."check", v.detail FROM v_session_overview o '
+        f"CROSS JOIN LATERAL {name}_fn(o.session_id) v WHERE o.projection_status = 'PROJECTED' "
+        f'ORDER BY o.created_at DESC, v."check"'))]}
+        for name in _CHECKS]
+    errors = [dict(r._mapping) for r in await db.execute(_OPEN_ERRORS)]
+    projected = {r[0] for r in await db.execute(_PROJECTED)}
+    dirty = {r["session_id"] for c in checks for r in c["rows"]} | {e["session_id"] for e in errors}
+    return dict((await db.execute(_QUALITY_COUNTS)).one()._mapping) | {
+        "projected_sessions": len(projected),
+        "clean_sessions": len(projected - dirty),
+        "checks": checks,
+        "open_errors": errors,
+        "not_projected": [dict(r._mapping) for r in await db.execute(_NOT_PROJECTED)],
     }
 
 

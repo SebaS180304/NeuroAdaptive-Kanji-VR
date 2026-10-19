@@ -74,6 +74,50 @@ class ResearchParticipantDetail(ResearchParticipant):
     substitutions: list[PretestSubstitution]
 
 
+class QualityCheckRow(BaseModel):
+    """One discrepancy returned by a verify_*_fn()."""
+    session_id: uuid.UUID
+    check: str
+    detail: str | None
+
+
+class QualityCheck(BaseModel):
+    name: str                   # the function without its _fn suffix, as V1.7 shows it
+    rows: list[QualityCheckRow]  # empty: the check passes
+
+
+class QualityError(BaseModel):
+    """An open projection error (v_projection_errors)."""
+    id: int
+    event_id: int
+    session_id: uuid.UUID
+    event_type: str
+    error_code: str
+    detail: str | None
+    # None when the event carries no session_elapsed_ms.
+    session_elapsed_ms: int | None
+
+
+class UnprojectedSession(BaseModel):
+    session_id: uuid.UUID
+    participant_id: uuid.UUID
+    external_code: str
+    created_at: datetime
+    projection_status: Literal["NO_DATA", "NOT_PROJECTED"]
+
+
+class DataQuality(BaseModel):
+    """Data quality (V1.7)."""
+    projected_sessions: int
+    # Projected, with no open error and no discrepancy in any check.
+    clean_sessions: int
+    open_by_code: dict[str, int]
+    resolved_errors: int
+    checks: list[QualityCheck]
+    open_errors: list[QualityError]
+    not_projected: list[UnprojectedSession]
+
+
 class SessionStateVisit(BaseModel):
     """One visit to a Game Flow state, in order (session_states)."""
     state: str
