@@ -15,7 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.research import (
-    ResearchAdaptation, ResearchParticipant, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionTimeline,
+    ResearchAdaptation, ResearchParticipant, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
+    SessionTimeline,
 )
 
 router = APIRouter(prefix="/research", tags=["research"])
@@ -288,3 +289,37 @@ async def list_adaptations(
     await _require_session(db, session_id)
     rows = await db.execute(_ADAPTATIONS, {"session_id": session_id, "include_no_change": include_no_change})
     return [dict(r._mapping) for r in rows]
+
+
+# Plan and execution are stored apart on purpose (EVENT_CONTRACT.md 5.6): a planned trial
+# with no trials row was never shown; one with no completion was started and cut.
+_PLAN = text("""
+SELECT (SELECT x.state::text FROM session_states x WHERE x.session_id = :session_id
+         ORDER BY x.visit_seq DESC LIMIT 1) AS last_state,
+       (SELECT x.entered_elapsed_ms FROM session_states x WHERE x.session_id = :session_id
+         ORDER BY x.visit_seq DESC LIMIT 1) AS last_state_ms,
+       (SELECT COALESCE(json_agg(json_build_object(
+            'block_state', b.block_state, 'kanji_set', b.kanji_set, 'block_seed', b.block_seed::text,
+            'planned', p.planned, 'started', p.started, 'completed', p.completed,
+            'min_lag_requested', b.min_lag_requested,
+            'min_lag_achieved', NULLIF(b.min_lag_achieved, -1),
+            'kanji_repeats', b.min_lag_achieved IS DISTINCT FROM -1,
+            'trials', p.trials) ORDER BY b.block_state), '[]')
+        FROM trial_blocks b
+        CROSS JOIN LATERAL (
+            SELECT count(*) AS planned, count(t.trial_id) AS started, count(t.completed_event_id) AS completed,
+                   COALESCE(json_agg(json_build_object('trial_id', pt.trial_id, 'status',
+                       CASE WHEN t.trial_id IS NULL THEN 'NEVER_SHOWN'
+                            WHEN t.completed_event_id IS NULL THEN 'STARTED' ELSE 'COMPLETED' END)
+                       ORDER BY pt.trial_sequence), '[]') AS trials
+            FROM planned_trials pt
+            LEFT JOIN trials t ON t.session_id = pt.session_id AND t.trial_id = pt.trial_id
+            WHERE pt.session_id = b.session_id AND pt.block_state = b.block_state) p
+        WHERE b.session_id = :session_id) AS blocks
+""")
+
+
+@router.get("/sessions/{session_id}/plan", response_model=SessionPlan)
+async def get_plan(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    await _require_session(db, session_id)
+    return dict((await db.execute(_PLAN, {"session_id": session_id})).one()._mapping)

@@ -16,6 +16,9 @@ details of the inspector, on the adaptive S7.
 GET /research/sessions/{id}/adaptations (V1.5): the decisions of the adaptive S7, with or
 without NO_CHANGE.
 
+GET /research/sessions/{id}/plan (V1.6): planned against executed trials per block, on
+the projected fixture, then cut by hand.
+
 GET /research/sessions/{id} (V1.2): the summary, checked against trial_timeline()
 and v_adaptations on the STATIC fixture session and on the adaptive S7 of
 test_projection_adaptation.py.
@@ -353,6 +356,40 @@ async def test_adaptations_rows():
         }
     finally:
         await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
+
+
+@pytest.mark.asyncio
+async def test_plan_complete_then_cut(client):
+    pid = await _register(client, CODES[0])
+    sid = await _projected_session(pid)
+    url = f"/research/sessions/{sid}/plan"
+    body = (await client.get(url)).json()
+    seed = await _scalar("SELECT block_seed FROM trial_blocks WHERE session_id = :s", s=sid)
+    entered = await _scalar("SELECT max(entered_elapsed_ms) FROM session_states WHERE session_id = :s", s=sid)
+    assert body == {
+        "last_state": "S7_EXPERIMENTAL_RETRIEVAL", "last_state_ms": entered,
+        "blocks": [{
+            "block_state": "S2_VR_TUTORIAL", "kanji_set": body["blocks"][0]["kanji_set"], "block_seed": str(seed),
+            "planned": 2, "started": 2, "completed": 2, "min_lag_requested": 2, "min_lag_achieved": 1,
+            "kanji_repeats": True,
+            "trials": [{"trial_id": "S2-001", "status": "COMPLETED"}, {"trial_id": "S2-002", "status": "COMPLETED"}],
+        }],
+    }
+    # Cut: S2-002 started with no completion, then never shown at all.
+    await _exec("UPDATE trials SET completed_event_id = NULL, completed_elapsed_ms = NULL "
+                "WHERE session_id = :s AND trial_id = 'S2-002'", s=sid)
+    block = (await client.get(url)).json()["blocks"][0]
+    assert (block["planned"], block["started"], block["completed"]) == (2, 2, 1)
+    assert [t["status"] for t in block["trials"]] == ["COMPLETED", "STARTED"]
+    await _exec("DELETE FROM trials WHERE session_id = :s AND trial_id = 'S2-002'", s=sid)
+    block = (await client.get(url)).json()["blocks"][0]
+    assert (block["planned"], block["started"], block["completed"]) == (2, 1, 1)
+    assert [t["status"] for t in block["trials"]] == ["COMPLETED", "NEVER_SHOWN"]
+    # Unity sends -1 when the block repeats no kanji: no lag to measure, not "not recorded".
+    await _exec("UPDATE trial_blocks SET min_lag_achieved = -1 WHERE session_id = :s", s=sid)
+    block = (await client.get(url)).json()["blocks"][0]
+    assert (block["min_lag_achieved"], block["kanji_repeats"]) == (None, False)
+    assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/plan")).status_code == 404
 
 
 def test_research_router_is_read_only():

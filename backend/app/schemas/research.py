@@ -251,3 +251,31 @@ class ResearchAdaptation(BaseModel):
     rules_version: str | None
     indicators: dict | None
     thresholds: dict | None
+
+
+class PlannedTrial(BaseModel):
+    trial_id: str
+    # COMPLETED, STARTED (no completion: the session was cut) or NEVER_SHOWN.
+    status: Literal["COMPLETED", "STARTED", "NEVER_SHOWN"]
+
+
+class PlanBlock(BaseModel):
+    """One generated block: its plan (planned_trials) against what ran (trials)."""
+    block_state: str
+    kanji_set: str | None
+    block_seed: str | None      # a bigint; a string so no client rounds it
+    planned: int
+    started: int
+    completed: int
+    min_lag_requested: int | None
+    # None with kanji_repeats False: the block repeats no kanji, so there is no lag (Unity sends -1).
+    min_lag_achieved: int | None
+    kanji_repeats: bool
+    trials: list[PlannedTrial]
+
+
+class SessionPlan(BaseModel):
+    """Plan and execution tab (V1.6). Blocks never generated have no row."""
+    last_state: str | None
+    last_state_ms: int | None   # when the last state was entered
+    blocks: list[PlanBlock]
