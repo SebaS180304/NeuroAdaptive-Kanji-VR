@@ -50,6 +50,30 @@ class ResearchSession(BaseModel):
     last_state: str | None
 
 
+class ParticipantSession(ResearchSession):
+    """One row of "Sessions in order" (V1.8), with the Session View's own aggregates."""
+    # Over answered trials (trial_timeline, window of 3); None when none was answered.
+    mean_rt_ms: float | None
+    # None when the session has no HEAD_AWAY event (never recorded, not zero).
+    head_away_count: int | None
+    head_away_ms: int | None
+    # Recorded before the pre-test was completed (or it never was): the default kanji set.
+    before_pretest: bool
+
+
+class PretestSubstitution(BaseModel):
+    set_name: str
+    original: str
+    # None: no valid substitute, the known kanji was kept and flagged.
+    substitute: str | None
+
+
+class ResearchParticipantDetail(ResearchParticipant):
+    """Participant View (V1.8). Substitutions are empty until the pre-test is complete."""
+    sessions: list[ParticipantSession]
+    substitutions: list[PretestSubstitution]
+
+
 class SessionStateVisit(BaseModel):
     """One visit to a Game Flow state, in order (session_states)."""
     state: str

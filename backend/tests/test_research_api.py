@@ -102,6 +102,44 @@ async def test_participant_list_rows(client):
 
 
 @pytest.mark.asyncio
+async def test_participant_detail(client):
+    if await _scalar("SELECT count(*) FROM kanji_items") == 0:
+        pytest.skip("kanji_items is empty: apply database/seed_kanji_items.sql")
+
+    pid = await _register(client, CODES[0], previous_japanese_experience=True)
+    await _finish_pretest(client, pid)
+    early = str(await _scalar("INSERT INTO experiment_sessions (participant_id, condition, status, created_at) "
+                              "VALUES (:p, 'BEHAVIOR_ADAPTIVE', 'ABORTED', now() - interval '1 day') RETURNING id",
+                              p=pid))
+    last = await _projected_session(pid)
+
+    resp = await client.get(f"/research/participants/{pid}")
+    assert resp.status_code == 200
+    body = resp.json()
+    listed = _row((await client.get("/research/participants")).json(), pid)
+    assert {k: body[k] for k in listed} == listed                       # the V1.11 row, same values
+
+    # Sessions oldest first; the one recorded before the pre-test was completed is marked.
+    assert [s["session_id"] for s in body["sessions"]] == [early, str(last)]
+    assert [s["before_pretest"] for s in body["sessions"]] == [True, False]
+    # The trend and the table read the Session View's own numbers.
+    summary = (await client.get(f"/research/sessions/{last}")).json()
+    for key in ("accuracy", "mean_rt_ms", "head_away_count", "head_away_ms", "decision_count", "last_state"):
+        assert body["sessions"][1][key] == summary[key], key
+    # No events at all: not recorded, never zero.
+    assert {k: body["sessions"][0][k] for k in ("mean_rt_ms", "head_away_count", "head_away_ms", "last_state")} == {
+        "mean_rt_ms": None, "head_away_count": None, "head_away_ms": None, "last_state": None}
+
+    # Every kanji known: all 15 kept and flagged, in the pre-test's own result.
+    pretest = (await client.get(f"/participants/{pid}/pretest")).json()
+    assert sorted((s["set_name"], s["original"]) for s in body["substitutions"]) == \
+        sorted((f["set"], f["original"]) for f in pretest["flagged"])
+    assert all(s["substitute"] is None for s in body["substitutions"]) and len(body["substitutions"]) == 15
+
+    assert (await client.get(f"/research/participants/{early}")).status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_session_list_rows_and_filters(client):
     pid = await _register(client, CODES[0])
     static = await _projected_session(pid)

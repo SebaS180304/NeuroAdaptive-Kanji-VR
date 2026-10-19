@@ -18,13 +18,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.research import (
-    ResearchAdaptation, ResearchParticipant, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
+    ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
     SessionTimeline,
 )
 
 router = APIRouter(prefix="/research", tags=["research"])
 
-_PARTICIPANTS = text("""
+_PARTICIPANT_COLUMNS = """
 SELECT p.id, p.external_code, p.created_at, p.pretest_completed_at,
        CASE WHEN p.pretest_completed_at IS NOT NULL THEN 'COMPLETED'
             WHEN r.answered > 0 THEN 'IN_PROGRESS'
@@ -43,9 +43,9 @@ CROSS JOIN LATERAL (SELECT count(*) AS session_count,
                            COALESCE(array_agg(DISTINCT e.condition ORDER BY e.condition)::text[], '{}') AS conditions
                     FROM experiment_sessions e WHERE e.participant_id = p.id) s
 LEFT JOIN LATERAL (SELECT o.created_at, o.accuracy FROM v_session_overview o
-                   WHERE o.participant_id = p.id ORDER BY o.created_at DESC LIMIT 1) last ON TRUE
-ORDER BY p.created_at DESC
-""")
+                   WHERE o.participant_id = p.id ORDER BY o.created_at DESC LIMIT 1) last ON TRUE"""
+
+_PARTICIPANTS = text(_PARTICIPANT_COLUMNS + " ORDER BY p.created_at DESC")
 
 
 @router.get("/participants", response_model=list[ResearchParticipant])
@@ -87,6 +87,25 @@ async def list_sessions(
     return [dict(r._mapping) for r in await db.execute(_SESSIONS, params)]
 
 
+# Aggregates over trial_timeline() shared by the Session View (V1.2) and the Participant
+# View (V1.8), so both show the same numbers. ha.recorded: HEAD_AWAY ever appears.
+_SUMMARY_JOINS = """
+CROSS JOIN LATERAL (
+    SELECT min(t.block_state)::text AS first_block, max(t.block_state)::text AS last_block,
+           (avg(t.response_time_ms) FILTER (WHERE t.response_time_ms IS NOT NULL))::float AS mean_rt_ms,
+           (avg(t.window_rt_cv) FILTER (WHERE t.response_time_ms IS NOT NULL))::float AS rt_cv_mean,
+           count(*) FILTER (WHERE t.cue_trigger = 'PROACTIVE') AS proactive_hints,
+           sum(t.head_away_count) FILTER (WHERE t.response_time_ms IS NOT NULL) AS head_away_count,
+           sum(t.head_away_ms) FILTER (WHERE t.response_time_ms IS NOT NULL) AS head_away_ms
+    FROM trial_timeline(o.session_id, 3) t) tl
+CROSS JOIN LATERAL (
+    SELECT EXISTS (SELECT 1 FROM session_events e
+                    WHERE e.session_id = o.session_id AND e.event_type = 'HEAD_AWAY') AS recorded) ha
+"""
+
+_HEAD_AWAY = """CASE WHEN ha.recorded THEN COALESCE(tl.head_away_count, 0) END AS head_away_count,
+       CASE WHEN ha.recorded THEN COALESCE(tl.head_away_ms, 0) END AS head_away_ms"""
+
 # The 0.3 criterion: a count whose event type never appears in the session is NULL.
 _SESSION_DETAIL = text(_SESSION_COLUMNS + """,
        s.assigned_kanji_set AS kanji_set, s.session_clock_started_at AS started_at,
@@ -94,8 +113,7 @@ _SESSION_DETAIL = text(_SESSION_COLUMNS + """,
        CASE WHEN o.trials_recorded THEN
             (SELECT count(*) FROM hint_requests h WHERE h.session_id = o.session_id) END AS hint_requests,
        CASE WHEN o.trials_recorded THEN tl.proactive_hints END AS proactive_hints,
-       CASE WHEN ha.recorded THEN COALESCE(tl.head_away_count, 0) END AS head_away_count,
-       CASE WHEN ha.recorded THEN COALESCE(tl.head_away_ms, 0) END AS head_away_ms,
+       """ + _HEAD_AWAY + """,
        (SELECT COALESCE(json_agg(json_build_object('state', x.state, 'entered_elapsed_ms', x.entered_elapsed_ms,
                                                    'exited_elapsed_ms', x.exited_elapsed_ms) ORDER BY x.visit_seq), '[]')
           FROM session_states x WHERE x.session_id = o.session_id) AS states,
@@ -108,17 +126,7 @@ _SESSION_DETAIL = text(_SESSION_COLUMNS + """,
 FROM v_session_overview o
 JOIN participants p ON p.id = o.participant_id
 JOIN experiment_sessions s ON s.id = o.session_id
-CROSS JOIN LATERAL (
-    SELECT min(t.block_state)::text AS first_block, max(t.block_state)::text AS last_block,
-           (avg(t.response_time_ms) FILTER (WHERE t.response_time_ms IS NOT NULL))::float AS mean_rt_ms,
-           (avg(t.window_rt_cv) FILTER (WHERE t.response_time_ms IS NOT NULL))::float AS rt_cv_mean,
-           count(*) FILTER (WHERE t.cue_trigger = 'PROACTIVE') AS proactive_hints,
-           sum(t.head_away_count) FILTER (WHERE t.response_time_ms IS NOT NULL) AS head_away_count,
-           sum(t.head_away_ms) FILTER (WHERE t.response_time_ms IS NOT NULL) AS head_away_ms
-    FROM trial_timeline(o.session_id, 3) t) tl
-CROSS JOIN LATERAL (
-    SELECT EXISTS (SELECT 1 FROM session_events e
-                    WHERE e.session_id = o.session_id AND e.event_type = 'HEAD_AWAY') AS recorded) ha
+""" + _SUMMARY_JOINS + """
 CROSS JOIN LATERAL (
     SELECT count(*) AS decisions,
            count(*) FILTER (WHERE d.action = 'CHANGE_ENVIRONMENT') AS env,
@@ -139,6 +147,42 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     if row is None:
         raise HTTPException(status_code=404, detail="session not found")
     return dict(row._mapping)
+
+
+_PARTICIPANT = text(_PARTICIPANT_COLUMNS + " WHERE p.id = :participant_id")
+
+# Oldest first: the table's # and the trend's ticks follow this order.
+_PARTICIPANT_SESSIONS = text(_SESSION_COLUMNS + """,
+       tl.mean_rt_ms, """ + _HEAD_AWAY + """,
+       (p.pretest_completed_at IS NULL OR o.created_at < p.pretest_completed_at) AS before_pretest
+FROM v_session_overview o
+JOIN participants p ON p.id = o.participant_id""" + _SUMMARY_JOINS + """
+WHERE o.participant_id = :participant_id
+ORDER BY o.created_at
+""")
+
+# Written when the pre-test completes; a NULL substitute is a kanji kept and flagged.
+_SUBSTITUTIONS = text("""
+SELECT k.set_name, o.kanji_char AS original, s.kanji_char AS substitute
+FROM kanji_substitutions k
+JOIN kanji_items o ON o.kanji_id = k.original_kanji_id
+LEFT JOIN kanji_items s ON s.kanji_id = k.substitute_kanji_id
+WHERE k.participant_id = :participant_id
+ORDER BY k.set_name, k.original_kanji_id
+""")
+
+
+@router.get("/participants/{participant_id}", response_model=ResearchParticipantDetail)
+async def get_participant(participant_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    """Participant View (V1.8): the V1.11 row, the sessions in order and the pre-test result."""
+    params = {"participant_id": participant_id}
+    row = (await db.execute(_PARTICIPANT, params)).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="participant not found")
+    return dict(row._mapping) | {
+        "sessions": [dict(r._mapping) for r in await db.execute(_PARTICIPANT_SESSIONS, params)],
+        "substitutions": [dict(r._mapping) for r in await db.execute(_SUBSTITUTIONS, params)],
+    }
 
 
 # A lane is NULL when its event type never appears in the session (hints: when no trial
