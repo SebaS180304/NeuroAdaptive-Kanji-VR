@@ -86,8 +86,8 @@ _SESSION_DETAIL = text(_SESSION_COLUMNS + """,
        CASE WHEN o.trials_recorded THEN
             (SELECT count(*) FROM hint_requests h WHERE h.session_id = o.session_id) END AS hint_requests,
        CASE WHEN o.trials_recorded THEN tl.proactive_hints END AS proactive_hints,
-       CASE WHEN ha.recorded THEN ha.n END AS head_away_count,
-       CASE WHEN ha.recorded THEN ha.ms END AS head_away_ms,
+       CASE WHEN ha.recorded THEN COALESCE(tl.head_away_count, 0) END AS head_away_count,
+       CASE WHEN ha.recorded THEN COALESCE(tl.head_away_ms, 0) END AS head_away_ms,
        (SELECT COALESCE(json_agg(json_build_object('state', x.state, 'entered_elapsed_ms', x.entered_elapsed_ms,
                                                    'exited_elapsed_ms', x.exited_elapsed_ms) ORDER BY x.visit_seq), '[]')
           FROM session_states x WHERE x.session_id = o.session_id) AS states,
@@ -104,14 +104,13 @@ CROSS JOIN LATERAL (
     SELECT min(t.block_state)::text AS first_block, max(t.block_state)::text AS last_block,
            (avg(t.response_time_ms) FILTER (WHERE t.response_time_ms IS NOT NULL))::float AS mean_rt_ms,
            (avg(t.window_rt_cv) FILTER (WHERE t.response_time_ms IS NOT NULL))::float AS rt_cv_mean,
-           count(*) FILTER (WHERE t.cue_trigger = 'PROACTIVE') AS proactive_hints
+           count(*) FILTER (WHERE t.cue_trigger = 'PROACTIVE') AS proactive_hints,
+           sum(t.head_away_count) FILTER (WHERE t.response_time_ms IS NOT NULL) AS head_away_count,
+           sum(t.head_away_ms) FILTER (WHERE t.response_time_ms IS NOT NULL) AS head_away_ms
     FROM trial_timeline(o.session_id, 3) t) tl
 CROSS JOIN LATERAL (
     SELECT EXISTS (SELECT 1 FROM session_events e
-                    WHERE e.session_id = o.session_id AND e.event_type = 'HEAD_AWAY') AS recorded,
-           (SELECT count(*) FROM head_away_episodes h WHERE h.session_id = o.session_id) AS n,
-           (SELECT COALESCE(sum(h.duration_ms), 0) FROM head_away_episodes h
-             WHERE h.session_id = o.session_id)::int AS ms) ha
+                    WHERE e.session_id = o.session_id AND e.event_type = 'HEAD_AWAY') AS recorded) ha
 CROSS JOIN LATERAL (
     SELECT count(*) AS decisions,
            count(*) FILTER (WHERE d.action = 'CHANGE_ENVIRONMENT') AS env,

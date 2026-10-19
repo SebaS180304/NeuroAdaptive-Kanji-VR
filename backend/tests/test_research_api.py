@@ -154,8 +154,9 @@ async def test_session_summary_static(client):
     if away == 0:
         assert (body["head_away_count"], body["head_away_ms"]) == (None, None)
     else:
-        assert body["head_away_count"] == await _scalar(
-            "SELECT count(*) FROM head_away_episodes WHERE session_id = :s", s=sid)
+        assert [body["head_away_count"], body["head_away_ms"]] == list((await _exec(
+            "SELECT sum(head_away_count), sum(head_away_ms) FROM trial_timeline(:s, 3) "
+            "WHERE response_time_ms IS NOT NULL", s=sid))[0])
 
 
 @pytest.mark.asyncio

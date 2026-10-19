@@ -84,7 +84,8 @@ class ResearchSessionDetail(ResearchSession):
     # None when no trial was recorded.
     hint_requests: int | None
     proactive_hints: int | None
-    # None when the session has no HEAD_AWAY event (0.3 criterion: never recorded, not zero).
+    # During answered trials (trial_timeline). None when the session has no HEAD_AWAY
+    # event (0.3 criterion: never recorded, not zero).
     head_away_count: int | None
     head_away_ms: int | None
     # None when no decision was recorded (every STATIC session).
