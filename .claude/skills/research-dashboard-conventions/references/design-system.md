@@ -260,7 +260,7 @@ No blur, no glass, no glow.
 | Navigation rail | custom | `--color-sidebar`; items 40 px pills; active = accent fill + `--color-on-accent` |
 | Page header | custom | Breadcrumb (`caption`, link), `display` title with mono ID, `lead` summary sentence built from data |
 | Session facts | `<dl>` | 120 px label column, `body`; quality dot 8 px |
-| Condition chip | `badge` | 32 px (header) / 24 px (tables), pill. Static: border-subtle fill + text-secondary. Behavior-adaptive: accent tint + on-accent-tint. Multimodal-adaptive (Oct 18): multimodal tint fill, multimodal text and a 1 px `--color-condition-multimodal` border, so it never reads as a warning notice. Unknown: dashed `--color-border-strong`, muted text. All four are drawn on the *Tokens* artboard |
+| Condition chip | `badge` | 32 px (header) / 24 px (tables), pill. Static: border-subtle fill + text-secondary. Behavior-adaptive: accent tint + on-accent-tint. Multimodal-adaptive (Oct 18): multimodal tint fill, multimodal text and a 1 px `--color-condition-multimodal` border, so it never reads as a warning notice. All three are drawn on the *Tokens* artboard. There is no "Unknown" chip (removed Oct 20): every session has a condition in the database, including sessions that are not projected, so the chip always shows the real condition |
 | Primary button | `button` | 32 px, pill, `--color-cta`, `--color-on-cta`, 600 |
 | Secondary button | `button` | 32–40 px, pill, 1 px `--color-border-strong`, surface |
 | Toggle chip (selected) | `toggle` | 32 px pill, accent tint, 1 px accent border |
@@ -370,7 +370,8 @@ Participant View*, both with dark variants.
   - Static: square, `--color-condition-static`.
   - Behavior-adaptive: circle, `--color-condition-behavior`.
   - Multimodal-adaptive: triangle, `--color-condition-multimodal`.
-  - Unknown: × cross, `--color-text-muted`.
+  - No Unknown shape (dropped Oct 20): every session has a condition in the
+    database, and the chart only draws completed, projected sessions.
   - No diamonds: the diamond belongs to timeline decisions. The latest session
     keeps its condition's shape and gets a "Latest" text label beside it.
   - The legend lists only the conditions present, then the caption
@@ -392,21 +393,31 @@ Participant View*, both with dark variants.
   (IN_PROGRESS) and ", [n] not started" (CREATED), each only when above 0.
 - **Head-away column**: episode count, then the total time in
   `--color-text-muted`: "3 (12.4 s)". "—" when not recorded, never 0.
-- **Lead sentence**, by case:
+- **Lead sentence**, by case (completed Oct 20 from the dev chat's cases):
   - All sessions after the pre-test, nothing replaced: "Every session used the
     kanji set confirmed by the pre-test. No kanji needed replacing."
   - All after, with replacements: "Every session used the kanji set confirmed
     by the pre-test, with [n] kanji replaced."
   - Some sessions before the pre-test: "[n] of [n] sessions were recorded
     before the pre-test and used the default set. Later sessions used the
-    confirmed set."
+    confirmed set" + ", with [n] kanji replaced." when [n] > 0, else ".".
+  - Every session before the pre-test: "All [n] sessions were recorded before
+    the pre-test and used the default set." ("The only session was recorded
+    before the pre-test and used the default set." when there is one.) No
+    sentence about later sessions.
   - Pre-test not started: "The pre-test hasn't been started. Sessions use the
     default kanji set until it is completed." with the "Open the pre-test"
     action.
-  - Pre-test in progress: "The pre-test is in progress ([n] of [n] kanji
-    answered). Sessions use the default set until it is completed."
-  - No sessions yet: "No sessions recorded yet." (appended to whichever
-    pre-test sentence applies).
+  - Pre-test in progress: "The pre-test is in progress ([n] kanji answered).
+    Sessions use the default set until it is completed." The pre-test has no
+    fixed length (each known kanji pulls in reserve kanji), so no total.
+  - Pre-test completed, no sessions yet: "The pre-test is complete, with [n]
+    kanji replaced. No sessions recorded yet." or, with none replaced, "The
+    pre-test is complete and no kanji needed replacing. No sessions recorded
+    yet."
+  - Pre-test not started or in progress, no sessions yet: that case's first
+    sentence, then "No sessions recorded yet." in place of "Sessions use the
+    default set until it is completed."
 - **Notes in the facts**: the same notes and component as V1.11 (warn icon +
   text), plus "[n] sessions recorded before the pre-test" when that applies.
 
