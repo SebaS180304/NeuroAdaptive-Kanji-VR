@@ -83,9 +83,7 @@ function lane(key: string, label: string, hint: string, marks: Mark[] | null, ga
 
 const point = (ms: number) => ({ start: ms, end: ms })
 
-// TODO(design): proactive cues, orienting, a head-away with no return, a decision Unity
-// never answered, the decision-to-answer link and the outcome badge have no rule in
-// design-system.md yet; these use existing tokens and the shape language of the chips.
+// Lanes 5-8: design-system.md "Lanes 5-8 marks" (Oct 19).
 function hintMarks(t: Timeline): Mark[] | null {
   return t.hints?.map((h): Mark => ({
     ...point(h.ms), mark: 'dot', y: 4, h: 8,
@@ -113,7 +111,9 @@ function headAwayMarks(t: Timeline, end: number): Mark[] | null {
   return t.head_away?.map((a): Mark => ({
     start: a.start_ms, end: a.end_ms ?? end, mark: 'bar',
     ...(a.end_ms === null ? { fill: null, stroke: '--color-headaway', dashed: true } : { fill: '--color-headaway' }),
-    tip: `Head-away (${title(a.limit_crossed).replace('_', ' ')}), ${span(a.start_ms, a.end_ms ?? end)}${a.end_ms === null ? ', no return before the session ended' : ''}`,
+    tip: a.end_ms === null
+      ? `Head-away (${title(a.limit_crossed).replace('_', ' ')}) from ${clockMs(a.start_ms)}. No return recorded before the session ended`
+      : `Head-away (${title(a.limit_crossed).replace('_', ' ')}), ${span(a.start_ms, a.end_ms)}`,
   })) ?? null
 }
 
@@ -129,14 +129,15 @@ function adaptationMarks(t: Timeline): Mark[] | null {
   const bands: Mark[] = [], links: Mark[] = [], diamonds: Mark[] = [], badges: Mark[] = []
   for (const a of t.adaptations) {
     const change = `${a.dimension === 'ESL' ? 'environment' : 'assistance'} ${a.from_level ? `${title(a.from_level)} to ` : 'to '}${title(a.to_level)}`
-    const unity = a.unity_result === 'APPLIED' ? `applied at ${clockMs(a.result_ms!)}`
-      : a.unity_result === 'SKIPPED' ? `skipped by Unity (${a.skip_reason}) at ${clockMs(a.result_ms!)}`
-        : 'no answer from Unity recorded'
-    const tip = `${a.trial_id}, estimated state ${title(a.learner_state)}: ${change}, ${unity}`
+    const unity = a.unity_result === 'APPLIED' ? `Applied at ${clockMs(a.result_ms!)}`
+      : a.unity_result === 'SKIPPED' ? `Skipped by Unity (${a.skip_reason}) at ${clockMs(a.result_ms!)}`
+        : 'No answer from Unity recorded'
+    const tip = `${a.trial_id}, estimated state ${title(a.learner_state)}: ${change}. ${unity}. ` +
+      `Outcome: ${a.outcome ? a.outcome.toLowerCase() : 'not recorded'}`
     if (a.cooldown_until_ms !== null)
       bands.push({ start: a.decided_ms, end: a.cooldown_until_ms, mark: 'band', y: 2, h: 12, fill: '--color-accent-tint',
         tip: `Cooldown after ${a.trial_id}, until ${clockMs(a.cooldown_until_ms)}` })
-    if (a.result_ms !== null)
+    if (a.unity_result !== null && a.result_ms !== null)
       links.push({ start: a.decided_ms, end: a.result_ms, mark: 'link', fill: null, stroke: '--color-accent', tip })
     diamonds.push({
       ...point(a.decided_ms), mark: 'diamond', tip,

@@ -46,6 +46,9 @@ const DATA: Timeline = {
     { decision_id: 'd2', trial_id: 'S7-011', decided_ms: 250_000, action: 'CHANGE_ASSISTANCE', dimension: 'LAL',
       from_level: 'MEDIUM', to_level: 'HIGH', learner_state: 'OVERLOADED', unity_result: 'SKIPPED', skip_reason: 'TIMEOUT',
       result_ms: 250_300, cooldown_until_ms: null, outcome: null },
+    { decision_id: 'd3', trial_id: 'S7-015', decided_ms: 300_000, action: 'CHANGE_ASSISTANCE', dimension: 'LAL',
+      from_level: 'HIGH', to_level: 'MEDIUM', learner_state: 'STABLE', unity_result: null, skip_reason: null,
+      result_ms: null, cooldown_until_ms: null, outcome: null },
   ],
 }
 
@@ -116,6 +119,7 @@ describe('timeline lanes', () => {
     const away = buildLanes(DATA)[6]!.marks!
     expect(away[0]).toMatchObject({ mark: 'bar', fill: '--color-headaway', start: 150_000, end: 152_500 })
     expect(away[1]).toMatchObject({ fill: null, stroke: '--color-headaway', dashed: true, end: 400_000 })
+    expect(away[1]!.tip).toBe('Head-away (Pitch down) from 06:30.000. No return recorded before the session ended')
   })
 
   it('a decision is a diamond joined to its application, with its cooldown and outcome', () => {
@@ -123,14 +127,18 @@ describe('timeline lanes', () => {
     // Drawn back to front: bands, links, diamonds, badges.
     expect(marks.map((m) => [m.mark, m.start, m.end])).toEqual([
       ['band', 200_000, 215_000],
-      ['link', 200_000, 201_500], ['link', 250_000, 250_300],
-      ['diamond', 200_000, 200_000], ['diamond', 250_000, 250_000],
+      ['link', 200_000, 201_500], ['link', 250_000, 250_300],              // none for d3: Unity never answered
+      ['diamond', 200_000, 200_000], ['diamond', 250_000, 250_000], ['diamond', 300_000, 300_000],
       ['badge', 200_000, 200_000],
     ])
-    const [applied, skipped] = marks.filter((m) => m.mark === 'diamond')
+    const [applied, skipped, pending] = marks.filter((m) => m.mark === 'diamond')
     expect(applied).toMatchObject({ fill: '--color-accent' })
+    expect(applied!.tip).toBe('S7-006, estimated state Disengaged: environment Medium to Low. Applied at 03:21.500. Outcome: negative')
     expect(skipped).toMatchObject({ fill: null, stroke: '--color-accent' })
-    expect(skipped!.tip).toBe('S7-011, estimated state Overloaded: assistance Medium to High, skipped by Unity (TIMEOUT) at 04:10.300')
+    expect(skipped!.dashed).toBeUndefined()
+    expect(skipped!.tip).toBe('S7-011, estimated state Overloaded: assistance Medium to High. Skipped by Unity (TIMEOUT) at 04:10.300. Outcome: not recorded')
+    expect(pending).toMatchObject({ fill: null, stroke: '--color-accent', dashed: true })
+    expect(pending!.tip).toBe('S7-015, estimated state Stable: assistance High to Medium. No answer from Unity recorded. Outcome: not recorded')
     expect(marks.find((m) => m.mark === 'badge')).toMatchObject({ fill: '--color-outcome-negative', shape: 'square' })
   })
 

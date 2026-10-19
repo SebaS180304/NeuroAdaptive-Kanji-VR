@@ -42,13 +42,25 @@ describe('timeline (V1.3)', () => {
     show(BASE)
     const t = await screen.findByRole('region', { name: 'Session timeline' })
     expect(await within(t).findByRole('heading', { name: 'Timeline' })).toBeInTheDocument()
-    expect(within(t).getAllByText(/^(Game Flow|Environment|Assistance|Trials|Hints|Peripherals|Head-away|Adaptations)$/).map((e) => e.textContent))
+    expect(within(t).getAllByText(/^(Game Flow|Environment|Assistance|Trials|Hints|Peripherals|Head-away|Adaptations)$/)
+      .filter((e) => !e.closest('[aria-label="Legend"]')).map((e) => e.textContent))
       .toEqual(['Game Flow', 'Environment', 'Assistance', 'Trials', 'Hints', 'Peripherals', 'Head-away', 'Adaptations'])
     expect(t).toHaveTextContent('No adaptations in a static session')   // DETAIL is STATIC
     expect(t).toHaveTextContent('Not recorded in this session')     // environment
     expect(t).toHaveTextContent('Nothing in this session')          // assistance
-    expect(within(t).getAllByText(/^(Correct|Incorrect|Not answered|Not completed \(session ended\))$/).map((e) => e.textContent))
+    // design-system.md "Lanes 5-8 marks": every mark in the caption, grouped by lane in lane order.
+    const legend = within(t).getByRole('list', { name: 'Legend' })
+    expect(within(legend).getAllByRole('heading').map((h) => h.textContent)).toEqual([
+      'Game Flow', 'Environment', 'Assistance', 'Trials', 'Hints', 'Peripherals', 'Head-away', 'Adaptations',
+    ])
+    const group = (lane: string) => within(legend).getByRole('heading', { name: lane }).closest('li')!
+    expect(within(group('Trials')).getAllByRole('listitem').map((e) => e.textContent))
       .toEqual(['Correct', 'Incorrect', 'Not answered', 'Not completed (session ended)'])
+    expect(within(group('Hints')).getAllByRole('listitem').map((e) => e.textContent)).toEqual(['Hint requested', 'Proactive cue'])
+    expect(within(group('Adaptations')).getAllByRole('listitem').map((e) => e.textContent)).toEqual([
+      'Change applied', 'Change skipped by Unity', 'No answer from Unity', 'Cooldown',
+      'Outcome positive', 'Outcome neutral', 'Outcome negative', 'Outcome uncertain',
+    ])
   })
 
   it('switches between the whole session and S7 from the keyboard', async () => {

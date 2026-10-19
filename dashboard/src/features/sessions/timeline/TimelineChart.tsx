@@ -92,7 +92,8 @@ function option(lanes: Lane[], end: number, w: [number, number], color: (n: stri
           if (!visible(x0)) return null
           if (m.mark === 'tick') return { type: 'rect', shape: { x: x0 - 1, y, width: 2, height: h }, style: { fill } }
           if (m.mark === 'dot')
-            return { type: 'circle', shape: { cx: x0, cy: mid, r: h / 2 - (stroke ? 0.75 : 0) }, style: { fill, stroke, lineWidth: 1.5 } }
+            // A requested hint is filled; a proactive cue is a 2 px ring of the same size.
+            return { type: 'circle', shape: { cx: x0, cy: mid, r: h / 2 - (stroke ? 1 : 0) }, style: { fill, stroke, lineWidth: 2 } }
           if (m.mark === 'diamond') {
             // design-system.md: a 12 px square rotated 45°, filled = applied, 2 px outline = skipped.
             const r = stroke ? 7.5 : 8.5
@@ -102,11 +103,18 @@ function option(lanes: Lane[], end: number, w: [number, number], color: (n: stri
               style: { fill: stroke ? color('--color-surface') : fill, stroke, lineWidth: 2, lineDash: dash },
             }
           }
-          // badge: the outcome, 6 px, at the diamond's upper right.
+          // badge: the outcome, 6 px, at the diamond's upper right, inside a 1 px surface ring.
+          const ring = { fill: color('--color-surface') }
           const style = { fill, stroke, lineWidth: 1 }
-          return m.shape === 'circle'
-            ? { type: 'circle', shape: { cx: x0 + 8, cy: slot - 2, r: 3 }, style }
-            : { type: 'rect', shape: { x: x0 + 5, y: slot - 5, width: 6, height: 6 }, style }
+          const inner = stroke ? 0.5 : 0
+          return {
+            type: 'group',
+            children: m.shape === 'circle'
+              ? [{ type: 'circle', shape: { cx: x0 + 8, cy: slot - 2, r: 4 }, style: ring },
+                 { type: 'circle', shape: { cx: x0 + 8, cy: slot - 2, r: 3 - inner }, style }]
+              : [{ type: 'rect', shape: { x: x0 + 4, y: slot - 6, width: 8, height: 8 }, style: ring },
+                 { type: 'rect', shape: { x: x0 + 5 + inner, y: slot - 5 + inner, width: 6 - 2 * inner, height: 6 - 2 * inner }, style }],
+          }
         }
 
         const rect = echarts.graphic.clipRectByRect(

@@ -94,15 +94,66 @@ function Lanes({ data, condition }: { data: Timeline; condition: string }) {
         </div>
       </div>
 
-      <div className="type-caption flex flex-wrap gap-6 text-(--color-text-muted)">
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 bg-(--color-trial-correct)" />Correct</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4" style={{ background: 'var(--hatch-trial-incorrect)' }} />Incorrect</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 border border-(--color-border-strong)" />Not answered</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-4 border border-dashed border-(--color-border-strong)" />Not completed (session ended)</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="size-2.5 rotate-45 bg-(--color-accent)" />Change applied</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="size-2.5 rotate-45 border-2 border-(--color-accent)" />Change skipped by Unity</span>
-        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-6 bg-(--color-accent-tint)" />Cooldown</span>
-      </div>
+      <Legend />
     </>
+  )
+}
+
+// design-system.md "Lanes 5-8 marks": every mark, grouped by lane in lane order. Swatches
+// are CSS copies of the canvas marks.
+const HATCH = { background: 'var(--hatch-trial-incorrect)' }
+const LEGEND: [string, [string, string, object?][]][] = [
+  ['Game Flow', [['S7', 'h-2 w-4 bg-(--color-text)'], ['Other states', 'h-2 w-4 bg-(--color-state-neutral)']]],
+  ['Environment', [
+    ['Low', 'h-2 w-4 bg-(--color-esl-low)'], ['Medium', 'h-2 w-4 bg-(--color-esl-medium)'], ['High', 'h-2 w-4 bg-(--color-esl-high)'],
+    ['Focus', 'h-2 w-4 border border-(--color-esl-high) bg-(--color-surface)'], ['Minimal or Baseline', 'h-2 w-4 bg-(--color-state-neutral)'],
+  ]],
+  ['Assistance', [
+    ['Low', 'h-2 w-4 bg-(--color-lal-low)'], ['Medium', 'h-2 w-4 bg-(--color-lal-medium)'], ['High', 'h-2 w-4 bg-(--color-lal-high)'],
+    ['Off', 'h-px w-4 bg-(--color-border-strong)'],
+  ]],
+  ['Trials', [
+    ['Correct', 'h-2 w-4 bg-(--color-trial-correct)'], ['Incorrect', 'h-2 w-4', HATCH],
+    ['Not answered', 'h-2 w-4 border border-(--color-border-strong)'],
+    ['Not completed (session ended)', 'h-2 w-4 border border-dashed border-(--color-border-strong)'],
+  ]],
+  ['Hints', [['Hint requested', 'size-2 rounded-full bg-(--color-lal-high)'], ['Proactive cue', 'size-2 rounded-full border-2 border-(--color-lal-high)']]],
+  ['Peripherals', [
+    ['Peripheral event', 'h-2 w-0.5 bg-(--color-peripheral)'], ['Dwell', 'h-1 w-4 bg-(--color-distractor)'],
+    ['Orienting', 'h-2 w-0.5 bg-(--color-distractor)'],
+  ]],
+  ['Head-away', [
+    ['Episode', 'h-2 w-4 bg-(--color-headaway)'],
+    ['No return (session ended)', 'h-2 w-4 border border-dashed border-(--color-headaway)'],
+  ]],
+  ['Adaptations', [
+    ['Change applied', 'size-2.5 rotate-45 bg-(--color-accent)'],
+    ['Change skipped by Unity', 'size-2.5 rotate-45 border-2 border-(--color-accent)'],
+    ['No answer from Unity', 'size-2.5 rotate-45 border-2 border-dashed border-(--color-accent)'],
+    ['Cooldown', 'h-2 w-6 bg-(--color-accent-tint)'],
+    ['Outcome positive', 'size-1.5 rounded-full bg-(--color-outcome-positive)'],
+    ['Outcome neutral', 'size-1.5 rounded-full border border-(--color-text-muted)'],
+    ['Outcome negative', 'size-1.5 bg-(--color-outcome-negative)'],
+    ['Outcome uncertain', 'size-1.5 border border-(--color-text-muted)'],
+  ]],
+]
+
+function Legend() {
+  return (
+    <ul aria-label="Legend" className="type-caption m-0 flex list-none flex-wrap gap-x-8 gap-y-3 p-0 text-(--color-text-muted)">
+      {LEGEND.map(([lane, items]) => (
+        <li key={lane} className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <h3 className="type-caption m-0 font-medium text-(--color-text-secondary)">{lane}</h3>
+          <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0">
+            {items.map(([label, swatch, style]) => (
+              <li key={label} className="flex items-center gap-2">
+                <span aria-hidden="true" className={`shrink-0 ${swatch}`} style={style} />
+                {label}
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
   )
 }
