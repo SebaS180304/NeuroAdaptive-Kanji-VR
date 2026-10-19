@@ -515,7 +515,7 @@ in the F5a log, `a5748886` the latest).** No pgAdmin open.
 
 ## Phase 3: Participant, quality and close
 
-### [ ] Task 3.0: Design questions for V1.7 and V1.8 (design chat)
+### [x] Task 3.0: Design questions for V1.7 and V1.8 (design chat, done 19 Oct)
 **Description:** The V1.7 and V1.8 artboards were validated on 17 Oct, before there was
 real data to check them against. The data of 19 Oct raises the questions below. Sebas
 takes them to the design chat; its answers update Tasks 3.1 and 3.2 and
@@ -597,16 +597,33 @@ version 27, with dark artboards `QualityDark` and `ParticipantDark`):**
     and "Show all [n]".
 12. `verify_trials` etc., without the suffix.
 
-**Still open (not in the artboards; asked of Sebas on 19 Oct):** the text of
-`design-system.md` → "V1.7 and V1.8: cases from real data", which the design chat cites
-but which is not in the repo copy. It should settle: the Response time axis; how the
-facts count `CREATED` and `IN_PROGRESS`; the lead for a pre-test in progress, no kanji
-replaced and no sessions; the status words in the table ("Aborted after S7").
+**The full answers are in `design-system.md` → "V1.7 and V1.8: cases from real data"**
+(copied from the design handoff on 19 Oct). Where it and the artboards disagree, the text
+wins. It adds to the list above:
+- Trend x-axis in session order by start time; the tooltip adds the visit number when it
+  is above 1. More than 12 sessions: ticks every 5, 6 px points, no point labels.
+- Unknown condition: × cross in `--color-text-muted`. The legend lists only the
+  conditions present.
+- Response time in ms from 0, top at the next 500 ms step above the largest mean, 4 or 5
+  gridlines.
+- Sessions fact: "[n] completed, [n] aborted", then ", [n] in progress" and ", [n] not
+  started", each only when above 0.
+- Head-away "—" when not recorded, never 0.
+- Lead sentence for every case: all after the pre-test with or without replacements, some
+  before, pre-test not started, pre-test in progress ("[n] of [n] kanji answered"), and
+  "No sessions recorded yet." appended.
+- V1.7 with every session projected: "Every recorded session is projected." A code
+  outside the five is appended at the end of the bars. The code filter applies before
+  paging.
+
+Not covered by the text or the artboards: the status words in the sessions table (the
+artboard shows "Aborted after S7"). Task 3.1 reuses the status wording of V1.1 and flags
+it at its screen check.
 
 **Acceptance:**
-- [x] Every question has an answer from the design chat, written down here (open items above)
+- [x] Every question has an answer from the design chat, written down here
 - [x] Tasks 3.1 and 3.2 are updated to the answers
-- [ ] `design-system.md` has the section "V1.7 and V1.8: cases from real data"
+- [x] `design-system.md` has the section "V1.7 and V1.8: cases from real data"
 
 **Deps:** Checkpoint C. **Scope:** XS
 

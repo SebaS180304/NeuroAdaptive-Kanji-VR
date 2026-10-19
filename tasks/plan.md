@@ -156,8 +156,8 @@ How the answers are handled:
    Checkpoint A of the old plan).
 3. Design chat, before Tasks 3.1 and 3.2: twelve questions on V1.7 and V1.8 against the
    real data of 19 Oct (Task 3.0 in `todo.md`). Answered on 19 Oct by the redrawn artboards
-   (canvas version 27, validated by Sebas at 23:54). Still open: the text of
-   `design-system.md` → "V1.7 and V1.8: cases from real data", which is not in the repo.
+   (canvas version 27, validated by Sebas at 23:54) and by `design-system.md` → "V1.7
+   and V1.8: cases from real data", copied into the skill the same day. Closed.
 
 ## Decisions (19 Oct, design chat, validated by Sebas)
 - V1.8 trend: completed sessions only, ticked by the table's `#`; shapes square (Static),
