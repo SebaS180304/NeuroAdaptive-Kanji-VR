@@ -112,6 +112,49 @@ class TimelineTrial(BaseModel):
     is_correct: bool | None     # None: not answered
 
 
+class TimelineHint(BaseModel):
+    ms: int
+    trial_id: str
+    proactive: bool             # True: the proactive cue at the trial's start; False: a request
+
+
+class TimelinePeripheral(BaseModel):
+    ms: int
+    event_index: int
+    object_name: str
+
+
+class TimelineDistractor(BaseModel):
+    kind: Literal["DWELL", "ORIENTING"]
+    start_ms: int               # onset
+    duration_ms: int
+    object_name: str
+
+
+class TimelineHeadAway(BaseModel):
+    start_ms: int               # onset
+    end_ms: int | None          # None: no return before the session ended
+    limit_crossed: str
+
+
+class TimelineAdaptation(BaseModel):
+    """A decision that changed something (NO_CHANGE is in the Adaptations tab)."""
+    decision_id: str
+    trial_id: str
+    decided_ms: int
+    action: str
+    dimension: str
+    from_level: str | None
+    to_level: str
+    learner_state: str
+    unity_result: Literal["APPLIED", "SKIPPED"] | None   # None: Unity has not answered (pending or lost)
+    skip_reason: str | None
+    result_ms: int | None       # when Unity applied or skipped it
+    # Start of the trial the cooldown runs to; the block's last trial end if that trial never ran.
+    cooldown_until_ms: int | None
+    outcome: str | None
+
+
 class SessionTimeline(BaseModel):
     """Lanes of the Session View timeline (V1.3), in session_elapsed_ms.
 
@@ -123,3 +166,8 @@ class SessionTimeline(BaseModel):
     environment: list[TimelineLevel] | None
     assistance: list[TimelineLevel] | None
     trials: list[TimelineTrial] | None
+    hints: list[TimelineHint] | None
+    peripherals: list[TimelinePeripheral] | None
+    distractors: list[TimelineDistractor] | None
+    head_away: list[TimelineHeadAway] | None
+    adaptations: list[TimelineAdaptation] | None

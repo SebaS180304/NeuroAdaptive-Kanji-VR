@@ -8,7 +8,7 @@ them projected from the fixture with two answered S5 trials (one correct).
 GET /research/sessions (V1.1): one row per session, filters combined. A projected
 STATIC session and an adaptive one with no events at all.
 
-GET /research/sessions/{id}/timeline (V1.3): lanes 1-4 on the same two sessions.
+GET /research/sessions/{id}/timeline (V1.3): the eight lanes on the same two sessions.
 
 GET /research/sessions/{id} (V1.2): the summary, checked against trial_timeline()
 and v_adaptations on the STATIC fixture session and on the adaptive S7 of
@@ -218,6 +218,22 @@ async def test_timeline_lanes_adaptive():
             {"trial_id": "S7-002", "block_state": "S7_EXPERIMENTAL_RETRIEVAL", "start_ms": 6000, "end_ms": 9500, "is_correct": False},
             {"trial_id": "S7-003", "block_state": "S7_EXPERIMENTAL_RETRIEVAL", "start_ms": 11000, "end_ms": 14500, "is_correct": True},
         ]
+        # Lanes 5-8. No hint was requested; S7-003 started with the proactive cue.
+        assert body["hints"] == [{"ms": 11000, "trial_id": "S7-003", "proactive": True}]
+        assert body["peripherals"] is None                                       # no PERIPHERAL_EVENT
+        onsets = await adaptive._exec("SELECT kind, onset_elapsed_ms, duration_ms FROM distractor_interactions "
+                                      "WHERE session_id = :s ORDER BY onset_elapsed_ms", s=sid)
+        assert [(d["kind"], d["start_ms"], d["duration_ms"]) for d in body["distractors"]] == [tuple(r) for r in onsets]
+        assert [d["kind"] for d in body["distractors"]] == ["DWELL", "ORIENTING"]
+        assert body["head_away"] is None                                         # no HEAD_AWAY
+        # Changes only (NO_CHANGE is in the V1.5 table). Cooldown until trial 5, which never
+        # ran: the band ends with the block's last trial.
+        assert body["adaptations"] == [{
+            "decision_id": "d-S7-002", "trial_id": "S7-002", "decided_ms": 8000, "action": "CHANGE_ASSISTANCE",
+            "dimension": "LAL", "from_level": "MEDIUM", "to_level": "HIGH", "learner_state": "OVERLOADED",
+            "unity_result": "APPLIED", "skip_reason": None, "result_ms": 9600, "cooldown_until_ms": 14500,
+            "outcome": None,
+        }]
     finally:
         await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
 
@@ -235,7 +251,8 @@ async def test_timeline_lanes_static(client):
     empty = str(await _scalar("INSERT INTO experiment_sessions (participant_id, condition) VALUES (:p, 'STATIC') "
                               "RETURNING id", p=pid))
     body = (await client.get(f"/research/sessions/{empty}/timeline")).json()
-    assert body == {"session_end_ms": None, "states": None, "environment": None, "assistance": None, "trials": None}
+    assert body == {"session_end_ms": None, "states": None, "environment": None, "assistance": None, "trials": None,
+                    "hints": None, "peripherals": None, "distractors": None, "head_away": None, "adaptations": None}
     assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/timeline")).status_code == 404
 
 

@@ -133,6 +133,8 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     return dict(row._mapping)
 
 
+# A lane is NULL when its event type never appears in the session (hints: when no trial
+# was recorded, since a request is per trial).
 # Assistance has no interval table: LAL is set on each state entry and by each applied
 # LAL change, and holds until the next one (runs of the same level are merged).
 _TIMELINE = text("""
@@ -140,6 +142,10 @@ WITH ev AS (
     SELECT bool_or(e.event_type = 'STATE_ENTERED') AS states,
            bool_or(e.event_type = 'ENVIRONMENT_APPLIED') AS env,
            bool_or(e.event_type = 'TRIAL_STARTED') AS trials,
+           bool_or(e.event_type = 'PERIPHERAL_EVENT') AS peripherals,
+           bool_or(e.event_type = 'DISTRACTOR_INTERACTION') AS distractors,
+           bool_or(e.event_type = 'HEAD_AWAY') AS head_away,
+           bool_or(e.event_type = 'ADAPTATION_DECISION') AS decisions,
            max(CASE WHEN jsonb_typeof(e.payload -> 'session_elapsed_ms') = 'number'
                     THEN (e.payload ->> 'session_elapsed_ms')::numeric END)::int AS end_ms
     FROM session_events e WHERE e.session_id = :session_id),
@@ -165,7 +171,38 @@ SELECT EXISTS (SELECT 1 FROM experiment_sessions WHERE id = :session_id) AS foun
        CASE WHEN ev.trials THEN (SELECT COALESCE(json_agg(json_build_object(
                 'trial_id', t.trial_id, 'block_state', t.block_state, 'start_ms', t.started_elapsed_ms,
                 'end_ms', t.completed_elapsed_ms, 'is_correct', t.is_correct)
-                ORDER BY t.started_elapsed_ms), '[]') FROM trials t WHERE t.session_id = :session_id) END AS trials
+                ORDER BY t.started_elapsed_ms), '[]') FROM trials t WHERE t.session_id = :session_id) END AS trials,
+       CASE WHEN ev.trials THEN (SELECT COALESCE(json_agg(json_build_object(
+                'ms', h.ms, 'trial_id', h.trial_id, 'proactive', h.proactive) ORDER BY h.ms), '[]')
+            FROM (SELECT r.elapsed_ms AS ms, r.trial_id, false AS proactive FROM hint_requests r
+                   WHERE r.session_id = :session_id
+                  UNION ALL
+                  SELECT t.started_elapsed_ms, t.trial_id, true FROM trials t
+                   WHERE t.session_id = :session_id AND t.cue_trigger = 'PROACTIVE') h) END AS hints,
+       CASE WHEN ev.peripherals THEN (SELECT COALESCE(json_agg(json_build_object(
+                'ms', x.elapsed_ms, 'event_index', x.event_index, 'object_name', x.object_name)
+                ORDER BY x.elapsed_ms), '[]') FROM peripheral_events x WHERE x.session_id = :session_id) END AS peripherals,
+       CASE WHEN ev.distractors THEN (SELECT COALESCE(json_agg(json_build_object(
+                'kind', x.kind, 'start_ms', x.onset_elapsed_ms, 'duration_ms', x.duration_ms, 'object_name', x.object_name)
+                ORDER BY x.onset_elapsed_ms), '[]') FROM distractor_interactions x WHERE x.session_id = :session_id) END AS distractors,
+       CASE WHEN ev.head_away THEN (SELECT COALESCE(json_agg(json_build_object(
+                'start_ms', x.onset_elapsed_ms, 'end_ms', x.returned_elapsed_ms, 'limit_crossed', x.limit_crossed)
+                ORDER BY x.onset_elapsed_ms), '[]') FROM head_away_episodes x WHERE x.session_id = :session_id) END AS head_away,
+       CASE WHEN ev.decisions THEN (SELECT COALESCE(json_agg(json_build_object(
+                'decision_id', v.decision_id, 'trial_id', v.trial_id, 'decided_ms', v.decided_elapsed_ms,
+                'action', v.action, 'dimension', v.dimension, 'from_level', v.from_level, 'to_level', v.to_level,
+                'learner_state', v.learner_state, 'unity_result', v.unity_result, 'skip_reason', v.skip_reason,
+                'result_ms', v.applied_elapsed_ms, 'outcome', v.outcome,
+                'cooldown_until_ms', CASE WHEN d.cooldown_until_trial IS NOT NULL THEN COALESCE(
+                    (SELECT t2.started_elapsed_ms FROM trials t2 WHERE t2.session_id = :session_id
+                        AND t2.block_state = t1.block_state AND t2.trial_sequence = d.cooldown_until_trial),
+                    (SELECT max(t3.completed_elapsed_ms) FROM trials t3 WHERE t3.session_id = :session_id
+                        AND t3.block_state = t1.block_state)) END)
+                ORDER BY v.decided_elapsed_ms), '[]')
+            FROM v_adaptations v
+            JOIN adaptation_decisions d ON d.session_id = v.session_id AND d.decision_id = v.decision_id
+            JOIN trials t1 ON t1.session_id = v.session_id AND t1.trial_id = v.trial_id
+            WHERE v.session_id = :session_id AND v.action <> 'NO_CHANGE') END AS adaptations
 FROM ev
 """)
 
