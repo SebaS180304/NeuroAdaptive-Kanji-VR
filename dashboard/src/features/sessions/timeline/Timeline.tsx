@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { getJson, type Schemas } from '@/api/client'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
-import { buildLanes, clock, clockMs, s7Window } from './lanes'
+import { clock, clockMs } from '@/lib/format'
+import { buildLanes, s7Window } from './lanes'
 import { AXIS_HEIGHT, PLOT_INSET, TimelineChart } from './TimelineChart'
 
 // V1.3 Timeline, artboard *Session View*: lanes 1-4 (Game Flow, environment,

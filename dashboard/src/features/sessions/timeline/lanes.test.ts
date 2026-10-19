@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Schemas } from '@/api/client'
-import { buildLanes, clock, clockMs, s7Window } from './lanes'
+import { clock, clockMs } from '@/lib/format'
+import { buildLanes, s7Window } from './lanes'
 
 type Timeline = Schemas['SessionTimeline']
 

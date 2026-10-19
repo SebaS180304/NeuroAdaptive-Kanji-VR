@@ -3,8 +3,7 @@ import { getJson, type Schemas } from '@/api/client'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { SESSION_STATUS_LABEL, type SessionStatus } from '@/components/SessionStatus'
-import { stateCode as code } from '@/lib/format'
-import { clockMs } from '../timeline/lanes'
+import { clockMs, stateCode as code } from '@/lib/format'
 
 // V1.6 Plan and execution tab, artboard *V1.6 Session View, Plan and execution tab*:
 // table 1-11, the "Where the session stopped" note 12-16.

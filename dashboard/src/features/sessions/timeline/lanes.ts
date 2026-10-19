@@ -1,5 +1,5 @@
 import type { Schemas } from '@/api/client'
-import { stateCode as code } from '@/lib/format'
+import { clockMs, stateCode as code } from '@/lib/format'
 
 // The timeline as data: one lane per row, in the fixed order of visualization-rules.md.
 // Fills are token names; the chart resolves them in the current theme. A new lane
@@ -44,12 +44,6 @@ export type Lane = {
   note: string | null
 }
 
-const pad = (n: number, w = 2) => String(n).padStart(w, '0')
-
-/** Session time as mm:ss (minutes keep counting past 59). */
-export const clock = (ms: number) => `${pad(Math.floor(ms / 60_000))}:${pad(Math.floor(ms / 1000) % 60)}`
-/** Session time as mm:ss.SSS. */
-export const clockMs = (ms: number) => `${clock(ms)}.${pad(Math.round(ms) % 1000, 3)}`
 
 const title = (level: string) => level[0] + level.slice(1).toLowerCase()
 const span = (start: number, end: number) => `${clockMs(start)} to ${clockMs(end)}`

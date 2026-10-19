@@ -29,3 +29,10 @@ export function formatDuration(ms: number): string {
 export function stateCode(state: string): string {
   return state.split('_')[0]!
 }
+
+const pad = (n: number, w = 2) => String(n).padStart(w, '0')
+
+/** Session time as mm:ss (minutes keep counting past 59). */
+export const clock = (ms: number) => `${pad(Math.floor(ms / 60_000))}:${pad(Math.floor(ms / 1000) % 60)}`
+/** Session time as mm:ss.SSS. */
+export const clockMs = (ms: number) => `${clock(ms)}.${pad(Math.round(ms) % 1000, 3)}`

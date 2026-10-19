@@ -4,7 +4,8 @@ import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
 import { tokenReader } from '@/lib/tokens'
-import { clock, type Lane } from './lanes'
+import { clock } from '@/lib/format'
+import { type Lane } from './lanes'
 
 echarts.use([CustomChart, GridComponent, TooltipComponent, DataZoomComponent, CanvasRenderer])
 

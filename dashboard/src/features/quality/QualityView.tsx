@@ -4,8 +4,7 @@ import { Link } from 'react-router'
 import { getJson, type Schemas } from '@/api/client'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
-import { formatDate } from '@/lib/format'
-import { clockMs } from '@/features/sessions/timeline/lanes'
+import { clockMs, formatDate } from '@/lib/format'
 
 // V1.7 Data quality, artboard *V1.7 Data quality* and its dark variant (canvas version 27),
 // with design-system.md "V1.7 and V1.8: cases from real data".
