@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getJson, type Schemas } from '@/api/client'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
+import { SESSION_STATUS_LABEL, type SessionStatus } from '@/components/SessionStatus'
 import { clockMs } from '../timeline/lanes'
 
 // V1.6 Plan and execution tab, artboard *V1.6 Session View, Plan and execution tab*:
@@ -135,7 +136,7 @@ export function PlanTab({ sessionId, condition }: { sessionId: string; condition
   )
 }
 
-export function StopNote({ sessionId, status, kanjiSet }: { sessionId: string; status: string; kanjiSet: string | null }) {
+export function StopNote({ sessionId, status, kanjiSet }: { sessionId: string; status: SessionStatus; kanjiSet: string | null }) {
   const { data } = usePlan(sessionId)
   return (
     <aside
@@ -152,7 +153,7 @@ export function StopNote({ sessionId, status, kanjiSet }: { sessionId: string; s
               {data.last_state ? `${code(data.last_state)}, at ${clockMs(data.last_state_ms!)}` : <Missing reason="No Game Flow state recorded" />}
             </dd>
             <dt className="text-(--color-text-muted)">Session status</dt>
-            <dd className="m-0">{status[0] + status.slice(1).toLowerCase().replace('_', ' ')}</dd>
+            <dd className="m-0">{SESSION_STATUS_LABEL[status]}</dd>
             <dt className="text-(--color-text-muted)">Kanji set</dt>
             <dd className="m-0">{kanjiSet ?? <Missing reason="Not recorded" />}</dd>
           </dl>

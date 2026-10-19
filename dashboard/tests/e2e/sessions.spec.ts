@@ -27,6 +27,21 @@ test('keyboard reaches the filters, then the first session, and opens it', async
   await expect(page).toHaveURL(/\/sessions\/[0-9a-f-]{36}$/)
 })
 
+// Status words (design-system.md V1.8): an aborted session names its last recorded state,
+// in V1.1 and in the Session View facts.
+test('an aborted session reads "Aborted in [state]" in the list and the Session View', async ({ page, request }) => {
+  type Row = { session_id: string; last_state: string | null }
+  const rows = (await (await request.get('/api/research/sessions?status=ABORTED')).json()) as Row[]
+  const s = rows.find((r) => r.last_state)
+  test.skip(!s, 'needs an aborted session with a recorded state')
+  const words = `Aborted in ${s!.last_state!.slice(0, 2)}`
+
+  await page.goto('/sessions')
+  await expect(page.getByRole('row', { name: new RegExp(s!.session_id.slice(0, 8)) })).toContainText(words)
+  await page.goto(`/sessions/${s!.session_id}`)
+  await expect(page.getByRole('complementary', { name: 'Session facts' })).toContainText(words)
+})
+
 // Screen check: the Session View header works from the keyboard alone, on a real adaptive session.
 test('Session View: keyboard reaches the back link and the participant', async ({ page, request }) => {
   const sessions = await (await request.get('/api/research/sessions?condition=BEHAVIOR_ADAPTIVE&status=COMPLETED')).json()

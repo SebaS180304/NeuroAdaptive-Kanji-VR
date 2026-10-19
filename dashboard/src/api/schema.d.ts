@@ -246,6 +246,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Csv
+         * @description The Trials or Adaptations tab as CSV (V1.9): the API's fields as headers, every
+         *     decision included (NO_CHANGE too). Rows go through the API's own model.
+         */
+        get: operations["export_csv_research_sessions__session_id__export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -644,6 +665,8 @@ export interface components {
             accuracy: number | null;
             /** Open Error Count */
             open_error_count: number;
+            /** Last State */
+            last_state: string | null;
         };
         /**
          * ResearchSessionDetail
@@ -692,6 +715,8 @@ export interface components {
             accuracy: number | null;
             /** Open Error Count */
             open_error_count: number;
+            /** Last State */
+            last_state: string | null;
             /** Kanji Set */
             kanji_set: string | null;
             /** Started At */
@@ -1500,6 +1525,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_csv_research_sessions__session_id__export_csv_get: {
+        parameters: {
+            query: {
+                kind: "trials" | "adaptations";
+                window_n?: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

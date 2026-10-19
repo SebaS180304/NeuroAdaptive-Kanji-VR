@@ -12,7 +12,7 @@ const ID = 'a5748886-55f2-408b-9779-d88b935773e9'
 const ADAPTIVE: Detail = {
   session_id: ID, participant_id: 'p1', external_code: 'DEV_UNITY', condition: 'BEHAVIOR_ADAPTIVE',
   status: 'COMPLETED', visit_number: 1, created_at: '2026-10-15T09:06:00Z', projection_status: 'PROJECTED',
-  trial_count: 52, decision_count: 20, accuracy: 0.7959, open_error_count: 0, kanji_set: 'A',
+  trial_count: 52, decision_count: 20, accuracy: 0.7959, open_error_count: 0, last_state: 'S9_SESSION_SUMMARY', kanji_set: 'A',
   started_at: '2026-10-15T09:06:00Z', first_block: 'S2_VR_TUTORIAL', last_block: 'S8_IMMEDIATE_ASSESSMENT',
   states: [
     { state: 'S0_SYSTEM_CHECK', entered_elapsed_ms: 0, exited_elapsed_ms: 60_000 },

@@ -11,17 +11,18 @@ const base: Row = {
   session_id: '', participant_id: 'p1', external_code: 'P01', condition: 'STATIC', status: 'COMPLETED',
   visit_number: 1, created_at: '2026-10-14T05:00:00Z', projection_status: 'PROJECTED',
   trial_count: 60, decision_count: null, accuracy: 0.8163, open_error_count: 0,
+  last_state: 'S9_SESSION_SUMMARY',
 }
 const ROWS: Row[] = [
   { ...base, session_id: 'aaaaaaaa-0000-0000-0000-000000000001', condition: 'BEHAVIOR_ADAPTIVE', decision_count: 12 },
   { ...base, session_id: 'bbbbbbbb-0000-0000-0000-000000000002', status: 'ABORTED', open_error_count: 3,
-    created_at: '2026-10-10T05:00:00Z' },
+    last_state: 'S7_EXPERIMENTAL_RETRIEVAL', created_at: '2026-10-10T05:00:00Z' },
   { ...base, session_id: 'cccccccc-0000-0000-0000-000000000003', participant_id: 'p2', external_code: 'OBS_01',
-    status: 'CREATED', projection_status: 'NOT_PROJECTED', trial_count: null, accuracy: null, visit_number: 2,
+    status: 'CREATED', projection_status: 'NOT_PROJECTED', trial_count: null, accuracy: null, visit_number: 2, last_state: null,
     created_at: '2026-10-05T05:00:00Z' },
   { ...base, session_id: 'dddddddd-0000-0000-0000-000000000004', participant_id: 'p2', external_code: 'OBS_01',
     condition: 'BEHAVIOR_ADAPTIVE', status: 'CREATED', projection_status: 'NO_DATA', trial_count: null,
-    accuracy: null, created_at: '2026-10-01T05:00:00Z' },
+    accuracy: null, last_state: null, created_at: '2026-10-01T05:00:00Z' },
 ]
 
 beforeEach(() => {
@@ -46,9 +47,10 @@ describe('session list (V1.1)', () => {
     expect(a).toHaveTextContent('81.6 %')
     expect(a).toHaveTextContent('12')
     expect(a).toHaveTextContent('No open errors')
-    expect(within(t).getByRole('row', { name: /bbbbbbbb/ })).toHaveTextContent('Aborted')
+    expect(within(t).getByRole('row', { name: /bbbbbbbb/ })).toHaveTextContent('Aborted in S7')
     expect(within(t).getByRole('row', { name: /bbbbbbbb/ })).toHaveTextContent('3 open errors')
     expect(within(t).getByRole('row', { name: /cccccccc/ })).toHaveTextContent('Not projected')
+    expect(within(t).getByRole('row', { name: /cccccccc/ })).toHaveTextContent('Not started')
     expect(within(t).getByRole('row', { name: /dddddddd/ })).toHaveTextContent('No data')
     expect(screen.getByText(/^4 sessions from 2 participants\./)).toBeInTheDocument()
   })
@@ -92,6 +94,8 @@ describe('session list (V1.1)', () => {
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(ids(t)).toHaveLength(4)
     await user.selectOptions(screen.getByLabelText('Status'), 'Not projected')
+    expect(ids(t)).toEqual(['cccccccc', 'dddddddd'])
+    await user.selectOptions(screen.getByLabelText('Status'), 'Not started')
     expect(ids(t)).toEqual(['cccccccc', 'dddddddd'])
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
 

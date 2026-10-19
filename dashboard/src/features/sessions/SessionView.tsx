@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router'
 import { ApiError, getJson, type Schemas } from '@/api/client'
 import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { Missing } from '@/components/Missing'
+import { sessionStatusText } from '@/components/SessionStatus'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
 import { formatDate, formatDuration, formatPercent, formatTime } from '@/lib/format'
 import { ExportMenu } from './ExportMenu'
@@ -15,9 +16,6 @@ import { SessionTables } from './trials/SessionTables'
 type Detail = Schemas['ResearchSessionDetail']
 type Adaptations = NonNullable<Detail['adaptations']>
 
-const STATUS_LABEL: Record<Detail['status'], string> = {
-  COMPLETED: 'Completed', IN_PROGRESS: 'In progress', ABORTED: 'Aborted', CREATED: 'Created',
-}
 // design-system.md "Condition chip", the 32 px size of the facts block.
 const CONDITION_PILL: Record<Condition, string> = {
   STATIC: 'bg-(--color-border-subtle) text-(--color-text-secondary)',
@@ -72,7 +70,7 @@ function Facts({ s }: { s: Detail }) {
           {formatDate(s.created_at)}, {s.started_at ? formatTime(s.started_at) : <Missing reason="The session clock never started" />}
         </dd>
         <dt className="text-(--color-text-muted)">Status</dt>
-        <dd className="m-0">{STATUS_LABEL[s.status]}</dd>
+        <dd className="m-0">{sessionStatusText(s.status, s.last_state)}</dd>
         <dt className="text-(--color-text-muted)">Data quality</dt>
         <dd className="m-0 flex items-center gap-2">
           <span aria-hidden="true" className={`size-2 rounded-full ${dot}`} />

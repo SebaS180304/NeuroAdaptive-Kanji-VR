@@ -652,8 +652,11 @@ only `COMPLETED` sessions are drawn in the trend.
   - the Learner Profile as a reserved slot.
 
 **Acceptance:**
-- [ ] V1.1, V1.8 and the Session View show the same status words from one component;
-      an aborted session reads "Aborted in [state]" (e2e on an aborted session)
+- [x] V1.1, V1.8 and the Session View show the same status words from one component;
+      an aborted session reads "Aborted in [state]" (e2e on an aborted session). Done
+      20 Oct: `components/SessionStatus.ts`; the last state is the last `session_states`
+      row, not `current_state`, which disagrees with the events in 2 aborted sessions
+      (S3 vs S1, S6 vs S9). The "Where the session stopped" note uses the same words
 - [ ] Substitutions and notes show only here
 - [ ] The trend values match `trial_timeline()` per session; only `COMPLETED` sessions
       are points, and their ticks match the table's `#`

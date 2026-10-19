@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { getJson, type Schemas } from '@/api/client'
 import { CONDITION_LABEL, ConditionChip, type Condition } from '@/components/ConditionChip'
 import { Missing } from '@/components/Missing'
+import { SESSION_STATUS_LABEL, sessionStatusText } from '@/components/SessionStatus'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { formatDate, formatPercent } from '@/lib/format'
 
@@ -12,12 +13,6 @@ import { formatDate, formatPercent } from '@/lib/format'
 type Session = Schemas['ResearchSession']
 type Status = Session['status']
 
-const STATUS_LABEL: Record<Status, string> = {
-  COMPLETED: 'Completed',
-  IN_PROGRESS: 'In progress',
-  ABORTED: 'Aborted',
-  CREATED: 'Created',
-}
 const NOT_PROJECTED = 'NOT_PROJECTED_ANY'
 
 // NO_DATA and NOT_PROJECTED both lack projected rows: the counters and the status filter group them.
@@ -172,7 +167,7 @@ export function SessionList() {
               <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} className={`${control} px-2`}>
                 <option value="">All statuses</option>
                 {(['COMPLETED', 'IN_PROGRESS', 'ABORTED', 'CREATED'] as const).map((s) => (
-                  <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                  <option key={s} value={s}>{SESSION_STATUS_LABEL[s]}</option>
                 ))}
                 <option value={NOT_PROJECTED}>Not projected</option>
               </select>
@@ -228,7 +223,7 @@ export function SessionList() {
                     <td className="px-4"><ConditionChip c={s.condition} /></td>
                     <td className="px-4 text-right">{s.visit_number}</td>
                     <td className="px-4 whitespace-nowrap">{formatDate(s.created_at)}</td>
-                    <td className="px-4 whitespace-nowrap">{STATUS_LABEL[s.status]}</td>
+                    <td className="px-4 whitespace-nowrap">{sessionStatusText(s.status, s.last_state)}</td>
                     <td className="px-4 text-right">
                       {s.trial_count ?? <Missing reason={projected(s) ? 'No trials recorded' : notProjectedReason(s)} />}
                     </td>

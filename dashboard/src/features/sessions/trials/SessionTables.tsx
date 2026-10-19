@@ -8,6 +8,7 @@ import { clockMs } from '../timeline/lanes'
 import { AdaptationsTab } from './AdaptationsTab'
 import { EstimatedState } from './EstimatedState'
 import { KeyValues } from './KeyValues'
+import { type SessionStatus } from '@/components/SessionStatus'
 import { PlanTab, StopNote } from './PlanTab'
 
 // V1.4 Trials tab and inspector, artboard *Session View*: tables 1-11, inspector 12-16.
@@ -41,7 +42,7 @@ const TABS = ['Trials', 'Adaptations', 'Plan and execution'] as const
 type Props = {
   sessionId: string
   condition: string
-  status: string
+  status: SessionStatus
   kanjiSet: string | null
   selected: string | null
   onSelect: (trialId: string) => void
