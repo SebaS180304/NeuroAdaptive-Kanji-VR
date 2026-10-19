@@ -1,8 +1,11 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { mockApi } from './test/api'
 import { renderApp } from './test/render'
 
 describe('app shell', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
   it('shows the rail with the four sections, in order', () => {
     renderApp('/sessions')
     const rail = screen.getByRole('navigation', { name: 'Main' })
@@ -13,6 +16,7 @@ describe('app shell', () => {
   })
 
   it('marks the rail item of the current section', () => {
+    mockApi({ 'GET /api/research/quality': () => new Promise<Response>(() => {}) })   // stays loading
     renderApp('/quality')
     expect(screen.getByRole('heading', { level: 1, name: 'Data quality' })).toBeInTheDocument()
     const rail = screen.getByRole('navigation', { name: 'Main' })
