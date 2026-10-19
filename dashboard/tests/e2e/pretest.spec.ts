@@ -107,7 +107,8 @@ async function saveByKeyboard(page: Page) {
 }
 
 function psql(sql: string): string[][] {
-  const out = execSync(`docker compose exec -T db psql -U neuroadaptive -d neuroadaptive_vr -At -F "|" -c "${sql}"`, {
+  // One line: on Windows the shell drops everything after a newline in the -c argument.
+  const out = execSync(`docker compose exec -T db psql -U neuroadaptive -d neuroadaptive_vr -At -F "|" -c "${sql.replace(/\s+/g, ' ')}"`, {
     cwd: repo, encoding: 'utf-8',
   })
   return out.trim().split('\n').filter(Boolean).map((l) => l.split('|'))
