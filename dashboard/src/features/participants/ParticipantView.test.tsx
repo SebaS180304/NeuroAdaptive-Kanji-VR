@@ -46,7 +46,7 @@ describe('participant view (V1.8)', () => {
 
   it('says which sessions came before the pre-test, and counts them in the facts', async () => {
     expect(await screen.findByText(
-      '1 of 3 sessions was recorded before the pre-test and used the default set. Later sessions used the confirmed set.',
+      '1 of 3 sessions was recorded before the pre-test and used the default set. Later sessions used the confirmed set, with 1 kanji replaced.',
     )).toBeInTheDocument()
     const f = await facts()
     expect(f).toHaveTextContent('Completed 2026-10-12')
@@ -96,7 +96,7 @@ describe('participant view, pre-test not complete', () => {
     show({ ...DONE, pretest_status: 'IN_PROGRESS', pretest_answered: 6, pretest_completed_at: null, flagged_count: null,
       sessions: [], substitutions: [], session_count: 0, conditions: [] })
     expect(await screen.findByText(
-      'The pre-test is in progress (6 kanji answered). Sessions use the default set until it is completed. No sessions recorded yet.',
+      'The pre-test is in progress (6 kanji answered). No sessions recorded yet.',
     )).toBeInTheDocument()
     const f = await facts()
     expect(f).toHaveTextContent("Not complete. Unity can't start a session yet.")
@@ -137,6 +137,15 @@ describe('participant view, pre-test completed and no sessions', () => {
     show({ ...DONE, sessions: [], substitutions: [] })
     expect(await screen.findByText(
       /^The pre-test is complete and no kanji needed replacing\. No sessions recorded yet\.$/)).toBeInTheDocument()
+  })
+})
+
+describe('participant view, some sessions before the pre-test and none replaced', () => {
+  it('ends the sentence without a count', async () => {
+    show({ ...DONE, substitutions: [] })
+    expect(await screen.findByText(
+      '1 of 3 sessions was recorded before the pre-test and used the default set. Later sessions used the confirmed set.',
+    )).toBeInTheDocument()
   })
 })
 

@@ -22,23 +22,24 @@ function lead(p: Detail): string {
   const n = p.sessions.length
   const before = p.sessions.filter((s) => s.before_pretest).length
   const replaced = p.substitutions.filter((s) => s.substitute !== null).length
-  const none = n === 0 ? ' No sessions recorded yet.' : ''
+  // Before the pre-test is complete, "No sessions recorded yet." takes the second sentence's place.
+  const none = 'No sessions recorded yet.'
   if (p.pretest_status === 'NOT_STARTED')
-    return `The pre-test hasn't been started. Sessions use the default kanji set until it is completed.${none}`
+    return `The pre-test hasn't been started. ${n === 0 ? none : 'Sessions use the default kanji set until it is completed.'}`
   if (p.pretest_status === 'IN_PROGRESS')
     // No "of [n]": the pre-test has no fixed length (each known kanji pulls in reserves).
-    return `The pre-test is in progress (${p.pretest_answered} kanji answered). Sessions use the default set until it is completed.${none}`
+    return `The pre-test is in progress (${p.pretest_answered} kanji answered). ${n === 0 ? none : 'Sessions use the default set until it is completed.'}`
   if (n === 0)
     return replaced > 0
-      ? `The pre-test is complete, with ${replaced} kanji replaced. No sessions recorded yet.`
-      : 'The pre-test is complete and no kanji needed replacing. No sessions recorded yet.'
+      ? `The pre-test is complete, with ${replaced} kanji replaced. ${none}`
+      : `The pre-test is complete and no kanji needed replacing. ${none}`
   // "Later sessions" only when there are some: a participant can have none after the pre-test.
   if (before === n)
     return n === 1
       ? 'The only session was recorded before the pre-test and used the default set.'
       : `All ${n} sessions were recorded before the pre-test and used the default set.`
   if (before > 0)
-    return `${before} of ${n} sessions ${before === 1 ? 'was' : 'were'} recorded before the pre-test and used the default set. Later sessions used the confirmed set.`
+    return `${before} of ${n} sessions ${before === 1 ? 'was' : 'were'} recorded before the pre-test and used the default set. Later sessions used the confirmed set${replaced > 0 ? `, with ${replaced} kanji replaced` : ''}.`
   return replaced > 0
     ? `Every session used the kanji set confirmed by the pre-test, with ${replaced} kanji replaced.`
     : 'Every session used the kanji set confirmed by the pre-test. No kanji needed replacing.'
