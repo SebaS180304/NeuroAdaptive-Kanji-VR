@@ -113,8 +113,9 @@ How the answers are handled:
 ## Phases
 - **Phase 0. Data foundation (backend and DB only):** Tasks 0.1–0.3 → Checkpoint 0.
 - **Phase 1. Pre-test, end to end, before the pilot:** Tasks 1.1–1.10 → Checkpoints A and B.
-  The headset checks of Tasks 1.8 and 1.9 and Checkpoint B run together on Tue 20 Oct;
-  the step-by-step script is "Headset session, Tue 20 Oct" in `todo.md`.
+  State on 19 Oct: 1.1–1.7 done; the code of 1.8–1.10 is committed (`d8c9558`, `a520817`,
+  `23a6a18`). What is left of them, and Checkpoint B, is the headset: they run together
+  on Tue 20 Oct, with the step-by-step script "Headset session, Tue 20 Oct" in `todo.md`.
 - **Phase 2. Session review:** Tasks 2.1–2.7 → Checkpoint C.
 - **Phase 3. Participant and quality, closing v1:** Tasks 3.1–3.3 → Checkpoint D.
 
@@ -123,7 +124,8 @@ How the answers are handled:
 | --- | --- | --- |
 | A participant takes a break of more than 30 min, and the rule aborts a live session | High | 30 min is about 17 times the longest normal gap. `p_idle` is a parameter. The ABORTED status is shown, never hidden, so a false abort is visible. Pause in VR is not a feature today |
 | The clean-up deletes evidence | High | Only rows no document cites. `pg_dump` first (`*.dump` is gitignored). The SQL is shown to Sebas before it runs |
-| Sets B and C, and the reserve, have no assembly segments: S5 assembles placeholder parts | High | S5 does not break: placeholders, `segments_authored = false` and a warning (Task 1.8). Task 1.9 cuts B and C before the dry run; Task 1.10 the 10 first-choice reserve kanji |
+| Sets B and C, and the reserve, have no assembly segments: S5 assembles placeholder parts | High | Done 19 Oct for B, C and the 10 first-choice reserve kanji (Tasks 1.9, 1.10). The other 10 reserve kanji keep the placeholder fallback: `segments_authored = false` and an S5 warning (Task 1.8) |
+| Assemblies recorded before 19 Oct all say `segments_authored = false`, set A included, although set A drew real strokes (no asset listed its segments) | Med | Not corrected in the DB. Any screen or analysis that reads the flag must treat rows before 19 Oct as unknown |
 | Timeline performance (hundreds of marks, ECharts) | Med | One ECharts instance with custom series; a Chrome DevTools profile only if it lags |
 | F7 is the schedule's only buffer | Med | Phase 1 goes first. Phase 2 can shrink to V1.1–V1.4, as the replan allows |
 | Design rules vs shadcn defaults (uniform radius, system font) | Med | Tokens override shadcn's CSS variables. The 5-tell audit runs at every checkpoint |
@@ -139,7 +141,15 @@ How the answers are handled:
 - The abort rule (30 min, run by the backend every 5 min), Pause, Fontsource and the
   Export menu are approved as described above.
 
+## Decisions (19 Oct, Sebas)
+- Assembly groups of B and C follow the authoring table's Assembly column. Where a
+  vertical crosses bars it stays whole (車, 手, 雨, 牛); where a diagonal crosses a bar,
+  the bar stays whole (女, 肉).
+- The 10 first-choice reserve kanji: groups approved as in Task 1.10 of `todo.md`; 口 is
+  left, top and right / bottom, by Sebas's choice.
+- The headset checks of Phase 1 run together on Tue 20 Oct.
+
 ## Open questions
-1. ~~Assembly segments for the 20 reserve kanji: who draws them, and when?~~ Decided 19 Oct: Tasks 1.9 (B and C) and 1.10 (the 10 first-choice reserve kanji). The groups of those 10 still have to be defined from stroke order (Task 1.10)
+1. ~~Assembly segments for the 20 reserve kanji: who draws them, and when?~~ Decided 19 Oct: Tasks 1.9 (B and C) and 1.10 (the 10 first-choice reserve kanji), both cut and committed the same day. The other 10 only if a real pre-test asks for them
 2. MIRAI: how consent is recorded; review of the substitution ranking (carried over,
    Checkpoint A of the old plan).

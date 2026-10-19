@@ -237,7 +237,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Acceptance:**
 - [x] Unity Play without a pre-test: one clear error, and no flow (Play as `OBS_01`, 19 Oct: one error naming the `/pretest` URL, flow stays in S0, no session row)
-- [ ] With a substitution: S5–S8 show the substitute, and `trials.kanji_id` is the substitute (needs a person in S1–S8; logic covered by harness K1–K4)
+- [ ] With a substitution: S5–S8 show the substitute, and `trials.kanji_id` is the substitute (needs a person in S1–S8; logic covered by harness K1–K4; headset session, 20 Oct)
 - [x] Distractors stay within the effective set (harness K4: 20 S7 trials, targets and options only from the effective set)
 - [x] Phase2TestHarness green (84/84, with the new K1–K5)
 
@@ -267,8 +267,9 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Acceptance:**
 - [ ] `tools/assembly_preview.png` reviewed by Sebas for the 10 kanji
-- [ ] Phase2TestHarness green; S5 logs "authored" for every kanji of B and C (harness 84/84 and `AssemblyPlan` authored for the 15 + 四, 19 Oct; the S5 log is checked in Play)
-- [ ] One kanji of B and one of C assembled in the headset; each group can be grasped
+- [x] Phase2TestHarness green (84/84, 19 Oct); `AssemblyPlan` counts the 15 and 四 as authored, every segment PNG found. Committed `a520817`
+- [ ] S5 logs "authored" for every kanji of B and C in Play (headset session, 20 Oct)
+- [ ] One kanji of B and one of C assembled in the headset; each group can be grasped (headset session, 20 Oct)
 
 **Verify:** harness; Play with set B and set C; `assemblies.segment_count` and
 `segments_authored = true` in the DB.
@@ -305,8 +306,9 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Acceptance:**
 - [x] Groups of the 10 kanji written down and reviewed by Sebas (19 Oct; 口 regrouped by Sebas)
-- [ ] Preview reviewed; harness green; S5 logs "authored" for each of the 10 (harness 84/84 and `AssemblyPlan` authored for all 10, 19 Oct)
-- [ ] A participant with a substitution assembles the substitute from real segments
+- [x] Preview reviewed by Sebas; harness green (84/84 and `AssemblyPlan` authored for all 10, 19 Oct). Committed `23a6a18`
+- [ ] The groups above copied into the authoring table of the project docs (Sebas)
+- [ ] A participant with a substitution assembles the substitute from real segments, and S5 logs "authored" (headset session, 20 Oct)
 
 **Verify:** harness; Play with a substituted participant (as in Task 1.8).
 
