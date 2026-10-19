@@ -7,6 +7,7 @@ import { Missing } from '@/components/Missing'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
 import { ReservedSlot } from '@/components/reserved/ReservedSlot'
 import { formatDate, formatDuration, formatPercent, formatTime } from '@/lib/format'
+import { Timeline } from './timeline/Timeline'
 
 // V1.2 Session View header and summary, artboard *Session View* (light and dark).
 
@@ -301,7 +302,8 @@ export function SessionView() {
         <>
           <TimeSection s={data} />
           <AdaptationsSection s={data} />
-          <ReservedSlot thing="Timeline and session tables" className="col-span-16" />
+          <Timeline sessionId={data.session_id} />
+          <ReservedSlot thing="Session tables" className="col-span-16" />
         </>
       )}
     </>

@@ -1,10 +1,12 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Schemas } from '@/api/client'
 import { json, mockApi } from '@/test/api'
 import { renderApp } from '@/test/render'
 
 type Detail = Schemas['ResearchSessionDetail']
+
+vi.mock('./timeline/TimelineChart', () => ({ AXIS_HEIGHT: 28, TimelineChart: () => null }))   // no canvas in jsdom
 
 const ID = 'a5748886-55f2-408b-9779-d88b935773e9'
 const ADAPTIVE: Detail = {
@@ -32,7 +34,11 @@ const STATIC: Detail = {
 }
 
 function show(detail: Detail | null) {
-  mockApi({ [`GET /api/research/sessions/${ID}`]: () => (detail ? json(detail) : json({ detail: 'session not found' }, 404)) })
+  mockApi({
+    [`GET /api/research/sessions/${ID}`]: () => (detail ? json(detail) : json({ detail: 'session not found' }, 404)),
+    [`GET /api/research/sessions/${ID}/timeline`]: () =>
+      json({ session_end_ms: null, states: null, environment: null, assistance: null, trials: null }),
+  })
   renderApp(`/sessions/${ID}`)
 }
 

@@ -44,3 +44,27 @@ test('Session View: keyboard reaches the back link and the participant', async (
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/sessions$/)
 })
+
+// V1.3: the full real F5a session renders without lag, and S7 can be isolated by keyboard.
+test('timeline draws a full adaptive session quickly and zooms to S7', async ({ page, request }) => {
+  const sessions = await (await request.get('/api/research/sessions?condition=BEHAVIOR_ADAPTIVE&status=COMPLETED')).json()
+  test.skip(sessions.length === 0, 'no completed adaptive session')
+  const t0 = Date.now()
+  await page.goto(`/sessions/${sessions[0].session_id}`)
+  const timeline = page.getByRole('region', { name: 'Session timeline' })
+  await timeline.locator('canvas').waitFor()
+  expect(Date.now() - t0).toBeLessThan(3000)
+
+  const longTasks = await page.evaluate(() => new Promise<number>((resolve) => {
+    let worst = 0
+    new PerformanceObserver((l) => l.getEntries().forEach((e) => { worst = Math.max(worst, e.duration) }))
+      .observe({ type: 'longtask', buffered: true })
+    setTimeout(() => resolve(worst), 500)
+  }))
+  expect(longTasks).toBeLessThan(200)
+
+  await timeline.getByRole('button', { name: 'Only S7' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(timeline.getByRole('button', { name: 'Only S7' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(timeline.getByText(/^Showing \d\d:\d\d to \d\d:\d\d of the session\.$/)).toBeAttached()
+})

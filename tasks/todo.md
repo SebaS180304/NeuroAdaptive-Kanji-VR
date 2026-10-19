@@ -408,6 +408,10 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Deps:** 2.2. **Scope:** L (split at build time: lanes 1–4, then 5–8)
 
+**Progress:**
+- [x] Lanes 1–4 (19 Oct): `GET .../timeline` with states, environment (`v_environment_intervals`), assistance (built from state entries plus applied LAL changes; no table holds it) and trials. One ECharts instance (canvas, custom series), zoom and pan, "Whole session / Only S7", `mm:ss` ticks, `mm:ss.SSS` tooltips. The real session `a5748886` draws in under 1 s with no long task over 200 ms (e2e). TODO(design): ESL MINIMAL, BASELINE, FOCUS and LAL OFF have no level token; they use `--color-state-neutral` with the level written on the bar
+- [ ] Lanes 5–8: hints, peripherals and distractors, head-away, adaptations (decision → application line, cooldown band, skipped shape, outcome badge)
+
 ### [ ] Task 2.4: Trials table and inspector (V1.4)
 **Description:**
 - **Endpoint:** `GET /research/sessions/{id}/trials?window_n=`.

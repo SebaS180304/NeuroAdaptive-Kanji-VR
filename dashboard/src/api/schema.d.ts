@@ -178,6 +178,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Timeline */
+        get: operations["get_timeline_research_sessions__session_id__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -646,6 +663,25 @@ export interface components {
          * @enum {string}
          */
         SessionStatus: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "ABORTED";
+        /**
+         * SessionTimeline
+         * @description Lanes of the Session View timeline (V1.3), in session_elapsed_ms.
+         *
+         *     A lane is None when its event type never appears in the session (not recorded),
+         *     and an empty list when it was recorded but has nothing to draw.
+         */
+        SessionTimeline: {
+            /** Session End Ms */
+            session_end_ms: number | null;
+            /** States */
+            states: components["schemas"]["TimelineState"][] | null;
+            /** Environment */
+            environment: components["schemas"]["TimelineLevel"][] | null;
+            /** Assistance */
+            assistance: components["schemas"]["TimelineLevel"][] | null;
+            /** Trials */
+            trials: components["schemas"]["TimelineTrial"][] | null;
+        };
         /** Substitution */
         Substitution: {
             /** Set */
@@ -654,6 +690,37 @@ export interface components {
             original: string;
             /** Substitute */
             substitute: string;
+        };
+        /** TimelineLevel */
+        TimelineLevel: {
+            /** Level */
+            level: string;
+            /** Start Ms */
+            start_ms: number;
+            /** End Ms */
+            end_ms: number | null;
+        };
+        /** TimelineState */
+        TimelineState: {
+            /** State */
+            state: string;
+            /** Start Ms */
+            start_ms: number;
+            /** End Ms */
+            end_ms: number | null;
+        };
+        /** TimelineTrial */
+        TimelineTrial: {
+            /** Trial Id */
+            trial_id: string;
+            /** Block State */
+            block_state: string;
+            /** Start Ms */
+            start_ms: number;
+            /** End Ms */
+            end_ms: number | null;
+            /** Is Correct */
+            is_correct: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -971,6 +1038,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchSessionDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_timeline_research_sessions__session_id__timeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTimeline"];
                 };
             };
             /** @description Validation Error */
