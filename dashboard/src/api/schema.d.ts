@@ -229,6 +229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plan */
+        get: operations["get_plan_research_sessions__session_id__plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -382,6 +399,42 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * PlanBlock
+         * @description One generated block: its plan (planned_trials) against what ran (trials).
+         */
+        PlanBlock: {
+            /** Block State */
+            block_state: string;
+            /** Kanji Set */
+            kanji_set: string | null;
+            /** Block Seed */
+            block_seed: string | null;
+            /** Planned */
+            planned: number;
+            /** Started */
+            started: number;
+            /** Completed */
+            completed: number;
+            /** Min Lag Requested */
+            min_lag_requested: number | null;
+            /** Min Lag Achieved */
+            min_lag_achieved: number | null;
+            /** Kanji Repeats */
+            kanji_repeats: boolean;
+            /** Trials */
+            trials: components["schemas"]["PlannedTrial"][];
+        };
+        /** PlannedTrial */
+        PlannedTrial: {
+            /** Trial Id */
+            trial_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "COMPLETED" | "STARTED" | "NEVER_SHOWN";
         };
         /** PretestAnswer */
         PretestAnswer: {
@@ -791,6 +844,18 @@ export interface components {
              * @default {}
              */
             config: Record<string, unknown>;
+        };
+        /**
+         * SessionPlan
+         * @description Plan and execution tab (V1.6). Blocks never generated have no row.
+         */
+        SessionPlan: {
+            /** Last State */
+            last_state: string | null;
+            /** Last State Ms */
+            last_state_ms: number | null;
+            /** Blocks */
+            blocks: components["schemas"]["PlanBlock"][];
         };
         /** SessionRead */
         SessionRead: {
@@ -1404,6 +1469,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchAdaptation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plan_research_sessions__session_id__plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionPlan"];
                 };
             };
             /** @description Validation Error */

@@ -449,7 +449,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 **Deps:** 2.4. **Scope:** M
 
-### [ ] Task 2.6: Plan and execution tab (V1.6)
+### [x] Task 2.6: Plan and execution tab (V1.6, done 19 Oct)
 **Description:**
 - **Endpoint:** `GET .../plan`.
 - **Screen:**
@@ -461,8 +461,9 @@ the scene during Play. Restart the backend only between runs, never with `--relo
   - the "Where the session stopped" note.
 
 **Acceptance:**
-- [ ] An ABORTED session shows where it stopped
-- [ ] A complete session shows no gap
+- [x] An ABORTED session shows where it stopped (`3354ad31`: "S6 stopped after S6-003. S6-004 started but has no completion, and S6-005 to S6-009 were planned and never shown. No plan was generated for S7 and S8."; the S6 row is tinted; e2e finds an aborted session with a cut block through the API)
+- [x] A complete session shows no gap (`a5748886`: every block complete, no tinted row, "Every planned trial was completed, in every block.")
+- [x] Screen checks: screenshots light and dark, keyboard (tabs), NULL as `—` with its reason, no clinical wording, 5-tell audit clean. Unity's `min_lag_achieved = -1` (no kanji repeats in the block) is shown as "No kanji repeats", not as a lag. The block seed travels as text (a bigint)
 
 **Verify:** pytest; Playwright against *V1.6*.
 

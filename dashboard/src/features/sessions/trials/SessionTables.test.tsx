@@ -52,6 +52,7 @@ function show(condition = 'BEHAVIOR_ADAPTIVE') {
       hints: null, peripherals: null, distractors: null, head_away: null, adaptations: null,
     }),
     [`GET /api/research/sessions/${ID}/trials?window_n=3`]: () => json(TRIALS),
+    [`GET /api/research/sessions/${ID}/plan`]: () => json({ last_state: null, last_state_ms: null, blocks: [] }),
     [`GET /api/research/sessions/${ID}/trials?window_n=5`]: () => json(TRIALS.map((t) => ({ ...t, window_n: 5, window_accuracy: 0.8 }))),
   })
   renderApp(`/sessions/${ID}`)
@@ -171,7 +172,7 @@ describe('Trials tab and inspector (V1.4)', () => {
     expect(await within(screen.getByRole('complementary', { name: 'Selected trial' })).findByText('80.0 %')).toBeInTheDocument()
   })
 
-  it('the Plan tab is reserved until its task, and tabs move with the arrow keys', async () => {
+  it('tabs move with the arrow keys, and wrap', async () => {
     const user = userEvent.setup()
     show()
     const trialsTab = await screen.findByRole('tab', { name: 'Trials' })
@@ -181,6 +182,6 @@ describe('Trials tab and inspector (V1.4)', () => {
     const plan = screen.getByRole('tab', { name: 'Plan and execution' })
     expect(plan).toHaveAttribute('aria-selected', 'true')
     expect(plan).toHaveFocus()
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('available in a later version')
+    expect(await screen.findByRole('table', { name: 'Plan and execution' })).toBeInTheDocument()
   })
 })

@@ -3,12 +3,12 @@ import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { getJson, type Schemas } from '@/api/client'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
-import { ReservedSlot } from '@/components/reserved/ReservedSlot'
 import { formatPercent } from '@/lib/format'
 import { clockMs } from '../timeline/lanes'
 import { AdaptationsTab } from './AdaptationsTab'
 import { EstimatedState } from './EstimatedState'
 import { KeyValues } from './KeyValues'
+import { PlanTab, StopNote } from './PlanTab'
 
 // V1.4 Trials tab and inspector, artboard *Session View*: tables 1-11, inspector 12-16.
 
@@ -38,9 +38,16 @@ const COLUMNS: [string, 'left' | 'right'][] = [
 ]
 const TABS = ['Trials', 'Adaptations', 'Plan and execution'] as const
 
-type Props = { sessionId: string; condition: string; selected: string | null; onSelect: (trialId: string) => void }
+type Props = {
+  sessionId: string
+  condition: string
+  status: string
+  kanjiSet: string | null
+  selected: string | null
+  onSelect: (trialId: string) => void
+}
 
-export function SessionTables({ sessionId, condition, selected, onSelect }: Props) {
+export function SessionTables({ sessionId, condition, status, kanjiSet, selected, onSelect }: Props) {
   const [tab, setTab] = useState<(typeof TABS)[number]>('Trials')
   const [hideTutorial, setHideTutorial] = useState(true)
   const [showNoChange, setShowNoChange] = useState(false)
@@ -68,7 +75,7 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
     <>
       <section
         aria-label="Session tables"
-        className={`col-span-16 flex min-w-0 flex-col rounded-(--radius-panel) border bg-(--color-surface) ${tab === 'Trials' ? 'min-[1056px]:col-span-11' : 'min-[1056px]:col-span-16'}`}
+        className={`col-span-16 flex min-w-0 flex-col rounded-(--radius-panel) border bg-(--color-surface) ${tab === 'Adaptations' ? 'min-[1056px]:col-span-16' : 'min-[1056px]:col-span-11'}`}
       >
         <div className="type-body flex flex-wrap items-center gap-2 border-b px-6">
           <div role="tablist" aria-label="Session tables" className="flex gap-2">
@@ -120,8 +127,8 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
         <div role="tabpanel" id="session-tabpanel" aria-labelledby={`tab-${TABS.indexOf(tab)}`} className="min-w-0">
           {tab === 'Adaptations' ? (
             <AdaptationsTab sessionId={sessionId} condition={condition} showNoChange={showNoChange} />
-          ) : tab !== 'Trials' ? (
-            <ReservedSlot thing={`${tab} tab`} className="m-6" />
+          ) : tab === 'Plan and execution' ? (
+            <PlanTab sessionId={sessionId} condition={condition} />
           ) : (
             <>
               {isPending && <LoadingNotice title="Loading the trials…" className="m-6" />}
@@ -200,6 +207,7 @@ export function SessionTables({ sessionId, condition, selected, onSelect }: Prop
       </section>
       {/* The Adaptations tab spans all 16 columns, with no inspector (design-system.md V1.5). */}
       {tab === 'Trials' && <Inspector t={current} windowN={windowN} noDecision={noDecision} />}
+      {tab === 'Plan and execution' && <StopNote sessionId={sessionId} status={status} kanjiSet={kanjiSet} />}
     </>
   )
 }

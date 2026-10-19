@@ -132,3 +132,29 @@ test('the Adaptations tab lists every decision and expands a row by keyboard', a
   await expect(first).toHaveAttribute('aria-expanded', 'true')
   await expect(table.getByRole('region', { name: /^Decision after S7-\d{3}$/ })).toContainText('Reason code')
 })
+
+// V1.6: an aborted session shows where it stopped; a complete one shows no gap.
+test('the Plan tab shows where an aborted session stopped, and no gap in a complete one', async ({ page, request }) => {
+  type Block = { completed: number; planned: number }
+  const plan = async (id: string) => (await (await request.get(`/api/research/sessions/${id}/plan`)).json()) as { blocks: Block[] }
+  let cut: string | null = null
+  for (const s of await (await request.get('/api/research/sessions?status=ABORTED')).json())
+    if ((await plan(s.session_id)).blocks.some((b) => b.completed < b.planned)) { cut = s.session_id; break }
+  const complete = (await (await request.get('/api/research/sessions?condition=BEHAVIOR_ADAPTIVE&status=COMPLETED')).json())[0]
+  test.skip(!cut || !complete, 'needs an aborted session with a cut block and a completed one')
+
+  await page.goto(`/sessions/${cut}`)
+  await page.getByRole('tab', { name: 'Plan and execution' }).click()
+  const table = page.getByRole('table', { name: 'Plan and execution', exact: true })
+  await expect(table.locator('tr[class*="warn-tint"]')).toHaveCount(1)
+  await expect(page.getByRole('complementary', { name: 'Where the session stopped' }))
+    .toContainText(/S\d stopped (after S\d-\d{3}|before its first completed trial)\./)
+  await expect(page.getByRole('complementary', { name: 'Where the session stopped' })).toContainText('Session statusAborted')
+
+  await page.goto(`/sessions/${complete.session_id}`)
+  await page.getByRole('tab', { name: 'Plan and execution' }).click()
+  await page.getByRole('table', { name: 'Plan and execution', exact: true }).waitFor()
+  await expect(page.locator('tr[class*="warn-tint"]')).toHaveCount(0)
+  await expect(page.getByRole('complementary', { name: 'Where the session stopped' }))
+    .toContainText('Every planned trial was completed, in every block.')
+})

@@ -307,7 +307,14 @@ export function SessionView() {
           <TimeSection s={data} />
           <AdaptationsSection s={data} />
           <Timeline sessionId={data.session_id} condition={data.condition} selected={selected} onSelect={setSelected} />
-          <SessionTables sessionId={data.session_id} condition={data.condition} selected={selected} onSelect={setSelected} />
+          <SessionTables
+            sessionId={data.session_id}
+            condition={data.condition}
+            status={data.status}
+            kanjiSet={data.kanji_set}
+            selected={selected}
+            onSelect={setSelected}
+          />
         </>
       )}
     </>
