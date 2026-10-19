@@ -488,6 +488,29 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 ### Checkpoint C: session review
 - [ ] A real BEHAVIOR_ADAPTIVE F5a session can be rebuilt on screen without pgAdmin; what the UI shows matches `verify_projection` and `verify_adaptation` (0 discrepancies). Review with Sebas
 
+**Automated check (19 Oct, green):** `npx playwright test checkpoint-c` (in `dashboard/`, backend and
+dev server up). For every completed BEHAVIOR_ADAPTIVE session (today `099690e1`, `d392fd25`,
+`a0c65228`, `a5748886`, all `DEV_UNITY`): `verify_projection_fn` and `verify_adaptation_fn` return
+0 rows, and the Session View matches SQL, not the API it is built on: the lead sentence (trials,
+changes, Unity skips), data quality, accuracy, decisions and changes, the timeline lanes that
+say "Not recorded", one Trials row per trial, every decision with its stored outcome, and the
+completed trials per block. 4 sessions, 9 tests, 0 discrepancies.
+
+**Review with Sebas (about 10 min, one session; which one is Sebas's call: `099690e1` is the one
+in the F5a log, `a5748886` the latest).** No pgAdmin open.
+1. `/sessions`: the session is listed with its condition, its adaptations count and "No open errors".
+2. Open it. The lead sentence says how many times the environment and the assistance changed.
+   "Where the time went" and the Adaptations block agree with it.
+3. Timeline, "Only S7": each change is a diamond joined to the moment Unity applied it, with its
+   cooldown band and outcome badge. Click a diamond: its trial is selected in the table.
+4. Inspector of that trial: "Why the system changed" in full, the estimated state with its
+   confidence, "Applied before S7-0nn", cooldown and outcome. "Show indicators and thresholds".
+5. Adaptations tab, "Show decisions with no change": every decision of S7, one row each. Expand
+   the change and compare it with step 4.
+6. Plan and execution tab: no tinted row, "Every planned trial was completed, in every block."
+7. Export CSV, both files: they open in Excel with the kanji readable.
+8. Decide: Checkpoint C closed, or a list of findings.
+
 ---
 
 ## Phase 3: Participant, quality and close
