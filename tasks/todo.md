@@ -616,9 +616,12 @@ wins. It adds to the list above:
   outside the five is appended at the end of the bars. The code filter applies before
   paging.
 
-Not covered by the text or the artboards: the status words in the sessions table (the
-artboard shows "Aborted after S7"). Task 3.1 reuses the status wording of V1.1 and flags
-it at its screen check.
+Status words (asked 19 Oct, answered 20 Oct; `design-system.md` → V1.8 → "Session status
+words"): one shared rule and one component for V1.1 and V1.8, plain text, no chip, no
+color. "Completed"; "Aborted in [state]" (e.g. "Aborted in S7"), or "Aborted" when the
+last state isn't recorded; "In progress"; "Not started" for `CREATED`. The V1.1 status
+filter uses the same words, and V1.1 keeps "Not projected". The design chat confirmed that
+only `COMPLETED` sessions are drawn in the trend.
 
 **Acceptance:**
 - [x] Every question has an answer from the design chat, written down here
@@ -629,6 +632,12 @@ it at its screen check.
 
 ### [ ] Task 3.1: Participant View (V1.8)
 **Description:**
+- **First slice, shared status words (V1.1 too):** one status component used by V1.1,
+  V1.8 and the Session View facts, replacing the three `STATUS_LABEL` copies
+  (`SessionList.tsx`, `SessionView.tsx`). `CREATED` becomes "Not started" (today
+  "Created"); `ABORTED` becomes "Aborted in S7". `ResearchSession` gains the last state
+  (`v_session_overview.current_state`, short code `S7`); NULL gives "Aborted". The V1.1
+  status filter uses the same words.
 - **Endpoint:** `GET /research/participants/{id}`.
 - **Screen:**
   - the lead sentence, with the cases of Task 3.0 (sessions before the pre-test,
@@ -643,6 +652,8 @@ it at its screen check.
   - the Learner Profile as a reserved slot.
 
 **Acceptance:**
+- [ ] V1.1, V1.8 and the Session View show the same status words from one component;
+      an aborted session reads "Aborted in [state]" (e2e on an aborted session)
 - [ ] Substitutions and notes show only here
 - [ ] The trend values match `trial_timeline()` per session; only `COMPLETED` sessions
       are points, and their ticks match the table's `#`
