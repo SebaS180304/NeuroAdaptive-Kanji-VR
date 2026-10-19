@@ -707,7 +707,7 @@ sessions, pairs that share a seed across conditions) and which are real
 
 **Deps:** 0.3, 1.3, 3.0. **Scope:** M
 
-### [ ] Task 3.3: Docs and graph (was Task 6)
+### [x] Task 3.3: Docs and graph (was Task 6, done 20 Oct)
 **Description:**
 - `database/ERD.md` and `schema.sql` cover 0004–0006.
 - In the skill:
@@ -720,8 +720,10 @@ sessions, pairs that share a seed across conditions) and which are real
 - `graphify update .`
 
 **Acceptance:**
-- [ ] ERD matches the migrations
-- [ ] The doc text is handed to Sebas
+- [x] ERD matches the migrations (`schema.sql` is the literal 0002–0006 SQL and applies
+      cleanly to an empty database; `ERD.md` has a section for 0004, 0005 and 0006)
+- [x] The doc text is handed to Sebas: `Claude outputs/Borrador_Docs_Proyecto_20oct.md`
+      (Plan §9 lines, spec §13.2 lazy chain and multi-substitution, the ABORTED rule)
 
 **Deps:** all. **Scope:** S
 
