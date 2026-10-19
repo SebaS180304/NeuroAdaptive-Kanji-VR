@@ -5,6 +5,7 @@ import { ParticipantList } from '@/features/participants/ParticipantList'
 import { PretestPick } from '@/features/pretest/PretestPick'
 import { PretestRun } from '@/features/pretest/PretestRun'
 import { RegisterParticipant } from '@/features/pretest/RegisterParticipant'
+import { SessionList } from '@/features/sessions/SessionList'
 import { TokensPage } from '@/features/tokens/TokensPage'
 
 // One route per v1 screen (stack-and-structure.md). Each renders its reserved
@@ -14,7 +15,7 @@ export const routes: RouteObject[] = [
     element: <AppShell />,
     children: [
       { index: true, element: <Navigate to="/sessions" replace /> },
-      { path: 'sessions', element: <ReservedScreen title="Sessions" thing="Session list" /> },
+      { path: 'sessions', element: <SessionList /> },
       { path: 'sessions/:sessionId', element: <ReservedScreen title="Session" thing="Session View" /> },
       { path: 'participants', element: <ParticipantList /> },
       { path: 'participants/:participantId', element: <ReservedScreen title="Participant" thing="Participant View" /> },

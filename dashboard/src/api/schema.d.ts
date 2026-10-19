@@ -144,6 +144,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sessions */
+        get: operations["list_sessions_research_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -382,6 +399,54 @@ export interface components {
             previous_japanese_experience: boolean | null;
             /** Flagged Count */
             flagged_count: number | null;
+        };
+        /**
+         * ResearchSession
+         * @description One row of the session list (V1.1), from v_session_overview.
+         */
+        ResearchSession: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** External Code */
+            external_code: string;
+            /**
+             * Condition
+             * @enum {string}
+             */
+            condition: "STATIC" | "BEHAVIOR_ADAPTIVE" | "MULTIMODAL_ADAPTIVE";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "ABORTED";
+            /** Visit Number */
+            visit_number: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Projection Status
+             * @enum {string}
+             */
+            projection_status: "NO_DATA" | "NOT_PROJECTED" | "PROJECTED";
+            /** Trial Count */
+            trial_count: number | null;
+            /** Decision Count */
+            decision_count: number | null;
+            /** Accuracy */
+            accuracy: number | null;
+            /** Open Error Count */
+            open_error_count: number;
         };
         /** SessionCreate */
         SessionCreate: {
@@ -725,6 +790,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchParticipant"][];
+                };
+            };
+        };
+    };
+    list_sessions_research_sessions_get: {
+        parameters: {
+            query?: {
+                participant_id?: string | null;
+                condition?: ("STATIC" | "BEHAVIOR_ADAPTIVE" | "MULTIMODAL_ADAPTIVE") | null;
+                status?: ("CREATED" | "IN_PROGRESS" | "COMPLETED" | "ABORTED") | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchSession"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

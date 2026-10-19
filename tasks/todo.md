@@ -352,7 +352,7 @@ the scene during Play. Restart the backend only between runs, never with `--relo
 
 ## Phase 2: Session review
 
-### [ ] Task 2.1: Session list (V1.1)
+### [x] Task 2.1: Session list (V1.1, done 19 Oct)
 **Description:**
 - **Endpoint:** `GET /research/sessions`, with filters for participant, condition, status
   and date range, built on `v_session_overview`.
@@ -364,9 +364,10 @@ the scene during Play. Restart the backend only between runs, never with `--relo
   - rows that are not projected are shown, never hidden.
 
 **Acceptance:**
-- [ ] The counts match SQL
-- [ ] The filters combine
-- [ ] A session opens `/sessions/:id`
+- [x] The counts match SQL (19 Oct: 49 sessions, 13 participants; projected 41 STATIC and 4 BEHAVIOR_ADAPTIVE, 4 not projected; 955 trials, 80 decisions, 0 open errors)
+- [x] The filters combine (endpoint: pytest; screen: Vitest. The screen filters in the browser, like V1.11)
+- [x] A session opens `/sessions/:id` (keyboard e2e)
+- [x] Screen checks: screenshots light and dark, keyboard e2e, NULL as `—` with its reason (counts are null when the event type was never recorded), no clinical wording, 5-tell audit clean. At 1440 px the table scrolls 20 px sideways inside its box because of the 25-character code `M2_EVIDENCE_20260928_1503`
 
 **Verify:** pytest; Playwright against *Session list*.
 
