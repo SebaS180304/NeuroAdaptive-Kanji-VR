@@ -226,6 +226,8 @@ async def _require_session(db: AsyncSession, session_id: uuid.UUID) -> None:
         raise HTTPException(status_code=404, detail="session not found")
 
 
+# Confidence is a 4-byte real: ::numeric gives the stored 0.8, not its float64 widening
+# 0.800000011920929.
 # trial_timeline() COALESCEs the head-away, peripheral and dwell columns to 0; here they are
 # NULL when their event type never appears in the session (data-contract.md, 0.3 criterion).
 _TRIALS = text("""
@@ -243,7 +245,7 @@ SELECT t.trial_id, t.block_state::text, t.trial_sequence, t.trial_type::text, t.
        CASE WHEN ev.peripherals THEN t.peripheral_event_count END AS peripheral_event_count,
        CASE WHEN ev.distractors THEN t.distractor_dwell_ms END AS distractor_dwell_ms,
        t.window_n, t.window_accuracy::float, t.window_rt_mean::float, t.window_rt_cv::float,
-       t.learner_state, d.cause, t.decision_confidence, t.decision_action, d.reason_code, d.explanation,
+       t.learner_state, d.cause, t.decision_confidence::numeric::float AS decision_confidence, t.decision_action, d.reason_code, d.explanation,
        d.dimension, d.from_level::text, d.to_level::text, v.unity_result, v.skip_reason,
        v.applied_before_trial_id, d.cooldown_until_trial,
        (SELECT c.trial_id FROM trials c WHERE c.session_id = t.session_id AND c.block_state = t.block_state
@@ -269,7 +271,7 @@ async def list_trials(
 
 
 _ADAPTATIONS = text("""
-SELECT v.decision_id, v.trial_id, v.decided_elapsed_ms, v.learner_state, v.cause, v.confidence, v.action,
+SELECT v.decision_id, v.trial_id, v.decided_elapsed_ms, v.learner_state, v.cause, v.confidence::numeric::float AS confidence, v.action,
        v.dimension, v.from_level::text, v.to_level::text, v.proactive_cues, v.reason_code, v.explanation,
        v.unity_result, v.skip_reason, v.applied_before_trial_id, d.cooldown_until_trial,
        (SELECT c.trial_id FROM trials t JOIN trials c ON c.session_id = t.session_id AND c.block_state = t.block_state

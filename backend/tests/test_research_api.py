@@ -427,6 +427,8 @@ async def test_export_csv():
         assert list(decisions[0]) == list(ResearchAdaptation.model_fields)
         assert [d["trial_id"] for d in decisions] == ["S7-001", "S7-002"]       # NO_CHANGE included
         assert decisions[0]["unity_result"] == "" and decisions[1]["unity_result"] == "APPLIED"
+        # confidence is a 4-byte real: the stored 0.8, not its float64 widening 0.800000011920929.
+        assert decisions[1]["confidence"] == "0.8"
     finally:
         await adaptive._exec("DELETE FROM participants WHERE external_code = :c", c=adaptive.PARTICIPANT_CODE)
 
