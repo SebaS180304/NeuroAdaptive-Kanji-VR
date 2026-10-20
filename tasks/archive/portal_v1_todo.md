@@ -228,7 +228,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** Task 3 of the old plan; merge after 1.6. **Scope:** M
 
-### [ ] Task 1.8: Unity uses `kanji_items` (was Task 5b)
+### [x] Task 1.8: Unity uses `kanji_items` (was Task 5b)
 **Description:**
 - `SessionBootstrap`: on a 409, log one error naming the `/pretest` URL and stop;
   otherwise read `kanji_items` into `SessionContext`.
@@ -237,7 +237,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Acceptance:**
 - [x] Unity Play without a pre-test: one clear error, and no flow (Play as `OBS_01`, 19 Oct: one error naming the `/pretest` URL, flow stays in S0, no session row)
-- [ ] With a substitution: S5–S8 show the substitute, and `trials.kanji_id` is the substitute (needs a person in S1–S8; logic covered by harness K1–K4; headset session, 20 Oct)
+- [x] With a substitution: S5–S8 show the substitute, and `trials.kanji_id` is the substitute (needs a person in S1–S8; logic covered by harness K1–K4; headset session, 20 Oct)
 - [x] Distractors stay within the effective set (harness K4: 20 S7 trials, targets and options only from the effective set)
 - [x] Phase2TestHarness green (84/84, with the new K1–K5)
 
@@ -245,7 +245,7 @@ attention question has 5 options, and the inclusion notice says "accepted".
 
 **Deps:** 1.7. **Scope:** M
 
-### [ ] Task 1.9: Assembly segments for sets B and C (C1 of `Plan_Fase5a.md` §10)
+### [x] Task 1.9: Assembly segments for sets B and C (C1 of `Plan_Fase5a.md` §10)
 **Description:**
 - Today only set A (and the tutorial's 四) has real segments; every session with set B or
   C assembles all five kanji from placeholder parts. The replan (risk 6) puts this before
@@ -266,17 +266,17 @@ attention question has 5 options, and the inclusion notice says "accepted".
   vertical stays whole, as with 車.
 
 **Acceptance:**
-- [ ] `tools/assembly_preview.png` reviewed by Sebas for the 10 kanji
+- [x] `tools/assembly_preview.png` reviewed by Sebas for the 10 kanji
 - [x] Phase2TestHarness green (84/84, 19 Oct); `AssemblyPlan` counts the 15 and 四 as authored, every segment PNG found. Committed `a520817`
-- [ ] S5 logs "authored" for every kanji of B and C in Play (headset session, 20 Oct)
-- [ ] One kanji of B and one of C assembled in the headset; each group can be grasped (headset session, 20 Oct)
+- [x] S5 logs "authored" for every kanji of B and C in Play (headset session, 20 Oct)
+- [x] One kanji of B and one of C assembled in the headset; each group can be grasped (headset session, 20 Oct)
 
 **Verify:** harness; Play with set B and set C; `assemblies.segment_count` and
 `segments_authored = true` in the DB.
 
 **Deps:** none (content). **Scope:** M
 
-### [ ] Task 1.10: Assembly segments for the reserve kanji that can be a first substitute
+### [x] Task 1.10: Assembly segments for the reserve kanji that can be a first substitute
 **Description:**
 - The pre-test asks the reserve in rank order (`ranked_substitutes`). Only 10 of the 20
   are the first choice for some original: 土 米 木 耳 口 貝 金 川 水 糸. 日 田 子 目 学 物 茶 are
@@ -307,15 +307,15 @@ attention question has 5 options, and the inclusion notice says "accepted".
 **Acceptance:**
 - [x] Groups of the 10 kanji written down and reviewed by Sebas (19 Oct; 口 regrouped by Sebas)
 - [x] Preview reviewed by Sebas; harness green (84/84 and `AssemblyPlan` authored for all 10, 19 Oct). Committed `23a6a18`
-- [ ] The groups above copied into the authoring table of the project docs (Sebas)
-- [ ] A participant with a substitution assembles the substitute from real segments, and S5 logs "authored" (headset session, 20 Oct)
+- [x] The groups above copied into the authoring table of the project docs (Sebas)
+- [x] A participant with a substitution assembles the substitute from real segments, and S5 logs "authored" (headset session, 20 Oct)
 
 **Verify:** harness; Play with a substituted participant (as in Task 1.8).
 
 **Deps:** 1.9 (same procedure). **Scope:** M
 
 ### Checkpoint B: the pre-test feeds the VR loop
-- [ ] A participant registered and pre-tested in the portal runs a Unity session with their effective set
+- [x] A participant registered and pre-tested in the portal runs a Unity session with their effective set
 
 ### Headset session, Tue 20 Oct: every pending VR check
 Everything Phase 1 still needs from the headset, in one sitting. Code is committed
@@ -324,29 +324,29 @@ Everything Phase 1 still needs from the headset, in one sitting. Code is committ
 the scene during Play. Restart the backend only between runs, never with `--reload`.
 
 **Run 1: set B with a substitution (Task 1.8, Task 1.9 for B, Checkpoint B)**
-- [ ] Portal `/pretest`: register `TEST_VR_B` with consent; answer "Yes" with the right
+- [x] Portal `/pretest`: register `TEST_VR_B` with consent; answer "Yes" with the right
       reading on one set B kanji (on 18 Oct, 山 → 口), "No" on the rest. Note the substitute
-- [ ] `SessionBootstrap`: `devParticipantCode = TEST_VR_B`, `newSessionKanjiSet = B`; Play
+- [x] `SessionBootstrap`: `devParticipantCode = TEST_VR_B`, `newSessionKanjiSet = B`; Play
       through S5–S8 (low `baselineTimeScale` is fine)
-- [ ] S5–S8 show the substitute in the original's place
-- [ ] S5: the 4 kept B kanji log "authored" and assemble from real strokes; every group can
+- [x] S5–S8 show the substitute in the original's place
+- [x] S5: the 4 kept B kanji log "authored" and assemble from real strokes; every group can
       be grasped. A first-choice substitute (口 for 山) also logs "authored" (Task 1.10);
       any other substitute logs the placeholder warning, as expected
 
 **Run 2: set C (Task 1.9 for C)**
-- [ ] `devParticipantCode = DEV_UNITY` (pre-test all No, set unchanged), `newSessionKanjiSet = C`;
+- [x] `devParticipantCode = DEV_UNITY` (pre-test all No, set unchanged), `newSessionKanjiSet = C`;
       Play through S5
-- [ ] S5: all 5 C kanji log "authored"; every group can be grasped (look at 花's three
+- [x] S5: all 5 C kanji log "authored"; every group can be grasped (look at 花's three
       pieces and 足's foot)
 
 **After both runs, in the DB** (`<id>` = each session id from the Unity log):
-- [ ] `select kanji_id, segment_count, segments_authored from assemblies where session_id = '<id>';`
+- [x] `select kanji_id, segment_count, segments_authored from assemblies where session_id = '<id>';`
       → `true` for every kanji, the substitute included if it is one of the 10 of Task 1.10
-- [ ] `select block_state, kanji_id, count(*) from trials where session_id = '<id>' group by 1, 2 order by 1, 2;`
+- [x] `select block_state, kanji_id, count(*) from trials where session_id = '<id>' group by 1, 2 order by 1, 2;`
       → run 1: the substitute appears and its original never does
-- [ ] Tick Task 1.8 (substitution), Task 1.9 (headset), Task 1.10 (substitute from real
-      segments) and Checkpoint B; delete `TEST_VR_B`
-      with Sebas's OK
+- [x] Tick Task 1.8 (substitution), Task 1.9 (headset), Task 1.10 (substitute from real
+      segments) and Checkpoint B; `TEST_VR_B` kept for
+      `checkpoint-b.spec.ts` (Sebas, 20 Oct)
 
 ---
 

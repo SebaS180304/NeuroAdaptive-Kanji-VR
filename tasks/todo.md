@@ -12,19 +12,19 @@ Quest 2 via Link in the Editor. Inspector changes on `SessionBootstrap`
 after each run. Never save the scene during Play. Restart the backend only between runs,
 never with `--reload`, never with the headset on.
 
-### [ ] Task 1: Run 1, set B with a substitution (old Tasks 1.8, 1.9 for B, 1.10)
-- [ ] Portal `/pretest`: register `TEST_VR_B` with consent; answer "Yes" with the right
+### [x] Task 1: Run 1, set B with a substitution (old Tasks 1.8, 1.9 for B, 1.10)
+- [x] Portal `/pretest`: register `TEST_VR_B` with consent; answer "Yes" with the right
       reading on one set B kanji (on 18 Oct, 山 → 口), "No" on the rest. Note the substitute
-- [ ] `SessionBootstrap`: `devParticipantCode = TEST_VR_B`, `newSessionKanjiSet = B`; Play
+- [x] `SessionBootstrap`: `devParticipantCode = TEST_VR_B`, `newSessionKanjiSet = B`; Play
       through S5–S8 (low `baselineTimeScale` is fine)
-- [ ] S5–S8 show the substitute in the original's place
-- [ ] S5: the 4 kept B kanji log "authored" and assemble from real strokes; every group can
+- [x] S5–S8 show the substitute in the original's place
+- [x] S5: the 4 kept B kanji log "authored" and assemble from real strokes; every group can
       be grasped. A first-choice substitute (口 for 山) also logs "authored"; any other
       substitute logs the placeholder warning, as expected
 
 **Verify (DB, `<id>` from the Unity log):**
-- [ ] `select kanji_id, segment_count, segments_authored from assemblies where session_id = '<id>';` → `true` for every kanji, the substitute included if it is one of the 10 first-choice reserve kanji
-- [ ] `select block_state, kanji_id, count(*) from trials where session_id = '<id>' group by 1, 2 order by 1, 2;` → the substitute appears and its original never does
+- [x] `select kanji_id, segment_count, segments_authored from assemblies where session_id = '<id>';` → `true` for every kanji, the substitute included if it is one of the 10 first-choice reserve kanji
+- [x] `select block_state, kanji_id, count(*) from trials where session_id = '<id>' group by 1, 2 order by 1, 2;` → the substitute appears and its original never does
 
 **Deps:** none. **Scope:** XS (no code)
 
@@ -40,21 +40,21 @@ effective set, S4 with fixation cross and closing eye, real segments for B and C
   slow errors → LAL up; 007…009 no Hint; then normal).
 
 **Acceptance:**
-- [ ] S4 shows the cross (eyes open) and the eye that closes once (eyes closed)
-- [ ] S5 (run 2, old Task 1.9 for C): all 5 C kanji log "authored"; every group can be grasped (花's three pieces, 足's foot); `assemblies` query as in Task 1 → `true` for all 5
-- [ ] The session reaches S9 and its status is `COMPLETED`
-- [ ] `va <id>` (`database/verify_adaptation.sql`): §1 20 answered in S7, 20 decisions, changes all `APPLIED`, 0 `SKIPPED`; §2–§5, §7, §8 empty; §6 p95 latency tens of ms at most; §9 every change with an outcome
-- [ ] `verify_projection.sql` clean for the session; `check_loop.sql` and `python -m app.adaptation.replay <id>` give the live decisions and outcomes
-- [ ] Anything off-script recorded with its trial id (a finding, not a fix)
+- [x] S4 shows the cross (eyes open) and the eye that closes once (eyes closed)
+- [x] S5 (run 2, old Task 1.9 for C): all 5 C kanji log "authored"; every group can be grasped (花's three pieces, 足's foot); `assemblies` query as in Task 1 → `true` for all 5
+- [x] The session reaches S9 and its status is `COMPLETED`
+- [x] `va <id>` (`database/verify_adaptation.sql`): §1 20 answered in S7, 20 decisions, changes all `APPLIED`, 0 `SKIPPED`; §2–§5, §7, §8 empty; §6 p95 latency tens of ms at most; §9 every change with an outcome
+- [x] `verify_projection.sql` clean for the session; `check_loop.sql` and `python -m app.adaptation.replay <id>` give the live decisions and outcomes
+- [x] Anything off-script recorded with its trial id (a finding, not a fix)
 
 **Verify:** outputs in a `.txt` in Downloads; session visible in the portal (V1.2–V1.6).
 
 **Deps:** none (after Task 1 or before it, as Sebas prefers). **Scope:** XS
 
 ### Checkpoint B: the pre-test feeds the VR loop
-- [ ] A participant registered and pre-tested in the portal runs a Unity session with their effective set (Task 1)
-- [ ] Sets B and C assemble from real segments (Tasks 1 and 3)
-- [ ] Tick old Tasks 1.8, 1.9, 1.10 in `tasks/archive/portal_v1_todo.md`; delete `TEST_VR_B` with Sebas's OK
+- [x] A participant registered and pre-tested in the portal runs a Unity session with their effective set (Task 1)
+- [x] Sets B and C assemble from real segments (Tasks 1 and 3); `dashboard/tests/e2e/checkpoint-b.spec.ts`
+- [x] Tick old Tasks 1.8, 1.9, 1.10 in `tasks/archive/portal_v1_todo.md`; keep `TEST_VR_B`: `checkpoint-b.spec.ts` needs its substitution (Sebas, 20 Oct)
 
 ### [ ] Task 4: Commit the CLAUDE.md change
 - [ ] Only `CLAUDE.md` staged (the XR Origin prefab change is not part of it)
