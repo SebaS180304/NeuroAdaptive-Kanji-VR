@@ -31,7 +31,7 @@ never with `--reload`, never with the headset on.
 ### Task 2: Run 2, set C: folded into Task 3 (Sebas, 20 Oct)
 Run 3 is set C with `DEV_UNITY` to S9, so its S5 checks cover run 2.
 
-### [ ] Task 3: Run 3, `BEHAVIOR_ADAPTIVE` complete S1 → S9, set C (run A of `Guion_Pasada_Visor_F5a.md`; covers run 2)
+### [x] Task 3: Run 3, `BEHAVIOR_ADAPTIVE` complete S1 → S9, set C (run A of `Guion_Pasada_Visor_F5a.md`; covers run 2)
 **Description:** First full adaptive session with the weekend changes: pre-test gate and
 effective set, S4 with fixation cross and closing eye, real segments for B and C.
 - Setup: `condition = BEHAVIOR_ADAPTIVE`, `devParticipantCode = DEV_UNITY`, set C
@@ -56,19 +56,19 @@ effective set, S4 with fixation cross and closing eye, real segments for B and C
 - [x] Sets B and C assemble from real segments (Tasks 1 and 3); `dashboard/tests/e2e/checkpoint-b.spec.ts`
 - [x] Tick old Tasks 1.8, 1.9, 1.10 in `tasks/archive/portal_v1_todo.md`; keep `TEST_VR_B`: `checkpoint-b.spec.ts` needs its substitution (Sebas, 20 Oct)
 
-### [ ] Task 4: Commit the CLAUDE.md change
-- [ ] Only `CLAUDE.md` staged (the XR Origin prefab change is not part of it)
-- [ ] Message shown to Sebas: `docs(claude): point to the Phase 6 plan`
-- [ ] Separate commit, also shown: `docs(tasks): plan the Phase 6 week to M3` (this plan, the archived portal plan)
+### [x] Task 4: Commit the CLAUDE.md change
+- [x] Only `CLAUDE.md` staged (the XR Origin prefab change is not part of it)
+- [x] Message shown to Sebas: `docs(claude): point to the Phase 6 plan`
+- [x] Separate commit, also shown: `docs(tasks): plan the Phase 6 week to M3` (this plan, the archived portal plan)
 
 **Deps:** none. **Scope:** XS
 
-### [ ] Task 5: Day draft
-- [ ] `Claude outputs/Borrador_Plan_Fase6_9_20oct.md`: §9 Tue 20 lines (Checkpoint B, run 3 id and result, findings)
+### [x] Task 5: Day draft
+- [x] `Claude outputs/Borrador_Plan_Fase6_9_20oct.md`: §9 Tue 20 lines (Checkpoint B, run 3 id and result, findings)
 
 ### Checkpoint Tue 20
-- [ ] Checkpoint B ✅; run 3 complete and clean in `verify_adaptation`
-- [ ] Day draft handed to Sebas
+- [x] Checkpoint B ✅; run 3 complete and clean in `verify_adaptation`
+- [x] Day draft handed to Sebas
 
 ---
 
