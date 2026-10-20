@@ -1,166 +1,111 @@
-# Implementation Plan: Research Web Portal v1 (dashboard + kanji pre-test)
+# Implementation Plan: Phase 6 week → M3 (Tue 20 – Fri 23 Oct 2026)
 
-Written 17 Oct 2026. Replaces the kanji pre-test plan (archived in
-`tasks/archive/kanji_pretest_{plan,todo}.md`; its Tasks 1–3 are done and its open
-tasks 3b, 4, 5 and 6 are folded in below).
+Written 20 Oct 2026. Replaces the Research Web Portal v1 plan, archived in
+`tasks/archive/portal_v1_{plan,todo}.md`. Its open items are carried over unchanged:
+the headset runs of Tasks 1.8–1.10 and Checkpoint B (here Task 1, and Task 3, which absorbs run 2), and
+Checkpoint D (here Task 12, the first thing to cut).
 
 ## Sources of truth
-- Skill `.claude/skills/research-dashboard-conventions/` (master copy): scope V1.1–V1.11,
-  data contract, stack, design system (validation log: every screen *Validated*),
-  design rules. The skill outranks the brief.
-- Mockups: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL` (22 artboards).
-  Design System: `https://claude.ai/artifact/NBVJKr7iEdfApEAFx1uZ4L`; its 45 color
-  tokens match `design-system.md` in both themes (checked 17 Oct).
-- Spec §13.1–13.2 and `Plan_Fase5a.md` D8: the inclusion criterion "no previous study
-  of Japanese" was **accepted by MIRAI on 9 Oct**.
+- `Claude outputs/docs_proyecto/Plan_Fase6.md`: §0 F5a close, §3 days, §4 Learner
+  Profile decisions D-F6-1 – D-F6-4 (approved by Sebas, 20 Oct), §5 criteria, §9 log.
+- `Claude outputs/docs_proyecto/Guion_Pasada_Visor_F5a.md`, run A: script for Task 3.
+- `Claude outputs/docs_proyecto/Plan_Fase5a.md` §5: F5a criteria for the evidence.
+- Code wins over the docs copy; ask Sebas when a planning detail looks stale.
 
 ## Overview
-One local web app (`dashboard/`, Vite + React + TS) served on `127.0.0.1`, over the
-existing FastAPI backend. It has two parts with different deadlines:
-- **Pre-test (V1.10 + V1.11):** registration and the kanji pre-test. Needed **before
-  the pilot** (23 Nov), because no session can be created without it.
-- **Session review (V1.1–V1.9):** read-only screens over the projected data. F7 window
-  (16–20 Nov); the backend read router can go earlier.
+Four days to M3 (Closed-Loop Prototype, behavioural). What is missing is exactly what
+the portal work did not touch: the headset checks, the Learner Profile v1 (backend),
+a phase test with a participant with no Japanese, and the evidence and tags.
 
-## Architecture decisions
-- **Read-only, one exception.** `/research` router, `GET` only, Pydantic schemas in
-  `backend/app/schemas/research.py`, SQL views and functions called with `text()`.
-  The only writes are registration (`POST /participants`) and the pre-test routes.
-- **Missing data goes to the backend, never React** (skill rule 2). Three gaps found on
-  17 Oct are closed with SQL in a migration:
-  - V1.7 needs `verify_*` as **functions that return discrepancy rows**. Today they are
-    `psql` scripts with `\echo`, and two of them check a single hard-coded session.
-  - V1.7 shows when each projection error happened. `projection_errors` has no elapsed
-    time and `session_events` has it only inside `payload`, so a view
-    `v_projection_errors` extracts it in SQL.
-  - "Not projected" needs a rule: the session has events but no `session_states` rows.
-    A session with no events is shown as "No data".
-- **Abandoned sessions become `ABORTED` by a database rule (decided 17 Oct).**
-  - The rule is a SQL function, `abort_stale_sessions(p_idle interval DEFAULT
-    '30 minutes')`. It sets `IN_PROGRESS` → `ABORTED` when the last `session_events` row
-    (or `updated_at`, if there are no events) is older than `p_idle`, and returns how many
-    rows it changed.
-  - The `postgres:16` image has no `pg_cron`, so the backend runs the function once at
-    startup and then every 5 minutes. `shortcut:` an in-process loop, not a database
-    scheduler; move it to `pg_cron` if the backend stops being always on.
-  - Why 30 minutes: in the 13 normal completed sessions, the longest gap between two
-    events is 1.8 min, and a whole session takes 5–14 min.
-  - `PATCH /sessions/{id}/state` already never takes a session out of `ABORTED`.
-- **Data clean-up (decided 17 Oct), after a `pg_dump` backup:**
-  - **Delete** the 23 sessions created before `JapaneseLearningStudio.unity` existed (commit
-    `267d48a`, 15 Sep 12:32 +09:00). All are `CREATED`, with 323 events in total, and no
-    project document cites them. Also delete participants left with no sessions, no
-    pre-test answers and no consent, except `DEV_UNITY`.
-  - **Do not delete** the three sessions with the 1,918 open `DUPLICATE` errors
-    (`dc28e1ea`, `fc835228`, `d3f19117`). They are F3 evidence (`Evidencia_Criterios_F3.md`,
-    `Plan_Fase3.md`). The errors are known: several Editor runs were stored under one id,
-    and `Plan_Fase3.md` records the root-cause fix. Mark those errors resolved, with a
-    note in `detail`, so V1.7 shows real problems only. Sebas confirms this split before
-    anything runs (Task 0.1). **Approved by Sebas on 17 Oct.**
-- **Fonts: local, via Fontsource (decided 17 Oct).** The packages are
-  `@fontsource-variable/newsreader` (variable, for the optical-size axis),
-  `@fontsource/public-sans` (400/500/600), `@fontsource/jetbrains-mono` (400) and
-  `@fontsource/noto-serif-jp` (500). Noto Serif JP ships in `unicode-range` chunks, so the
-  browser downloads only the chunks that the shown kanji need. Added to the stack table.
-- **Export CSV is a menu (decided 17 Oct).** The CTA opens a popover with "Trials (CSV)"
-  and "Adaptations (CSV)". In a STATIC session, Adaptations is disabled with the reason
-  "No adaptations in a static session". It uses the elevated popover style that
-  `design-system.md` already defines.
-- **The Pause button on the kanji screen (decided 17 Oct)** goes back to the pre-test list
-  without saving the current kanji. A short status notice says "Paused at [n] answered".
-  Start or Resume continues at the right kanji, so the backend needs no change.
-- **Registration options** follow spec §13.1 and the accepted criterion. **Approved by
-  Sebas on 17 Oct** (table below). Each list is stored as a fixed `Literal` set in the API
-  schema.
-- **Theme:** light by default, with `[data-theme="dark"]` and `prefers-color-scheme`.
-  V1.1 has no dark artboard, so its dark screenshot is built from the tokens and is not
-  compared to a mockup. V1.7 and V1.8 got theirs on 19 Oct (canvas version 27).
-- **Copy change:** the inclusion notice on registration says the criterion is
-  *accepted* (MIRAI, 9 Oct), not *proposed*. Same notice, same layout.
+## Week rules (Sebas, 20 Oct)
+- Nothing new in the portal. Checkpoint D only if time is left; it is cut first.
+- The backend restarts only between runs, never with the headset on.
+- Commits in English, one per change; every message is shown to Sebas before
+  committing (message files in Downloads, nothing on `main`).
+- Each day ends with a draft in `Claude outputs/` for `Plan_Fase6.md` §9.
 
-### Registration options (approved by Sebas, 17 Oct)
-| Question (participant-facing) | Options shown | Stored value |
-| --- | --- | --- |
-| How old are you? | 18–24 · 25–34 · 35–44 · 45 or older · Prefer not to answer | `age_range`: `18-24`, `25-34`, `35-44`, `45+`, NULL |
-| Have you studied Japanese before (classes, courses or self-study)? | Yes · No · Prefer not to answer | `previous_japanese_experience`: true / false / NULL |
-| Have you studied kanji before? | Yes · No · Prefer not to answer | `previous_kanji_experience` |
-| Have you used a VR headset before? | Yes · No · Prefer not to answer | `previous_vr_experience` |
-| How often is it hard for you to keep your attention on study tasks? *(optional)* | Never · Rarely · Sometimes · Often · Very often · Prefer not to answer | `self_rated_attention_difficulty`: `NEVER`, `RARELY`, `SOMETIMES`, `OFTEN`, `VERY_OFTEN`, NULL |
-
-How the answers are handled:
-- **Previous Japanese study, Yes:** the inclusion notice appears. **Prefer not to
-  answer:** the notice also appears, worded "not reported".
-- **The attention question has 5 options**, where the mockup shows 4 placeholders. The
-  pill group simply gets one more pill.
-- **The question about how the participant feels before a session** (spec §13.1,
-  "alertness/fatigue") is asked per session, not at registration. It is out of scope here.
+## Architecture decisions: Learner Profile v1 (Task 6 – 9)
+- **One table, one row per participant and format version** (`learner_profiles`,
+  migration 0007; option A, Sebas, 20 Oct): PK (`participant_id` FK, `profile_version`
+  `'v1'`), `computed_at`, `session_ids UUID[]` (the completed sessions it covers) and
+  `profile JSONB`. Overwritten at each completed session; a later `v2` (after the pilot,
+  or the EEG column in F4) lives next to the `v1` rows. Three parts:
+  1. `calibrations`: one entry per completed session, the S6 profile as
+     `S6Profile.as_dict()` already writes it (`rt_ref` per type, `acc_ref`,
+     `away_ref_ms`, `env_dwell_ref_ms`, plus `n_trials`, `reliability`).
+  2. `adaptations`: `adaptation_decisions` with `action <> 'NO_CHANGE'`, grouped by
+     action, dimension and direction (`from_level` → `to_level`, up or down) and cause,
+     with counts per outcome (`POSITIVE` / `NEUTRAL` / `NEGATIVE` / `UNCERTAIN` /
+     not recorded).
+  3. `trend`: accuracy and mean RT per **completed** session, oldest first, the same
+     numbers V1.8 already shows (`trial_timeline()`).
+  Why JSONB and no extra tables: every part is derived and rebuildable; the table only
+  stores the last computed result so the portal does not recompute on every read.
+- **Calculation in Python, reusing the estimator code.** `app/adaptation/learner_profile.py`
+  rebuilds each session's S6 profile from `session_events` with `build_trials` +
+  `build_profile` (as `SessionAdaptationState` and `replay.py` do) and reads parts 2 and
+  3 from the schema with `text()`. Nothing new in the estimator.
+- **Only sessions `COMPLETED` up to S9 count (Sebas, 20 Oct).** Aborted sessions are
+  left out of all three parts: calibration, adaptations and trend.
+- **When it runs (D-F6-3).** Because an abort cannot change the profile, it is computed
+  only when a session completes: Unity's `PATCH /sessions/{id}/state` with S9
+  (`sessions.py` `update_session_state`), after the commit. A late S9 on an `ABORTED`
+  session keeps it `ABORTED`, so it is not counted. A failure in the profile is logged and
+  never fails the PATCH (losing the state update for a derived table would be the wrong
+  trade); `--all` rebuilds anything a failure missed.
+- **Rebuild:** `python -m app.adaptation.learner_profile --all [--check]` recomputes from
+  events and schema; `--check` compares with the stored rows and prints differences
+  (expected: none). This is the proof of "reconstructible".
+- **D-F6-1: the profile never changes how a session starts.** The starting levels come
+  from Unity (`SessionBootstrap`) and `rules.initial_state` (HOME_LEVEL); nothing reads
+  `learner_profiles` on that path. A test shows it: a participant with a stored profile
+  gets the same session response and the same S7 initial state as one without.
+- **Endpoint:** `GET /research/participants/{id}/profile` (read-only, `/research` router,
+  Pydantic schema in `schemas/research.py`). 404 for an unknown participant; `null`
+  profile when there is none yet. The portal screen waits for the mockup (D-F6-4).
 
 ## Dependency graph
 ```
-0.1 backup + clean-up ─┐
-0.2 abort rule (0005) ─┼─► 2.1 session list (ABORTED, not projected)
-0.3 read SQL (0006) ───┴─► 2.x session screens, 3.2 quality
-1.1 options (Sebas) ─► 1.2 registration rules ─► 1.5 register screen
-1.3 scaffold ─► 1.4 /research/participants + V1.11 ─► 1.5 pick/register ─► 1.6 kanji + done
-                                                                            │
-                     1.7 session gate + kanji_items (backend) ◄────────────┘ (merge after 1.6)
-                     1.8 Unity uses kanji_items
-                     1.9 assembly B and C ─► 1.10 assembly of the first-choice reserve
-1.3 ─► 2.1 ─► 2.2 summary ─► 2.3 timeline ─► 2.4 trials + inspector ─► 2.5 adaptations ─► 2.6 plan ─► 2.7 export
-1.4 + 3.0 design questions ─► 3.1 participant view;  0.3 + 3.0 ─► 3.2 quality
+T1 run 1 (B + substitution) ─┐
+T3 run 3 (adaptive S1→S9, set C; covers run 2) ┴─► Checkpoint B, verify_adaptation clean ──► (fresh adaptive session for T7/T8)
+T4 CLAUDE.md commit (independent)
+T6 migration 0007 ─► T7 calculation + rebuild ─► T8 close hooks ─► T9 endpoint
+                                     └──────────► T10 D-F6-1 test
+mockup validated by Sebas (design chats) ─► T11 frontend (blocked)
+consent text (PM) + participant ─► T13 phase test ─► T14 findings
+T3 + T13 ─► T15 evidence ─► T16 tags ─► T17 spec v1.4 change list
+T12 Checkpoint D (only if time is left)
 ```
 
 ## Phases
-- **Phase 0. Data foundation (backend and DB only):** Tasks 0.1–0.3 → Checkpoint 0.
-- **Phase 1. Pre-test, end to end, before the pilot:** Tasks 1.1–1.10 → Checkpoints A and B.
-  State on 19 Oct: 1.1–1.7 done; the code of 1.8–1.10 is committed (`d8c9558`, `a520817`,
-  `23a6a18`). What is left of them, and Checkpoint B, is the headset: they run together
-  on Tue 20 Oct, with the step-by-step script "Headset session, Tue 20 Oct" in `todo.md`.
-- **Phase 2. Session review:** Tasks 2.1–2.7 → Checkpoint C.
-- **Phase 3. Participant and quality, closing v1:** Task 3.0 (design questions), then
-  Tasks 3.1–3.3 → Checkpoint D. Checkpoint C passed on 19 Oct (session `099690e1`).
+- **Tue 20 (headset):** Tasks 1–5 → Checkpoint Tue.
+- **Wed 21 (backend):** Tasks 6–10 → Checkpoint Wed. Task 11 starts only with the
+  validated mockup.
+- **Thu 22 (phase test):** Tasks 13–14 → Checkpoint Thu.
+- **Fri 23 (M3):** Tasks 15–17 (+ 12 if time) → Checkpoint M3.
+
+## Cut rule (Plan_Fase6.md §3)
+1. Checkpoint D (Task 12) goes to the week of 16 Nov.
+2. If the profile does not close Wed 21: computed by the rebuild script and shown in
+   the M3 note; migration and screen move to the first week of F4.
+3. No participant Thu 22 → Fri 23 morning; if not either, M3 ships with `DEV_UNITY`
+   sessions, declared, and the test moves to the behavioural dry run.
+4. Spec v1.4 does not move: if the document is not ready, its change list goes as an
+   annex to the M3 note.
 
 ## Risks and mitigations
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| A participant takes a break of more than 30 min, and the rule aborts a live session | High | 30 min is about 17 times the longest normal gap. `p_idle` is a parameter. The ABORTED status is shown, never hidden, so a false abort is visible. Pause in VR is not a feature today |
-| The clean-up deletes evidence | High | Only rows no document cites. `pg_dump` first (`*.dump` is gitignored). The SQL is shown to Sebas before it runs |
-| Sets B and C, and the reserve, have no assembly segments: S5 assembles placeholder parts | High | Done 19 Oct for B, C and the 10 first-choice reserve kanji (Tasks 1.9, 1.10). The other 10 reserve kanji keep the placeholder fallback: `segments_authored = false` and an S5 warning (Task 1.8) |
-| Assemblies recorded before 19 Oct all say `segments_authored = false`, set A included, although set A drew real strokes (no asset listed its segments) | Med | Not corrected in the DB. Any screen or analysis that reads the flag must treat rows before 19 Oct as unknown |
-| Timeline performance (hundreds of marks, ECharts) | Med | One ECharts instance with custom series; a Chrome DevTools profile only if it lags |
-| F7 is the schedule's only buffer | Med | Phase 1 goes first. Phase 2 can shrink to V1.1–V1.4, as the replan allows |
-| Design rules vs shadcn defaults (uniform radius, system font) | Med | Tokens override shadcn's CSS variables. The 5-tell audit runs at every checkpoint |
-| Unity Editor dev Play is blocked by the session gate | Med | `DEV_UNITY` gets consent and a pre-test via the API in Task 1.7 |
-
-## Decisions (17 Oct, Sebas)
-- Registration options: approved as in the table above.
-- Clean-up: delete the 23 pre-scene sessions and their orphan participants; for the 3 F3
-  evidence sessions, only resolve their `DUPLICATE` errors.
-- Branches: Phase 0 and Task 1.2 are committed on `feature/kanji-pretest`. Then
-  `phase/7-research-dashboard` is created from its tip, and every task from 1.3 on goes
-  there.
-- The abort rule (30 min, run by the backend every 5 min), Pause, Fontsource and the
-  Export menu are approved as described above.
-
-## Decisions (19 Oct, Sebas)
-- Assembly groups of B and C follow the authoring table's Assembly column. Where a
-  vertical crosses bars it stays whole (車, 手, 雨, 牛); where a diagonal crosses a bar,
-  the bar stays whole (女, 肉).
-- The 10 first-choice reserve kanji: groups approved as in Task 1.10 of `todo.md`; 口 is
-  left, top and right / bottom, by Sebas's choice.
-- The headset checks of Phase 1 run together on Tue 20 Oct.
+| Run 3 is ~30 min in the headset after runs 1–2 | Med | Runs 1–2 can stop at S5–S8; run 3 is a fresh Play. Backend restart only between runs |
+| A run fails `verify_adaptation` | High | Record as a finding with the session id (F5a rule: record, do not fix this week unless it blocks M3) |
+| `outcome` is NULL for a change (not recorded) | Med | Its own bucket "not recorded", never folded into `UNCERTAIN` |
+| The profile hook slows or breaks the S9 PATCH | Med | Runs after the commit, wrapped in try/except, logged |
+| The participant's consent text is not ready Thu 22 | High | PM drafts it today (Plan_Fase6 §7); registration requires it since 17 Oct |
+| The mockup is not validated by Fri 23 | Med | Criterion 4b is declared pending in the M3 note; the endpoint is ready |
 
 ## Open questions
-1. ~~Assembly segments for the 20 reserve kanji: who draws them, and when?~~ Decided 19 Oct: Tasks 1.9 (B and C) and 1.10 (the 10 first-choice reserve kanji), both cut and committed the same day. The other 10 only if a real pre-test asks for them
-2. MIRAI: how consent is recorded; review of the substitution ranking (carried over,
-   Checkpoint A of the old plan).
-3. Design chat, before Tasks 3.1 and 3.2: twelve questions on V1.7 and V1.8 against the
-   real data of 19 Oct (Task 3.0 in `todo.md`). Answered on 19 Oct by the redrawn artboards
-   (canvas version 27, validated by Sebas at 23:54) and by `design-system.md` → "V1.7
-   and V1.8: cases from real data", copied into the skill the same day. Closed.
-
-## Decisions (19 Oct, design chat, validated by Sebas)
-- V1.8 trend: completed sessions only, ticked by the table's `#`; shapes square (Static),
-  circle (Behavior-adaptive), triangle (Multimodal-adaptive).
-- V1.7: a "Sessions not projected" section, an empty state with the resolved count, a
-  paged errors table and expandable "Needs review" rows.
+1. ~~"Per participant **and version**" (D-F6-2)~~ Option A: one row per participant and
+   format version, overwritten (Sebas, 20 Oct).
+2. ~~Do `ABORTED` sessions count?~~ No, in no part (Sebas, 20 Oct).
+3. Who is the participant on Thu 22, and at what time (Sebas).
+4. ~~Set for run 3~~ Set C (Sebas, 20 Oct).
