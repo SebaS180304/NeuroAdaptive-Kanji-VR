@@ -13,8 +13,10 @@ Rules:
 
 Plans, technical design, test scripts and the daily progress log live in a
 claude.ai Project. A read-only copy is exported to `Claude outputs/docs_proyecto/`
-(gitignored); start with its `README.md`. For the current phase (F5a) read
-`Plan_Fase5a.md` (criteria in §5, daily log in §9) and `Planteamiento_Tecnico_F5a.md`.
+(gitignored); start with its `README.md`. For the current phase (F6, M3 on 23 Oct)
+read `Plan_Fase6.md` (F5a close in §0, Learner Profile v1 decisions in §4, criteria
+in §5, daily log in §9); the previous phase is `Plan_Fase5a.md` and
+`Planteamiento_Tecnico_F5a.md`.
 The copy can be out of date: if it disagrees with the code, the code wins; ask Sebas
 before relying on a planning detail that looks stale.
 
