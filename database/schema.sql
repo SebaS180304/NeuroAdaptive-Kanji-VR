@@ -2,11 +2,12 @@
 -- NeuroAdaptive VR -- Esquema inicial de PostgreSQL (Fase 1)
 -- =====================================================================
 -- Este archivo es la referencia humana-legible del esquema que producen
--- las migraciones Alembic 0001_initial_schema a 0006_research_read
--- (backend/alembic/versions). Las partes de 0002 a 0006 son copia literal de
+-- las migraciones Alembic 0001_initial_schema a 0007_learner_profile
+-- (backend/alembic/versions). Las partes de 0002 a 0007 son copia literal de
 -- backend/alembic/versions/sql/000N_*_up.sql, en ese orden: 0002_schema_v1
 -- (1 oct 2026), 0003_adaptation (14 oct), 0004_kanji_pretest (16 oct),
--- 0005_abort_stale_sessions y 0006_research_read (17 oct).
+-- 0005_abort_stale_sessions y 0006_research_read (17 oct), 0007_learner_profile
+-- (21 oct).
 -- Los dos deben mantenerse identicos; si se autogenera una nueva
 -- migracion con Alembic, este archivo debe regenerarse con:
 --   pg_dump --schema-only --no-owner --no-privileges neuroadaptive_vr
@@ -2183,3 +2184,21 @@ GROUP BY r.app_n, r.k
 HAVING count(DISTINCT r.sid) = 2
    AND (count(DISTINCT (r.object_name, r.duration_ms)) <> 1 OR count(DISTINCT r.esl) <> 1)
 $$;
+
+-- NeuroAdaptive VR -- Learner Profile v1 -- migration 0007 (up)
+-- The last computed profile of each participant, per format version (Plan_Fase6 §4,
+-- D-F6-2 and D-F6-3). Derived data: app/adaptation/learner_profile.py rebuilds every
+-- row from session_events and the schema (--all), so nothing here is a source of truth.
+-- Only COMPLETED sessions feed it; ABORTED ones are in no part (Sebas, 21 Oct).
+-- A later format (v2 after the pilot, EEG in F4) lives next to the v1 rows.
+
+CREATE TABLE learner_profiles (
+    participant_id  UUID        NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+    profile_version VARCHAR(8)  NOT NULL DEFAULT 'v1',
+    computed_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- The COMPLETED sessions the profile covers, oldest first.
+    session_ids     UUID[]      NOT NULL DEFAULT '{}',
+    -- calibrations, adaptations, trend (tasks/plan.md).
+    profile         JSONB       NOT NULL,
+    PRIMARY KEY (participant_id, profile_version)
+);

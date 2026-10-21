@@ -289,3 +289,13 @@ Added on 17 October 2026 for the read-only `/research` router. No table changes.
 
 The `verify_*.sql` scripts stay for `psql` use: a change to a check goes in both
 places.
+
+## Learner Profile v1 — migration 0007
+
+Added on 21 October 2026 (Plan_Fase6 §4, D-F6-2 and D-F6-3). Derived data:
+`app/adaptation/learner_profile.py` rebuilds every row from `session_events` and the
+schema, so the table only keeps the last computed result for the portal.
+
+| Table | What it stores | Key |
+|---|---|---|
+| `learner_profiles` | The last computed profile of a participant: `computed_at`, `session_ids` (the `COMPLETED` sessions it covers, oldest first) and `profile` (JSONB: calibrations, adaptations, trend). `ABORTED` sessions are in no part (Sebas, 21 Oct). Deleted with its participant | `(participant_id, profile_version)`; `profile_version` is `'v1'` |

@@ -93,14 +93,14 @@ The 15 older sessions stay empty unless Sebas says otherwise (plan.md open quest
 **Verify:** `pytest tests/test_session_lifecycle.py`; full pytest green.
 **Deps:** none. **Files:** `routes/sessions.py`, `tests/test_session_lifecycle.py`. **Scope:** XS
 
-### [ ] Task 6: Migration 0007 `learner_profiles`
+### [x] Task 6: Migration 0007 `learner_profiles`
 **Description:** Table as in `plan.md` (PK `participant_id` FK `ON DELETE CASCADE` +
 `profile_version`, option A; `computed_at`, `session_ids UUID[]`, `profile JSONB`). Same pattern as
 0003–0006: SQL in `alembic/versions/sql/0007_learner_profile_{up,down}.sql`.
 
 **Acceptance:**
-- [ ] up, down, up again on the dev DB; `database/schema.sql` and `ERD.md` cover 0007
-- [ ] The `_clean_test_participants` fixture still deletes test participants (cascade)
+- [x] up, down, up again on the dev DB; `database/schema.sql` and `ERD.md` cover 0007
+- [x] The `_clean_test_participants` fixture still deletes test participants (cascade)
 
 **Verify:** `alembic upgrade head`; full pytest green.
 **Deps:** none. **Files:** migration + 2 SQL, `models/` (if an ORM model is needed; `text()` may be enough), `database/schema.sql`, `database/ERD.md`. **Scope:** S
