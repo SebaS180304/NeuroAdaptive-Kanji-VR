@@ -1,6 +1,7 @@
 # Todo: Phase 6 week → M3 (20 – 23 Oct)
 
 Plan: `tasks/plan.md`. Previous list (portal v1): `tasks/archive/portal_v1_todo.md`.
+**Aligned up to: D-F6-11** (`Estado_Actual.md`, the alignment board; it wins over this list).
 Every commit: message file in Downloads, shown to Sebas first, one change each.
 
 ---
@@ -159,7 +160,7 @@ participant a row. Errors are logged and never fail the PATCH or stop the sweep 
 **Verify:** pytest. **Deps:** 6, 8. **Files:** `tests/test_learner_profile.py`. **Scope:** XS
 
 ### [x] Task 11a: Frontend: the Learner Profile at the top of V1.8 (Wed 21 evening; split by Sebas, 21 Oct)
-**Description:** The profile block of canvas 37: header with the scope line, *Usual performance*,
+**Description:** The profile block of the validated canvas (30, 38, 39; D-F6-6): header with the scope line, *Usual performance*,
 *What followed each adaptation* (at most 3 groups, "Show [n] more groups"), *Across sessions*
 replacing the old V1.8 trend chart (one chart, accuracy as correct of 20), and the "No profile
 yet." panel. "See [n] decisions" goes to the session's V1.5 unfiltered for now (11b adds the
@@ -168,7 +169,7 @@ filter and the cross-session list). Backend untouched.
 **Acceptance:**
 - [x] Load the `research-dashboard-conventions` skill first; copy from `Contenido_UI_F-PROFILE.md` (updated 21 Oct), form from design-system.md "V1.8 Learner Profile (F-PROFILE)"; no new tokens
 - [x] design-system.md without the aborted-sessions clause (canvas 39, validated 18:22, copied to the skill 21 Oct)
-- [x] Adjustments of the 21 Oct copy: global-median mark for a type with < 3 valid S6 trials; empty profile with the canvas 37 text, the same with no sessions or only aborted ones; **no mention of aborted sessions anywhere in the profile**; `UNCERTAIN` · `INCOMPLETE` reads "Can't tell: S7 ended first"
+- [x] Adjustments of the 21 Oct copy: global-median mark for a type with < 3 valid S6 trials; empty profile with the validated canvas text, the same with no sessions or only aborted ones; **no mention of aborted sessions anywhere in the profile**; `UNCERTAIN` · `INCOMPLETE` reads "Can't tell: S7 ended first"
 - [x] The cases of the canvas render from real data: `DEV_UNITY` (many sessions), STATIC only, adaptive without changes, no completed session ("No profile yet.", also when every session aborted), one session; sessions before 0003 show "—", never 0
 - [x] Counts match `adaptation_decisions` / the endpoint (Vitest on the pure text helpers; Playwright on `DEV_UNITY`)
 - [x] No regression before the Thu 22 test: build, Vitest 133/133 and Playwright 31/32 green. The one failure, `quality.spec.ts`, fails the same on the last commit without 11a: `/research/quality` takes ~3.7 s and the test waits 5 s while the suite runs in parallel; alone it passes. Finding, not fixed (not part of 11a)
@@ -222,7 +223,7 @@ does not wait). Copy stays as `Contenido_UI_F-PROFILE.md` (D-F6-6) where the can
 ## Thu 22 Oct: phase test
 
 ### [ ] Task 13: Phase test with a participant with no Japanese
-- [ ] Before: consent text ready (PM), participant booked (Sebas), backend restarted and `/health/db` OK
+- [ ] Before: consent approved (D-F6-9, protocol Part B of `Consentimiento_Protocolo_Sesion_v0.md`), participant at 11:00 (Sebas), `/health/db` OK. No commits and no backend restart before 12:00 (board §1)
 - [ ] Portal: registration with consent, pre-test
 - [ ] Headset: `BEHAVIOR_ADAPTIVE` complete to S9 with their code; Sebas's sheet notes off-script moments with trial ids
 - [ ] After: `verify_projection` and `verify_adaptation` 0 discrepancies; each applied change has an outcome (or `UNCERTAIN` with reason); profile row present; session reviewed in the portal

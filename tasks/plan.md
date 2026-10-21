@@ -1,11 +1,16 @@
 # Implementation Plan: Phase 6 week → M3 (Tue 20 – Fri 23 Oct 2026)
 
-Written 20 Oct 2026, updated 21 Oct (Wed 21 dev tasks, F-PROFILE brief). Replaces the Research Web Portal v1 plan, archived in
+Written 20 Oct 2026, updated 21 Oct (Wed 21 dev tasks, F-PROFILE brief). **Aligned up to: D-F6-11**
+(`Estado_Actual.md`). Replaces the Research Web Portal v1 plan, archived in
 `tasks/archive/portal_v1_{plan,todo}.md`. Its open items are carried over unchanged:
 the headset runs of Tasks 1.8–1.10 and Checkpoint B (here Task 1, and Task 3, which absorbs run 2), and
 Checkpoint D (here Task 12, the first thing to cut).
 
 ## Sources of truth
+- **`Claude outputs/docs_proyecto/Estado_Actual.md`, the alignment board, comes first**
+  (rule in `CLAUDE.md`). A decision exists only with a number in its §4; if this plan or
+  any other doc disagrees with it, the board wins and Sebas is told. This plan cites the
+  board's numbers (R-…, D…, D-A…, D-F6-…).
 - `Claude outputs/docs_proyecto/Plan_Fase6.md`: §0 F5a close, §3 days, §4 Learner
   Profile decisions D-F6-1 – D-F6-4 (approved by Sebas, 20 Oct), §5 criteria, §9 log.
 - `Claude outputs/docs_proyecto/Dashboard_Feature_F-PROFILE.md` (PM, 21 Oct): what the
@@ -14,13 +19,14 @@ Checkpoint D (here Task 12, the first thing to cut).
 - `Claude outputs/docs_proyecto/Contenido_UI_F-PROFILE.md` (UI/UX, 21 Oct): the screen
   copy; every `{…}` in it is a field of the profile endpoint.
 - Skill `references/design-system.md`, "V1.8 Learner Profile (F-PROFILE)": the form,
-  validated by Sebas (canvas 37, 21 Oct). The cross-session link and the V1.5 group
-  filter (canvas 38) were validated by Sebas the same day.
+  validated by Sebas on canvas 30, 38 and 39 (D-F6-6). Where the validated canvas and
+  `design-system.md` differ in form, the canvas wins (D-F6-11).
 - `Claude outputs/docs_proyecto/Consentimiento_Protocolo_Sesion_v0.md` (PM, 21 Oct):
   Part B is the Thu 22 protocol (Task 13).
 - `Claude outputs/docs_proyecto/Guion_Pasada_Visor_F5a.md`, run A: script for Task 3.
 - `Claude outputs/docs_proyecto/Plan_Fase5a.md` §5: F5a criteria for the evidence.
-- Code wins over the docs copy; ask Sebas when a planning detail looks stale.
+- Below the board, the code wins over a stale mirror copy of a doc; ask Sebas when a
+  planning detail looks stale.
 
 ## Overview
 Four days to M3 (Closed-Loop Prototype, behavioural). What is missing is exactly what
@@ -121,7 +127,7 @@ a phase test with a participant with no Japanese, and the evidence and tags.
   `computed_at`, `session_ids`, `profile` (the JSON above, as stored). This answers open
   decision 3 of the F-PROFILE brief. The portal screen waits for the mockup (D-F6-4); per
   the brief, if Sebas validates it today it is built Fri 23, otherwise the week of 26 Oct
-  and M3 shows the profile from the API. **Validated 21 Oct (canvas 37). Split by Sebas
+  and M3 shows the profile from the API. **Validated 21 Oct (canvas 30, 38, 39; D-F6-6). Split by Sebas
   (21 Oct): Task 11a, the profile block in V1.8, on Wed 21 evening; Task 11b, the
   cross-session list and the V1.5 filter, on Fri 23 if time.**
 - **V1.5 group filter (Task 11b):** `?group=<key>` on the Session View's Adaptations tab.
@@ -138,8 +144,8 @@ T6a S9 fills completed_at (independent, first commit of Wed)
 T6 migration 0007 ─► T7 calculation + rebuild ─► T8 hooks (COMPLETED, ABORTED) ─► T9 endpoint
                                      └──────────► T10 D-F6-1 test
 T6a … T10 ─► T10b day draft for §9
-mockup validated (canvas 37, 38) + T9 ─► T11a profile in V1.8 ─► T11b V1.5 filter, cross-session list
-consent text (PM) + participant ─► T13 phase test ─► T14 findings
+mockup validated (canvas 30, 38, 39; D-F6-6) + T9 ─► T11a profile in V1.8 ─► T11a-fix (D-F6-11) ─► T11b V1.5 filter, cross-session list
+consent approved (D-F6-9) + participant (Thu 22, 11:00) ─► T13 phase test ─► T14 findings
 T3 + T13 ─► T15 evidence ─► T16 tags ─► T17 spec v1.4 change list
 T12 Checkpoint D (only if time is left)
 ```
@@ -170,7 +176,6 @@ T12 Checkpoint D (only if time is left)
 | The profile hook slows or breaks the S9 PATCH | Med | `BackgroundTasks` after the commit, wrapped in try/except, logged |
 | Two triggers for one participant at once (S9 PATCH and a sweep) | Low | The upsert is one statement per row; the later one wins and both compute from the same committed data |
 | Tests write the real `DEV_UNITY` profile row in the dev DB | Low | It is the row Checkpoint Wed expects; `--all` recomputes it the same |
-| The participant's consent text is not ready Thu 22 | High | PM draft v0 exists (21 Oct); Sebas reviews it and checks with his supervisor today. Registration requires it since 17 Oct |
 | The mockup is not validated by Fri 23 | Med | Criterion 4b is declared pending in the M3 note; the endpoint is ready |
 
 ## Open questions
@@ -179,7 +184,7 @@ T12 Checkpoint D (only if time is left)
 2. ~~Do `ABORTED` sessions count?~~ No, in no part (Sebas, 20 Oct).
 3. Who is the participant on Thu 22, and at what time (Sebas).
 4. ~~Set for run 3~~ Set C (Sebas, 20 Oct).
-5. ~~Fill `completed_at` for the sessions completed before Task 6a?~~ Yes (Sebas, 21 Oct):
+5. ~~Fill `completed_at` for the sessions completed before Task 6a?~~ Yes (Sebas, 21 Oct; **D-F6-10**):
    `database/backfill_completed_at.sql` filled all 16 (not 15) with the first S9/S10
    `STATE_ENTERED` of each.
 6. ~~`ABORTED` sessions: the F-PROFILE brief (§2) counted them up to S6/S7~~ They count
