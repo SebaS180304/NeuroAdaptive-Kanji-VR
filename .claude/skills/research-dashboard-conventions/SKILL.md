@@ -9,7 +9,12 @@ A web app that lets a researcher review, **after** a session, what happened in
 the NeuroAdaptive VR prototype (kanji learning in Unity/Quest): trials,
 environment, behavior, and the decisions of the F5a adaptive loop. It runs
 **only on the lab machine**. v1 is **read-only** over what migrations
-`0002`–`0006` project. It is built in **F7 (Nov 16–20)**, towards M4.
+`0002`–`0007` project. It was built in **F6 (Oct 19–23)**, ahead of its original
+F7 slot (Nov 16–20); the Learner Profile (F-PROFILE) is part of it.
+
+**Aligned up to: D-F6-11** of `Claude outputs/docs_proyecto/Estado_Actual.md`, the
+alignment board. A decision exists only with a number in its §4; if this skill
+disagrees with the board, the board wins and Sebas is told.
 
 Full context brief (Spanish, copy of the claude.ai Project):
 `Claude outputs/docs_proyecto/Brief_Research_Dashboard_Dev_V1.md`.
@@ -49,9 +54,10 @@ values come from the *Design System* artifact that Sebas validates.
    logs, fixtures and screenshots.
 7. **Local, no outbound traffic.** Frontend on `127.0.0.1`, no analytics, no
    runtime CDNs, fonts bundled.
-8. **Reserve what does not exist; never fake it.** EEG, Learner Profile, HCI
-   self-report: a visible reserved slot ("Available in a later version"). No
-   sample data.
+8. **Reserve what does not exist; never fake it.** EEG, HCI self-report: a
+   visible reserved slot ("Available in a later version"). No sample data. The
+   Learner Profile exists (migration `0007`) and goes at the top of the
+   Participant View (D-F6-4).
 9. **Do not restart the backend during a headset session.** There is no
    `--reload`; changes are applied with `docker compose restart backend` between
    sessions.

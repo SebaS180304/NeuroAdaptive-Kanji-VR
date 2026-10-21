@@ -37,8 +37,8 @@ F7.
 | Kanji pre-test and per-participant substitutions | `kanji_pretest_responses`, `kanji_substitutions`, `participants.pretest_completed_at` (`0004`) | Oct 16 |
 | Abandoned sessions set to `ABORTED` | `abort_stale_sessions()` (`0005`) | Oct 17 |
 | Session overview, projection errors with session time, verify checks as functions | `v_session_overview`, `v_projection_errors`, `verify_*_fn()` (`0006`) | Oct 17 |
-| S6 calibration profile | Computed in memory (`backend/app/adaptation/profile.py`); **not persisted** | — |
-| Cross-session Learner Profile v1 | Does not exist yet | F6 |
+| S6 calibration profile | Persisted per completed session in `learner_profiles.profile` → `calibrations` (`0007`), rebuilt from `session_events` (D-F6-2, D-F6-3) | Oct 21 |
+| Cross-session Learner Profile v1 | `learner_profiles` (`0007`): calibrations, adaptation groups with outcomes, S7 trend; COMPLETED sessions only (D-F6-2); `GET /research/participants/{id}/profile` | Oct 21 |
 | EEG | Does not exist yet | F4 |
 | HCI self-report (S10) | No table | No date |
 
@@ -211,8 +211,8 @@ Statuses: `Idea → Planned → Design validated → In dev → Done`.
 | F-EXPERIMENT | Experiment View: Static vs Behavior-Adaptive vs Multimodal-Adaptive | Pilot data (F8). **Decided Oct 16: after the pilot** | Condition filter in the session list | Idea |
 | F-EEG | EEG lane: windows, GOOD / ACCEPTABLE / POOR quality, exclusions; normalized indices | F4 (AURA). **Decided Oct 16: not yet** | Timeline accepts new lanes | Idea |
 | F-MULTI | Multimodal decisions: EEG contribution to confidence and behavioral fallback | F4 S3 + F-EEG | Source column in V1.5 | Idea |
-| F-PROFILE | Cross-session Learner Profile: dimensions, evidence, confidence, history. Only `COMPLETED` sessions count; an `ABORTED` session is in no part, even if it reached S6 or S7 (Sebas, 21 Oct) | F6 (Oct 19–23) | Top of the Participant View (D-F6-4, 20 Oct) | Planned |
-| F-CALIB | Session S6 calibration profile (`rt_ref`, `acc_ref`, `reliability`…) | Persist it in the backend, or recompute it in an endpoint | Reserved card in the summary | Idea |
+| F-PROFILE | Cross-session Learner Profile: dimensions, evidence, confidence, history. Only `COMPLETED` sessions count; an `ABORTED` session is in no part, even if it reached S6 or S7 (Sebas, 21 Oct) | F6 (Oct 19–23) | Top of the Participant View (D-F6-4, 20 Oct) | In progress: Task 11a done (`983aaa7`), 11a-fix and 11b pending (D-F6-7, D-F6-11) |
+| F-CALIB | Session S6 calibration profile (`rt_ref`, `acc_ref`, `reliability`…) in the Session View | Data persisted with the Learner Profile (`0007`); a per-session read is still to add | Reserved card in the summary | Idea |
 | F-PRETEST | Pre-test detail (answers, auto vs researcher review) | Data already exists (`0004`) | Participant View | Idea |
 | F-HCI | HCI self-report (S10, 7 items) | New table | Reserved section in the summary | Idea |
 | F-CONFIG | Experimental configuration of the session | `session_config_snapshots` (already exists) | Summary | Idea |
@@ -221,4 +221,4 @@ Statuses: `Idea → Planned → Design validated → In dev → Done`.
 
 Rule: nothing in this table is implemented without its `feature-spec` and a
 validated design. v1 only leaves the visible reserved slot where the table says
-so.
+so; F-PROFILE is the exception, built in F6 (D-F6-4).
