@@ -182,7 +182,9 @@ T12 Checkpoint D (only if time is left)
 1. ~~"Per participant **and version**" (D-F6-2)~~ Option A: one row per participant and
    format version, overwritten (Sebas, 20 Oct).
 2. ~~Do `ABORTED` sessions count?~~ No, in no part (Sebas, 20 Oct).
-3. Who is the participant on Thu 22, and at what time (Sebas).
+3. ~~Who is the participant on Thu 22, and at what time?~~ Thu 22 at 11:00, with the
+   consent approved (D-F6-9; time on the board, §1). The participant is registered in the
+   portal with a new code, never their name (protocol Part B, step 3; skill rule 6).
 4. ~~Set for run 3~~ Set C (Sebas, 20 Oct).
 5. ~~Fill `completed_at` for the sessions completed before Task 6a?~~ Yes (Sebas, 21 Oct; **D-F6-10**):
    `database/backfill_completed_at.sql` filled all 16 (not 15) with the first S9/S10
