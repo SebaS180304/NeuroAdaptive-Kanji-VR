@@ -76,7 +76,7 @@ effective set, S4 with fixation cross and closing eye, real segments for B and C
 
 Branch `phase/6-learner-profile` from `phase/7-research-dashboard` (Plan_Fase6 header).
 Source: Plan_Fase6 §3 (Wed 21), §4 (D-F6-1 – D-F6-3) and the PM review of Tue 20 in §9.
-No frontend until Sebas validates the mockup (Task 11). Data needs: `Dashboard_Feature_F-PROFILE.md` §2.
+No frontend until Sebas validates the mockup (Task 11). Data needs: `Dashboard_Feature_F-PROFILE.md` §2 and every `{…}` in `Contenido_UI_F-PROFILE.md`.
 Before the branch: the XR Origin prefab change and the uncommitted `tasks/` edits stay
 out of every Learner Profile commit (`tasks/` goes in its own `docs(tasks)` commit).
 
@@ -112,7 +112,8 @@ adaptations grouped by action, dimension, direction, cause with outcome counts; 
 completed sessions, by `status = 'COMPLETED'`, never `completed_at`) and upserts the row.
 CLI `--all` and `--check`. JSON as in `plan.md` (each entry with its `session_id` and
 condition; groups with `decision_ids` and `UNCERTAIN` split by `outcome_reason`;
-`decisions_recorded: false` for sessions before 0003).
+`decisions_recorded: false` for sessions before 0003; the calibration, group-key,
+per-session ids, subtype, `NO_CHANGE` and trend fields listed in `plan.md`).
 
 **Acceptance:**
 - [ ] On the 4 adaptive `DEV_UNITY` sessions (`099690e1`, `d392fd25`, `a0c65228`, `a5748886`) + run 3: each calibration equals the S6 profile in that session's `ADAPTATION_DECISION` context; adaptation counts equal a direct `GROUP BY` on `adaptation_decisions`; trend equals V1.8's numbers (pytest)
@@ -120,6 +121,8 @@ condition; groups with `decision_ids` and `UNCERTAIN` split by `outcome_reason`;
 - [ ] An `ABORTED` session appears in no part (Sebas, 20 Oct, confirmed 21 Oct); a NULL outcome counts as "not recorded"
 - [ ] An `UNCERTAIN` outcome is counted under its reason (`NOT_APPLIED` / `INCOMPLETE`); a group's `decision_ids` equal its rows in `adaptation_decisions`
 - [ ] A completed session from before 0003 has `decisions_recorded: false`; a STATIC session has no groups and no such flag
+- [ ] Calibration `k`/`n` match S6's answered trials; a type with < 2 valid S6 trials is listed as a global-median fallback
+- [ ] A group's per-session ids add up to its count; each adaptive session's `NO_CHANGE` count equals `adaptation_decisions`; trend values equal `GET /research/participants/{id}`
 - [ ] `--all --check` after `--all` prints no differences
 
 **Verify:** `pytest tests/test_learner_profile.py`; the CLI in the backend container.
@@ -155,10 +158,13 @@ participant a row. Errors are logged and never fail the PATCH or stop the sweep 
 
 **Verify:** pytest. **Deps:** 6, 8. **Files:** `tests/test_learner_profile.py`. **Scope:** XS
 
-### [ ] Task 11: Frontend: profile at the top of the Participant View (BLOCKED on the mockup)
+### [ ] Task 11: Frontend: profile at the top of the Participant View (Fri 23; mockup validated, canvas 37)
 - [ ] Starts only when Sebas validates the mockup (web design + UI/UX chats). No visual design here. Validated Wed 21 → built Fri 23; otherwise week of 26 Oct and M3 shows the profile from the API (F-PROFILE brief)
 - [ ] Done as in F-PROFILE §5: checked with `DEV_UNITY` and the Thu 22 participant; counts match `adaptation_decisions` and `v_adaptations`; Playwright screenshot light and dark; 5-tell audit; no regression in V1.8 or V1.11
-- [ ] Load the `research-dashboard-conventions` skill first; replaces the reserved slot in V1.8
+- [ ] Load the `research-dashboard-conventions` skill first; replaces the reserved slot in V1.8 and the old V1.8 trend chart (one chart)
+- [ ] Copy from `Contenido_UI_F-PROFILE.md`; form from design-system.md "V1.8 Learner Profile (F-PROFILE)"
+- [ ] Cross-session link (disclosure list) and V1.5 `?group=<key>` filter: only once Sebas validates canvas 38
+- [ ] V1.5 and V1.6: cause "Impulsive" reads "Quick errors"
 
 ### [ ] Task 10b: Day draft
 - [ ] `Claude outputs/Borrador_Plan_Fase6_9_21oct.md`: §9 Wed 21 lines (`completed_at` commit, Learner Profile v1 backend with commits, `DEV_UNITY` profile summary, findings)

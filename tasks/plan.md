@@ -11,6 +11,11 @@ Checkpoint D (here Task 12, the first thing to cut).
 - `Claude outputs/docs_proyecto/Dashboard_Feature_F-PROFILE.md` (PM, 21 Oct): what the
   profile screen shows, its data cases (§2) and content rules; the data the endpoint
   must carry comes from there. Open decision 3 (endpoint shape) is ours.
+- `Claude outputs/docs_proyecto/Contenido_UI_F-PROFILE.md` (UI/UX, 21 Oct): the screen
+  copy; every `{…}` in it is a field of the profile endpoint.
+- Skill `references/design-system.md`, "V1.8 Learner Profile (F-PROFILE)": the form,
+  validated by Sebas (canvas 37, 21 Oct). The cross-session link and the V1.5 group
+  filter (canvas 38) are marked *pending Sebas's validation* there.
 - `Claude outputs/docs_proyecto/Consentimiento_Protocolo_Sesion_v0.md` (PM, 21 Oct):
   Part B is the Thu 22 protocol (Task 13).
 - `Claude outputs/docs_proyecto/Guion_Pasada_Visor_F5a.md`, run A: script for Task 3.
@@ -49,6 +54,18 @@ a phase test with a participant with no Japanese, and the evidence and tags.
   - each adaptation group lists its `decision_ids` (link to the Session View, V1.5) and
     splits `UNCERTAIN` by `outcome_reason` (`NOT_APPLIED`, `INCOMPLETE`), read from the
     `ADAPTATION_OUTCOME` event payload, where `outcome.py` writes it;
+  - calibration per session also carries S6 correct as `k` of `n`, `rt_ref_global`, and
+    the trial types that fell back to the global median (fewer than 2 valid trials),
+    for the "Too few {T} trials" tooltip;
+  - a group is keyed by estimated state + cause + dimension + direction (so `AWAY`,
+    `ENVIRONMENT`, `IMPULSIVE` and the return after `STABLE` stay apart). Each group has
+    a string `key` (e.g. `OVERLOADED.<cause>.LAL.UP`), its decisions **per session**
+    (`session_id` → `decision_ids`, for the "See [n] decisions in [k] sessions" list),
+    outcome counts plus O4 subtype counts (`RESOLVED`, `HELD_WITH_DROP`…, tooltip) and
+    the time of its latest decision (tie-break of the group order);
+  - each adaptive session carries its `NO_CHANGE` count ("The system checked {d} times");
+  - trend per completed session: correct in S7 of 20 and mean RT, the same numbers
+    `GET /research/participants/{id}` gives V1.8 today, with kanji set and condition;
   - a session with no `adaptation_decisions` rows at all (before migration 0003, 13 Oct)
     is marked `decisions_recorded: false`, so the screen shows "—", never 0. A STATIC
     session has no groups by design and is not marked.
@@ -98,7 +115,12 @@ a phase test with a participant with no Japanese, and the evidence and tags.
   `computed_at`, `session_ids`, `profile` (the JSON above, as stored). This answers open
   decision 3 of the F-PROFILE brief. The portal screen waits for the mockup (D-F6-4); per
   the brief, if Sebas validates it today it is built Fri 23, otherwise the week of 26 Oct
-  and M3 shows the profile from the API.
+  and M3 shows the profile from the API. **Validated 21 Oct (canvas 37): Task 11 is
+  built Fri 23.**
+- **V1.5 group filter (Task 11):** `?group=<key>` on the Session View's Adaptations tab.
+  V1.5 rows already have state, cause, dimension and levels, so the tab derives each
+  row's key with the same function the profile's key follows and filters by it; no
+  new endpoint and no ids in the URL.
 
 ## Dependency graph
 ```
@@ -156,5 +178,8 @@ T12 Checkpoint D (only if time is left)
 6. ~~`ABORTED` sessions: the F-PROFILE brief (§2) counted them up to S6/S7~~ They count
    in no part: calibration, adaptations or trend (Sebas, confirmed 21 Oct). The brief's
    §2 row and Plan_Fase6 §4 get the note (day draft of 21 Oct).
-7. F-PROFILE open decision 2 (latest calibration or the average) is a screen choice:
-   the profile stores one calibration per session, so either works without a change.
+7. ~~F-PROFILE open decisions 1–3~~ Validated 21 Oct: the profile's trend replaces the
+   V1.8 chart; calibration shows the latest session with the range of all; endpoint
+   shape as above. Cross-session link: option (b), a disclosure list (web design chat).
+8. Canvas 38 (cross-session link, V1.5 group filter) is pending Sebas's validation;
+   needed before Task 11 on Fri 23, not for the backend.
