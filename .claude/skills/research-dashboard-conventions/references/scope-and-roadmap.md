@@ -211,7 +211,7 @@ Statuses: `Idea → Planned → Design validated → In dev → Done`.
 | F-EXPERIMENT | Experiment View: Static vs Behavior-Adaptive vs Multimodal-Adaptive | Pilot data (F8). **Decided Oct 16: after the pilot** | Condition filter in the session list | Idea |
 | F-EEG | EEG lane: windows, GOOD / ACCEPTABLE / POOR quality, exclusions; normalized indices | F4 (AURA). **Decided Oct 16: not yet** | Timeline accepts new lanes | Idea |
 | F-MULTI | Multimodal decisions: EEG contribution to confidence and behavioral fallback | F4 S3 + F-EEG | Source column in V1.5 | Idea |
-| F-PROFILE | Cross-session Learner Profile: dimensions, evidence, confidence, history | F6 (Oct 19–23) | Reserved tab in Participant View | Idea |
+| F-PROFILE | Cross-session Learner Profile: dimensions, evidence, confidence, history. Only `COMPLETED` sessions count; an `ABORTED` session is in no part, even if it reached S6 or S7 (Sebas, 21 Oct) | F6 (Oct 19–23) | Top of the Participant View (D-F6-4, 20 Oct) | Planned |
 | F-CALIB | Session S6 calibration profile (`rt_ref`, `acc_ref`, `reliability`…) | Persist it in the backend, or recompute it in an endpoint | Reserved card in the summary | Idea |
 | F-PRETEST | Pre-test detail (answers, auto vs researcher review) | Data already exists (`0004`) | Participant View | Idea |
 | F-HCI | HCI self-report (S10, 7 items) | New table | Reserved section in the summary | Idea |
