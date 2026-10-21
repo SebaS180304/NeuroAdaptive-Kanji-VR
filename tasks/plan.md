@@ -177,9 +177,9 @@ T12 Checkpoint D (only if time is left)
 2. ~~Do `ABORTED` sessions count?~~ No, in no part (Sebas, 20 Oct).
 3. Who is the participant on Thu 22, and at what time (Sebas).
 4. ~~Set for run 3~~ Set C (Sebas, 20 Oct).
-5. Fill `completed_at` for the 15 sessions completed before Task 6a (from their S9
-   `STATE_ENTERED` event)? Default: no, recorded as a finding, as with the old
-   `segments_authored = false` rows (Sebas to confirm).
+5. ~~Fill `completed_at` for the sessions completed before Task 6a?~~ Yes (Sebas, 21 Oct):
+   `database/backfill_completed_at.sql` filled all 16 (not 15) with the first S9/S10
+   `STATE_ENTERED` of each.
 6. ~~`ABORTED` sessions: the F-PROFILE brief (§2) counted them up to S6/S7~~ They count
    in no part: calibration, adaptations or trend (Sebas, confirmed 21 Oct). The brief's
    §2 row and Plan_Fase6 §4 get the note (day draft of 21 Oct).

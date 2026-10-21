@@ -83,7 +83,7 @@ out of every Learner Profile commit (`tasks/` goes in its own `docs(tasks)` comm
 ### [x] Task 6a: S9 fills `experiment_sessions.completed_at`
 **Description:** `update_session_state` sets `completed_at = now_utc()` the first time the
 status becomes `COMPLETED` (S9, or S10 if S9 was skipped). One commit, before the profile.
-The 15 older sessions stay empty unless Sebas says otherwise (plan.md open question 5).
+The older sessions were backfilled afterwards (plan.md open question 5).
 
 **Acceptance:**
 - [x] PATCH to S9 → `completed_at` set; a later PATCH to S10 keeps the same value (pytest)
@@ -189,7 +189,7 @@ filter and the cross-session list). Backend untouched.
 - [x] Full pytest green; `graphify update .`
 - [x] `DEV_UNITY` profile computed from its 5 completed adaptive sessions, `--check` clean
 - [x] Day draft handed to Sebas
-- [x] Open question 5 of `plan.md` answered by Sebas (or the default recorded); question 6 answered 21 Oct (`ABORTED` never counts). Q5 unanswered: default "no" recorded in the day draft
+- [x] Open question 5 of `plan.md` answered by Sebas (or the default recorded); question 6 answered 21 Oct (`ABORTED` never counts). Q5 answered 21 Oct: backfilled, 16 sessions (`database/backfill_completed_at.sql`)
 
 ---
 
