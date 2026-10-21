@@ -1,7 +1,7 @@
 # Todo: Phase 6 week → M3 (20 – 23 Oct)
 
 Plan: `tasks/plan.md`. Previous list (portal v1): `tasks/archive/portal_v1_todo.md`.
-**Aligned up to: D-F6-11** (`Estado_Actual.md`, the alignment board; it wins over this list).
+**Aligned up to: D-F6-17** (`Estado_Actual.md`, the alignment board; it wins over this list).
 Every commit: message file in Downloads, shown to Sebas first, one change each.
 
 ---
@@ -191,6 +191,7 @@ does not wait). Copy stays as `Contenido_UI_F-PROFILE.md` (D-F6-6) where the can
 - [ ] "Show [n] more groups": transparent background
 - [ ] Empty texts (STATIC only, no changes): 12 px top padding and a top rule; the "See [d] decisions" link **below** the sentence, not beside it
 - [ ] Badge tooltip: "POSITIVE, RESOLVED" (comma, no count), not "POSITIVE · RESOLVED 1"
+- [ ] **"Not recorded" badge: its form waits for Sebas's validation on the canvas, Thu 22 after 12:00 (D-F6-16).** Until then the badge keeps the form it has since `983aaa7` (the V1.5 dashed "Not recorded" chip with its count); no new form is applied
 - [ ] Across sessions: 16 px top padding, 8 px gap; a compact chart (~124 px, no x-axis title); the legend row ends with "Completed sessions only, numbered as in the table."; point tooltip "Session 4, Static, set A, 14 of 20 correct"
 - [ ] Below the profile: a "Pre-test and kanji sets" section (title 22/28, 1 px top rule, columns 1–10) with the lead sentence and the Pre-test / Notes list; "Kanji replaced by the pre-test" in columns 11–16 with an 18/24 title, 1 px top rule, and no intro sentence
 - [ ] STATIC-only text by number of completed sessions (UI/UX, 21 Oct; `Contenido_UI_F-PROFILE.md` §5, row "Solo STATIC"). With 1 or 2 sessions "Across sessions" says there is no trend yet, so "the trend" is not named:
