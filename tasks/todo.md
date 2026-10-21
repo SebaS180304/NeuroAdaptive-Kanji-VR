@@ -167,7 +167,7 @@ filter and the cross-session list). Backend untouched.
 
 **Acceptance:**
 - [ ] Load the `research-dashboard-conventions` skill first; copy from `Contenido_UI_F-PROFILE.md` (updated 21 Oct), form from design-system.md "V1.8 Learner Profile (F-PROFILE)"; no new tokens
-- [ ] **Waits for** the web design chat to drop the aborted-sessions clause from the scope line in design-system.md (handoff copy, then copied to the skill); both copies still have it on 21 Oct
+- [x] design-system.md without the aborted-sessions clause (canvas 39, validated 18:22, copied to the skill 21 Oct)
 - [ ] Adjustments of the 21 Oct copy: global-median mark for a type with < 3 valid S6 trials; empty profile with the canvas 37 text, the same with no sessions or only aborted ones; **no mention of aborted sessions anywhere in the profile**; `UNCERTAIN` · `INCOMPLETE` reads "Can't tell: S7 ended first"
 - [ ] The cases of the canvas render from real data: `DEV_UNITY` (many sessions), STATIC only, adaptive without changes, no completed session ("No profile yet.", also when every session aborted), one session; sessions before 0003 show "—", never 0
 - [ ] Counts match `adaptation_decisions` / the endpoint (Vitest on the pure text helpers; Playwright on `DEV_UNITY`)

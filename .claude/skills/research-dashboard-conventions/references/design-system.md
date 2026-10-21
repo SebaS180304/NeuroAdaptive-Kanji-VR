@@ -36,7 +36,8 @@ the URL. Status *Pending* = do not build the screen yet.
 | V1.10 Kanji pre-test | *V1.10 …* row (pick, register, one kanji, complete, states) and its dark row; summary without substitutions (Sebas, Oct 16, 23:57) | Validated | Oct 17 2026, 00:02 |
 | V1.11 Participant list (needs a scope entry from the dev chat) | *V1.11 Participant list (proposed)* and its dark artboard | Validated | Oct 17 2026, 00:20 |
 | F-PROFILE Learner Profile at the top of V1.8 | *V1.8 Participant View · Learner Profile* (Tweaks: `noSessions`, `oneSession`, `staticOnly`, `noChanges`, `manySessions`) and its dark artboard | Validated | Oct 21 2026, 14:14 |
-| F-PROFILE cross-session decision link and V1.5 group filter | `manySessions` Tweak (list open) of the Learner Profile artboard; `groupFilter` Tweak of the V1.5 artboard (canvas version 38) | Validated | Oct 21 2026, 15:18 |
+| F-PROFILE: "See [n] decisions in [k] sessions" and the V1.5 group filter | Learner Profile (`manySessions`) and V1.5 (`groupFilter`) artboards, canvas version 38 | Validated | Oct 21 2026, 18:22 |
+| F-PROFILE: aborted sessions never mentioned (scope line without the "[m] aborted…" clause) | same artboard, canvas version 39 | Validated | Oct 21 2026, 18:22 |
 
 All artboards: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL`.
 
@@ -495,12 +496,17 @@ from `Contenido_UI_F-PROFILE.md` (UI/UX chat); this section only fixes the form.
     no chart, only the sentence.
 - **Only COMPLETED sessions count** (Sebas, Oct 21, 14:24): an ABORTED session
   is in no part of the profile (calibration, adaptations, trend), even if it
-  reached S6 or S7. The scope line says it once for the whole profile: "A
-  summary of [n] completed sessions; [m] aborted session(s) [is/are] not
-  included." (the second clause only when [m] > 0). Block origin lines no
-  longer mention aborted sessions. "Sessions in order" below still lists them.
-- **"See [n] decisions" across sessions** (Oct 21, 14:50; validated by
-  Sebas on Oct 21 2026, 15:18, canvas version 38). A group can hold decisions from several
+  reached S6 or S7. **The profile never mentions aborted sessions** (Sebas, Oct
+  21, 18:19; artboard confirmed 18:22): no count, no clause, no
+  tooltip, also not in the empty profile. A session can abort for technical
+  reasons (30 minutes with no activity), so naming them would read as the
+  participant's fault. The scope line is: "A summary of [n] completed sessions.
+  It describes what happened in windows of trials, not the person, and it
+  doesn't change how the next session starts." Block origin lines don't mention
+  them either. "Sessions in order", below the profile, still lists them with
+  their status. Copy: `Contenido_UI_F-PROFILE.md` §0.1.
+- **"See [n] decisions" across sessions** (Oct 21, 14:50; validated by Sebas
+  Oct 21, 18:22, canvas version 38). A group can hold decisions from several
   sessions, and V1.5 belongs to one session:
   - Group from one session: a plain link, "See [n] decisions", to that
     session's V1.5 filtered by the group.
