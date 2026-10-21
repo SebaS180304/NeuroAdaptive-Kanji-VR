@@ -176,12 +176,35 @@ filter and the cross-session list). Backend untouched.
 
 **Deps:** 9 (+ `gen:api`, done). **Files:** `features/participants/` (ParticipantView, new profile component, TrendChart), tests. **Scope:** M
 
+### [ ] Task 11a-fix: match the canvas artboard (`ParticipantProfile.dc.html`, read 21 Oct)
+Compared after `983aaa7`. **D-F6-11:** where the validated canvas and `design-system.md` differ in form,
+the canvas wins (the web design chat copies the differences into `design-system.md`; development
+does not wait). Copy stays as `Contenido_UI_F-PROFILE.md` (D-F6-6) where the canvas text is older.
+- [ ] Header: chips and the sessions fact in **one** wrapping row, right-aligned (not chips above the fact); fact in `--color-text-muted`; header gap 8 px
+- [ ] Empty profile: keep the scope line ("A summary of the completed sessions. …") and put "No profile computed" in the meta slot
+- [ ] Usual performance table: "Latest session" and range columns **right-aligned**, 16 px left padding; compact rows (5 px padding, not 40 px); "Typical response time" row 8 px top padding
+- [ ] Fallback mark: tooltip names the short type ("Too few T3 trials in practice; …"), and gets an `aria-label`
+- [ ] Adaptations panel: padding 20/24 px; groups as an `<ol>`, each row with a 1 px **top** rule and 12 px vertical padding
+- [ ] Links: "See [n] decisions" underlined, weight 500; the disclosure uses a 12 px stroke chevron (SVG), not ▾
+- [ ] Decision list: full width of the group row, under the badges, on `--color-explain-bg`, padding 8/12 px; the date in muted text, "Session 3 (2026-10-16)"
+- [ ] "Show [n] more groups": transparent background
+- [ ] Empty texts (STATIC only, no changes): 12 px top padding and a top rule; the "See [d] decisions" link **below** the sentence, not beside it
+- [ ] Badge tooltip: "POSITIVE, RESOLVED" (comma, no count), not "POSITIVE · RESOLVED 1"
+- [ ] Across sessions: 16 px top padding, 8 px gap; a compact chart (~124 px, no x-axis title); the legend row ends with "Completed sessions only, numbered as in the table."; point tooltip "Session 4, Static, set A, 14 of 20 correct"
+- [ ] Below the profile: a "Pre-test and kanji sets" section (title 22/28, 1 px top rule, columns 1–10) with the lead sentence and the Pre-test / Notes list; "Kanji replaced by the pre-test" in columns 11–16 with an 18/24 title, 1 px top rule, and no intro sentence
+- [ ] STATIC-only text by number of completed sessions (UI/UX, 21 Oct; `Contenido_UI_F-PROFILE.md` §5, row "Solo STATIC"). With 1 or 2 sessions "Across sessions" says there is no trend yet, so "the trend" is not named:
+  - 1: "No adaptations: the only session so far was STATIC, and STATIC never adapts. Usual performance comes from this session."
+  - 2: "No adaptations: both sessions so far were STATIC, and STATIC never adapts. Usual performance and the results across sessions come from them."
+  - ≥ 3: the current text ("all {n} sessions so far were STATIC … the trend come from these sessions.")
+  - Change `staticOnly()` in `profileText.ts` and its tests: `profileText.test.ts` (the 2-session case expected "all 2 sessions") and `ParticipantView.test.tsx` (the STATIC-only case, 2 sessions)
+- [ ] Not changed on purpose: dates stay in the portal's format (`formatDate`, "2026-10-21"), the canvas shows illustrative "Oct 21 2026"; copy from the 21 Oct document wins over older canvas text ("From practice (S6) of {n} completed sessions", "From {b} completed adaptive session(s)", "Can't tell: S7 ended first"); the "Not recorded" badge stays (real data has it, the canvas has no such case)
+
 ### [ ] Task 11b: Frontend: cross-session decisions and the V1.5 group filter (Fri 23 if time, else week of 26 Oct)
 - [ ] "See [n] decisions in [k] sessions" disclosure list (canvas 38), newest first, "Session [#] ([date])"
 - [ ] V1.5 `?group=<key>`: notice, "Back to the profile", "Show all decisions"; reload and back keep it
 - [ ] V1.5 and V1.6: cause "Impulsive" reads "Quick errors"
 - [ ] Verified with the Thu 22 participant (one session); F-PROFILE §5 closed
-- [ ] "No adaptations: the only session so far was STATIC…" (one STATIC session) is not in the copy: confirm with the UI/UX chat
+- [x] "No adaptations: the only session so far was STATIC…" (one STATIC session): confirmed by UI/UX on 21 Oct without "the trend", plus a 2-session text; built in Task 11a-fix
 
 **Deps:** 11a. Not needed for M3 (criterion 4b is met by 11a).
 
