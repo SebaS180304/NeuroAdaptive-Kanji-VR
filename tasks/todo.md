@@ -151,10 +151,10 @@ participant a row. Errors are logged and never fail the PATCH or stop the sweep 
 
 **Verify:** `pytest tests/test_learner_profile.py` (endpoint tests live with the profile's). `npm run gen:api` waits for a backend restart (Task 11). **Deps:** 7. **Files:** `routes/research.py`, `schemas/research.py`, skill `data-contract.md`, test. **Scope:** S
 
-### [ ] Task 10: D-F6-1 test: the profile does not change how a session starts
+### [x] Task 10: D-F6-1 test: the profile does not change how a session starts
 **Acceptance:**
-- [ ] Two pre-tested participants, one with a stored profile (with an `OVERLOADED` → LAL HIGH history) and one without: `POST /sessions` gives the same fields (condition, kanji set and items, no level fields), and `SessionAdaptationState` enters S7 with `HOME_LEVEL` for both
-- [ ] A comment in the test cites D-F6-1 ("until after the pilot")
+- [x] Two pre-tested participants, one with a stored profile (with an `OVERLOADED` → LAL HIGH history) and one without: `POST /sessions` gives the same fields (condition, kanji set and items, no level fields), and `SessionAdaptationState` enters S7 with `HOME_LEVEL` for both
+- [x] A comment in the test cites D-F6-1 ("until after the pilot")
 
 **Verify:** pytest. **Deps:** 6, 8. **Files:** `tests/test_learner_profile.py`. **Scope:** XS
 

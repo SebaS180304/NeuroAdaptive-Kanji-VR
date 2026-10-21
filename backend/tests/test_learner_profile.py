@@ -265,3 +265,46 @@ async def test_profile_endpoint_matches_the_stored_json() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         body = (await client.get(f"/research/participants/{rows[0]['pid']}/profile")).json()
     assert body["profile"] == rows[0]["profile"]
+
+
+# --- D-F6-1 (Task 10) ------------------------------------------------------------
+
+from app.adaptation.rules import HOME_LEVEL  # noqa: E402
+from app.api.routes import websocket  # noqa: E402
+
+
+@pytest.mark.asyncio
+async def test_the_profile_never_changes_how_a_session_starts(client, pretested) -> None:
+    """D-F6-1 (Plan_Fase6 §4): the profile records and summarises; it does not set the
+    starting levels "until after the pilot", or STATIC and adaptive would stop starting
+    alike. A participant whose profile says raising assistance helped starts the same as
+    one with no profile at all."""
+    with_profile = await pretested("TEST_PROFILE")
+    without = await pretested("TEST_PROFILE_NONE")
+    history = {"calibrations": [], "trend": [], "adaptations": [{
+        "key": "OVERLOADED.NONE.LAL.UP", "learner_state": "OVERLOADED", "cause": None, "dimension": "LAL",
+        "direction": "UP", "count": 3, "outcomes": {"POSITIVE": 3},
+        "outcome_reasons": {"POSITIVE": {"RESOLVED": 3}}, "decisions": {}, "last_decided_at": None}]}
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("INSERT INTO learner_profiles (participant_id, profile) VALUES (:p, CAST(:j AS jsonb))"),
+                         {"p": with_profile, "j": json.dumps(history)})
+        await db.commit()
+
+    started = {}
+    for pid in (with_profile, without):
+        resp = await client.post("/sessions", json={"participant_id": pid, "condition": "BEHAVIOR_ADAPTIVE",
+                                                    "assigned_kanji_set": "A"})
+        assert resp.status_code == 201
+        body = resp.json()
+        session_id = uuid.UUID(body["id"])
+        async with AsyncSessionLocal() as db:
+            await websocket._load_adaptation(db, session_id, "BEHAVIOR_ADAPTIVE")
+        state = websocket._adaptation.pop(session_id)
+        state.feed("STATE_ENTERED", {"state": "S7_EXPERIMENTAL_RETRIEVAL", "session_elapsed_ms": 1000})
+        started[pid] = ({k: v for k, v in body.items()
+                         if k not in ("id", "participant_id", "created_at", "session_clock_started_at")},
+                        (state.engine.esl, state.engine.lal))
+
+    assert started[with_profile] == started[without]
+    assert started[with_profile][1] == (HOME_LEVEL, HOME_LEVEL)
+    assert not any("level" in k or k in ("esl", "lal") for k in started[with_profile][0])
