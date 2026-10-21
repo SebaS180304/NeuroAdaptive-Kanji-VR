@@ -92,9 +92,10 @@ a phase test with a participant with no Japanese, and the evidence and tags.
     in its own DB session, without delaying the response. A late S9 on an `ABORTED`
     session keeps it `ABORTED`: no trigger.
   - `ABORTED`: only `abort_stale_sessions()` (migration 0005) sets it, and the SQL
-    function returns a count, not ids. `services/stale_sessions.py` takes `now()` before
-    the call and afterwards computes every participant with an `ABORTED` session whose
-    `updated_at` is at or after it. 0005 stays as it is.
+    function returns a count, not ids. In the same transaction, `services/stale_sessions.py`
+    reads the participants of the `ABORTED` sessions with `updated_at = now()` (the
+    function sets that, and `now()` is fixed per transaction: exactly the sessions it just
+    aborted), commits, then computes them. 0005 stays as it is.
   - Why compute on an abort when the aborted session does not count: the participant
     gets a row even when every session aborted (criterion 4: "each participant with
     sessions has a profile"), with empty parts.

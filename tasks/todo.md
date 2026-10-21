@@ -128,19 +128,19 @@ per-session ids, subtype, `NO_CHANGE` and trend fields listed in `plan.md`).
 **Verify:** `pytest tests/test_learner_profile.py`; the CLI in the backend container.
 **Deps:** 6. **Files:** `app/adaptation/learner_profile.py`, `tests/test_learner_profile.py`. **Scope:** M
 
-### [ ] Task 8: Compute when the status becomes `COMPLETED` or `ABORTED`
+### [x] Task 8: Compute when the status becomes `COMPLETED` or `ABORTED`
 **Description:** (D-F6-3, PM review of 20 Oct.) `COMPLETED`: `update_session_state` queues
 `compute` with `BackgroundTasks`, so it runs after `get_db` commits. `ABORTED`:
-`services/stale_sessions.py` takes `now()` before `abort_stale_sessions()` and then
-computes each participant with an `ABORTED` session updated at or after it (0005
+`services/stale_sessions.py` reads, in the same transaction, the participants of the
+sessions it just aborted (`updated_at = now()`) and computes them after the commit (0005
 unchanged). The aborted session is still left out of the profile; the abort gives the
 participant a row. Errors are logged and never fail the PATCH or stop the sweep loop.
 
 **Acceptance:**
-- [ ] PATCH to S9 → the participant's row includes the session (pytest)
-- [ ] A session swept to `ABORTED` → the participant has a row, and the session is in no part (pytest, with `abort_stale_sessions(interval '0')` on a test session)
-- [ ] A late S9 on an `ABORTED` session → no trigger, the session is not in the row
-- [ ] A forced error in `compute` → the PATCH still returns 200 with the state saved; the sweep still returns its count
+- [x] PATCH to S9 → the participant's row includes the session (pytest)
+- [x] A session swept to `ABORTED` → the participant has a row, and the session is in no part (pytest, with `abort_stale_sessions(interval '0')` on a test session)
+- [x] A late S9 on an `ABORTED` session → no trigger, the session is not in the row
+- [x] A forced error in `compute` → the PATCH still returns 200 with the state saved; the sweep still returns its count
 
 **Verify:** pytest. **Deps:** 7. **Files:** `routes/sessions.py`, `services/stale_sessions.py`, tests. **Scope:** S
 

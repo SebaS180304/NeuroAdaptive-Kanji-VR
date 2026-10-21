@@ -10,10 +10,11 @@ reproducibility and traceability.").
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adaptation import learner_profile
 from app.db.session import get_db
 from app.models.participant import Participant
 from app.models.pretest import KanjiSubstitution
@@ -121,7 +122,8 @@ def _status_for(state: GameFlowState) -> SessionStatus:
 
 @router.patch("/{session_id}/state", response_model=SessionRead)
 async def update_session_state(
-    session_id: uuid.UUID, payload: SessionStateUpdate, db: AsyncSession = Depends(get_db)
+    session_id: uuid.UUID, payload: SessionStateUpdate, background: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> SessionRead:
     session = await db.get(ExperimentSession, session_id)
     if session is None:
@@ -136,6 +138,8 @@ async def update_session_state(
         session.status = _status_for(payload.new_state)
         if session.status == SessionStatus.COMPLETED and session.completed_at is None:
             session.completed_at = now_utc()
+            # Runs after get_db commits (D-F6-3); a failure is logged, never returned.
+            background.add_task(learner_profile.refresh, [session.participant_id])
 
     await db.flush()
     await db.refresh(session)

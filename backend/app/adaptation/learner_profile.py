@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import sys
 from collections import Counter
 from typing import Any
@@ -40,6 +41,8 @@ from app.adaptation.profile import MIN_TRIALS_PER_TYPE, build_profile, profile_t
 from app.adaptation.trials import S7_STATE, build_trials
 
 VERSION = "v1"
+
+logger = logging.getLogger(__name__)
 
 _SESSIONS = text("""
 SELECT s.id::text AS session_id, s.condition::text AS condition, s.assigned_kanji_set AS kanji_set,
@@ -142,6 +145,23 @@ async def compute(db: AsyncSession, participant_id: str) -> None:
     await db.execute(_UPSERT, {"pid": participant_id, "version": VERSION,
                                "session_ids": session_ids,
                                "profile": json.dumps(profile)})
+
+
+async def refresh(participant_ids) -> None:
+    """Recompute after a session completes or aborts, in its own DB session.
+
+    A failure is logged and never raised: the PATCH or the sweep that triggered it
+    must not fail for a derived table; ``--all`` rebuilds whatever was missed.
+    """
+    from app.db.base import AsyncSessionLocal
+
+    for pid in participant_ids:
+        try:
+            async with AsyncSessionLocal() as db:
+                await compute(db, str(pid))
+                await db.commit()
+        except Exception:
+            logger.exception("learner profile of %s not computed", pid)
 
 
 async def differences(db: AsyncSession, participant_id: str) -> list[str]:

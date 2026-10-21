@@ -163,3 +163,59 @@ async def test_check_finds_no_difference_right_after_a_rebuild(pretested) -> Non
         await db.execute(text("UPDATE learner_profiles SET profile = '{}' WHERE participant_id = :pid"), {"pid": pid})
         await db.commit()
         assert await learner_profile.differences(db, pid) != []
+
+
+# --- triggers (Task 8) -----------------------------------------------------------
+
+from app.services.stale_sessions import abort_stale_sessions  # noqa: E402
+
+
+async def _stored(pid: str) -> list[dict]:
+    return await _rows("SELECT session_ids FROM learner_profiles WHERE participant_id = :pid", pid=pid)
+
+
+@pytest.mark.asyncio
+async def test_reaching_s9_computes_the_profile(client, pretested) -> None:
+    pid = await pretested("TEST_PROFILE")
+    sid = await _session(client, pid, "STATIC", "S8_IMMEDIATE_ASSESSMENT")
+    assert await _stored(pid) == []
+
+    await client.patch(f"/sessions/{sid}/state", json={"new_state": "S9_SESSION_SUMMARY"})
+    assert [str(s) for s in (await _stored(pid))[0]["session_ids"]] == [sid]
+
+
+@pytest.mark.asyncio
+async def test_an_abort_by_the_sweep_gives_a_row_without_the_session(client, pretested) -> None:
+    pid = await pretested("TEST_PROFILE")
+    sid = await _session(client, pid, "STATIC", "S5_STANDARDIZED_LEARNING")
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("UPDATE experiment_sessions SET updated_at = now() - interval '31 minutes' "
+                              "WHERE id = :s"), {"s": sid})
+        await db.commit()
+
+    assert await abort_stale_sessions() >= 1
+    stored = await _stored(pid)
+    assert len(stored) == 1 and stored[0]["session_ids"] == []
+
+    # A late S9 keeps it ABORTED and does not bring it into the profile.
+    await client.patch(f"/sessions/{sid}/state", json={"new_state": "S9_SESSION_SUMMARY"})
+    assert (await _stored(pid))[0]["session_ids"] == []
+
+
+@pytest.mark.asyncio
+async def test_a_failing_profile_never_fails_the_patch_or_the_sweep(client, pretested, monkeypatch) -> None:
+    async def boom(db, participant_id):
+        raise RuntimeError("forced")
+    monkeypatch.setattr(learner_profile, "compute", boom)
+
+    pid = await pretested("TEST_PROFILE")
+    sid = await _session(client, pid, "STATIC", "S8_IMMEDIATE_ASSESSMENT")
+    resp = await client.patch(f"/sessions/{sid}/state", json={"new_state": "S9_SESSION_SUMMARY"})
+    assert resp.status_code == 200 and resp.json()["status"] == "COMPLETED"
+
+    stale = await _session(client, pid, "STATIC", "S5_STANDARDIZED_LEARNING")
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("UPDATE experiment_sessions SET updated_at = now() - interval '31 minutes' "
+                              "WHERE id = :s"), {"s": stale})
+        await db.commit()
+    assert await abort_stale_sessions() >= 1

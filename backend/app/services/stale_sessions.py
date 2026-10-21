@@ -12,6 +12,7 @@ import logging
 
 from sqlalchemy import text
 
+from app.adaptation import learner_profile
 from app.db.base import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,13 @@ CHECK_EVERY_S = 300
 async def abort_stale_sessions() -> int:
     async with AsyncSessionLocal() as db:
         n = (await db.execute(text("SELECT abort_stale_sessions()"))).scalar_one()
+        # The function sets updated_at = now(), the same instant for the whole transaction:
+        # exactly the sessions it just aborted. Their participants get their profile (D-F6-3).
+        aborted = (await db.execute(text(
+            "SELECT DISTINCT participant_id FROM experiment_sessions "
+            "WHERE status = 'ABORTED' AND updated_at = now()"))).scalars().all() if n else []
         await db.commit()
+    await learner_profile.refresh(aborted)
     if n:
         logger.info("aborted %d abandoned session(s)", n)
     return n
