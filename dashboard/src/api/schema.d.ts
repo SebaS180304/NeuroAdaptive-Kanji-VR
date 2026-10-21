@@ -198,6 +198,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/participants/{participant_id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Learner Profile
+         * @description The stored Learner Profile v1 (F-PROFILE). Read only: it is computed when a session
+         *     completes or aborts (app/adaptation/learner_profile.py), never here.
+         */
+        get: operations["get_learner_profile_research_participants__participant_id__profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/quality": {
         parameters: {
             query?: never;
@@ -435,6 +456,33 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * LearnerProfile
+         * @description The stored Learner Profile v1 (migration 0007). No row yet: profile is None.
+         */
+        LearnerProfile: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** Profile Version */
+            profile_version: string | null;
+            /** Computed At */
+            computed_at: string | null;
+            /** Session Ids */
+            session_ids: string[];
+            profile: components["schemas"]["LearnerProfileData"] | null;
+        };
+        /** LearnerProfileData */
+        LearnerProfileData: {
+            /** Calibrations */
+            calibrations: components["schemas"]["ProfileCalibration"][];
+            /** Adaptations */
+            adaptations: components["schemas"]["ProfileAdaptationGroup"][];
+            /** Trend */
+            trend: components["schemas"]["ProfileTrendPoint"][];
+        };
         /** ParticipantCreate */
         ParticipantCreate: {
             /** External Code */
@@ -656,6 +704,105 @@ export interface components {
             original: string;
             /** Substitute */
             substitute: string | null;
+        };
+        /**
+         * ProfileAdaptationGroup
+         * @description Changes of completed sessions with the same state, cause, dimension and direction.
+         */
+        ProfileAdaptationGroup: {
+            /** Key */
+            key: string;
+            /** Learner State */
+            learner_state: string;
+            /** Cause */
+            cause: string | null;
+            /** Dimension */
+            dimension: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "UP" | "DOWN";
+            /** Count */
+            count: number;
+            /** Outcomes */
+            outcomes: {
+                [key: string]: number;
+            };
+            /** Outcome Reasons */
+            outcome_reasons: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
+            /** Decisions */
+            decisions: {
+                [key: string]: string[];
+            };
+            /** Last Decided At */
+            last_decided_at: string | null;
+        };
+        /**
+         * ProfileCalibration
+         * @description S6 of one completed session, as the estimator builds it (S6Profile.as_dict()).
+         */
+        ProfileCalibration: {
+            /** Session Id */
+            session_id: string;
+            /** Rt Ref */
+            rt_ref: {
+                [key: string]: number;
+            };
+            /** Rt Ref Global */
+            rt_ref_global: number | null;
+            /** Rt Spread */
+            rt_spread: number;
+            /** Acc Ref */
+            acc_ref: number | null;
+            /** Idle Eff Ref */
+            idle_eff_ref: number | null;
+            /** Away Ref Ms */
+            away_ref_ms: number;
+            /** Env Dwell Ref Ms */
+            env_dwell_ref_ms: number;
+            /** Orienting Rate Ref */
+            orienting_rate_ref: number | null;
+            /** N Trials */
+            n_trials: number;
+            /** N Valid Rt */
+            n_valid_rt: number;
+            /** Reliability */
+            reliability: number;
+            /** Correct */
+            correct: number;
+            /** N */
+            n: number;
+            /** Fallback Types */
+            fallback_types: string[];
+        };
+        /**
+         * ProfileTrendPoint
+         * @description One completed session, oldest first.
+         */
+        ProfileTrendPoint: {
+            /** Session Id */
+            session_id: string;
+            /** Condition */
+            condition: string;
+            /** Kanji Set */
+            kanji_set: string | null;
+            /** Created At */
+            created_at: string;
+            /** S7 Trials */
+            s7_trials: number;
+            /** S7 Correct */
+            s7_correct: number;
+            /** S7 Mean Rt Ms */
+            s7_mean_rt_ms: number | null;
+            /** No Change */
+            no_change: number | null;
+            /** Decisions Recorded */
+            decisions_recorded: boolean | null;
         };
         /** QualityCheck */
         QualityCheck: {
@@ -1671,6 +1818,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchParticipantDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_learner_profile_research_participants__participant_id__profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnerProfile"];
                 };
             };
             /** @description Validation Error */
