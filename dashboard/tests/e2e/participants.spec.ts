@@ -25,24 +25,22 @@ test('keyboard reaches the filters, then each participant code, in order', async
   await expect(page).toHaveURL(/\/participants\/[0-9a-f-]{36}$/)
 })
 
-// V1.8 on the participant with the most sessions: every session is a row, in order, and
-// only the completed ones are trend points, ticked by their row number.
-test('the Participant View lists every session and draws only the completed ones', async ({ page, request }) => {
+// V1.8 on the participant with the most sessions: every session is a row, in order; the
+// Learner Profile's chart draws only the completed ones, ticked by their row number (F-PROFILE).
+test('the Participant View lists every session and the profile draws only the completed ones', async ({ page, request }) => {
   type Row = { id: string; session_count: number }
   type Session = { session_id: string; status: string; accuracy: number | null }
+  type Group = { count: number; decisions: Record<string, string[]> }
+  type Point = { session_id: string; s7_correct: number; s7_trials: number }
   const rows = (await (await request.get('/api/research/participants')).json()) as Row[]
   const p = rows.reduce((a, b) => (b.session_count > a.session_count ? b : a))
   const detail = (await (await request.get(`/api/research/participants/${p.id}`)).json()) as { sessions: Session[] }
+  const profile = (await (await request.get(`/api/research/participants/${p.id}/profile`)).json()) as
+    { profile: { adaptations: Group[]; trend: Point[] } | null }
 
   await page.goto(`/participants/${p.id}`)
   const table = page.getByRole('table', { name: 'Sessions in order' })
   await expect(table.locator('tbody tr')).toHaveCount(detail.sessions.length)
-  const points = detail.sessions
-    .map((s, i) => [i + 1, s] as const)
-    .filter(([, s]) => s.status === 'COMPLETED' && s.accuracy !== null)
-    .map(([n, s]) => `${n} ${(s.accuracy! * 100).toFixed(1)} %`)
-  await expect(page.getByRole('img', { name: /^Accuracy per completed session/ }))
-    .toHaveAttribute('aria-label', `Accuracy per completed session: ${points.join(', ')}`)
 
   // Each row reads the Session View's own accuracy.
   for (const [i, s] of detail.sessions.slice(0, 3).entries()) {
@@ -51,8 +49,25 @@ test('the Participant View lists every session and draws only the completed ones
     await expect(cell).toHaveText(summary.accuracy === null ? '—' : `${(summary.accuracy * 100).toFixed(1)} %`)
   }
 
+  test.skip(!profile.profile || profile.profile.trend.length < 2, 'needs a profile with 2 completed sessions')
+  const number = new Map(detail.sessions.map((s, i) => [s.session_id, i + 1]))
+  const points = profile.profile!.trend.map((t) => `${number.get(t.session_id)} ${t.s7_correct} of ${t.s7_trials}`)
+  await expect(page.getByRole('img', { name: /^Correct in S7 per completed session/ }))
+    .toHaveAttribute('aria-label', `Correct in S7 per completed session: ${points.join(', ')}`)
+  const completed = detail.sessions.filter((s) => s.status === 'COMPLETED').length
+  expect(points).toHaveLength(completed)
+
+  // The groups on screen are the endpoint's, with their counts (at most 3 before "Show more").
+  const region = page.getByRole('region', { name: 'What followed each adaptation' })
+  for (const g of profile.profile!.adaptations.slice(0, 3)) {
+    const k = Object.keys(g.decisions).length
+    const name = k === 1 ? `See ${g.count} decision${g.count === 1 ? '' : 's'}` : `See ${g.count} decisions in ${k} sessions`
+    await expect(region.getByText(name, { exact: false }).first()).toBeVisible()
+  }
+  await expect(page.getByRole('region', { name: 'Learner Profile' })).not.toContainText(/abort/i)
+
   // Keyboard: the measure toggle.
-  await page.getByRole('button', { name: 'Accuracy' }).focus()
+  await page.getByRole('button', { name: 'Correct in S7' }).focus()
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: 'Response time' })).toBeFocused()
   await page.keyboard.press('Enter')

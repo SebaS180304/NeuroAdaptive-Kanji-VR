@@ -15,12 +15,13 @@ const CHIP: Record<string, Chip> = {
 }
 const NOT_RECORDED: Chip = { box: 'border border-dashed border-(--color-border-strong) text-(--color-text-muted)', mark: '', shape: 'none', label: 'Not recorded' }
 
-export function OutcomeChip({ outcome }: { outcome: string | null }) {
+/** label and title replace the enum's words, e.g. the Learner Profile's "Recovered after: 2". */
+export function OutcomeChip({ outcome, label, title }: { outcome: string | null; label?: string; title?: string }) {
   const c = (outcome && CHIP[outcome]) || NOT_RECORDED
   return (
-    <span className={`type-caption inline-flex h-6 items-center gap-2 rounded-(--radius-pill) px-2.5 font-medium whitespace-nowrap ${c.box}`}>
+    <span title={title} className={`type-caption inline-flex h-6 items-center gap-2 rounded-(--radius-pill) px-2.5 font-medium whitespace-nowrap ${c.box}`}>
       {c.mark && <span aria-hidden="true" data-shape={c.shape} className={c.mark} style={c.style} />}
-      {c.label}
+      {label ?? c.label}
     </span>
   )
 }

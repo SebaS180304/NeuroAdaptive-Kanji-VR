@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Schemas } from '@/api/client'
@@ -9,6 +9,8 @@ vi.mock('./TrendChart', async (actual) => ({ ...(await actual()), TrendChart: ()
 
 type Detail = Schemas['ResearchParticipantDetail']
 type Row = Detail['sessions'][number]
+type Profile = Schemas['LearnerProfile']
+type Group = Schemas['ProfileAdaptationGroup']
 
 const session: Row = {
   session_id: '', participant_id: 'p1', external_code: 'P01', condition: 'STATIC', status: 'COMPLETED',
@@ -34,9 +36,45 @@ const DONE: Detail = {
   ],
 }
 
-function show(detail: Detail) {
-  mockApi({ [`GET /api/research/participants/${detail.id}`]: () => json(detail) })
+const A = 'aaaaaaaa-0000-0000-0000-000000000001'
+const C = 'cccccccc-0000-0000-0000-000000000003'
+const cal = (session_id: string, correct: number) => ({
+  session_id, rt_ref: { T1_MEANING_TO_KANJI: 2300, T2_KANJI_TO_MEANING: 1500, T3_KANJI_TO_READING: 2100 },
+  rt_ref_global: 2049, rt_spread: 0.2, acc_ref: correct / 8, idle_eff_ref: null, away_ref_ms: 412, env_dwell_ref_ms: 180,
+  orienting_rate_ref: null, n_trials: 8, n_valid_rt: 8, reliability: 1, correct, n: 8,
+  fallback_types: session_id === C ? ['T2_KANJI_TO_MEANING'] : [],
+})
+const trend = (session_id: string, condition: Row['condition'], s7_correct: number, created_at: string) => ({
+  session_id, condition, kanji_set: 'A', created_at, s7_trials: 20, s7_correct, s7_mean_rt_ms: 2400,
+  no_change: condition === 'STATIC' ? null : 18, decisions_recorded: condition === 'STATIC' ? null : true,
+})
+const RAISED: Group = {
+  key: 'OVERLOADED.NONE.LAL.UP', learner_state: 'OVERLOADED', cause: null, dimension: 'LAL', direction: 'UP', count: 1,
+  outcomes: { POSITIVE: 1 }, outcome_reasons: { POSITIVE: { RESOLVED: 1 } }, decisions: { [C]: ['S7-006'] },
+  last_decided_at: '2026-10-16T05:10:00+00:00',
+}
+const PROFILE: Profile = {
+  participant_id: 'p1', profile_version: 'v1', computed_at: '2026-10-16T06:00:00Z', session_ids: [A, C],
+  profile: {
+    calibrations: [cal(A, 6), cal(C, 7)],
+    adaptations: [RAISED],
+    trend: [trend(A, 'STATIC', 15, '2026-10-10T05:00:00Z'), trend(C, 'BEHAVIOR_ADAPTIVE', 17, '2026-10-16T05:00:00Z')],
+  },
+}
+const EMPTY: Profile = { participant_id: 'p1', profile_version: null, computed_at: null, session_ids: [], profile: null }
+
+function show(detail: Detail, profile: Profile = PROFILE) {
+  mockApi({
+    [`GET /api/research/participants/${detail.id}`]: () => json(detail),
+    [`GET /api/research/participants/${detail.id}/profile`]: () => json(profile),
+  })
   renderApp(`/participants/${detail.id}`)
+}
+
+async function learnerProfile() {
+  const region = await screen.findByRole('region', { name: 'Learner Profile' })
+  await waitFor(() => expect(within(region).queryByText('Loading the profile…')).not.toBeInTheDocument())
+  return region
 }
 
 const facts = () => screen.findByRole('complementary', { name: 'Participant facts' })
@@ -50,8 +88,11 @@ describe('participant view (V1.8)', () => {
     )).toBeInTheDocument()
     const f = await facts()
     expect(f).toHaveTextContent('Completed 2026-10-12')
-    expect(f).toHaveTextContent('2 completed, 1 aborted')
-    expect(f).toHaveTextContent('Static, Behavior-adaptive')
+    // The sessions fact and the conditions sit in the header, right of the title (F-PROFILE).
+    const header = screen.getByLabelText('Sessions and conditions')
+    expect(header).toHaveTextContent('2 completed, 1 aborted')
+    expect(header).toHaveTextContent('Static')
+    expect(header).toHaveTextContent('Behavior-adaptive')
     expect(f).toHaveTextContent('Previous Japanese study reported')
     expect(f).toHaveTextContent('Kanji kept with no substitute')
     expect(f).toHaveTextContent('1 session recorded before the pre-test')
@@ -76,32 +117,118 @@ describe('participant view (V1.8)', () => {
     const t = await screen.findByRole('table', { name: 'Kanji replaced by the pre-test' })
     expect(within(t).getByRole('row', { name: /山/ })).toHaveTextContent('A山川')
     expect(within(t).getByRole('row', { name: /水/ })).toHaveTextContent('No valid substitute: kept and flagged')
-    expect(screen.getByText('Learner profile across sessions: available in a later version.')).toBeInTheDocument()
+    expect(screen.queryByText(/available in a later version/)).not.toBeInTheDocument()   // the profile is here now
   })
 
-  it('draws completed sessions only, numbered as in the table, and switches the measure', async () => {
+  it('draws the profile trend: completed sessions numbered as in the table, correct of 20', async () => {
     const user = userEvent.setup()
-    const trend = await screen.findByRole('img', { name: /^Accuracy per completed session/ })
-    expect(trend).toHaveAccessibleName('Accuracy per completed session: 1 80.0 %, 3 90.0 %')
-    expect(screen.getByText('Completed sessions only; aborted ones are listed in the table below.')).toBeInTheDocument()
+    const chart = await screen.findByRole('img', { name: /^Correct in S7 per completed session/ })
+    expect(chart).toHaveAccessibleName('Correct in S7 per completed session: 1 15 of 20, 3 17 of 20')
     await user.click(screen.getByRole('button', { name: 'Response time' }))
     expect(screen.getByRole('button', { name: 'Response time' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('img', { name: /^Mean response time per completed session/ })).toHaveAccessibleName(
-      'Mean response time per completed session: 1 1834 ms, 3 1834 ms')
+    expect(screen.getByRole('img', { name: /^Mean response time in S7/ })).toHaveAccessibleName(
+      'Mean response time in S7 per completed session: 1 2400 ms, 3 2400 ms')
+    expect(screen.getAllByRole('img', { name: /per completed session/ })).toHaveLength(1)   // one chart on the page
+  })
+})
+
+describe('learner profile (F-PROFILE)', () => {
+  it('comes first, says what it covers and never mentions aborted sessions', async () => {
+    show(DONE)
+    const p = await learnerProfile()
+    expect(within(p).getByRole('heading', { name: 'Learner Profile' })).toBeInTheDocument()
+    expect(p).toHaveTextContent('A summary of 2 completed sessions. It describes what happened in windows of trials')
+    expect(p).toHaveTextContent('Updated 2026-10-16, profile v1')
+    expect(p.textContent).not.toMatch(/abort/i)
+  })
+
+  it('answers the three questions with the latest practice, the groups and the trend', async () => {
+    show(DONE)
+    const p = await learnerProfile()
+    expect(p).toHaveTextContent('In practice (S6) of the latest session, P01 answered 7 of 8 correctly, taking about 2.0 s per answer')
+    expect(within(p).getByRole('row', { name: /Correct in practice/ })).toHaveTextContent('7 of 86–7 of 8')
+    expect(within(p).getByTitle('Too few Kanji to meaning (T2) trials in practice; this uses the overall median.')).toBeInTheDocument()
+    expect(p).toHaveTextContent('From practice (S6) of 2 completed sessions: 1 STATIC, 1 adaptive.')
+    expect(p).toHaveTextContent('When answers got slower and less accurate than in practice (estimated overload), assistance (LAL) was raised 1 time.')
+    expect(within(p).getByText('Too few to tell')).toBeInTheDocument()
+    expect(within(p).getByTitle('POSITIVE · RESOLVED 1')).toHaveTextContent('Recovered after: 1')
+    expect(within(p).getByRole('link', { name: 'See 1 decision' })).toHaveAttribute('href', `/sessions/${C}?tab=adaptations`)
+    expect(p).toHaveTextContent('From 1 completed adaptive session. STATIC sessions never adapt')
+    expect(p).toHaveTextContent('Two sessions so far: 15 then 17 correct in S7, 2.4 then 2.4 s per answer. Too few for a trend.')
+  })
+
+  it('lists the sessions of a group that spans several, newest first', async () => {
+    const user = userEvent.setup()
+    const both: Group = { ...RAISED, count: 3, outcomes: { POSITIVE: 3 }, outcome_reasons: { POSITIVE: { RESOLVED: 3 } },
+      decisions: { [A]: ['S7-004'], [C]: ['S7-006', 'S7-012'] } }
+    show(DONE, { ...PROFILE, profile: { ...PROFILE.profile!, adaptations: [both] } })
+    const p = await learnerProfile()
+    expect(p).toHaveTextContent('assistance (LAL) was raised 3 times; recovered after 3 of 3.')
+    const button = within(p).getByRole('button', { name: 'See 3 decisions in 2 sessions' })
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+    await user.click(button)
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+    const lines = within(within(p).getByRole('list', { name: 'Decisions by session' })).getAllByRole('listitem')
+    expect(lines.map((l) => l.textContent)).toEqual(['Session 3 (2026-10-16)2 decisions', 'Session 1 (2026-10-10)1 decision'])
+    expect(within(lines[0]!).getByRole('link', { name: '2 decisions' })).toHaveAttribute('href', `/sessions/${C}?tab=adaptations`)
+  })
+
+  it('shows at most 3 groups, the rest behind a button', async () => {
+    const user = userEvent.setup()
+    const groups = ['A', 'B', 'C', 'D'].map((k) => ({ ...RAISED, key: k }))
+    show(DONE, { ...PROFILE, profile: { ...PROFILE.profile!, adaptations: groups } })
+    const p = await learnerProfile()
+    expect(within(p).getAllByRole('link', { name: 'See 1 decision' })).toHaveLength(3)
+    await user.click(within(p).getByRole('button', { name: 'Show 1 more group' }))
+    expect(within(p).getAllByRole('link', { name: 'See 1 decision' })).toHaveLength(4)
+  })
+
+  it('with STATIC sessions only, says adaptations are not expected', async () => {
+    show(DONE, { ...PROFILE, profile: { ...PROFILE.profile!, adaptations: [],
+      trend: PROFILE.profile!.trend.map((t) => ({ ...t, condition: 'STATIC' as const, no_change: null, decisions_recorded: null })) } })
+    expect(await learnerProfile()).toHaveTextContent(
+      'No adaptations: all 2 sessions so far were STATIC, and STATIC never adapts. Usual performance and the trend come from these sessions.')
+  })
+
+  it('with adaptive sessions and no change, says how often the system checked', async () => {
+    show(DONE, { ...PROFILE, profile: { ...PROFILE.profile!, adaptations: [] } })
+    const p = await learnerProfile()
+    expect(p).toHaveTextContent('No adaptations in 1 adaptive session. The system checked 18 times and kept the levels each time.')
+    expect(within(p).getByRole('link', { name: 'See 18 decisions' })).toHaveAttribute('href', `/sessions/${C}?tab=adaptations`)
+  })
+
+  it('marks older sessions with no adaptation record, never as 0', async () => {
+    const old = { ...PROFILE.profile!.trend[1]!, decisions_recorded: false, no_change: 0 }
+    show(DONE, { ...PROFILE, profile: { ...PROFILE.profile!, adaptations: [], trend: [PROFILE.profile!.trend[0]!, old] } })
+    const p = await learnerProfile()
+    expect(within(p).getByTitle(/^Adaptations weren't recorded before 13 Oct/)).toHaveTextContent('1 older session has no adaptation record.')
+    expect(p.textContent).not.toMatch(/checked 0 times/)
+  })
+
+  it('with no completed session: one panel, the same with no row or an empty one', async () => {
+    for (const profile of [EMPTY, { ...PROFILE, session_ids: [], profile: { calibrations: [], adaptations: [], trend: [] } }]) {
+      show(DONE, profile)
+      const p = await learnerProfile()
+      expect(within(p).getByRole('heading', { name: 'No profile yet.' })).toBeInTheDocument()
+      expect(p).toHaveTextContent('P01 has no completed session yet. The profile appears after the first one. Pre-test done on 2026-10-12.')
+      expect(p.textContent).not.toMatch(/abort|failed|incomplete|dropped|didn't finish/i)
+      cleanup()
+    }
   })
 })
 
 describe('participant view, pre-test not complete', () => {
   it('offers the pre-test and says the default set is in use', async () => {
     show({ ...DONE, pretest_status: 'IN_PROGRESS', pretest_answered: 6, pretest_completed_at: null, flagged_count: null,
-      sessions: [], substitutions: [], session_count: 0, conditions: [] })
+      sessions: [], substitutions: [], session_count: 0, conditions: [] }, EMPTY)
     expect(await screen.findByText(
       'The pre-test is in progress (6 kanji answered). No sessions recorded yet.',
     )).toBeInTheDocument()
     const f = await facts()
     expect(f).toHaveTextContent("Not complete. Unity can't start a session yet.")
     expect(within(f).getByRole('link', { name: 'Open the pre-test' })).toHaveAttribute('href', '/pretest')
-    expect(screen.getByText('No completed sessions yet.')).toBeInTheDocument()
+    expect(await learnerProfile()).toHaveTextContent('P01 has no completed session yet. The profile appears after the first one.')
+    expect((await learnerProfile()).textContent).not.toMatch(/Pre-test done/)
   })
 
   it('names a pre-test not started', async () => {

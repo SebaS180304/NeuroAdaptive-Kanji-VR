@@ -158,7 +158,7 @@ participant a row. Errors are logged and never fail the PATCH or stop the sweep 
 
 **Verify:** pytest. **Deps:** 6, 8. **Files:** `tests/test_learner_profile.py`. **Scope:** XS
 
-### [ ] Task 11a: Frontend: the Learner Profile at the top of V1.8 (Wed 21 evening; split by Sebas, 21 Oct)
+### [x] Task 11a: Frontend: the Learner Profile at the top of V1.8 (Wed 21 evening; split by Sebas, 21 Oct)
 **Description:** The profile block of canvas 37: header with the scope line, *Usual performance*,
 *What followed each adaptation* (at most 3 groups, "Show [n] more groups"), *Across sessions*
 replacing the old V1.8 trend chart (one chart, accuracy as correct of 20), and the "No profile
@@ -166,13 +166,13 @@ yet." panel. "See [n] decisions" goes to the session's V1.5 unfiltered for now (
 filter and the cross-session list). Backend untouched.
 
 **Acceptance:**
-- [ ] Load the `research-dashboard-conventions` skill first; copy from `Contenido_UI_F-PROFILE.md` (updated 21 Oct), form from design-system.md "V1.8 Learner Profile (F-PROFILE)"; no new tokens
+- [x] Load the `research-dashboard-conventions` skill first; copy from `Contenido_UI_F-PROFILE.md` (updated 21 Oct), form from design-system.md "V1.8 Learner Profile (F-PROFILE)"; no new tokens
 - [x] design-system.md without the aborted-sessions clause (canvas 39, validated 18:22, copied to the skill 21 Oct)
-- [ ] Adjustments of the 21 Oct copy: global-median mark for a type with < 3 valid S6 trials; empty profile with the canvas 37 text, the same with no sessions or only aborted ones; **no mention of aborted sessions anywhere in the profile**; `UNCERTAIN` · `INCOMPLETE` reads "Can't tell: S7 ended first"
-- [ ] The cases of the canvas render from real data: `DEV_UNITY` (many sessions), STATIC only, adaptive without changes, no completed session ("No profile yet.", also when every session aborted), one session; sessions before 0003 show "—", never 0
-- [ ] Counts match `adaptation_decisions` / the endpoint (Vitest on the pure text helpers; Playwright on `DEV_UNITY`)
-- [ ] No regression before the Thu 22 test: build, Vitest and the full Playwright suite (checkpoint-b, checkpoint-c, pre-test) green; otherwise the profile does not ship and V1.8 stays as it is
-- [ ] Playwright screenshots light and dark; 5-tell audit reported
+- [x] Adjustments of the 21 Oct copy: global-median mark for a type with < 3 valid S6 trials; empty profile with the canvas 37 text, the same with no sessions or only aborted ones; **no mention of aborted sessions anywhere in the profile**; `UNCERTAIN` · `INCOMPLETE` reads "Can't tell: S7 ended first"
+- [x] The cases of the canvas render from real data: `DEV_UNITY` (many sessions), STATIC only, adaptive without changes, no completed session ("No profile yet.", also when every session aborted), one session; sessions before 0003 show "—", never 0
+- [x] Counts match `adaptation_decisions` / the endpoint (Vitest on the pure text helpers; Playwright on `DEV_UNITY`)
+- [x] No regression before the Thu 22 test: build, Vitest 133/133 and Playwright 31/32 green. The one failure, `quality.spec.ts`, fails the same on the last commit without 11a: `/research/quality` takes ~3.7 s and the test waits 5 s while the suite runs in parallel; alone it passes. Finding, not fixed (not part of 11a)
+- [x] Screenshots light and dark (`DEV_UNITY`, STATIC only, no profile) with the repo's Playwright; the Playwright MCP has no Chrome on this machine. 5-tell audit reported
 
 **Deps:** 9 (+ `gen:api`, done). **Files:** `features/participants/` (ParticipantView, new profile component, TrendChart), tests. **Scope:** M
 
@@ -181,6 +181,7 @@ filter and the cross-session list). Backend untouched.
 - [ ] V1.5 `?group=<key>`: notice, "Back to the profile", "Show all decisions"; reload and back keep it
 - [ ] V1.5 and V1.6: cause "Impulsive" reads "Quick errors"
 - [ ] Verified with the Thu 22 participant (one session); F-PROFILE §5 closed
+- [ ] "No adaptations: the only session so far was STATIC…" (one STATIC session) is not in the copy: confirm with the UI/UX chat
 
 **Deps:** 11a. Not needed for M3 (criterion 4b is met by 11a).
 

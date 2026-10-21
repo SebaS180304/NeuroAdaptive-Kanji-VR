@@ -1,17 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ApiError, getJson, type Schemas } from '@/api/client'
-import { CONDITION_LABEL, ConditionChip, type Condition } from '@/components/ConditionChip'
+import { ConditionChip } from '@/components/ConditionChip'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
 import { sessionStatusText } from '@/components/SessionStatus'
 import { formatDate, formatPercent } from '@/lib/format'
+import { LearnerProfile } from './LearnerProfile'
 import { NoteList, participantNotes } from './notes'
-import { formatMeasure, SHAPE, TrendChart, type Measure, type TrendPoint } from './TrendChart'
 
 // V1.8 Participant View, artboard *V1.8 Participant View* and its dark variant (canvas
-// version 27), with design-system.md "V1.7 and V1.8: cases from real data".
+// version 27), with design-system.md "V1.7 and V1.8: cases from real data". Since F-PROFILE
+// (canvas 37-39) the Learner Profile comes first, under the header; its "Across sessions"
+// replaces the old trend chart, and the sessions fact and conditions sit right of the title.
 
 type Detail = Schemas['ResearchParticipantDetail']
 type Row = Detail['sessions'][number]
@@ -62,7 +63,7 @@ function Facts({ p }: { p: Detail }) {
     ...(before > 0 ? [`${plural(before, 'session', 'sessions')} recorded before the pre-test`] : []),
   ]
   return (
-    <aside aria-label="Participant facts" className="col-span-16 self-end min-[1056px]:col-span-6">
+    <aside aria-label="Participant facts" className="col-span-16 min-[1056px]:col-span-6">
       <dl className="type-body m-0 grid grid-cols-[120px_minmax(0,1fr)] gap-x-4 gap-y-2">
         <dt className="text-(--color-text-muted)">Pre-test</dt>
         {p.pretest_completed_at ? (
@@ -81,84 +82,10 @@ function Facts({ p }: { p: Detail }) {
             </Link>
           </dd>
         )}
-        <dt className="text-(--color-text-muted)">Sessions</dt>
-        <dd className="m-0">{sessionsFact(p.sessions)}</dd>
-        <dt className="text-(--color-text-muted)">Conditions</dt>
-        <dd className="m-0">{p.conditions.length ? p.conditions.map((c) => CONDITION_LABEL[c]).join(', ') : <Missing reason="No sessions yet" />}</dd>
         <dt className="text-(--color-text-muted)">Notes</dt>
         <dd className="m-0">{notes.length ? <NoteList notes={notes} /> : 'None'}</dd>
       </dl>
     </aside>
-  )
-}
-
-const MEASURES: [Measure, string, string][] = [
-  ['accuracy', 'Accuracy', 'Accuracy per completed session'],
-  ['rt', 'Response time', 'Mean response time per completed session'],
-]
-
-// Legend marks drawn as small SVGs, in the chart's shapes.
-function Mark({ c }: { c: Condition }) {
-  const fill = `var(${SHAPE[c].token})`
-  return (
-    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
-      {c === 'STATIC' && <rect x="1" y="1" width="10" height="10" fill={fill} />}
-      {c === 'BEHAVIOR_ADAPTIVE' && <circle cx="6" cy="6" r="5" fill={fill} />}
-      {c === 'MULTIMODAL_ADAPTIVE' && <polygon points="6,0.5 11.5,11 0.5,11" fill={fill} />}
-    </svg>
-  )
-}
-
-function Trend({ p }: { p: Detail }) {
-  const [measure, setMeasure] = useState<Measure>('accuracy')
-  // Only COMPLETED sessions are drawn; n is the row's # in "Sessions in order".
-  const points: TrendPoint[] = p.sessions.flatMap((s, i) => {
-    const value = measure === 'accuracy' ? s.accuracy : s.mean_rt_ms
-    return s.status === 'COMPLETED' && value !== null
-      ? [{ n: i + 1, condition: s.condition, value, date: formatDate(s.created_at), visit: s.visit_number }]
-      : []
-  })
-  const present = (Object.keys(SHAPE) as Condition[]).filter((c) => points.some((pt) => pt.condition === c))
-  const name = MEASURES.find(([m]) => m === measure)![2]
-  return (
-    <section
-      aria-label="Trend across sessions"
-      className="col-span-16 flex flex-col gap-4 rounded-(--radius-panel) border bg-(--color-surface) p-6 min-[1056px]:col-span-10"
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <h2 className="type-title m-0">Across sessions</h2>
-        <div role="group" aria-label="Measure" className="flex gap-2">
-          {MEASURES.map(([m, label]) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={measure === m}
-              onClick={() => setMeasure(m)}
-              className={`type-body h-8 rounded-(--radius-pill) border px-4 ${
-                measure === m
-                  ? 'border-(--color-accent) bg-(--color-accent-tint) font-medium text-(--color-on-accent-tint)'
-                  : 'border-(--color-border-strong) bg-(--color-surface) text-(--color-text)'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {points.length === 0 ? (
-        <p className="type-body m-0 text-(--color-text-muted)">No completed sessions yet.</p>
-      ) : (
-        <div role="img" aria-label={`${name}: ${points.map((pt) => `${pt.n} ${formatMeasure(measure, pt.value)}`).join(', ')}`}>
-          <TrendChart points={points} measure={measure} />
-        </div>
-      )}
-      <div className="type-caption flex flex-wrap gap-6 text-(--color-text-muted)">
-        {present.map((c) => (
-          <span key={c} className="flex items-center gap-2"><Mark c={c} />{CONDITION_LABEL[c]}</span>
-        ))}
-        <span>Completed sessions only; aborted ones are listed in the table below.</span>
-      </div>
-    </section>
   )
 }
 
@@ -202,7 +129,6 @@ function Substitutions({ p }: { p: Detail }) {
           {p.pretest_completed_at ? 'No kanji needed replacing.' : 'Shown once the pre-test is complete.'}
         </p>
       )}
-      <p className="type-caption m-0 text-(--color-text-muted)">Learner profile across sessions: available in a later version.</p>
     </section>
   )
 }
@@ -297,9 +223,15 @@ export function ParticipantView() {
         <h1 className="type-display m-0">
           Participant {data && <span className="font-mono text-[30px] tracking-[-0.6px]">{data.external_code}</span>}
         </h1>
-        {data && <p className="type-lead m-0 max-w-[640px] text-(--color-text-secondary)">{lead(data)}</p>}
       </header>
-      {data && <Facts p={data} />}
+      {data && (
+        <div aria-label="Sessions and conditions" className="type-body col-span-16 flex flex-col gap-2 self-end min-[1056px]:col-span-6 min-[1056px]:items-end">
+          <div className="flex flex-wrap gap-2">
+            {data.conditions.length ? data.conditions.map((c) => <ConditionChip key={c} c={c} />) : <Missing reason="No sessions yet" />}
+          </div>
+          <span className="text-(--color-text-secondary)">{sessionsFact(data.sessions)}</span>
+        </div>
+      )}
 
       {isPending && <LoadingNotice title="Loading the participant…" className="col-span-16" />}
       {notFound && (
@@ -311,7 +243,9 @@ export function ParticipantView() {
 
       {data && (
         <>
-          <Trend p={data} />
+          <LearnerProfile p={data} />
+          <p className="type-lead col-span-16 m-0 max-w-[640px] text-(--color-text-secondary) min-[1056px]:col-span-10">{lead(data)}</p>
+          <Facts p={data} />
           <Substitutions p={data} />
           <SessionsTable sessions={data.sessions} />
         </>

@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router'
 import { getJson, type Schemas } from '@/api/client'
 import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
@@ -48,7 +49,9 @@ type Props = {
 }
 
 export function SessionTables({ sessionId, condition, status, kanjiSet, selected, onSelect }: Props) {
-  const [tab, setTab] = useState<(typeof TABS)[number]>('Trials')
+  // ?tab=adaptations opens the Adaptations tab (the Learner Profile's "See [n] decisions").
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState<(typeof TABS)[number]>(params.get('tab') === 'adaptations' ? 'Adaptations' : 'Trials')
   const [hideTutorial, setHideTutorial] = useState(true)
   const [showNoChange, setShowNoChange] = useState(false)
   const [windowN, setWindowN] = useState(3)

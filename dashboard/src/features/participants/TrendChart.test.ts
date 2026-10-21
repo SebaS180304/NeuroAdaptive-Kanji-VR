@@ -3,7 +3,7 @@ import { rtAxis, trendOption, type TrendPoint } from './TrendChart'
 
 const color = (n: string) => n
 const point = (n: number, condition: TrendPoint['condition'], value: number): TrendPoint =>
-  ({ n, condition, value, date: '2026-10-14', visit: 1 })
+  ({ n, condition, value, date: '2026-10-14', visit: 1, of: 20, set: 'A' })
 
 type Item = { value: number; symbol: string; symbolSize: number; itemStyle: { color: string }; label?: { show: boolean } }
 const series = (o: ReturnType<typeof trendOption>) => (o.series as { data: Item[] }[])[0]!.data
@@ -11,18 +11,20 @@ const ticks = (o: ReturnType<typeof trendOption>) => (o.xAxis as { data: string[
 
 describe('trend chart (design-system.md, V1.8)', () => {
   it('ticks the table numbers and shapes points by condition, the latest labeled', () => {
-    const o = trendOption([point(1, 'STATIC', 0.5), point(2, 'BEHAVIOR_ADAPTIVE', 0.6), point(4, 'MULTIMODAL_ADAPTIVE', 0.7)], 'accuracy', color)
+    const o = trendOption([point(1, 'STATIC', 15), point(2, 'BEHAVIOR_ADAPTIVE', 16), point(4, 'MULTIMODAL_ADAPTIVE', 17)], 'correct', color)
     expect(ticks(o)).toEqual(['1', '2', '4'])
     expect(series(o).map((d) => [d.symbol, d.itemStyle.color])).toEqual([
       ['rect', '--color-condition-static'], ['circle', '--color-condition-behavior'], ['triangle', '--color-condition-multimodal'],
     ])
     expect(series(o).map((d) => !!d.label?.show)).toEqual([false, false, true])
-    expect(o.yAxis).toMatchObject({ min: 0, max: 1, interval: 0.25 })
+    expect(o.yAxis).toMatchObject({ min: 0, max: 20, interval: 5 })   // correct answers of 20, never a percentage
+    const label = (o.yAxis as { axisLabel: { formatter: (v: number) => string } }).axisLabel.formatter
+    expect([0, 5, 20].map(label)).toEqual(['0', '5', '20 of 20'])
   })
 
   it('with more than 12 points: 6 px points and no point labels', () => {
-    const many = Array.from({ length: 13 }, (_, i) => point(i + 1, 'STATIC', 0.5))
-    const d = series(trendOption(many, 'accuracy', color))
+    const many = Array.from({ length: 13 }, (_, i) => point(i + 1, 'STATIC', 15))
+    const d = series(trendOption(many, 'correct', color))
     expect(d.every((p) => p.symbolSize === 6 && !p.label?.show)).toBe(true)
   })
 

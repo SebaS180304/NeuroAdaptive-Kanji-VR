@@ -8,11 +8,12 @@ import { tokenReader } from '@/lib/tokens'
 
 echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
-// V1.8 "Across sessions" (design-system.md, V1.7 and V1.8: cases from real data).
+// "Across sessions" of the Learner Profile (design-system.md, V1.8 rules and F-PROFILE): correct in
+// S7 as answers of 20, never a percentage, or the mean response time.
 
-export type Measure = 'accuracy' | 'rt'
-/** One completed session; n is its # in "Sessions in order". */
-export type TrendPoint = { n: number; condition: Condition; value: number; date: string; visit: number }
+export type Measure = 'correct' | 'rt'
+/** One completed session; n is its # in "Sessions in order"; of is its S7 trial count. */
+export type TrendPoint = { n: number; condition: Condition; value: number; date: string; visit: number; of: number; set: string | null }
 
 // Shape and color, never color alone. No diamond: it belongs to timeline decisions.
 export const SHAPE: Record<Condition, { symbol: string; token: string }> = {
@@ -27,12 +28,13 @@ export function rtAxis(largest: number): { max: number; interval: number } {
   return { max: interval * Math.max(1, Math.ceil(largest / interval)), interval }
 }
 
-export const formatMeasure = (m: Measure, v: number) => (m === 'accuracy' ? `${(v * 100).toFixed(1)} %` : `${Math.round(v)} ms`)
+export const formatMeasure = (m: Measure, v: number, of = 20) => (m === 'correct' ? `${v} of ${of}` : `${Math.round(v)} ms`)
 
 export function trendOption(points: TrendPoint[], measure: Measure, color: (n: string) => string) {
   const many = points.length > 12
   const text = { fontFamily: 'Public Sans', fontSize: 12, color: color('--color-text-muted') }
-  const y = measure === 'accuracy' ? { min: 0, max: 1, interval: 0.25 } : { min: 0, ...rtAxis(Math.max(...points.map((p) => p.value))) }
+  const of = Math.max(...points.map((p) => p.of))
+  const y = measure === 'correct' ? { min: 0, max: of, interval: 5 } : { min: 0, ...rtAxis(Math.max(...points.map((p) => p.value))) }
   return {
     animation: false,
     textStyle: { fontFamily: 'Public Sans' },
@@ -42,7 +44,7 @@ export function trendOption(points: TrendPoint[], measure: Measure, color: (n: s
       formatter: (p: { dataIndex: number }) => {
         const t = points[p.dataIndex]!
         return echarts.format.encodeHTML(
-          `Session ${t.n}, ${t.date}${t.visit > 1 ? `, visit ${t.visit}` : ''}: ${formatMeasure(measure, t.value)}`)
+          `Session ${t.n}, ${t.date}${t.visit > 1 ? `, visit ${t.visit}` : ''}${t.set ? `, set ${t.set}` : ''}: ${formatMeasure(measure, t.value, t.of)}`)
       },
     },
     xAxis: {
@@ -59,7 +61,7 @@ export function trendOption(points: TrendPoint[], measure: Measure, color: (n: s
     yAxis: {
       type: 'value',
       ...y,
-      axisLabel: { ...text, formatter: (v: number) => (measure === 'accuracy' ? `${v * 100} %` : `${v} ms`) },
+      axisLabel: { ...text, formatter: (v: number) => (measure === 'correct' ? (v === of ? `${v} of ${of}` : String(v)) : `${v} ms`) },
       splitLine: { lineStyle: { color: color('--color-border-subtle') } },
     },
     series: [{
