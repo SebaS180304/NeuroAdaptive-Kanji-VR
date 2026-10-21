@@ -1,5 +1,7 @@
 # Design system · v1 (approved Oct 16)
 
+Alineado hasta: D-F6-11 (`Estado_Actual.md`, Oct 21 2026).
+
 > **Status: v1 design COMPLETE.** Tokens approved Oct 16 2026 (light 23:15, dark
 > 23:18). Every screen, V1.1 to V1.11, validated by Oct 17 2026, 00:20 (see the log).
 > Implement these exact values. A screen is built only once its mockup appears as
@@ -38,6 +40,7 @@ the URL. Status *Pending* = do not build the screen yet.
 | F-PROFILE Learner Profile at the top of V1.8 | *V1.8 Participant View · Learner Profile* (Tweaks: `noSessions`, `oneSession`, `staticOnly`, `noChanges`, `manySessions`) and its dark artboard | Validated | Oct 21 2026, 14:14 |
 | F-PROFILE: "See [n] decisions in [k] sessions" and the V1.5 group filter | Learner Profile (`manySessions`) and V1.5 (`groupFilter`) artboards, canvas version 38 | Validated | Oct 21 2026, 18:22 |
 | F-PROFILE: aborted sessions never mentioned (scope line without the "[m] aborted…" clause) | same artboard, canvas version 39 | Validated | Oct 21 2026, 18:22 |
+| F-PROFILE: canvas-only form written here (D-F6-11; the 12 form points of the dev chat's Task 11a-fix) | same artboards, canvas 30, 38 and 39; no new drawing | Recorded, nothing new to validate | Oct 21 2026, 19:40 |
 
 All artboards: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL`.
 
@@ -526,6 +529,59 @@ from `Contenido_UI_F-PROFILE.md` (UI/UX chat); this section only fixes the form.
   filter and restores the intro sentence. The filter lives in the URL
   (e.g. `?group=…`), so reload and back keep it. "Show decisions with no
   change" stays available and applies inside the filter.
+- **Exact form from the validated canvas** (D-F6-11, Oct 21 2026). Where the
+  canvas and this file differed, the canvas wins; these are the values that
+  were only drawn. They supersede the older V1.8 trend-chart rules (axis title,
+  0–100 % axis) for the profile's chart.
+  - *Page header*: breadcrumb and title (1–10) with 8 px between them; the
+    condition chips and the sessions fact share **one** wrapping row at 11–16,
+    right-aligned, aligned to the bottom of the title; the fact in
+    `--color-text-muted`. The main grid on this page uses a 24 px row gap.
+  - *Empty profile*: the profile header stays as in the other states (scope
+    line "A summary of the completed sessions. It describes…"), and the meta
+    slot at 14–16 reads "No profile computed" instead of the date.
+  - *Usual performance table*: header cells 32 px with a 1 px `--color-border`
+    bottom rule; "Latest session" and the range column **right-aligned** with
+    16 px left padding and no wrapping; body rows compact, 5 px vertical
+    padding (indented rows 16 px left), 1 px `--color-border-subtle` rules;
+    the "Typical response time" row has 8 px top padding and none below. The
+    fallback icon carries the tooltip naming the short type ("Too few T3
+    trials in practice; this uses the overall median.") and the same text as
+    its `aria-label`.
+  - *Adaptations panel*: padding 20 px top/bottom, 24 px sides; 12 px gap
+    between title, list and origin lines. Groups are an `<ol>` without
+    bullets; each `<li>` has a 1 px `--color-border-subtle` **top** rule and
+    12 px vertical padding; inside it a two-column grid (sentence, link) with
+    24 px column gap and 8 px row gap.
+  - *Links and disclosure*: "See [n] decisions" is underlined, weight 500,
+    `--color-accent`, no wrap. The disclosure button looks the same (no
+    border, no fill, underlined) and ends in a 12 px stroke chevron (SVG,
+    1.6 px stroke), pointing down when closed and up when open; never "▾".
+  - *Decision list* (open disclosure): spans the full group row, under the
+    badges; `--color-explain-bg`, radius 2 px, padding 8 px / 12 px, 4 px
+    between lines; the date in `--color-text-muted` inside the parentheses,
+    the "[n] decisions" link right-aligned. Dates use the portal's format.
+  - *"Show [n] more groups"*: 32 px outline pill, 1 px `--color-accent`
+    border, **transparent** background, on-accent-tint text, weight 500.
+  - *Empty texts* (STATIC only, no changes): body text with 12 px top padding
+    and a 1 px `--color-border-subtle` top rule; the "See [d] decisions" link
+    goes **below** the sentence, not beside it.
+  - *Badge tooltip*: the enum, then the subtype after a comma, no count:
+    "POSITIVE", "POSITIVE, RESOLVED", "UNCERTAIN, INCOMPLETE".
+  - *Across sessions*: 16 px top padding over the 1 px top rule, 8 px gap.
+    The chart is compact, about 124 px tall (plot about 88 px), with **no
+    x-axis title**; the legend row lists the condition shapes and ends with
+    "Completed sessions only, numbered as in the table." in `caption`. Point
+    tooltip: "Session [#], [condition], set [X], [k] of 20 correct".
+  - *Below the profile*: a "Pre-test and kanji sets" section at 1–10 (1 px
+    `--color-border` top rule, 24 px top padding, title in `section` type
+    22/28) with the pre-test lead sentence (16/24) and a `<dl>` with Pre-test
+    and Notes (120 px label column). Next to it, at 11–16, "Kanji replaced by
+    the pre-test": 1 px top rule, 24 px top padding, title in `subtitle` type
+    18/24, the table directly under it, **no intro sentence**. "Sessions in
+    order" follows at 1–16.
+  - Copy is not part of this list: where the canvas text is older than
+    `Contenido_UI_F-PROFILE.md`, the document wins (D-F6-6).
 - **No profile**: the blocks are replaced by one surface panel (1–10) with
   "No profile yet." as subtitle and "[code] has no completed session yet. The
   profile appears after the first one." (+ the pre-test date). A participant
