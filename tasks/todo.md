@@ -75,6 +75,23 @@ effective set, S4 with fixation cross and closing eye, real segments for B and C
 ## Wed 21 Oct: Learner Profile v1 (backend)
 
 Branch `phase/6-learner-profile` from `phase/7-research-dashboard` (Plan_Fase6 header).
+Source: Plan_Fase6 §3 (Wed 21), §4 (D-F6-1 – D-F6-3) and the PM review of Tue 20 in §9.
+No frontend until Sebas validates the mockup (Task 11). Data needs: `Dashboard_Feature_F-PROFILE.md` §2.
+Before the branch: the XR Origin prefab change and the uncommitted `tasks/` edits stay
+out of every Learner Profile commit (`tasks/` goes in its own `docs(tasks)` commit).
+
+### [ ] Task 6a: S9 fills `experiment_sessions.completed_at`
+**Description:** `update_session_state` sets `completed_at = now_utc()` the first time the
+status becomes `COMPLETED` (S9, or S10 if S9 was skipped). One commit, before the profile.
+The 15 older sessions stay empty unless Sebas says otherwise (plan.md open question 5).
+
+**Acceptance:**
+- [ ] PATCH to S9 → `completed_at` set; a later PATCH to S10 keeps the same value (pytest)
+- [ ] PATCH to a state before S9 → `completed_at` stays NULL
+- [ ] A late S9 on an `ABORTED` session → still `ABORTED`, `completed_at` NULL
+
+**Verify:** `pytest tests/test_session_lifecycle.py`; full pytest green.
+**Deps:** none. **Files:** `routes/sessions.py`, `tests/test_session_lifecycle.py`. **Scope:** XS
 
 ### [ ] Task 6: Migration 0007 `learner_profiles`
 **Description:** Table as in `plan.md` (PK `participant_id` FK `ON DELETE CASCADE` +
@@ -92,32 +109,41 @@ Branch `phase/6-learner-profile` from `phase/7-research-dashboard` (Plan_Fase6 h
 **Description:** `app/adaptation/learner_profile.py`: `compute(db, participant_id)` builds
 the three parts (calibrations from events via `build_trials` + `build_profile`;
 adaptations grouped by action, dimension, direction, cause with outcome counts; trend over
-completed sessions) and upserts the row. CLI `--all` and `--check`.
+completed sessions, by `status = 'COMPLETED'`, never `completed_at`) and upserts the row.
+CLI `--all` and `--check`. JSON as in `plan.md` (each entry with its `session_id` and
+condition; groups with `decision_ids` and `UNCERTAIN` split by `outcome_reason`;
+`decisions_recorded: false` for sessions before 0003).
 
 **Acceptance:**
 - [ ] On the 4 adaptive `DEV_UNITY` sessions (`099690e1`, `d392fd25`, `a0c65228`, `a5748886`) + run 3: each calibration equals the S6 profile in that session's `ADAPTATION_DECISION` context; adaptation counts equal a direct `GROUP BY` on `adaptation_decisions`; trend equals V1.8's numbers (pytest)
 - [ ] STATIC sessions give calibrations and trend, and no adaptation groups
-- [ ] An `ABORTED` session appears in no part (Sebas, 20 Oct); a NULL outcome counts as "not recorded"
+- [ ] An `ABORTED` session appears in no part (Sebas, 20 Oct, confirmed 21 Oct); a NULL outcome counts as "not recorded"
+- [ ] An `UNCERTAIN` outcome is counted under its reason (`NOT_APPLIED` / `INCOMPLETE`); a group's `decision_ids` equal its rows in `adaptation_decisions`
+- [ ] A completed session from before 0003 has `decisions_recorded: false`; a STATIC session has no groups and no such flag
 - [ ] `--all --check` after `--all` prints no differences
 
 **Verify:** `pytest tests/test_learner_profile.py`; the CLI in the backend container.
 **Deps:** 6. **Files:** `app/adaptation/learner_profile.py`, `tests/test_learner_profile.py`. **Scope:** M
 
-### [ ] Task 8: Compute when a session completes (S9)
-**Description:** After `update_session_state` commits a `COMPLETED` status, compute that
-participant. No hook on abort: aborted sessions do not count. Errors are logged and never
-fail the PATCH.
+### [ ] Task 8: Compute when the status becomes `COMPLETED` or `ABORTED`
+**Description:** (D-F6-3, PM review of 20 Oct.) `COMPLETED`: `update_session_state` queues
+`compute` with `BackgroundTasks`, so it runs after `get_db` commits. `ABORTED`:
+`services/stale_sessions.py` takes `now()` before `abort_stale_sessions()` and then
+computes each participant with an `ABORTED` session updated at or after it (0005
+unchanged). The aborted session is still left out of the profile; the abort gives the
+participant a row. Errors are logged and never fail the PATCH or stop the sweep loop.
 
 **Acceptance:**
 - [ ] PATCH to S9 → the participant's row includes the session (pytest)
-- [ ] A late S9 on an `ABORTED` session → the session is not in the row
-- [ ] A forced error in `compute` → the PATCH still returns 200 and the state is saved
+- [ ] A session swept to `ABORTED` → the participant has a row, and the session is in no part (pytest, with `abort_stale_sessions(interval '0')` on a test session)
+- [ ] A late S9 on an `ABORTED` session → no trigger, the session is not in the row
+- [ ] A forced error in `compute` → the PATCH still returns 200 with the state saved; the sweep still returns its count
 
-**Verify:** pytest. **Deps:** 7. **Files:** `routes/sessions.py`, tests. **Scope:** S
+**Verify:** pytest. **Deps:** 7. **Files:** `routes/sessions.py`, `services/stale_sessions.py`, tests. **Scope:** S
 
 ### [ ] Task 9: Endpoint `GET /research/participants/{id}/profile`
 **Acceptance:**
-- [ ] Returns the stored row through a Pydantic schema; 404 unknown participant; `profile: null` with no row
+- [ ] Returns the stored row through a Pydantic schema (`participant_id`, `profile_version`, `computed_at`, `session_ids`, `profile`); 404 unknown participant; `profile: null` with no row
 - [ ] Read-only (no compute on read); the data contract in the skill lists it
 
 **Verify:** `pytest tests/test_research_api.py`. **Deps:** 7. **Files:** `routes/research.py`, `schemas/research.py`, skill `data-contract.md`, test. **Scope:** S
@@ -130,13 +156,18 @@ fail the PATCH.
 **Verify:** pytest. **Deps:** 6, 8. **Files:** `tests/test_learner_profile.py`. **Scope:** XS
 
 ### [ ] Task 11: Frontend: profile at the top of the Participant View (BLOCKED on the mockup)
-- [ ] Starts only when Sebas validates the mockup (web design + UI/UX chats). No visual design here
+- [ ] Starts only when Sebas validates the mockup (web design + UI/UX chats). No visual design here. Validated Wed 21 → built Fri 23; otherwise week of 26 Oct and M3 shows the profile from the API (F-PROFILE brief)
+- [ ] Done as in F-PROFILE §5: checked with `DEV_UNITY` and the Thu 22 participant; counts match `adaptation_decisions` and `v_adaptations`; Playwright screenshot light and dark; 5-tell audit; no regression in V1.8 or V1.11
 - [ ] Load the `research-dashboard-conventions` skill first; replaces the reserved slot in V1.8
+
+### [ ] Task 10b: Day draft
+- [ ] `Claude outputs/Borrador_Plan_Fase6_9_21oct.md`: §9 Wed 21 lines (`completed_at` commit, Learner Profile v1 backend with commits, `DEV_UNITY` profile summary, findings)
 
 ### Checkpoint Wed 21
 - [ ] Full pytest green; `graphify update .`
-- [ ] `DEV_UNITY` profile computed, `--check` clean
-- [ ] Day draft `Claude outputs/Borrador_Plan_Fase6_9_21oct.md`
+- [ ] `DEV_UNITY` profile computed from its 5 completed adaptive sessions, `--check` clean
+- [ ] Day draft handed to Sebas
+- [ ] Open question 5 of `plan.md` answered by Sebas (or the default recorded); question 6 answered 21 Oct (`ABORTED` never counts)
 
 ---
 
@@ -162,6 +193,7 @@ fail the PATCH.
 ## Fri 23 Oct: M3
 
 ### [ ] Task 15: Criteria evidence of F5a and F6
+- [ ] Declare the 3 sessions of 28–29 Sep with duplicated events (`d3f19117`, `dc28e1ea`, `fc835228`); not deleted (PM, 20 Oct)
 - [ ] `Evidencia_Criterios_F5a.md` and `Evidencia_Criterios_F6.md` drafts (in `Claude outputs/`), like `Evidencia_Criterios_M2.md`: each criterion with session id, query or test
 - [ ] F5a criterion 8 from Task 13 (or declared with `DEV_UNITY` per the cut rule); criterion 9 (EEG) as the EEG chat leaves it
 
@@ -170,7 +202,8 @@ fail the PATCH.
 - [ ] Pushed only with his OK
 
 ### [ ] Task 17: Change list for spec v1.4
-- [ ] `Claude outputs/Cambios_Spec_v1_4.md`: every behaviour that differs from v1.3 since F5a (pre-test gate and substitution, S4 cross and eye, ABORTED rule, adaptation loop, outcomes, Learner Profile), with the commit or doc that backs it
+- [ ] `Claude outputs/Cambios_Spec_v1_4.md`: every behaviour that differs from v1.3 since F5a (pre-test gate and substitution, S4 cross and eye, ABORTED rule, adaptation loop, outcomes, Learner Profile, `completed_at` at S9), with the commit or doc that backs it
+- [ ] *To validate* (PM, 20 Oct): an `ON_REQUEST` Hint inside the O4 outcome window (`099690e1`, `239269fc` S7-012); exclude or mark those trials, decided with the Thu 22 data
 
 ### [ ] Task 12: Checkpoint D of the portal (only if time is left; cut first)
 - [ ] Every screen V1.1–V1.11 with screenshots in light and dark
