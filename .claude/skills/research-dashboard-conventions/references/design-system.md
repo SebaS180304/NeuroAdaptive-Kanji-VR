@@ -35,6 +35,7 @@ the URL. Status *Pending* = do not build the screen yet.
 | V1.8 Participant View | *V1.8 Participant View* (Tweaks: `pretestDone` shows the "Open the pre-test" state), dark variant | Validated; revised from real data and re-validated | Oct 17 2026, 00:02; Oct 19 2026, 23:54 |
 | V1.10 Kanji pre-test | *V1.10 …* row (pick, register, one kanji, complete, states) and its dark row; summary without substitutions (Sebas, Oct 16, 23:57) | Validated | Oct 17 2026, 00:02 |
 | V1.11 Participant list (needs a scope entry from the dev chat) | *V1.11 Participant list (proposed)* and its dark artboard | Validated | Oct 17 2026, 00:20 |
+| F-PROFILE Learner Profile at the top of V1.8 | *V1.8 Participant View · Learner Profile* (Tweaks: `noSessions`, `oneSession`, `staticOnly`, `noChanges`, `manySessions`) and its dark artboard | Validated | Oct 21 2026, 14:14 |
 
 All artboards: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL`.
 
@@ -447,6 +448,86 @@ Participant View*, both with dark variants.
   time with "Show all [n]".
 - **Check names**: the function name without its suffix, in mono:
   `verify_trials`, not `verify_trials_fn` or a file name.
+
+## V1.8 Learner Profile (F-PROFILE)
+
+Drawn Oct 21 2026; **validated by Sebas on Oct 21 2026, 14:14** (canvas
+version 30, light and dark, all six states). Copy comes
+from `Contenido_UI_F-PROFILE.md` (UI/UX chat); this section only fixes the form.
+
+- **Place**: the profile is the first section of V1.8, right after the header,
+  and fits above the fold at 1440 × 900 for real participants (default case
+  ends at y ≈ 897). The header keeps the breadcrumb and title; the condition
+  chips and the sessions fact move to its right (11–16). The pre-test sentence,
+  facts, notes, substitutions and "Sessions in order" follow below the profile.
+- **Open decision 1 (validated)**: the profile's "Across sessions" block
+  replaces the old V1.8 trend chart. One chart on the page.
+- **Open decision 2 (validated)**: calibration shows the latest session's
+  values with the range across all sessions, never an average.
+- **Profile header** (1–16): 2 px `--color-text` top rule, "Learner Profile" in
+  `section` type (22/28), the scope line in body secondary (1–13), and
+  "Updated [date], profile v[n]" in `caption` at 14–16, right-aligned.
+- **Three blocks, three treatments** (not a card grid):
+  - *Usual performance* (1–6), no panel: subtitle, the entry sentence, then a
+    table with "Latest session" and the range column ("Across [n] sessions", or
+    "One session so far." with no range values). The three response-time rows
+    sit under a 600-weight "Typical response time" row and are indented 16 px;
+    trial types read "Meaning to kanji (T1)", "Kanji to meaning (T2)", "Kanji to
+    reading (T3)". The overall-median fallback is a 14 px info icon after the
+    value with the tooltip from the copy. Origin lines in `caption`.
+  - *What followed each adaptation* (7–16), surface panel, radius 2 px: one row
+    per group, rules between rows. Sentence on the left, "See [n] decisions"
+    link on the right; below it the badge row. "Too few to tell" is the first
+    item of the badge row: a 24 px pill, `--color-state-neutral` fill,
+    `--color-text-secondary` 600 text (never dashed). Outcome badges reuse the
+    V1.5 outcome chips (same fill + mark shape) with the direction label and
+    count, e.g. "Recovered after: 2"; the enum and subtype go in the tooltip.
+    At most 3 groups show; more go behind "Show [n] more groups" (outline
+    accent pill). The empty texts (STATIC only, no changes) are plain body
+    text, not an empty state.
+  - *Across sessions* (1–16), 1 px top rule: subtitle, the entry sentence (it is
+    the chart title), and the "Correct in S7" / "Response time" toggle. The
+    chart follows the V1.8 rules (completed only, ticks numbered as in the
+    table, shapes by condition, "Latest" label up to 12 sessions), with one
+    change: the accuracy axis is **correct answers of 20** (0, 5, 10, 15, "20 of
+    20"), matching the sentence, instead of 0–100 %. With one session there is
+    no chart, only the sentence.
+- **Only COMPLETED sessions count** (Sebas, Oct 21, 14:24): an ABORTED session
+  is in no part of the profile (calibration, adaptations, trend), even if it
+  reached S6 or S7. The scope line says it once for the whole profile: "A
+  summary of [n] completed sessions; [m] aborted session(s) [is/are] not
+  included." (the second clause only when [m] > 0). Block origin lines no
+  longer mention aborted sessions. "Sessions in order" below still lists them.
+- **"See [n] decisions" across sessions** (Oct 21, 14:50; *pending Sebas's
+  validation*, canvas version 38). A group can hold decisions from several
+  sessions, and V1.5 belongs to one session:
+  - Group from one session: a plain link, "See [n] decisions", to that
+    session's V1.5 filtered by the group.
+  - Group from several sessions: the link becomes a disclosure button, "See
+    [n] decisions in [k] sessions" with a chevron (`aria-expanded`). It opens,
+    inside the group row, a list on `--color-explain-bg`: one line per session,
+    newest first, "Session [#] ([date])" with the session number from "Sessions
+    in order" and, on the right, a link "[n] decisions" to that session's V1.5
+    filtered by the group. Not a popover, and no "latest session only" shortcut,
+    which would hide the other sessions.
+- **V1.5 filtered by a profile group** (Tweak `groupFilter` on the V1.5
+  artboard): the table shows only that group's decisions. Above it, in place of
+  the intro sentence, a notice on `--color-accent-tint` with `role="status"`:
+  "Filtered from the Learner Profile" (600, on-accent-tint), the group sentence
+  and "[k] of the [n] decisions in this session"; then "Back to the profile"
+  (link) and "Show all decisions" (outline accent pill), which removes the
+  filter and restores the intro sentence. The filter lives in the URL
+  (e.g. `?group=…`), so reload and back keep it. "Show decisions with no
+  change" stays available and applies inside the filter.
+- **No profile**: the blocks are replaced by one surface panel (1–10) with
+  "No profile yet." as subtitle and "[code] has no completed session yet. The
+  profile appears after the first one." (+ the pre-test date). A participant
+  whose sessions all aborted looks exactly the same: an empty profile, not an
+  error.
+- **Many sessions**: same layout; with DEV_UNITY the third group and the chart
+  fall below 900 px, accepted by Sebas for test participants.
+- **V1.5 and V1.6 artboards**: the cause "Impulsive" now reads "Quick errors",
+  following the copy rule that `IMPULSIVE` never appears on screen.
 
 ## Participant list (V1.11) and navigation
 
