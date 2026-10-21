@@ -219,3 +219,49 @@ async def test_a_failing_profile_never_fails_the_patch_or_the_sweep(client, pret
                               "WHERE id = :s"), {"s": stale})
         await db.commit()
     assert await abort_stale_sessions() >= 1
+
+
+# --- endpoint (Task 9) -----------------------------------------------------------
+
+import uuid  # noqa: E402
+
+
+@pytest.mark.asyncio
+async def test_profile_endpoint_returns_the_stored_row(client, pretested) -> None:
+    pid = await pretested("TEST_PROFILE")
+    sid = await _session(client, pid, "STATIC", "S9_SESSION_SUMMARY")      # computes it (Task 8)
+
+    resp = await client.get(f"/research/participants/{pid}/profile")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["participant_id"] == pid and body["profile_version"] == "v1"
+    assert body["session_ids"] == [sid] and body["computed_at"] is not None
+    assert [t["session_id"] for t in body["profile"]["trend"]] == [sid]
+    assert body["profile"]["trend"][0]["decisions_recorded"] is None
+    assert body["profile"]["adaptations"] == []
+
+
+@pytest.mark.asyncio
+async def test_profile_endpoint_without_a_row_or_participant(client, pretested) -> None:
+    pid = await pretested("TEST_PROFILE")
+    body = (await client.get(f"/research/participants/{pid}/profile")).json()
+    assert body == {"participant_id": pid, "profile_version": None, "computed_at": None,
+                    "session_ids": [], "profile": None}
+
+    assert (await client.get(f"/research/participants/{uuid.uuid4()}/profile")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_profile_endpoint_matches_the_stored_json() -> None:
+    """Every field the calculation writes survives the schema (none dropped or renamed)."""
+    from httpx import ASGITransport, AsyncClient
+
+    from app.main import app
+
+    rows = await _rows("SELECT participant_id::text AS pid, profile FROM learner_profiles l "
+                       "JOIN participants p ON p.id = l.participant_id WHERE p.external_code = 'DEV_UNITY'")
+    if not rows:
+        pytest.skip("no DEV_UNITY profile in this database")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        body = (await client.get(f"/research/participants/{rows[0]['pid']}/profile")).json()
+    assert body["profile"] == rows[0]["profile"]

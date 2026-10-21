@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.research import (
-    DataQuality, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
+    DataQuality, LearnerProfile, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
     SessionTimeline,
 )
 
@@ -183,6 +183,19 @@ async def get_participant(participant_id: uuid.UUID, db: AsyncSession = Depends(
         "sessions": [dict(r._mapping) for r in await db.execute(_PARTICIPANT_SESSIONS, params)],
         "substitutions": [dict(r._mapping) for r in await db.execute(_SUBSTITUTIONS, params)],
     }
+
+
+@router.get("/participants/{participant_id}/profile", response_model=LearnerProfile)
+async def get_learner_profile(participant_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    """The stored Learner Profile v1 (F-PROFILE). Read only: it is computed when a session
+    completes or aborts (app/adaptation/learner_profile.py), never here."""
+    if (await db.execute(text("SELECT 1 FROM participants WHERE id = :p"), {"p": participant_id})).first() is None:
+        raise HTTPException(status_code=404, detail="participant not found")
+    row = (await db.execute(text(
+        "SELECT profile_version, computed_at, session_ids, profile FROM learner_profiles "
+        "WHERE participant_id = :p AND profile_version = 'v1'"), {"p": participant_id})).first()
+    empty = {"profile_version": None, "computed_at": None, "session_ids": [], "profile": None}
+    return {"participant_id": participant_id, **(dict(row._mapping) if row else empty)}
 
 
 # The verify_*_fn() of migration 0006, in the order V1.7 lists them.

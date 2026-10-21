@@ -144,12 +144,12 @@ participant a row. Errors are logged and never fail the PATCH or stop the sweep 
 
 **Verify:** pytest. **Deps:** 7. **Files:** `routes/sessions.py`, `services/stale_sessions.py`, tests. **Scope:** S
 
-### [ ] Task 9: Endpoint `GET /research/participants/{id}/profile`
+### [x] Task 9: Endpoint `GET /research/participants/{id}/profile`
 **Acceptance:**
-- [ ] Returns the stored row through a Pydantic schema (`participant_id`, `profile_version`, `computed_at`, `session_ids`, `profile`); 404 unknown participant; `profile: null` with no row
-- [ ] Read-only (no compute on read); the data contract in the skill lists it
+- [x] Returns the stored row through a Pydantic schema (`participant_id`, `profile_version`, `computed_at`, `session_ids`, `profile`); 404 unknown participant; `profile: null` with no row
+- [x] Read-only (no compute on read); the data contract in the skill lists it
 
-**Verify:** `pytest tests/test_research_api.py`. **Deps:** 7. **Files:** `routes/research.py`, `schemas/research.py`, skill `data-contract.md`, test. **Scope:** S
+**Verify:** `pytest tests/test_learner_profile.py` (endpoint tests live with the profile's). `npm run gen:api` waits for a backend restart (Task 11). **Deps:** 7. **Files:** `routes/research.py`, `schemas/research.py`, skill `data-contract.md`, test. **Scope:** S
 
 ### [ ] Task 10: D-F6-1 test: the profile does not change how a session starts
 **Acceptance:**

@@ -74,6 +74,67 @@ class ResearchParticipantDetail(ResearchParticipant):
     substitutions: list[PretestSubstitution]
 
 
+class ProfileCalibration(BaseModel):
+    """S6 of one completed session, as the estimator builds it (S6Profile.as_dict())."""
+    session_id: str
+    rt_ref: dict[str, float]              # by trial type; a fallback type holds the global median
+    rt_ref_global: float | None
+    rt_spread: float
+    acc_ref: float | None
+    idle_eff_ref: float | None
+    away_ref_ms: float
+    env_dwell_ref_ms: float
+    orienting_rate_ref: float | None
+    n_trials: int
+    n_valid_rt: int
+    reliability: float
+    correct: int                          # S6 correct, of n
+    n: int
+    fallback_types: list[str]             # fewer than 3 valid trials: the global median is used
+
+
+class ProfileAdaptationGroup(BaseModel):
+    """Changes of completed sessions with the same state, cause, dimension and direction."""
+    key: str                              # "<state>.<cause or NONE>.<dimension>.<UP|DOWN>", the V1.5 ?group=
+    learner_state: str
+    cause: str | None
+    dimension: str
+    direction: Literal["UP", "DOWN"]
+    count: int
+    outcomes: dict[str, int]              # POSITIVE / NEUTRAL / NEGATIVE / UNCERTAIN / NOT_RECORDED
+    outcome_reasons: dict[str, dict[str, int]]   # by outcome, the O4 reason (RESOLVED, INCOMPLETE...)
+    decisions: dict[str, list[str]]       # session id -> decision ids
+    last_decided_at: str | None           # ISO 8601, as stored; orders groups of equal count
+
+
+class ProfileTrendPoint(BaseModel):
+    """One completed session, oldest first."""
+    session_id: str
+    condition: str
+    kanji_set: str | None
+    created_at: str                       # ISO 8601, as stored
+    s7_trials: int
+    s7_correct: int
+    s7_mean_rt_ms: float | None
+    no_change: int | None                 # None for STATIC: it never adapts
+    decisions_recorded: bool | None       # False: adaptive with no decision rows (before 0003)
+
+
+class LearnerProfileData(BaseModel):
+    calibrations: list[ProfileCalibration]
+    adaptations: list[ProfileAdaptationGroup]
+    trend: list[ProfileTrendPoint]
+
+
+class LearnerProfile(BaseModel):
+    """The stored Learner Profile v1 (migration 0007). No row yet: profile is None."""
+    participant_id: uuid.UUID
+    profile_version: str | None
+    computed_at: datetime | None
+    session_ids: list[uuid.UUID]          # the COMPLETED sessions it covers; ABORTED ones never
+    profile: LearnerProfileData | None
+
+
 class QualityCheckRow(BaseModel):
     """One discrepancy returned by a verify_*_fn()."""
     session_id: uuid.UUID

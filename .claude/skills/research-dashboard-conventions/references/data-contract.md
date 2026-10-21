@@ -94,6 +94,7 @@ not mix with the endpoints Unity uses.
 | `GET /research/sessions/{session_id}/export.csv?kind=trials\|adaptations` | CSV |
 | `GET /research/participants` | V1.11: one row per participant with `external_code`, `created_at`, pre-test status and `answered`, session count, conditions, last session date and accuracy (NULL if no answered trials), `previous_japanese_experience`, `flagged_count` |
 | `GET /research/participants/{participant_id}` | V1.8: the V1.11 row, the sessions oldest first with the Session View's aggregates and `before_pretest`, and the substitutions (a NULL substitute is a kanji kept and flagged) |
+| `GET /research/participants/{participant_id}/profile` | F-PROFILE (V1.8, top): the stored Learner Profile v1 (migration 0007): `profile_version`, `computed_at`, `session_ids` (COMPLETED only; ABORTED never count) and `profile` with `calibrations`, `adaptations` (groups with `key` for V1.5's `?group=`, outcomes, O4 reasons, decision ids per session) and `trend` (S7 numbers per session). No row yet: `profile` is `null`, not an error; unknown participant: 404. Computed when a session completes or aborts, never on read |
 | `GET /research/quality` | V1.7: open `projection_errors` by code and in full, the resolved count, each `verify_*_fn` run on every projected session, and the sessions with no projection |
 
 Rules:
