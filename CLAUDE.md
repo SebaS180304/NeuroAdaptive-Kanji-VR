@@ -9,6 +9,21 @@ Rules:
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 - A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.
 
+## How the chats stay aligned (read first)
+
+Several Claude chats work on this project (PM, development, web design, UI/UX,
+EEG, content). They stay aligned through one board:
+`Claude outputs/docs_proyecto/Estado_Actual.md`.
+
+- Read `Estado_Actual.md` before starting any task. If a plan, brief or doc
+  disagrees with it, the board wins: tell Sebas, do not "fix" the other doc.
+- A decision exists only once it has a number in §4 of the board. Do not act on
+  a decision that is not there yet, even if it came up in a message.
+- `Claude outputs/docs_proyecto/` is a read-only mirror that only the PM chat
+  updates. Never write there. Hand progress over as a draft in `Claude outputs/`.
+- Edit only the docs and files the board lists as yours (§3). For anything else,
+  write a proposal and tell Sebas.
+
 ## Project docs (planning and design)
 
 Plans, technical design, test scripts and the daily progress log live in a
