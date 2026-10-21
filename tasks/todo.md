@@ -158,22 +158,38 @@ participant a row. Errors are logged and never fail the PATCH or stop the sweep 
 
 **Verify:** pytest. **Deps:** 6, 8. **Files:** `tests/test_learner_profile.py`. **Scope:** XS
 
-### [ ] Task 11: Frontend: profile at the top of the Participant View (Fri 23; mockup validated, canvas 37)
-- [ ] Starts only when Sebas validates the mockup (web design + UI/UX chats). No visual design here. Validated Wed 21 → built Fri 23; otherwise week of 26 Oct and M3 shows the profile from the API (F-PROFILE brief)
-- [ ] Done as in F-PROFILE §5: checked with `DEV_UNITY` and the Thu 22 participant; counts match `adaptation_decisions` and `v_adaptations`; Playwright screenshot light and dark; 5-tell audit; no regression in V1.8 or V1.11
-- [ ] Load the `research-dashboard-conventions` skill first; replaces the reserved slot in V1.8 and the old V1.8 trend chart (one chart)
-- [ ] Copy from `Contenido_UI_F-PROFILE.md`; form from design-system.md "V1.8 Learner Profile (F-PROFILE)"
-- [ ] Cross-session link (disclosure list) and V1.5 `?group=<key>` filter (canvas 38, validated 21 Oct)
-- [ ] V1.5 and V1.6: cause "Impulsive" reads "Quick errors"
+### [ ] Task 11a: Frontend: the Learner Profile at the top of V1.8 (Wed 21 evening; split by Sebas, 21 Oct)
+**Description:** The profile block of canvas 37: header with the scope line, *Usual performance*,
+*What followed each adaptation* (at most 3 groups, "Show [n] more groups"), *Across sessions*
+replacing the old V1.8 trend chart (one chart, accuracy as correct of 20), and the "No profile
+yet." panel. "See [n] decisions" goes to the session's V1.5 unfiltered for now (11b adds the
+filter and the cross-session list). Backend untouched.
 
-### [ ] Task 10b: Day draft
-- [ ] `Claude outputs/Borrador_Plan_Fase6_9_21oct.md`: §9 Wed 21 lines (`completed_at` commit, Learner Profile v1 backend with commits, `DEV_UNITY` profile summary, findings)
+**Acceptance:**
+- [ ] Load the `research-dashboard-conventions` skill first; copy from `Contenido_UI_F-PROFILE.md`, form from design-system.md "V1.8 Learner Profile (F-PROFILE)"; no new tokens
+- [ ] The cases of the canvas render from real data: `DEV_UNITY` (many sessions), STATIC only, adaptive without changes, no completed session ("No profile yet.", also when every session aborted), one session; sessions before 0003 show "—", never 0
+- [ ] Counts match `adaptation_decisions` / the endpoint (Vitest on the pure text helpers; Playwright on `DEV_UNITY`)
+- [ ] No regression before the Thu 22 test: build, Vitest and the full Playwright suite (checkpoint-b, checkpoint-c, pre-test) green; otherwise the profile does not ship and V1.8 stays as it is
+- [ ] Playwright screenshots light and dark; 5-tell audit reported
+
+**Deps:** 9 (+ `gen:api`, done). **Files:** `features/participants/` (ParticipantView, new profile component, TrendChart), tests. **Scope:** M
+
+### [ ] Task 11b: Frontend: cross-session decisions and the V1.5 group filter (Fri 23 if time, else week of 26 Oct)
+- [ ] "See [n] decisions in [k] sessions" disclosure list (canvas 38), newest first, "Session [#] ([date])"
+- [ ] V1.5 `?group=<key>`: notice, "Back to the profile", "Show all decisions"; reload and back keep it
+- [ ] V1.5 and V1.6: cause "Impulsive" reads "Quick errors"
+- [ ] Verified with the Thu 22 participant (one session); F-PROFILE §5 closed
+
+**Deps:** 11a. Not needed for M3 (criterion 4b is met by 11a).
+
+### [x] Task 10b: Day draft
+- [x] `Claude outputs/Borrador_Plan_Fase6_9_21oct.md`: §9 Wed 21 lines (`completed_at` commit, Learner Profile v1 backend with commits, `DEV_UNITY` profile summary, findings)
 
 ### Checkpoint Wed 21
-- [ ] Full pytest green; `graphify update .`
-- [ ] `DEV_UNITY` profile computed from its 5 completed adaptive sessions, `--check` clean
-- [ ] Day draft handed to Sebas
-- [ ] Open question 5 of `plan.md` answered by Sebas (or the default recorded); question 6 answered 21 Oct (`ABORTED` never counts)
+- [x] Full pytest green; `graphify update .`
+- [x] `DEV_UNITY` profile computed from its 5 completed adaptive sessions, `--check` clean
+- [x] Day draft handed to Sebas
+- [x] Open question 5 of `plan.md` answered by Sebas (or the default recorded); question 6 answered 21 Oct (`ABORTED` never counts). Q5 unanswered: default "no" recorded in the day draft
 
 ---
 

@@ -119,9 +119,10 @@ a phase test with a participant with no Japanese, and the evidence and tags.
   `computed_at`, `session_ids`, `profile` (the JSON above, as stored). This answers open
   decision 3 of the F-PROFILE brief. The portal screen waits for the mockup (D-F6-4); per
   the brief, if Sebas validates it today it is built Fri 23, otherwise the week of 26 Oct
-  and M3 shows the profile from the API. **Validated 21 Oct (canvas 37): Task 11 is
-  built Fri 23.**
-- **V1.5 group filter (Task 11):** `?group=<key>` on the Session View's Adaptations tab.
+  and M3 shows the profile from the API. **Validated 21 Oct (canvas 37). Split by Sebas
+  (21 Oct): Task 11a, the profile block in V1.8, on Wed 21 evening; Task 11b, the
+  cross-session list and the V1.5 filter, on Fri 23 if time.**
+- **V1.5 group filter (Task 11b):** `?group=<key>` on the Session View's Adaptations tab.
   V1.5 rows already have state, cause, dimension and levels, so the tab derives each
   row's key with the same function the profile's key follows and filters by it; no
   new endpoint and no ids in the URL.
@@ -135,7 +136,7 @@ T6a S9 fills completed_at (independent, first commit of Wed)
 T6 migration 0007 ─► T7 calculation + rebuild ─► T8 hooks (COMPLETED, ABORTED) ─► T9 endpoint
                                      └──────────► T10 D-F6-1 test
 T6a … T10 ─► T10b day draft for §9
-mockup validated by Sebas (design chats) ─► T11 frontend (blocked)
+mockup validated (canvas 37, 38) + T9 ─► T11a profile in V1.8 ─► T11b V1.5 filter, cross-session list
 consent text (PM) + participant ─► T13 phase test ─► T14 findings
 T3 + T13 ─► T15 evidence ─► T16 tags ─► T17 spec v1.4 change list
 T12 Checkpoint D (only if time is left)
@@ -143,10 +144,10 @@ T12 Checkpoint D (only if time is left)
 
 ## Phases
 - **Tue 20 (headset):** Tasks 1–5 → Checkpoint Tue.
-- **Wed 21 (backend):** Task 6a, then Tasks 6–10, Task 10b → Checkpoint Wed. Task 11
-  starts only with the validated mockup.
+- **Wed 21 (backend):** Task 6a, then Tasks 6–10, Task 10b → Checkpoint Wed, then
+  Task 11a (frontend) with whatever is left of the day.
 - **Thu 22 (phase test):** Tasks 13–14 → Checkpoint Thu.
-- **Fri 23 (M3):** Tasks 15–17, Task 11 if the mockup was validated Wed 21 (+ 12 if
+- **Fri 23 (M3):** Tasks 15–17, Task 11b if time (+ 12 if
   time) → Checkpoint M3.
 
 ## Cut rule (Plan_Fase6.md §3)
