@@ -134,6 +134,8 @@ async def update_session_state(
     # revierte.
     if session.status != SessionStatus.ABORTED:
         session.status = _status_for(payload.new_state)
+        if session.status == SessionStatus.COMPLETED and session.completed_at is None:
+            session.completed_at = now_utc()
 
     await db.flush()
     await db.refresh(session)

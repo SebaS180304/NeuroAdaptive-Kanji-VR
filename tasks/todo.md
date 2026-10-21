@@ -80,15 +80,15 @@ No frontend until Sebas validates the mockup (Task 11). Data needs: `Dashboard_F
 Before the branch: the XR Origin prefab change and the uncommitted `tasks/` edits stay
 out of every Learner Profile commit (`tasks/` goes in its own `docs(tasks)` commit).
 
-### [ ] Task 6a: S9 fills `experiment_sessions.completed_at`
+### [x] Task 6a: S9 fills `experiment_sessions.completed_at`
 **Description:** `update_session_state` sets `completed_at = now_utc()` the first time the
 status becomes `COMPLETED` (S9, or S10 if S9 was skipped). One commit, before the profile.
 The 15 older sessions stay empty unless Sebas says otherwise (plan.md open question 5).
 
 **Acceptance:**
-- [ ] PATCH to S9 → `completed_at` set; a later PATCH to S10 keeps the same value (pytest)
-- [ ] PATCH to a state before S9 → `completed_at` stays NULL
-- [ ] A late S9 on an `ABORTED` session → still `ABORTED`, `completed_at` NULL
+- [x] PATCH to S9 → `completed_at` set; a later PATCH to S10 keeps the same value (pytest)
+- [x] PATCH to a state before S9 → `completed_at` stays NULL
+- [x] A late S9 on an `ABORTED` session → still `ABORTED`, `completed_at` NULL
 
 **Verify:** `pytest tests/test_session_lifecycle.py`; full pytest green.
 **Deps:** none. **Files:** `routes/sessions.py`, `tests/test_session_lifecycle.py`. **Scope:** XS
