@@ -36,6 +36,7 @@ the URL. Status *Pending* = do not build the screen yet.
 | V1.10 Kanji pre-test | *V1.10 …* row (pick, register, one kanji, complete, states) and its dark row; summary without substitutions (Sebas, Oct 16, 23:57) | Validated | Oct 17 2026, 00:02 |
 | V1.11 Participant list (needs a scope entry from the dev chat) | *V1.11 Participant list (proposed)* and its dark artboard | Validated | Oct 17 2026, 00:20 |
 | F-PROFILE Learner Profile at the top of V1.8 | *V1.8 Participant View · Learner Profile* (Tweaks: `noSessions`, `oneSession`, `staticOnly`, `noChanges`, `manySessions`) and its dark artboard | Validated | Oct 21 2026, 14:14 |
+| F-PROFILE cross-session decision link and V1.5 group filter | `manySessions` Tweak (list open) of the Learner Profile artboard; `groupFilter` Tweak of the V1.5 artboard (canvas version 38) | Validated | Oct 21 2026, 15:18 |
 
 All artboards: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL`.
 
@@ -498,8 +499,8 @@ from `Contenido_UI_F-PROFILE.md` (UI/UX chat); this section only fixes the form.
   summary of [n] completed sessions; [m] aborted session(s) [is/are] not
   included." (the second clause only when [m] > 0). Block origin lines no
   longer mention aborted sessions. "Sessions in order" below still lists them.
-- **"See [n] decisions" across sessions** (Oct 21, 14:50; *pending Sebas's
-  validation*, canvas version 38). A group can hold decisions from several
+- **"See [n] decisions" across sessions** (Oct 21, 14:50; validated by
+  Sebas on Oct 21 2026, 15:18, canvas version 38). A group can hold decisions from several
   sessions, and V1.5 belongs to one session:
   - Group from one session: a plain link, "See [n] decisions", to that
     session's V1.5 filtered by the group.

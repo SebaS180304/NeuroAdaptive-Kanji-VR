@@ -15,7 +15,7 @@ Checkpoint D (here Task 12, the first thing to cut).
   copy; every `{…}` in it is a field of the profile endpoint.
 - Skill `references/design-system.md`, "V1.8 Learner Profile (F-PROFILE)": the form,
   validated by Sebas (canvas 37, 21 Oct). The cross-session link and the V1.5 group
-  filter (canvas 38) are marked *pending Sebas's validation* there.
+  filter (canvas 38) were validated by Sebas the same day.
 - `Claude outputs/docs_proyecto/Consentimiento_Protocolo_Sesion_v0.md` (PM, 21 Oct):
   Part B is the Thu 22 protocol (Task 13).
 - `Claude outputs/docs_proyecto/Guion_Pasada_Visor_F5a.md`, run A: script for Task 3.
@@ -181,5 +181,4 @@ T12 Checkpoint D (only if time is left)
 7. ~~F-PROFILE open decisions 1–3~~ Validated 21 Oct: the profile's trend replaces the
    V1.8 chart; calibration shows the latest session with the range of all; endpoint
    shape as above. Cross-session link: option (b), a disclosure list (web design chat).
-8. Canvas 38 (cross-session link, V1.5 group filter) is pending Sebas's validation;
-   needed before Task 11 on Fri 23, not for the backend.
+8. ~~Canvas 38 (cross-session link, V1.5 group filter)~~ Validated by Sebas, 21 Oct.

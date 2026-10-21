@@ -163,7 +163,7 @@ participant a row. Errors are logged and never fail the PATCH or stop the sweep 
 - [ ] Done as in F-PROFILE §5: checked with `DEV_UNITY` and the Thu 22 participant; counts match `adaptation_decisions` and `v_adaptations`; Playwright screenshot light and dark; 5-tell audit; no regression in V1.8 or V1.11
 - [ ] Load the `research-dashboard-conventions` skill first; replaces the reserved slot in V1.8 and the old V1.8 trend chart (one chart)
 - [ ] Copy from `Contenido_UI_F-PROFILE.md`; form from design-system.md "V1.8 Learner Profile (F-PROFILE)"
-- [ ] Cross-session link (disclosure list) and V1.5 `?group=<key>` filter: only once Sebas validates canvas 38
+- [ ] Cross-session link (disclosure list) and V1.5 `?group=<key>` filter (canvas 38, validated 21 Oct)
 - [ ] V1.5 and V1.6: cause "Impulsive" reads "Quick errors"
 
 ### [ ] Task 10b: Day draft
