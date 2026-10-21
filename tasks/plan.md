@@ -57,7 +57,7 @@ a phase test with a participant with no Japanese, and the evidence and tags.
   - calibration per session also carries S6 correct as `k` of `n`, `rt_ref_global`, and
     the trial types that fell back to the global median, for the "Too few {T} trials"
     tooltip. The rule is the estimator's: fewer than `MIN_TRIALS_PER_TYPE` = **3** valid
-    trials (the copy's "< 2" is out of date; code wins);
+    trials (the copy says so since 21 Oct);
   - a group is keyed by estimated state + cause + dimension + direction (so `AWAY`,
     `ENVIRONMENT`, `IMPULSIVE` and the return after `STABLE` stay apart). Each group has
     a string `key` (e.g. `OVERLOADED.<cause>.LAL.UP`), its decisions **per session**
@@ -69,6 +69,8 @@ a phase test with a participant with no Japanese, and the evidence and tags.
     `s7_correct`, `s7_mean_rt_ms`), with kanji set and condition. **S7 only**, as the
     validated copy reads ("correct in S7", "of 20"); V1.8's old chart used S5–S8
     accuracy and the mean RT of every block, so the numbers differ by design;
+  - the profile never mentions aborted sessions (copy of 21 Oct): no count of them is
+    needed in the JSON or on screen;
   - a session with no `adaptation_decisions` rows at all (before migration 0003, 13 Oct)
     is marked `decisions_recorded: false`, so the screen shows "—", never 0. A STATIC
     session has no groups by design and is not marked.

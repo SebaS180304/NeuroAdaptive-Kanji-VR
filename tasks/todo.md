@@ -121,7 +121,7 @@ per-session ids, subtype, `NO_CHANGE` and trend fields listed in `plan.md`).
 - [x] An `ABORTED` session appears in no part (Sebas, 20 Oct, confirmed 21 Oct); a NULL outcome counts as "not recorded"
 - [x] An `UNCERTAIN` outcome is counted under its reason (`NOT_APPLIED` / `INCOMPLETE`); a group's `decision_ids` equal its rows in `adaptation_decisions`
 - [x] A completed session from before 0003 has `decisions_recorded: false`; a STATIC session has no groups and no such flag
-- [x] Calibration `k`/`n` match S6's answered trials; a type with < 2 valid S6 trials is listed as a global-median fallback
+- [x] Calibration `k`/`n` match S6's answered trials; a type with < 3 valid S6 trials (`MIN_TRIALS_PER_TYPE`) is listed as a global-median fallback
 - [x] A group's per-session ids add up to its count; each adaptive session's `NO_CHANGE` count equals `adaptation_decisions`; trend values equal a direct query of S7 trials
 - [x] `--all --check` after `--all` prints no differences
 
@@ -166,7 +166,9 @@ yet." panel. "See [n] decisions" goes to the session's V1.5 unfiltered for now (
 filter and the cross-session list). Backend untouched.
 
 **Acceptance:**
-- [ ] Load the `research-dashboard-conventions` skill first; copy from `Contenido_UI_F-PROFILE.md`, form from design-system.md "V1.8 Learner Profile (F-PROFILE)"; no new tokens
+- [ ] Load the `research-dashboard-conventions` skill first; copy from `Contenido_UI_F-PROFILE.md` (updated 21 Oct), form from design-system.md "V1.8 Learner Profile (F-PROFILE)"; no new tokens
+- [ ] **Waits for** the web design chat to drop the aborted-sessions clause from the scope line in design-system.md (handoff copy, then copied to the skill); both copies still have it on 21 Oct
+- [ ] Adjustments of the 21 Oct copy: global-median mark for a type with < 3 valid S6 trials; empty profile with the canvas 37 text, the same with no sessions or only aborted ones; **no mention of aborted sessions anywhere in the profile**; `UNCERTAIN` · `INCOMPLETE` reads "Can't tell: S7 ended first"
 - [ ] The cases of the canvas render from real data: `DEV_UNITY` (many sessions), STATIC only, adaptive without changes, no completed session ("No profile yet.", also when every session aborted), one session; sessions before 0003 show "—", never 0
 - [ ] Counts match `adaptation_decisions` / the endpoint (Vitest on the pure text helpers; Playwright on `DEV_UNITY`)
 - [ ] No regression before the Thu 22 test: build, Vitest and the full Playwright suite (checkpoint-b, checkpoint-c, pre-test) green; otherwise the profile does not ship and V1.8 stays as it is
