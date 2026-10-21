@@ -105,7 +105,7 @@ The 15 older sessions stay empty unless Sebas says otherwise (plan.md open quest
 **Verify:** `alembic upgrade head`; full pytest green.
 **Deps:** none. **Files:** migration + 2 SQL, `models/` (if an ORM model is needed; `text()` may be enough), `database/schema.sql`, `database/ERD.md`. **Scope:** S
 
-### [ ] Task 7: Calculation and rebuild
+### [x] Task 7: Calculation and rebuild
 **Description:** `app/adaptation/learner_profile.py`: `compute(db, participant_id)` builds
 the three parts (calibrations from events via `build_trials` + `build_profile`;
 adaptations grouped by action, dimension, direction, cause with outcome counts; trend over
@@ -116,14 +116,14 @@ condition; groups with `decision_ids` and `UNCERTAIN` split by `outcome_reason`;
 per-session ids, subtype, `NO_CHANGE` and trend fields listed in `plan.md`).
 
 **Acceptance:**
-- [ ] On the 4 adaptive `DEV_UNITY` sessions (`099690e1`, `d392fd25`, `a0c65228`, `a5748886`) + run 3: each calibration equals the S6 profile in that session's `ADAPTATION_DECISION` context; adaptation counts equal a direct `GROUP BY` on `adaptation_decisions`; trend equals V1.8's numbers (pytest)
-- [ ] STATIC sessions give calibrations and trend, and no adaptation groups
-- [ ] An `ABORTED` session appears in no part (Sebas, 20 Oct, confirmed 21 Oct); a NULL outcome counts as "not recorded"
-- [ ] An `UNCERTAIN` outcome is counted under its reason (`NOT_APPLIED` / `INCOMPLETE`); a group's `decision_ids` equal its rows in `adaptation_decisions`
-- [ ] A completed session from before 0003 has `decisions_recorded: false`; a STATIC session has no groups and no such flag
-- [ ] Calibration `k`/`n` match S6's answered trials; a type with < 2 valid S6 trials is listed as a global-median fallback
-- [ ] A group's per-session ids add up to its count; each adaptive session's `NO_CHANGE` count equals `adaptation_decisions`; trend values equal `GET /research/participants/{id}`
-- [ ] `--all --check` after `--all` prints no differences
+- [x] On the 4 adaptive `DEV_UNITY` sessions (`099690e1`, `d392fd25`, `a0c65228`, `a5748886`) + run 3: each calibration equals the S6 profile in that session's `ADAPTATION_DECISION` context; adaptation counts equal a direct `GROUP BY` on `adaptation_decisions`; trend equals a direct query of S7 trials (pytest; S7 only, see plan.md)
+- [x] STATIC sessions give calibrations and trend, and no adaptation groups
+- [x] An `ABORTED` session appears in no part (Sebas, 20 Oct, confirmed 21 Oct); a NULL outcome counts as "not recorded"
+- [x] An `UNCERTAIN` outcome is counted under its reason (`NOT_APPLIED` / `INCOMPLETE`); a group's `decision_ids` equal its rows in `adaptation_decisions`
+- [x] A completed session from before 0003 has `decisions_recorded: false`; a STATIC session has no groups and no such flag
+- [x] Calibration `k`/`n` match S6's answered trials; a type with < 2 valid S6 trials is listed as a global-median fallback
+- [x] A group's per-session ids add up to its count; each adaptive session's `NO_CHANGE` count equals `adaptation_decisions`; trend values equal a direct query of S7 trials
+- [x] `--all --check` after `--all` prints no differences
 
 **Verify:** `pytest tests/test_learner_profile.py`; the CLI in the backend container.
 **Deps:** 6. **Files:** `app/adaptation/learner_profile.py`, `tests/test_learner_profile.py`. **Scope:** M

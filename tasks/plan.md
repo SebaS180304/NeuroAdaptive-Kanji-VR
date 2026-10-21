@@ -55,8 +55,9 @@ a phase test with a participant with no Japanese, and the evidence and tags.
     splits `UNCERTAIN` by `outcome_reason` (`NOT_APPLIED`, `INCOMPLETE`), read from the
     `ADAPTATION_OUTCOME` event payload, where `outcome.py` writes it;
   - calibration per session also carries S6 correct as `k` of `n`, `rt_ref_global`, and
-    the trial types that fell back to the global median (fewer than 2 valid trials),
-    for the "Too few {T} trials" tooltip;
+    the trial types that fell back to the global median, for the "Too few {T} trials"
+    tooltip. The rule is the estimator's: fewer than `MIN_TRIALS_PER_TYPE` = **3** valid
+    trials (the copy's "< 2" is out of date; code wins);
   - a group is keyed by estimated state + cause + dimension + direction (so `AWAY`,
     `ENVIRONMENT`, `IMPULSIVE` and the return after `STABLE` stay apart). Each group has
     a string `key` (e.g. `OVERLOADED.<cause>.LAL.UP`), its decisions **per session**
@@ -64,8 +65,10 @@ a phase test with a participant with no Japanese, and the evidence and tags.
     outcome counts plus O4 subtype counts (`RESOLVED`, `HELD_WITH_DROP`…, tooltip) and
     the time of its latest decision (tie-break of the group order);
   - each adaptive session carries its `NO_CHANGE` count ("The system checked {d} times");
-  - trend per completed session: correct in S7 of 20 and mean RT, the same numbers
-    `GET /research/participants/{id}` gives V1.8 today, with kanji set and condition;
+  - trend per completed session: S7 trials, correct and mean RT (`s7_trials`,
+    `s7_correct`, `s7_mean_rt_ms`), with kanji set and condition. **S7 only**, as the
+    validated copy reads ("correct in S7", "of 20"); V1.8's old chart used S5–S8
+    accuracy and the mean RT of every block, so the numbers differ by design;
   - a session with no `adaptation_decisions` rows at all (before migration 0003, 13 Oct)
     is marked `decisions_recorded: false`, so the screen shows "—", never 0. A STATIC
     session has no groups by design and is not marked.
