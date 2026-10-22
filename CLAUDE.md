@@ -23,6 +23,10 @@ EEG, content). They stay aligned through one board:
   updates. Never write there. Hand progress over as a draft in `Claude outputs/`.
 - Edit only the docs and files the board lists as yours (§3). For anything else,
   write a proposal and tell Sebas.
+- Questions for the PM chat go in writing, never only in the conversation: add
+  them, dated, under "Dudas para PM" in a draft in `Claude outputs/`, tell Sebas in
+  one line, and do not act on anything that depends on the answer. With no
+  questions at the end of the day, write "Sin dudas · <date>" (board §2, rule 8).
 
 ## Project docs (planning and design)
 
