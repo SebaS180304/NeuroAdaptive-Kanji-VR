@@ -47,7 +47,7 @@ namespace NeuroAdaptiveVR.Controllers
 
         [Header("Podium (world, metres)")]
         [Tooltip("Centre of the screen.")]
-        [SerializeField] private Vector3 screenCenter = new(0f, 0.98f, 1.02f);
+        [SerializeField] private Vector3 screenCenter = new(0f, 1.22f, 1.02f);   // task raised 0.24 m with the eye at 1.60 (D-F6-25)
         [SerializeField] private Vector2 screenSize = new(0.66f, 0.44f);
         [Tooltip("Degrees the screen leans back from vertical, facing the eye at 1.36 m.")]
         [SerializeField] private float screenTilt = 25f;

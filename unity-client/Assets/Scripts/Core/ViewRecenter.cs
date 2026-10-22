@@ -41,7 +41,7 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private BehaviorTelemetryController telemetry;
 
         [Tooltip("Designed eye position in world space (Diseno_Sala_ESL.md: origin, eye at 1.36 m).")]
-        [SerializeField] private Vector3 designEyePosition = new(0f, 1.36f, 0f);
+        [SerializeField] private Vector3 designEyePosition = new(0f, 1.60f, 0f);   // seated, virtual eye at 1.60 m (D-F6-25, provisional; A-3)
 
         [Tooltip("Designed facing, in degrees of world yaw. 0 = +Z, towards the Learning Board.")]
         [SerializeField] private float designYaw = 0f;

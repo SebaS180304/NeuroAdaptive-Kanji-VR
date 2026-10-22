@@ -926,8 +926,9 @@ namespace NeuroAdaptiveVR.EditorTools
         // ESL visible band (Phase 3, F3.1)
         // ==================================================================
 
-        // Fixed eye of the rig: the camera is anchored at 1.36 m at the origin.
-        private static readonly Vector3 Eye = new Vector3(0f, 1.36f, 0f);
+        // Fixed eye of the rig: the camera is anchored at 1.60 m at the origin (D-F6-25,
+        // provisional; 1.36 m until 22 Oct).
+        private static readonly Vector3 Eye = new Vector3(0f, 1.60f, 0f);
 
         // Measured in the headset on 28 September (Diseno_Sala_ESL.md 8): the
         // visible field is +-42 deg, +-40 deg while fixating the board. The board
