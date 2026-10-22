@@ -103,6 +103,7 @@ namespace NeuroAdaptiveVR.EditorTools
             HeadBehaviorCases();
             DistractorCases();
             PeripheralAnimalCases();
+            SetAObjectCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -1751,6 +1752,47 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X9", "Eventos perifericos: animales (D-F6-28): sorteo 3/2/2, duraciones, entran y salen, reposan en su sitio, <= 3 Hz",
                   p.Count == 0, p.Count == 0 ? Join(entries.Select(t => t.name)) : Join(p));
+        }
+
+        /// <summary>
+        /// X10. Stage-1 objects of S5 for set A (D-F6-20, D-F6-26): five prefabs with the
+        /// reference envelope (±1 cm), pivot at the centre, no collider. All five kanji
+        /// carry an object or none does (never real and placeholder mixed in a session),
+        /// and a reference box is never assigned: boxes are scaffolding, not test content.
+        /// </summary>
+        private static void SetAObjectCases()
+        {
+            var p = new List<string>();
+            var rows = new (string kanji, string code, Vector3 size)[]
+            {
+                ("KANJI_TSUKI", "01_TSUKI", new Vector3(0.23f, 0.30f, 0.08f)), ("KANJI_KURUMA", "02_KURUMA", new Vector3(0.40f, 0.18f, 0.24f)),
+                ("KANJI_HI", "03_HI", new Vector3(0.24f, 0.30f, 0.16f)), ("KANJI_TAKE", "04_TAKE", new Vector3(0.24f, 0.35f, 0.12f)),
+                ("KANJI_ISHI", "05_ISHI", new Vector3(0.30f, 0.28f, 0.18f)),
+            };
+            int assigned = 0, boxes = 0;
+            foreach (var r in rows)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Art/KanjiLessonAssets/Prefabs/{r.code}.prefab");
+                if (prefab == null) { p.Add($"falta el prefab {r.code}"); continue; }
+                bool isBox = prefab.transform.Find("Model_Box") != null;
+                if (isBox) boxes++;
+                var renderers = prefab.GetComponentsInChildren<Renderer>(true);
+                if (renderers.Length == 0) { p.Add($"{r.code} sin malla"); continue; }
+                var b = renderers[0].bounds;
+                foreach (var rr in renderers) b.Encapsulate(rr.bounds);
+                if (Vector3.Distance(b.size, r.size) > 0.0173f) p.Add($"{r.code} mide {b.size:F2}, referencia {r.size:F2}");   // 1 cm per axis
+                if (b.center.magnitude > 0.01f) p.Add($"{r.code} pivote fuera del centro ({b.center:F3})");
+                if (prefab.GetComponentsInChildren<Collider>(true).Length > 0) p.Add($"{r.code} tiene collider");
+                var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{r.kanji}.asset");
+                if (item != null && item.anchorObjectPrefab != null)
+                {
+                    assigned++;
+                    if (item.anchorObjectPrefab.transform.Find("Model_Box") != null) p.Add($"{r.kanji} tiene asignada una caja");
+                }
+            }
+            if (assigned != 0 && assigned != rows.Length) p.Add($"{assigned}/5 kanji con objeto: se mezclan real y placeholder (D-F6-26)");
+            Check("X10", "Objetos de S5 del set A: cinco prefabs del tamano de referencia, los cinco asignados o ninguno, nunca una caja (D-F6-26)",
+                  p.Count == 0, p.Count == 0 ? $"{rows.Length - boxes} modelos, {boxes} cajas · asignados {assigned}/5" : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)
