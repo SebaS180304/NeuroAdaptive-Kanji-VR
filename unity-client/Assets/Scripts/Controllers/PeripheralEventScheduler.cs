@@ -141,8 +141,12 @@ namespace NeuroAdaptiveVR.Controllers
             }
 
             _active = _pool[_rng.Next(_pool.Count)];
+            // Each animal has its own length (bird 1.5 s, cat 4.0 s, butterfly 3.0 s; D-F6-28);
+            // an object without PeripheralAnimation keeps the default.
+            var anim = _active.GetComponent<PeripheralAnimation>();
+            float duration = anim != null ? anim.DurationSeconds : eventDurationSeconds;
             _active.SetActive(true);
-            _activeUntil = Time.time + eventDurationSeconds;
+            _activeUntil = Time.time + duration;
             _eventIndex++;
 
             // Se registra porque Fase 5 necesita poder correlacionar una
@@ -153,7 +157,7 @@ namespace NeuroAdaptiveVR.Controllers
             {
                 { "event_index", _eventIndex },
                 { "object_name", _active.name },
-                { "duration_ms", Mathf.RoundToInt(eventDurationSeconds * 1000f) },
+                { "duration_ms", Mathf.RoundToInt(duration * 1000f) },
             });
             OnPeripheralFired?.Invoke(_active, _eventIndex);
         }

@@ -102,6 +102,7 @@ namespace NeuroAdaptiveVR.EditorTools
             StimulusTelemetryCases(content);
             HeadBehaviorCases();
             DistractorCases();
+            PeripheralAnimalCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -1692,6 +1693,47 @@ namespace NeuroAdaptiveVR.EditorTools
             string seq = string.Join(", ", delays.Select(d => d.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
             Check("N2", "Reintentos de reconexion: 0.5, 1, 2, 4 s y luego cada 5 s, sin rendirse",
                   seq == "0.5, 1.0, 2.0, 4.0, 5.0, 5.0, 5.0", seq);
+        }
+
+        /// <summary>
+        /// X9. The peripheral events are animals (D-F6-28): the seven entries of the draw (bird
+        /// x3 at the old sphere positions, cat x2, butterfly x2, so a uniform draw gives
+        /// 3/7, 2/7, 2/7), each with its length (1.5 / 4.0 / 3.0 s); every one starts and
+        /// ends away from its rest pose (it enters, never pops in), rests where it was put,
+        /// and nothing moves faster than 3 Hz.
+        /// </summary>
+        private static void PeripheralAnimalCases()
+        {
+            var p = new List<string>();
+            var layer = GameObject.Find("EnvironmentalLayer");
+            var container = layer == null ? null : layer.transform.Find("PeripheralEvents");
+            if (container == null) { Check("X9", "Eventos perifericos: animales", false, "no hay PeripheralEvents"); return; }
+            var entries = container.Cast<Transform>().ToList();
+            var anims = entries.Select(t => t.GetComponent<PeripheralAnimation>()).ToList();
+            if (anims.Any(a => a == null)) p.Add("hay eventos sin PeripheralAnimation: " + Join(entries.Where(t => t.GetComponent<PeripheralAnimation>() == null).Select(t => t.name)));
+            var ok = anims.Where(a => a != null).ToList();
+            int Count(PeripheralAnimation.Kind k) => ok.Count(a => a.AnimalKind == k);
+            if (entries.Count != 7 || Count(PeripheralAnimation.Kind.Bird) != 3 || Count(PeripheralAnimation.Kind.Cat) != 2 || Count(PeripheralAnimation.Kind.Butterfly) != 2)
+                p.Add($"sorteo: {entries.Count} entradas, pajaro {Count(PeripheralAnimation.Kind.Bird)}, gato {Count(PeripheralAnimation.Kind.Cat)}, mariposa {Count(PeripheralAnimation.Kind.Butterfly)} (se esperan 7: 3/2/2)");
+            var length = new Dictionary<PeripheralAnimation.Kind, float> {
+                { PeripheralAnimation.Kind.Bird, 1.5f }, { PeripheralAnimation.Kind.Cat, 4.0f }, { PeripheralAnimation.Kind.Butterfly, 3.0f } };
+            foreach (var a in ok)
+            {
+                if (Mathf.Abs(a.DurationSeconds - length[a.AnimalKind]) > 0.01f) p.Add($"{a.name} dura {a.DurationSeconds} s");
+                if (a.RateHz > 3f) p.Add($"{a.name} se mueve a {a.RateHz} Hz");
+                if (a.Model == null) { p.Add($"{a.name} sin Model"); continue; }
+                a.Pose(0f);
+                float start = a.Model.localPosition.magnitude;
+                a.Pose((a.DurationSeconds - a.RestSeconds) * 0.5f + a.RestSeconds * 0.5f);
+                float rest = a.Model.localPosition.magnitude;
+                a.Pose(a.DurationSeconds);
+                float end = a.Model.localPosition.magnitude;
+                a.Pose(0f);
+                if (start < 0.3f || end < 0.3f) p.Add($"{a.name} aparece o desaparece en su sitio (inicio {start:F2} m, final {end:F2} m)");
+                if (rest > 0.05f) p.Add($"{a.name} no reposa en su sitio ({rest:F2} m)");
+            }
+            Check("X9", "Eventos perifericos: animales (D-F6-28): sorteo 3/2/2, duraciones, entran y salen, reposan en su sitio, <= 3 Hz",
+                  p.Count == 0, p.Count == 0 ? Join(entries.Select(t => t.name)) : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)
