@@ -1016,9 +1016,16 @@ namespace NeuroAdaptiveVR.EditorTools
             { "OutsideFigureLeft_T3",       (-39.3f, -24.9f,  -7.7f,  1.7f) },
             { "CurtainRight_T2",            ( 32.9f,  37.7f,  -5.8f, 11.8f) },
             { "OutsideFigureRight_T3",      ( 24.9f,  39.3f,  -7.7f,  1.7f) },
-            { "PeripheralEvent_WindowLeft", (-33.2f, -29.6f,   1.7f,  4.5f) },
-            { "PeripheralEvent_WindowRight",( 29.6f,  33.2f,   1.7f,  4.5f) },
-            { "PeripheralEvent_Shelf",      ( 33.1f,  36.7f,  15.2f, 18.6f) },
+            // Peripheral animals (Diseno_Sala_ESL.md §10.2), room v148, eye at 1.60 m, over their
+            // whole path; measured in Unity 22 Oct with reference-size boxes (D-F6-33). The birds
+            // keep the spheres' ids.
+            { "PeripheralEvent_WindowLeft",           (-34.2f, -26.1f, -11.6f, -3.4f) },
+            { "PeripheralEvent_WindowRight",          ( 26.1f,  34.2f, -11.6f, -3.4f) },
+            { "PeripheralEvent_Shelf",                ( 33.9f,  45.5f,   7.8f, 11.7f) },
+            { "PeripheralEvent_CatWindowLeft",        (-35.7f, -25.6f, -11.5f, -7.3f) },
+            { "PeripheralEvent_CatWindowRight",       ( 26.4f,  35.2f, -11.5f, -7.3f) },
+            { "PeripheralEvent_ButterflyWindowLeft",  (-32.6f, -25.4f,  -3.4f,  0.2f) },
+            { "PeripheralEvent_ButterflyWindowRight", ( 25.4f,  32.6f,  -3.4f,  0.2f) },
         };
 
         private const float LayoutToleranceDeg = 0.5f;
@@ -1064,7 +1071,17 @@ namespace NeuroAdaptiveVR.EditorTools
                 }
 
                 var motion = obj.GetComponent<EnvironmentMotion>();
-                if (motion == null) Add();
+                var animal = obj.GetComponent<PeripheralAnimation>();
+                if (animal != null)
+                {
+                    // A peripheral animal, over its whole path (Diseno_Sala_ESL.md §10.2–§10.3).
+                    try
+                    {
+                        for (int i = 0; i <= MoverSamples; i++) { animal.Pose(animal.DurationSeconds * i / MoverSamples); Add(); }
+                    }
+                    finally { animal.Pose(0f); }
+                }
+                else if (motion == null) Add();
                 else
                 {
                     var restPos = obj.localPosition;

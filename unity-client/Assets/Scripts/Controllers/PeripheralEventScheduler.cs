@@ -69,7 +69,10 @@ namespace NeuroAdaptiveVR.Controllers
         private void HandleProfileApplied(EnvironmentProfile profile)
         {
             _profile = profile;
-            HideActive();
+            // An animal already on show finishes its way out instead of vanishing (Diseno_Sala_ESL.md
+            // §10.2); Update hides it when its time is up. The shortest interval (10 s) is longer
+            // than the longest animal (4 s), so it never overlaps the next one.
+            if (_active != null && _active.GetComponent<PeripheralAnimation>() == null) HideActive();
             RebuildPool();
             if (profile != null && stimulation != null)
                 _rng = new System.Random(EnvironmentSeed.For(stimulation.BaseSeed,
@@ -94,7 +97,7 @@ namespace NeuroAdaptiveVR.Controllers
             foreach (Transform child in container.Cast<Transform>().OrderBy(t => t.name, System.StringComparer.Ordinal))
             {
                 _pool.Add(child.gameObject);
-                child.gameObject.SetActive(false);
+                if (child.gameObject != _active) child.gameObject.SetActive(false);
             }
         }
 

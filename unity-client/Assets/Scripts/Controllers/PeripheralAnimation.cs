@@ -4,47 +4,50 @@ namespace NeuroAdaptiveVR.Controllers
 {
     /// <summary>
     /// How one peripheral animal moves while PeripheralEventScheduler shows it
-    /// (D-F6-22, D-F6-23, D-F6-27, D-F6-28). Blender makes the mesh, Unity moves it:
-    /// this object stays at the rest pose (the old sphere's position, so the
-    /// telemetry name and the seeded draw keep one entry per position), and its
-    /// child "Model" travels in and out. Parts named Wing*, Tail* or Head* under
-    /// Model flap or sway.
+    /// (Diseno_Sala_ESL.md §10.2; D-F6-22, D-F6-23, D-F6-27, D-F6-28). Blender makes
+    /// the mesh, Unity moves it: this object stays at the rest pose and keeps the
+    /// telemetry id (PeripheralEvent_*); its child "Model" travels along the §10.2
+    /// path. Parts named Wing*, Tail* or Head* under Model flap, sway or turn.
     ///
-    /// No pop-in and no luminance change (rule 9 of Diseno_UI_Kanji_Studio_v1.md):
-    /// every animal enters and leaves from outside the view or behind something
-    /// (entryOffset), never by appearing in place. Periodic motion stays at or
-    /// under 3 Hz. Timing is deterministic from the moment it is shown, so the
-    /// same seed shows the same animal doing the same thing.
+    /// Paths are in world coordinates (room v148, eye at 1.60 m), quadratic Béziers
+    /// (start, control, end):
+    /// - Bird: in along (pathStart, pathControl, rest) in inSeconds, perched
+    ///   restSeconds, out along the same curve reversed in outSeconds (0.4 / 0.7 / 0.4).
+    /// - Butterfly: in along (pathStart, pathControl, rest), then out along (rest,
+    ///   outControl, outEnd); no rest; a ±4 cm vertical ripple at 1 Hz on top.
+    /// - Cat: walks the outer sill from pathStart to rest, sits and turns its head
+    ///   about 30° towards the room, turns round and walks out (1.4 / 1.2 / 1.4).
+    ///
+    /// Every path starts and ends hidden (behind the paper half and the curtain, or
+    /// beyond 42°), so an animal never pops in or out (rule 9 of
+    /// Diseno_UI_Kanji_Studio_v1.md). Periodic motion stays at or under 3 Hz. The pose
+    /// is a pure function of the time since it was shown: same seed, same animal,
+    /// same movement; the harness samples it (X9, E13).
     /// </summary>
     public class PeripheralAnimation : MonoBehaviour
     {
         public enum Kind { Bird, Cat, Butterfly }
 
         [SerializeField] private Kind kind = Kind.Bird;
-
-        [Tooltip("Total time visible: bird 1.5 s, cat 4.0 s, butterfly 3.0 s.")]
-        [SerializeField] private float durationSeconds = 1.5f;
-
-        [Tooltip("Where the model starts and ends, relative to the rest pose: outside the view or behind a wall.")]
-        [SerializeField] private Vector3 entryOffset = new(0.9f, 0.6f, 1.2f);
-
-        [Tooltip("Where it leaves to; zero = the way it came.")]
-        [SerializeField] private Vector3 exitOffset = Vector3.zero;
-
-        [Tooltip("Seconds still at the rest pose (bird about 0.7 s).")]
+        [SerializeField] private Vector3 pathStart;
+        [SerializeField] private Vector3 pathControl;
+        [Tooltip("Butterfly only: the way out.")]
+        [SerializeField] private Vector3 outControl;
+        [SerializeField] private Vector3 outEnd;
+        [SerializeField] private float inSeconds = 0.4f;
         [SerializeField] private float restSeconds = 0.7f;
+        [SerializeField] private float outSeconds = 0.4f;
 
-        [Tooltip("Flap or sway rate; the design caps it at 3 Hz.")]
-        [SerializeField, Range(0.5f, 3f)] private float rateHz = 3f;
+        private const float WingHz = 3f, StepHz = 1.5f, TailHz = 0.5f, RippleHz = 1f, RippleM = 0.04f;
 
         private Transform _model;
         private Transform[] _wings, _tails, _heads;
         private Quaternion[] _wingRest, _tailRest, _headRest;
         private float _shownAt;
 
-        public float DurationSeconds => durationSeconds;
+        public float DurationSeconds => inSeconds + restSeconds + outSeconds;
         public float RestSeconds => restSeconds;
-        public float RateHz => rateHz;
+        public float RateHz => Mathf.Max(kind == Kind.Cat ? StepHz : WingHz, RippleHz);
         public Kind AnimalKind => kind;
         public Transform Model => Init() ? _model : null;
 
@@ -84,39 +87,64 @@ namespace NeuroAdaptiveVR.Controllers
 
         private void Update() => Pose(Time.time - _shownAt);
 
+        private static Vector3 Bezier(Vector3 a, Vector3 c, Vector3 b, float u)
+        {
+            u = Mathf.Clamp01(u);
+            float v = 1f - u;
+            return v * v * a + 2f * v * u * c + u * u * b;
+        }
+
+        private static float Smooth(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
+
+        /// <summary>World position of the model at t seconds after being shown, and whether it is travelling.</summary>
+        public Vector3 PathAt(float t, out bool moving)
+        {
+            Vector3 rest = transform.position;
+            moving = true;
+            switch (kind)
+            {
+                case Kind.Butterfly:
+                    Vector3 p = t < inSeconds
+                        ? Bezier(pathStart, pathControl, rest, Smooth(t / inSeconds))
+                        : Bezier(rest, outControl, outEnd, Smooth((t - inSeconds - restSeconds) / outSeconds));
+                    return p + new Vector3(0f, RippleM * Mathf.Sin(2f * Mathf.PI * RippleHz * t), 0f);
+                case Kind.Cat:
+                    if (t < inSeconds) return Vector3.Lerp(pathStart, rest, Smooth(t / inSeconds));
+                    if (t < inSeconds + restSeconds) { moving = false; return rest; }
+                    return Vector3.Lerp(rest, pathStart, Smooth((t - inSeconds - restSeconds) / outSeconds));
+                default: // bird
+                    if (t < inSeconds) return Bezier(pathStart, pathControl, rest, Smooth(t / inSeconds));
+                    if (t < inSeconds + restSeconds) { moving = false; return rest; }
+                    return Bezier(pathStart, pathControl, rest, Smooth(1f - (t - inSeconds - restSeconds) / outSeconds));
+            }
+        }
+
         /// <summary>The pose at t seconds after being shown; public so the harness can sample it.</summary>
         public void Pose(float t)
         {
             if (!Init()) return;
-            float travel = Mathf.Max(0.01f, (durationSeconds - restSeconds) * 0.5f);
-            Vector3 exit = exitOffset == Vector3.zero ? entryOffset : exitOffset;
-            Vector3 offset;
-            bool moving;
-            if (t < travel) { offset = Vector3.Lerp(entryOffset, Vector3.zero, Smooth(t / travel)); moving = true; }
-            else if (t < travel + restSeconds) { offset = Vector3.zero; moving = false; }
-            else { offset = Vector3.Lerp(Vector3.zero, exit, Smooth((t - travel - restSeconds) / travel)); moving = true; }
+            Vector3 world = PathAt(t, out bool moving);
+            Vector3 ahead = PathAt(t + 0.02f, out _);
+            _model.position = world;
+            Vector3 dir = ahead - world; dir.y = 0f;
+            if (moving && dir.sqrMagnitude > 1e-8f) _model.rotation = Quaternion.LookRotation(dir.normalized);
+            else if (!moving) _model.rotation = Quaternion.LookRotation(kind == Kind.Cat ? new Vector3(-Mathf.Sign(transform.position.x), 0f, 0f) : Vector3.back);
 
-            // The butterfly never flies straight: a small vertical wobble on its path, at the flap rate.
-            if (kind == Kind.Butterfly) offset += new Vector3(0f, 0.03f * Mathf.Sin(2f * Mathf.PI * rateHz * 0.5f * t), 0f);
-            _model.localPosition = offset;
-            if (offset.sqrMagnitude > 1e-6f && kind != Kind.Cat)
-                _model.localRotation = Quaternion.LookRotation(new Vector3(-offset.x, 0f, -offset.z).normalized + new Vector3(0f, 0f, 1e-4f));
-            else
-                _model.localRotation = Quaternion.identity;
-
-            float phase = Mathf.Sin(2f * Mathf.PI * rateHz * t);
+            float tin = t - inSeconds;
             switch (kind)
             {
-                case Kind.Bird:        // wings beat while flying, folded while perched
-                    Swing(_wings, _wingRest, moving ? 55f * phase : 0f, Vector3.forward, true);
+                case Kind.Bird:        // gliding with a beat of at most 3 Hz in flight; folded and a head turn when perched
+                    Swing(_wings, _wingRest, moving ? 35f * Mathf.Sin(2f * Mathf.PI * WingHz * t) : 0f, Vector3.forward, true);
+                    Swing(_heads, _headRest, moving ? 0f : 25f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(tin / restSeconds)), Vector3.up, false);
                     break;
-                case Kind.Butterfly:   // wings beat the whole time
-                    Swing(_wings, _wingRest, 60f * Mathf.Abs(phase), Vector3.forward, true);
+                case Kind.Butterfly:   // wings at 3 Hz the whole time
+                    Swing(_wings, _wingRest, 60f * Mathf.Abs(Mathf.Sin(Mathf.PI * WingHz * t)), Vector3.forward, true);
                     break;
-                case Kind.Cat:         // tail sways, head turns slowly once towards the room
-                    Swing(_tails, _tailRest, 20f * phase, Vector3.up, false);
-                    float look = Mathf.Clamp01((t - travel) / Mathf.Max(0.01f, restSeconds));
-                    Swing(_heads, _headRest, 25f * Mathf.Sin(Mathf.PI * look), Vector3.up, false);
+                case Kind.Cat:         // steps at 1.5 Hz while walking, tail at 0.5 Hz, head about 30° towards the room while sitting
+                    if (moving) _model.position += new Vector3(0f, 0.01f * Mathf.Abs(Mathf.Sin(Mathf.PI * StepHz * t)), 0f);
+                    Swing(_tails, _tailRest, 20f * Mathf.Sin(2f * Mathf.PI * TailHz * t), Vector3.up, false);
+                    // facing the board along the sill, the room (−z) is a turn of −30° on the right window and +30° on the left
+                    Swing(_heads, _headRest, moving ? 0f : -Mathf.Sign(transform.position.x) * 30f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(tin / restSeconds)), Vector3.up, false);
                     break;
             }
         }
@@ -130,7 +158,5 @@ namespace NeuroAdaptiveVR.Controllers
                 parts[i].localRotation = rest[i] * Quaternion.AngleAxis(d, axis);
             }
         }
-
-        private static float Smooth(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
     }
 }
