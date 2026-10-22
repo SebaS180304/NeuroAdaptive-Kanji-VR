@@ -39,7 +39,8 @@ describe('Learner Profile copy (Contenido_UI_F-PROFILE.md)', () => {
 
   it('gives the latest value, the range across sessions and the global-median fallback', () => {
     const rows = calibrationRows([cal({ correct: 6, rt_ref: { T1_MEANING_TO_KANJI: 2900 } }), cal({ fallback_types: ['T2_KANJI_TO_MEANING'] })])
-    expect(rows.find((r) => r.label === 'Kanji to meaning (T2)')).toMatchObject({ latest: '1.5 s', fallback: true })
+    expect(rows.find((r) => r.label === 'Kanji to meaning (T2)')).toMatchObject({
+      latest: '1.5 s', fallback: true, fallbackTip: 'Too few T2 trials in practice; this uses the overall median.' })
     expect(rows.find((r) => r.label === 'Meaning to kanji (T1)')).toMatchObject({ latest: '2.3 s', range: '2.3–2.9 s' })
     expect(rows.find((r) => r.label === 'Correct in practice')).toMatchObject({ latest: '7 of 8', range: '6–7 of 8' })
     expect(rows.find((r) => r.label === 'Looking away from the task')).toMatchObject({ latest: '0.4 s per trial', range: '0.4 s' })
@@ -66,15 +67,16 @@ describe('Learner Profile copy (Contenido_UI_F-PROFILE.md)', () => {
       outcome_reasons: { POSITIVE: { RESOLVED: 1 }, UNCERTAIN: { INCOMPLETE: 1, NOT_APPLIED: 1 }, NOT_RECORDED: { NOT_RECORDED: 1 } } }))
     expect(rescue.map((b) => b.text)).toEqual([
       'Recovered after: 1', "Can't tell: not applied: 1", "Can't tell: S7 ended first: 1", 'Not recorded: 1'])
-    expect(rescue[0]!.title).toBe('POSITIVE · RESOLVED 1')
+    expect(rescue.map((b) => b.title).slice(0, 3)).toEqual(['POSITIVE, RESOLVED', 'UNCERTAIN, NOT_APPLIED', 'UNCERTAIN, INCOMPLETE'])
     const back = badges(group({ learner_state: 'STABLE', direction: 'DOWN', outcomes: { POSITIVE: 1, NEUTRAL: 1, NEGATIVE: 1 },
       outcome_reasons: { POSITIVE: { HELD: 1 }, NEUTRAL: { HELD_WITH_DROP: 1 }, NEGATIVE: { RELAPSED: 1 } } }))
     expect(back.map((b) => b.text)).toEqual(['Held after: 1', 'Held, with a dip: 1', 'Slipped after: 1'])
   })
 
   it('says STATIC never adapts, also with a single session', () => {
-    expect(staticOnly(2)).toMatch(/^No adaptations: all 2 sessions so far were STATIC/)
-    expect(staticOnly(1)).toMatch(/^No adaptations: the only session so far was STATIC, .* come from this session\.$/)
+    expect(staticOnly(1)).toBe('No adaptations: the only session so far was STATIC, and STATIC never adapts. Usual performance comes from this session.')
+    expect(staticOnly(2)).toBe('No adaptations: both sessions so far were STATIC, and STATIC never adapts. Usual performance and the results across sessions come from them.')
+    expect(staticOnly(3)).toMatch(/^No adaptations: all 3 sessions so far were STATIC, .* the trend come from these sessions\.$/)
   })
 
   it('describes first and last session only, with no projection', () => {

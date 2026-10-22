@@ -3,7 +3,7 @@ import { GridComponent, TooltipComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
-import type { Condition } from '@/components/ConditionChip'
+import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { tokenReader } from '@/lib/tokens'
 
 echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
@@ -38,22 +38,19 @@ export function trendOption(points: TrendPoint[], measure: Measure, color: (n: s
   return {
     animation: false,
     textStyle: { fontFamily: 'Public Sans' },
-    grid: { left: 56, right: 56, top: 16, bottom: 48 },
+    grid: { left: 72, right: 56, top: 8, bottom: 28 },   // compact, about 124 px (design-system.md, F-PROFILE)
     tooltip: {
       trigger: 'item',
       formatter: (p: { dataIndex: number }) => {
         const t = points[p.dataIndex]!
         return echarts.format.encodeHTML(
-          `Session ${t.n}, ${t.date}${t.visit > 1 ? `, visit ${t.visit}` : ''}${t.set ? `, set ${t.set}` : ''}: ${formatMeasure(measure, t.value, t.of)}`)
+          `Session ${t.n}, ${CONDITION_LABEL[t.condition]}${t.set ? `, set ${t.set}` : ''}, ${
+            measure === 'correct' ? `${t.value} of ${t.of} correct` : formatMeasure(measure, t.value)}`)
       },
     },
     xAxis: {
       type: 'category',
       data: points.map((p) => String(p.n)),
-      name: 'Completed sessions, numbered as in the table',
-      nameLocation: 'middle',
-      nameGap: 32,
-      nameTextStyle: text,
       axisTick: { show: false },
       axisLine: { lineStyle: { color: color('--color-border-strong') } },
       axisLabel: { ...text, interval: many ? (_: number, label: string) => Number(label) % 5 === 0 : 0 },
@@ -100,5 +97,5 @@ export function TrendChart({ points, measure }: { points: TrendPoint[]; measure:
     return () => media.removeEventListener('change', draw)
   }, [points, measure])
 
-  return <div ref={el} aria-hidden="true" className="h-[248px] w-full" />
+  return <div ref={el} aria-hidden="true" className="h-[124px] w-full" />
 }

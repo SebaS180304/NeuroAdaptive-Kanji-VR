@@ -77,7 +77,7 @@ async function learnerProfile() {
   return region
 }
 
-const facts = () => screen.findByRole('complementary', { name: 'Participant facts' })
+const facts = () => screen.findByRole('region', { name: 'Pre-test and kanji sets' })
 
 describe('participant view (V1.8)', () => {
   beforeEach(() => show(DONE))
@@ -147,11 +147,11 @@ describe('learner profile (F-PROFILE)', () => {
     const p = await learnerProfile()
     expect(p).toHaveTextContent('In practice (S6) of the latest session, P01 answered 7 of 8 correctly, taking about 2.0 s per answer')
     expect(within(p).getByRole('row', { name: /Correct in practice/ })).toHaveTextContent('7 of 86–7 of 8')
-    expect(within(p).getByTitle('Too few Kanji to meaning (T2) trials in practice; this uses the overall median.')).toBeInTheDocument()
+    expect(within(p).getByLabelText('Too few T2 trials in practice; this uses the overall median.')).toBeInTheDocument()
     expect(p).toHaveTextContent('From practice (S6) of 2 completed sessions: 1 STATIC, 1 adaptive.')
     expect(p).toHaveTextContent('When answers got slower and less accurate than in practice (estimated overload), assistance (LAL) was raised 1 time.')
     expect(within(p).getByText('Too few to tell')).toBeInTheDocument()
-    expect(within(p).getByTitle('POSITIVE · RESOLVED 1')).toHaveTextContent('Recovered after: 1')
+    expect(within(p).getByTitle('POSITIVE, RESOLVED')).toHaveTextContent('Recovered after: 1')
     expect(within(p).getByRole('link', { name: 'See 1 decision' })).toHaveAttribute('href', `/sessions/${C}?tab=adaptations`)
     expect(p).toHaveTextContent('From 1 completed adaptive session. STATIC sessions never adapt')
     expect(p).toHaveTextContent('Two sessions so far: 15 then 17 correct in S7, 2.4 then 2.4 s per answer. Too few for a trend.')
@@ -187,7 +187,7 @@ describe('learner profile (F-PROFILE)', () => {
     show(DONE, { ...PROFILE, profile: { ...PROFILE.profile!, adaptations: [],
       trend: PROFILE.profile!.trend.map((t) => ({ ...t, condition: 'STATIC' as const, no_change: null, decisions_recorded: null })) } })
     expect(await learnerProfile()).toHaveTextContent(
-      'No adaptations: all 2 sessions so far were STATIC, and STATIC never adapts. Usual performance and the trend come from these sessions.')
+      'No adaptations: both sessions so far were STATIC, and STATIC never adapts. Usual performance and the results across sessions come from them.')
   })
 
   it('with adaptive sessions and no change, says how often the system checked', async () => {
@@ -210,6 +210,8 @@ describe('learner profile (F-PROFILE)', () => {
       show(DONE, profile)
       const p = await learnerProfile()
       expect(within(p).getByRole('heading', { name: 'No profile yet.' })).toBeInTheDocument()
+      expect(p).toHaveTextContent('A summary of the completed sessions. It describes what happened')
+      expect(p).toHaveTextContent('No profile computed')
       expect(p).toHaveTextContent('P01 has no completed session yet. The profile appears after the first one. Pre-test done on 2026-10-12.')
       expect(p.textContent).not.toMatch(/abort|failed|incomplete|dropped|didn't finish/i)
       cleanup()

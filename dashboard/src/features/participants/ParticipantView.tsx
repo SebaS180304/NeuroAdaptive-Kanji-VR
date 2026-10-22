@@ -56,14 +56,16 @@ function sessionsFact(sessions: Row[]): string {
   ].join(', ')
 }
 
-function Facts({ p }: { p: Detail }) {
+function PretestFacts({ p }: { p: Detail }) {
   const before = p.sessions.filter((s) => s.before_pretest).length
   const notes = [
     ...participantNotes(p),
     ...(before > 0 ? [`${plural(before, 'session', 'sessions')} recorded before the pre-test`] : []),
   ]
   return (
-    <aside aria-label="Participant facts" className="col-span-16 min-[1056px]:col-span-6">
+    <section aria-label="Pre-test and kanji sets" className="col-span-16 flex flex-col gap-4 border-t pt-6 min-[1056px]:col-span-10">
+      <h2 className="type-title m-0">Pre-test and kanji sets</h2>
+      <p className="type-lead m-0 max-w-[640px] text-(--color-text-secondary)">{lead(p)}</p>
       <dl className="type-body m-0 grid grid-cols-[120px_minmax(0,1fr)] gap-x-4 gap-y-2">
         <dt className="text-(--color-text-muted)">Pre-test</dt>
         {p.pretest_completed_at ? (
@@ -85,7 +87,7 @@ function Facts({ p }: { p: Detail }) {
         <dt className="text-(--color-text-muted)">Notes</dt>
         <dd className="m-0">{notes.length ? <NoteList notes={notes} /> : 'None'}</dd>
       </dl>
-    </aside>
+    </section>
   )
 }
 
@@ -93,14 +95,11 @@ function Substitutions({ p }: { p: Detail }) {
   return (
     <section
       aria-label="Pre-test substitutions"
-      className="col-span-16 flex flex-col gap-4 border-t-2 border-(--color-text) pt-6 min-[1056px]:col-span-6"
+      className="col-span-16 flex flex-col gap-3 border-t pt-6 min-[1056px]:col-span-6"
     >
-      <h2 className="type-title m-0">Kanji replaced by the pre-test</h2>
+      <h2 className="type-subtitle m-0">Kanji replaced by the pre-test</h2>
       {p.substitutions.length > 0 ? (
         <>
-          <p className="type-body m-0 text-(--color-text-secondary)">
-            Known kanji were swapped for the closest reserve kanji before the first visit.
-          </p>
           <table aria-label="Kanji replaced by the pre-test" className="type-body w-full border-collapse">
             <thead>
               <tr>
@@ -216,20 +215,20 @@ export function ParticipantView() {
   })
   const notFound = error instanceof ApiError && (error.status === 404 || error.status === 422)
 
+  // This page's grid uses a 24 px row gap (design-system.md, F-PROFILE), not the shell's 32 px.
   return (
-    <>
-      <header className="col-span-16 flex flex-col gap-4 min-[1056px]:col-span-10">
+    <div className="col-span-16 grid grid-cols-16 content-start gap-x-8 gap-y-6">
+      <header className="col-span-16 flex flex-col gap-2 min-[1056px]:col-span-10">
         <Link to="/participants" className="type-caption text-(--color-accent) no-underline hover:text-(--color-accent-hover)">Participants</Link>
         <h1 className="type-display m-0">
           Participant {data && <span className="font-mono text-[30px] tracking-[-0.6px]">{data.external_code}</span>}
         </h1>
       </header>
       {data && (
-        <div aria-label="Sessions and conditions" className="type-body col-span-16 flex flex-col gap-2 self-end min-[1056px]:col-span-6 min-[1056px]:items-end">
-          <div className="flex flex-wrap gap-2">
-            {data.conditions.length ? data.conditions.map((c) => <ConditionChip key={c} c={c} />) : <Missing reason="No sessions yet" />}
-          </div>
-          <span className="text-(--color-text-secondary)">{sessionsFact(data.sessions)}</span>
+        <div aria-label="Sessions and conditions"
+          className="type-body col-span-16 flex flex-wrap items-center gap-2 self-end min-[1056px]:col-span-6 min-[1056px]:justify-end">
+          {data.conditions.length ? data.conditions.map((c) => <ConditionChip key={c} c={c} />) : <Missing reason="No sessions yet" />}
+          <span className="text-(--color-text-muted)">{sessionsFact(data.sessions)}</span>
         </div>
       )}
 
@@ -244,12 +243,11 @@ export function ParticipantView() {
       {data && (
         <>
           <LearnerProfile p={data} />
-          <p className="type-lead col-span-16 m-0 max-w-[640px] text-(--color-text-secondary) min-[1056px]:col-span-10">{lead(data)}</p>
-          <Facts p={data} />
+          <PretestFacts p={data} />
           <Substitutions p={data} />
           <SessionsTable sessions={data.sessions} />
         </>
       )}
-    </>
+    </div>
   )
 }

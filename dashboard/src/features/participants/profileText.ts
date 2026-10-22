@@ -13,6 +13,10 @@ const sessions = (n: number) => `${n} completed ${n === 1 ? 'session' : 'session
 // Rounded on whole tenths: (1950 / 1000).toFixed(1) would give 1.9.
 const sec = (ms: number) => (Math.round(ms / 100) / 10).toFixed(1)
 
+// The empty profile keeps the scope line without a count (design-system.md, D-F6-11).
+export const EMPTY_SCOPE =
+  "A summary of the completed sessions. It describes what happened in windows of trials, not the person, and it doesn't change how the next session starts."
+
 export const scopeLine = (n: number) =>
   `A summary of ${sessions(n)}. It describes what happened in windows of trials, not the person, and it doesn't change how the next session starts.`
 
@@ -31,7 +35,7 @@ export const TYPES: [string, string][] = [
   ['T3_KANJI_TO_READING', 'Kanji to reading (T3)'],
 ]
 
-export type CalRow = { label: string; latest: string; range: string | null; fallback?: boolean; type?: string; rt?: boolean }
+export type CalRow = { label: string; latest: string; range: string | null; fallback?: boolean; fallbackTip?: string; rt?: boolean }
 
 const span = (values: number[], fmt: (v: number) => string, unit = '') => {
   const lo = Math.min(...values), hi = Math.max(...values)
@@ -44,7 +48,8 @@ export function calibrationRows(cals: Cal[]): CalRow[] {
   const many = cals.length > 1
   const rows: CalRow[] = TYPES.filter(([t]) => last.rt_ref[t] !== undefined).map(([t, label]) => {
     const values = cals.map((c) => c.rt_ref[t]).filter((v): v is number => v !== undefined)
-    return { label, type: t, rt: true, latest: `${sec(last.rt_ref[t]!)} s`, fallback: last.fallback_types.includes(t),
+    return { label, rt: true, latest: `${sec(last.rt_ref[t]!)} s`, fallback: last.fallback_types.includes(t),
+             fallbackTip: `Too few ${t.slice(0, 2)} trials in practice; this uses the overall median.`,
              range: many ? span(values, sec, ' s') : null }
   })
   const sameN = cals.every((c) => c.n === last.n)
@@ -107,14 +112,15 @@ export type Badge = { outcome: string; text: string; title: string }
 /** One badge per result, in a fixed order (never sorted by result, D-F6-1). */
 export function badges(g: Group): Badge[] {
   const reasons = (o: string) => Object.entries(g.outcome_reasons[o] ?? {})
-  const title = (o: string, rs: [string, number][]) => [o, ...rs.map(([r, n]) => `${r} ${n}`)].join(' · ')
+  // The enum, then the subtype after a comma, no count (design-system.md, D-F6-11).
+  const title = (o: string, rs: [string, number][]) => [o, ...rs.map(([r]) => r)].join(', ')
   const out: Badge[] = []
   for (const o of CLASSIFIED) {
     const n = g.outcomes[o]
     if (n) out.push({ outcome: o, text: `${LABEL[o][isReturn(g) ? 1 : 0]}: ${n}`, title: title(o, reasons(o)) })
   }
   for (const [r, n] of reasons('UNCERTAIN').sort(([a], [b]) => (a === 'NOT_APPLIED' ? -1 : b === 'NOT_APPLIED' ? 1 : 0)))
-    out.push({ outcome: 'UNCERTAIN', text: `${UNCERTAIN_LABEL[r] ?? "Can't tell"}: ${n}`, title: `UNCERTAIN · ${r} ${n}` })
+    out.push({ outcome: 'UNCERTAIN', text: `${UNCERTAIN_LABEL[r] ?? "Can't tell"}: ${n}`, title: `UNCERTAIN, ${r}` })
   if (g.outcomes.NOT_RECORDED)
     out.push({ outcome: 'NOT_RECORDED', text: `Not recorded: ${g.outcomes.NOT_RECORDED}`, title: 'No outcome was recorded for these changes' })
   return out
@@ -125,10 +131,12 @@ const s = (n: number) => (n === 1 ? '' : 's')
 export const adaptationsOrigin = (adaptive: number) =>
   `From ${adaptive} completed adaptive session${s(adaptive)}. STATIC sessions never adapt and aren't counted here.`
 
-// One session is not in the copy; "the only session" keeps the sentence grammatical.
-export const staticOnly = (n: number) => n === 1
-  ? 'No adaptations: the only session so far was STATIC, and STATIC never adapts. Usual performance and the trend come from this session.'
-  : `No adaptations: all ${n} sessions so far were STATIC, and STATIC never adapts. Usual performance and the trend come from these sessions.`
+// By completed sessions (Contenido_UI_F-PROFILE.md §5): with 1 or 2 there is no trend yet, so it isn't named.
+export function staticOnly(n: number): string {
+  if (n === 1) return 'No adaptations: the only session so far was STATIC, and STATIC never adapts. Usual performance comes from this session.'
+  if (n === 2) return 'No adaptations: both sessions so far were STATIC, and STATIC never adapts. Usual performance and the results across sessions come from them.'
+  return `No adaptations: all ${n} sessions so far were STATIC, and STATIC never adapts. Usual performance and the trend come from these sessions.`
+}
 
 export const noChanges = (adaptive: number, checked: number) =>
   `No adaptations in ${adaptive} adaptive session${s(adaptive)}. The system checked ${checked} times and kept the levels each time.`
