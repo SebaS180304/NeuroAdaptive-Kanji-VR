@@ -15,8 +15,10 @@ namespace NeuroAdaptiveVR.Controllers
     ///   restSeconds, out along the same curve reversed in outSeconds (0.4 / 0.7 / 0.4).
     /// - Butterfly: in along (pathStart, pathControl, rest), then out along (rest,
     ///   outControl, outEnd); no rest; a ±4 cm vertical ripple at 1 Hz on top.
-    /// - Cat: walks the outer sill from pathStart to rest, sits and turns its head
-    ///   about 30° towards the room, turns round and walks out (1.4 / 1.2 / 1.4).
+    /// - Cat: walks the outer sill from pathStart to rest, stands turning its head
+    ///   about 30° towards the room, turns round and walks out (1.4 / 1.2 / 1.4). It
+    ///   never sits (D-F6-34): it walks by rotating its four rigid legs (Leg*).
+    ///   Parts named Leg* swing in a diagonal gait (front-left with back-right).
     ///
     /// Every path starts and ends hidden (behind the paper half and the curtain, or
     /// beyond 42°), so an animal never pops in or out (rule 9 of
@@ -41,8 +43,8 @@ namespace NeuroAdaptiveVR.Controllers
         private const float WingHz = 3f, StepHz = 1.5f, TailHz = 0.5f, RippleHz = 1f, RippleM = 0.04f;
 
         private Transform _model;
-        private Transform[] _wings, _tails, _heads;
-        private Quaternion[] _wingRest, _tailRest, _headRest;
+        private Transform[] _wings, _tails, _heads, _legs;
+        private Quaternion[] _wingRest, _tailRest, _headRest, _legRest;
         private float _shownAt;
 
         public float DurationSeconds => inSeconds + restSeconds + outSeconds;
@@ -59,8 +61,8 @@ namespace NeuroAdaptiveVR.Controllers
             if (_model != null) return true;
             _model = transform.Find("Model");
             if (_model == null) { Debug.LogError($"[PeripheralAnimation] {name} has no Model child."); enabled = false; return false; }
-            _wings = Parts("Wing"); _tails = Parts("Tail"); _heads = Parts("Head");
-            _wingRest = Rest(_wings); _tailRest = Rest(_tails); _headRest = Rest(_heads);
+            _wings = Parts("Wing"); _tails = Parts("Tail"); _heads = Parts("Head"); _legs = Parts("Leg");
+            _wingRest = Rest(_wings); _tailRest = Rest(_tails); _headRest = Rest(_heads); _legRest = Rest(_legs);
             return true;
         }
 
@@ -140,8 +142,14 @@ namespace NeuroAdaptiveVR.Controllers
                 case Kind.Butterfly:   // wings at 3 Hz the whole time
                     Swing(_wings, _wingRest, 60f * Mathf.Abs(Mathf.Sin(Mathf.PI * WingHz * t)), Vector3.forward, true);
                     break;
-                case Kind.Cat:         // steps at 1.5 Hz while walking, tail at 0.5 Hz, head about 30° towards the room while sitting
-                    if (moving) _model.position += new Vector3(0f, 0.01f * Mathf.Abs(Mathf.Sin(Mathf.PI * StepHz * t)), 0f);
+                case Kind.Cat:         // legs at 1.5 Hz while walking, tail at 0.5 Hz, head about 30° towards the room while standing (D-F6-34)
+                    float stride = moving ? 25f * Mathf.Sin(2f * Mathf.PI * StepHz * t) : 0f;
+                    for (int i = 0; i < _legs.Length; i++)
+                    {
+                        string n = _legs[i].name;   // diagonal pairs move together: LegFL with LegBR, LegFR with LegBL
+                        float sign = n.EndsWith("FL") || n.EndsWith("BR") ? 1f : -1f;
+                        _legs[i].localRotation = _legRest[i] * Quaternion.AngleAxis(sign * stride, Vector3.right);
+                    }
                     Swing(_tails, _tailRest, 20f * Mathf.Sin(2f * Mathf.PI * TailHz * t), Vector3.up, false);
                     // facing the board along the sill, the room (−z) is a turn of −30° on the right window and +30° on the left
                     Swing(_heads, _headRest, moving ? 0f : -Mathf.Sign(transform.position.x) * 30f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(tin / restSeconds)), Vector3.up, false);

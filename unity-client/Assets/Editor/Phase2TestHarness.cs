@@ -1023,8 +1023,8 @@ namespace NeuroAdaptiveVR.EditorTools
             { "PeripheralEvent_WindowLeft",           (-34.2f, -26.1f, -11.6f, -3.4f) },
             { "PeripheralEvent_WindowRight",          ( 26.1f,  34.2f, -11.6f, -3.4f) },
             { "PeripheralEvent_Shelf",                ( 33.9f,  45.5f,   7.8f, 11.7f) },
-            { "PeripheralEvent_CatWindowLeft",        (-35.7f, -25.6f, -11.5f, -7.3f) },
-            { "PeripheralEvent_CatWindowRight",       ( 26.4f,  35.2f, -11.5f, -7.3f) },
+            { "PeripheralEvent_CatWindowLeft",        (-35.3f, -26.1f, -11.4f, -7.2f) },   // standing (D-F6-34)
+            { "PeripheralEvent_CatWindowRight",       ( 26.0f,  35.3f, -11.4f, -7.2f) },
             { "PeripheralEvent_ButterflyWindowLeft",  (-32.6f, -25.4f,  -3.4f,  0.2f) },
             { "PeripheralEvent_ButterflyWindowRight", ( 25.4f,  32.6f,  -3.4f,  0.2f) },
         };
@@ -1749,6 +1749,21 @@ namespace NeuroAdaptiveVR.EditorTools
                 a.Pose(0f);
                 if (start < 0.3f || end < 0.3f) p.Add($"{a.name} aparece o desaparece en su sitio (inicio {start:F2} m, final {end:F2} m)");
                 if (rest > 0.05f) p.Add($"{a.name} no reposa en su sitio ({rest:F2} m)");
+                if (a.AnimalKind == PeripheralAnimation.Kind.Cat)
+                {
+                    // D-F6-34: four rigid legs that swing while it walks and stay still while it stands.
+                    var legs = a.Model.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("Leg")).ToList();
+                    if (legs.Count != 4) p.Add($"{a.name} tiene {legs.Count} patas");
+                    else
+                    {
+                        a.Pose(0.2f);
+                        float walking = legs.Max(l => Quaternion.Angle(l.localRotation, Quaternion.identity));
+                        a.Pose((a.DurationSeconds - a.RestSeconds) * 0.5f + a.RestSeconds * 0.5f);
+                        float standing = legs.Max(l => Quaternion.Angle(l.localRotation, Quaternion.identity));
+                        a.Pose(0f);
+                        if (walking < 5f || standing > 0.5f) p.Add($"{a.name}: patas {walking:F0} grados caminando, {standing:F1} de pie");
+                    }
+                }
             }
             Check("X9", "Eventos perifericos: animales (D-F6-28): sorteo 3/2/2, duraciones, entran y salen, reposan en su sitio, <= 3 Hz",
                   p.Count == 0, p.Count == 0 ? Join(entries.Select(t => t.name)) : Join(p));
