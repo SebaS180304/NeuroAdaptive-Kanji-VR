@@ -1020,9 +1020,9 @@ namespace NeuroAdaptiveVR.EditorTools
             // Peripheral animals (Diseno_Sala_ESL.md §10.2), room v148, eye at 1.60 m, over their
             // whole path; measured in Unity 22 Oct with reference-size boxes (D-F6-33). The birds
             // keep the spheres' ids.
-            { "PeripheralEvent_WindowLeft",           (-34.2f, -26.1f, -11.6f, -3.4f) },
-            { "PeripheralEvent_WindowRight",          ( 26.1f,  34.2f, -11.6f, -3.4f) },
-            { "PeripheralEvent_Shelf",                ( 33.9f,  45.5f,   7.8f, 11.7f) },
+            { "PeripheralEvent_WindowLeft",           (-34.2f, -26.5f, -11.7f, -3.4f) },   // wings folded when perched
+            { "PeripheralEvent_WindowRight",          ( 26.5f,  34.2f, -11.7f, -3.4f) },
+            { "PeripheralEvent_Shelf",                ( 34.2f,  45.5f,   7.7f, 11.7f) },
             { "PeripheralEvent_CatWindowLeft",        (-35.3f, -26.1f, -11.4f, -7.2f) },   // standing (D-F6-34)
             { "PeripheralEvent_CatWindowRight",       ( 26.0f,  35.3f, -11.4f, -7.2f) },
             { "PeripheralEvent_ButterflyWindowLeft",  (-32.6f, -25.4f,  -3.4f,  0.2f) },
@@ -1749,6 +1749,15 @@ namespace NeuroAdaptiveVR.EditorTools
                 a.Pose(0f);
                 if (start < 0.3f || end < 0.3f) p.Add($"{a.name} aparece o desaparece en su sitio (inicio {start:F2} m, final {end:F2} m)");
                 if (rest > 0.05f) p.Add($"{a.name} no reposa en su sitio ({rest:F2} m)");
+                if (a.AnimalKind == PeripheralAnimation.Kind.Bird)
+                {
+                    // §10.2: wings open in flight, folded when perched.
+                    var wings = a.Model.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("Wing")).ToList();
+                    a.Pose((a.DurationSeconds - a.RestSeconds) * 0.5f + a.RestSeconds * 0.5f);
+                    float perched = wings.Count == 0 ? 0f : wings.Min(w => Quaternion.Angle(w.localRotation, Quaternion.identity));
+                    a.Pose(0f);
+                    if (wings.Count != 2 || perched < 60f) p.Add($"{a.name}: {wings.Count} alas, plegadas {perched:F0} grados posado");
+                }
                 if (a.AnimalKind == PeripheralAnimation.Kind.Cat)
                 {
                     // D-F6-34: four rigid legs that swing while it walks and stay still while it stands.

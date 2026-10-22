@@ -41,6 +41,8 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float outSeconds = 0.4f;
 
         private const float WingHz = 3f, StepHz = 1.5f, TailHz = 0.5f, RippleHz = 1f, RippleM = 0.04f;
+        /// <summary>A perched bird's wings, down along the body (Diseno_Sala_ESL.md §10.2).</summary>
+        public const float FoldedWingDeg = -80f;
 
         private Transform _model;
         private Transform[] _wings, _tails, _heads, _legs;
@@ -135,8 +137,8 @@ namespace NeuroAdaptiveVR.Controllers
             float tin = t - inSeconds;
             switch (kind)
             {
-                case Kind.Bird:        // gliding with a beat of at most 3 Hz in flight; folded and a head turn when perched
-                    Swing(_wings, _wingRest, moving ? 35f * Mathf.Sin(2f * Mathf.PI * WingHz * t) : 0f, Vector3.forward, true);
+                case Kind.Bird:        // wings open, gliding with a beat of at most 3 Hz in flight; folded along the body and a head turn when perched
+                    Swing(_wings, _wingRest, moving ? 35f * Mathf.Sin(2f * Mathf.PI * WingHz * t) : FoldedWingDeg, Vector3.forward, true);
                     Swing(_heads, _headRest, moving ? 0f : 25f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(tin / restSeconds)), Vector3.up, false);
                     break;
                 case Kind.Butterfly:   // wings at 3 Hz the whole time
