@@ -63,7 +63,7 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private float betweenKanjiSeconds = 3f;
 
         [Tooltip("D-F6-49: stage 1 brings the object to 0.72 m, levitating, and plays its reading 3 times (8 s). " +
-                 "OFF until MIRAI answers (A-9): with it off, stage 1 stays as before.")]
+                 "ON for the 23 Oct test (D-F6-58); with it off, stage 1 stays as before.")]
         [SerializeField] private bool objectApproach = false;
 
         private bool _trialClosed;

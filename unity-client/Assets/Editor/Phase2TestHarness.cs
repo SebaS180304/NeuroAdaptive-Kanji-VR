@@ -2083,14 +2083,14 @@ namespace NeuroAdaptiveVR.EditorTools
         /// <summary>
         /// X14. S5 stage 1 with the object coming closer (D-F6-49): from the board anchor to 0.72 m from the eye
         /// in 1 s, levitating ±1.5 cm every 2 s and turning ±20 deg every 6 s, back at 8 s; the reading at 1.5, 3.5
-        /// and 5.5 s. Built behind a switch that stays OFF in the scene until MIRAI answers (A-9, D-F6-57).
+        /// and 5.5 s. Behind its switch, which is ON in the scene for the 23 Oct test (D-F6-58).
         /// </summary>
         private static void ObjectApproachCases()
         {
             var p = new List<string>();
             var s5 = UnityEngine.Object.FindFirstObjectByType<S5LearningBlockController>(FindObjectsInactive.Include);
             if (s5 == null) p.Add("no hay S5LearningBlockController");
-            else if (new SerializedObject(s5).FindProperty("objectApproach").boolValue) p.Add("el interruptor de D-F6-49 esta ENCENDIDO: debe quedar apagado hasta A-9");
+            else if (!new SerializedObject(s5).FindProperty("objectApproach").boolValue) p.Add("el interruptor de D-F6-49 esta APAGADO: D-F6-58 lo enciende para la prueba");
             var anchor = new Vector3(0f, 1.78f, 1.88f);
             float maxBob = 0f, maxTurn = 0f, nearDist = 0f;
             for (float t = 0f; t <= KanjiDiscoveryController.ApproachSeconds + 1e-4f; t += 0.02f)
@@ -2107,8 +2107,8 @@ namespace NeuroAdaptiveVR.EditorTools
             if (maxTurn > 20.01f || maxTurn < 19.9f) p.Add($"gira {maxTurn:F1} grados");
             var times = KanjiDiscoveryController.ObjectReadingSeconds;
             if (!times.SequenceEqual(new[] { 1.5f, 3.5f, 5.5f })) p.Add("la lectura no suena a 1,5 / 3,5 / 5,5 s");
-            Check("X14", "S5 etapa 1 con el objeto que se acerca (D-F6-49): poses y tiempos; interruptor APAGADO hasta A-9",
-                  p.Count == 0, p.Count == 0 ? $"apagado · 0,72 m a 1 s · ±{maxBob * 100f:F1} cm · ±{maxTurn:F0} grados · lectura 1,5/3,5/5,5 s · vuelve a los {KanjiDiscoveryController.ApproachSeconds} s" : Join(p));
+            Check("X14", "S5 etapa 1 con el objeto que se acerca (D-F6-49): poses y tiempos; interruptor ENCENDIDO (D-F6-58)",
+                  p.Count == 0, p.Count == 0 ? $"encendido · 0,72 m a 1 s · ±{maxBob * 100f:F1} cm · ±{maxTurn:F0} grados · lectura 1,5/3,5/5,5 s · vuelve a los {KanjiDiscoveryController.ApproachSeconds} s" : Join(p));
         }
 
         /// <summary>

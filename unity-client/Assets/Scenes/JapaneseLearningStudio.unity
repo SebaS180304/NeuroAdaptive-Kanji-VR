@@ -5319,7 +5319,7 @@ MonoBehaviour:
   meaningSeconds: 2
   readingSeconds: 2
   betweenKanjiSeconds: 3
-  objectApproach: 0
+  objectApproach: 1
 --- !u!82 &1019401299
 AudioSource:
   m_ObjectHideFlags: 0
