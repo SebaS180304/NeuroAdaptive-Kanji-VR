@@ -1750,14 +1750,29 @@ namespace NeuroAdaptiveVR.EditorTools
                 a.Pose(0f);
                 if (start < 0.3f || end < 0.3f) p.Add($"{a.name} aparece o desaparece en su sitio (inicio {start:F2} m, final {end:F2} m)");
                 if (rest > 0.05f) p.Add($"{a.name} no reposa en su sitio ({rest:F2} m)");
-                if (a.AnimalKind == PeripheralAnimation.Kind.Bird)
+                if (a.AnimalKind != PeripheralAnimation.Kind.Cat)
                 {
-                    // §10.2: wings open in flight, folded when perched.
+                    // D-F6-27: the Blender mesh, never a box or a sphere; wing pivots at rest are the mesh's own pose.
+                    var prims = a.Model.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh == null || f.sharedMesh.name == "Cube" || f.sharedMesh.name == "Sphere").ToList();
+                    if (prims.Count > 0) p.Add($"{a.name} sigue con primitivas ({prims.Count})");
                     var wings = a.Model.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("Wing")).ToList();
+                    float Spread() => wings.Count == 0 ? 0f : wings.Min(w => Quaternion.Angle(w.localRotation, Quaternion.identity));
+                    float Widest() => wings.Count == 0 ? 0f : wings.Max(w => Quaternion.Angle(w.localRotation, Quaternion.identity));
+                    float lo = 180f, hi = 0f, inS = (a.DurationSeconds - a.RestSeconds) * 0.5f;   // the bird goes in and out in the same time
+                    for (float t = 0f; t < a.DurationSeconds; t += 0.02f)
+                    {
+                        bool flying = a.AnimalKind == PeripheralAnimation.Kind.Butterfly || t < inS - 0.02f || t > inS + a.RestSeconds + 0.02f;
+                        if (!flying) continue;
+                        a.Pose(t);
+                        lo = Mathf.Min(lo, Spread()); hi = Mathf.Max(hi, Widest());
+                    }
                     a.Pose((a.DurationSeconds - a.RestSeconds) * 0.5f + a.RestSeconds * 0.5f);
-                    float perched = wings.Count == 0 ? 0f : wings.Min(w => Quaternion.Angle(w.localRotation, Quaternion.identity));
+                    float perched = Widest();
                     a.Pose(0f);
-                    if (wings.Count != 2 || perched < 60f) p.Add($"{a.name}: {wings.Count} alas, plegadas {perched:F0} grados posado");
+                    if (wings.Count != 2) p.Add($"{a.name}: {wings.Count} alas");
+                    // §10.2 and the animation sheets: bird 0° folded when perched, 10°-80° in flight; butterfly 10°-80° all the time.
+                    else if (a.AnimalKind == PeripheralAnimation.Kind.Bird && (perched > 1f || lo < 9.9f || hi > 80.1f)) p.Add($"{a.name}: alas {perched:F0} grados posado, {lo:F0}-{hi:F0} en vuelo");
+                    else if (a.AnimalKind == PeripheralAnimation.Kind.Butterfly && (lo < 9.9f || hi > 80.1f)) p.Add($"{a.name}: alas {lo:F0}-{hi:F0} grados");
                 }
                 if (a.AnimalKind == PeripheralAnimation.Kind.Cat)
                 {
@@ -1774,6 +1789,19 @@ namespace NeuroAdaptiveVR.EditorTools
                         if (walking < 5f || standing > 0.5f) p.Add($"{a.name}: patas {walking:F0} grados caminando, {standing:F1} de pie");
                     }
                 }
+            }
+            // D-F6-28: not one sphere left in the v148 room; the silhouettes are 24B, facing the way they walk.
+            var studio = GameObject.Find("Studio");
+            var spheres = studio == null ? new List<MeshFilter>() : studio.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh != null && f.sharedMesh.name == "Sphere" && f.GetComponent<MeshRenderer>().enabled).ToList();
+            if (spheres.Count > 0) p.Add("esferas en la sala: " + Join(spheres.Select(f => f.transform.parent.name + "/" + f.name)));
+            foreach (var name in new[] { "OutsideFigureLeft_T3", "OutsideFigureRight_T3" })
+            {
+                var fig = GameObject.Find("Studio/EnvironmentalLayer/Movers/" + name);
+                var mesh = fig == null ? null : fig.GetComponentsInChildren<MeshFilter>(true).FirstOrDefault(f => f.name == "SM_24B_Silueta");
+                var motion = fig == null ? null : fig.GetComponent<EnvironmentMotion>();
+                if (mesh == null || motion == null) { p.Add($"{name} sin la malla 24B"); continue; }
+                var axis = new SerializedObject(motion).FindProperty("traverseAxis").vector3Value;
+                if (Vector3.Angle(-mesh.transform.forward, axis) > 1f) p.Add($"{name} no mira hacia donde camina");
             }
             Check("X9", "Eventos perifericos: animales (D-F6-28): sorteo 3/2/2, duraciones, entran y salen, reposan en su sitio, <= 3 Hz",
                   p.Count == 0, p.Count == 0 ? Join(entries.Select(t => t.name)) : Join(p));

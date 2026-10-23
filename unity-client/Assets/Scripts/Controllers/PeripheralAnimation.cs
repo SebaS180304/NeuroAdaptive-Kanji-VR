@@ -7,7 +7,9 @@ namespace NeuroAdaptiveVR.Controllers
     /// (Diseno_Sala_ESL.md §10.2; D-F6-22, D-F6-23, D-F6-27, D-F6-28). Blender makes
     /// the mesh, Unity moves it: this object stays at the rest pose and keeps the
     /// telemetry id (PeripheralEvent_*); its child "Model" travels along the §10.2
-    /// path. Parts named Wing*, Tail* or Head* under Model flap, sway or turn.
+    /// path. Parts named Wing*, Tail* or Head* under Model flap, sway or turn. Wing
+    /// pivots sit at the shoulder in Model axes, at the pose of the Blender mesh (bird:
+    /// folded; butterfly: flat), and swing about the body axis (23B and 26B animation sheets).
     ///
     /// Paths are in world coordinates (room v148, eye at 1.60 m), quadratic Béziers
     /// (start, control, end):
@@ -41,12 +43,15 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float outSeconds = 0.4f;
 
         private const float WingHz = 3f, StepHz = 1.5f, TailHz = 0.5f, RippleHz = 1f, RippleM = 0.04f;
-        /// <summary>A perched bird's wings, down along the body (Diseno_Sala_ESL.md §10.2).</summary>
-        public const float FoldedWingDeg = -80f;
+        /// <summary>A flying bird's wings, raised from folded (0°) to glide, beating ±35° within the sheet's 10°-80°.</summary>
+        public const float OpenWingDeg = 45f;
+        /// <summary>The butterfly's wings never close below 10° (26B sheet: 10°-80°).</summary>
+        public const float ButterflyMinWingDeg = 10f;
 
-        private Transform _model;
-        private Transform[] _wings, _tails, _heads, _legs;
-        private Quaternion[] _wingRest, _tailRest, _headRest, _legRest;
+        // Not kept across editor reloads, so a mesh swapped in by the editor tools is picked up.
+        [System.NonSerialized] private Transform _model;
+        [System.NonSerialized] private Transform[] _wings, _tails, _heads, _legs;
+        [System.NonSerialized] private Quaternion[] _wingRest, _tailRest, _headRest, _legRest;
         private float _shownAt;
 
         public float DurationSeconds => inSeconds + restSeconds + outSeconds;
@@ -137,12 +142,12 @@ namespace NeuroAdaptiveVR.Controllers
             float tin = t - inSeconds;
             switch (kind)
             {
-                case Kind.Bird:        // wings open, gliding with a beat of at most 3 Hz in flight; folded along the body and a head turn when perched
-                    Swing(_wings, _wingRest, moving ? 35f * Mathf.Sin(2f * Mathf.PI * WingHz * t) : FoldedWingDeg, Vector3.forward, true);
+                case Kind.Bird:        // wings open, gliding with a beat of at most 3 Hz in flight; folded along the body (the mesh's pose) and a head turn when perched
+                    Swing(_wings, _wingRest, moving ? OpenWingDeg + 35f * Mathf.Sin(2f * Mathf.PI * WingHz * t) : 0f, Vector3.forward, true);
                     Swing(_heads, _headRest, moving ? 0f : 25f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(tin / restSeconds)), Vector3.up, false);
                     break;
                 case Kind.Butterfly:   // wings at 3 Hz the whole time
-                    Swing(_wings, _wingRest, 60f * Mathf.Abs(Mathf.Sin(Mathf.PI * WingHz * t)), Vector3.forward, true);
+                    Swing(_wings, _wingRest, ButterflyMinWingDeg + 60f * Mathf.Abs(Mathf.Sin(Mathf.PI * WingHz * t)), Vector3.forward, true);
                     break;
                 case Kind.Cat:         // legs at 1.5 Hz while walking, tail at 0.5 Hz, head about 30° towards the room while standing (D-F6-34)
                     float stride = moving ? 25f * Mathf.Sin(2f * Mathf.PI * StepHz * t) : 0f;
