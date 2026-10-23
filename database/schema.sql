@@ -2,12 +2,12 @@
 -- NeuroAdaptive VR -- Esquema inicial de PostgreSQL (Fase 1)
 -- =====================================================================
 -- Este archivo es la referencia humana-legible del esquema que producen
--- las migraciones Alembic 0001_initial_schema a 0007_learner_profile
--- (backend/alembic/versions). Las partes de 0002 a 0007 son copia literal de
+-- las migraciones Alembic 0001_initial_schema a 0008_stages_authored_count
+-- (backend/alembic/versions). Las partes de 0002 a 0008 son copia literal de
 -- backend/alembic/versions/sql/000N_*_up.sql, en ese orden: 0002_schema_v1
 -- (1 oct 2026), 0003_adaptation (14 oct), 0004_kanji_pretest (16 oct),
 -- 0005_abort_stale_sessions y 0006_research_read (17 oct), 0007_learner_profile
--- (21 oct).
+-- (21 oct), 0008_stages_authored_count (23 oct).
 -- Los dos deben mantenerse identicos; si se autogenera una nueva
 -- migracion con Alembic, este archivo debe regenerarse con:
 --   pg_dump --schema-only --no-owner --no-privileges neuroadaptive_vr
@@ -2202,3 +2202,21 @@ CREATE TABLE learner_profiles (
     profile         JSONB       NOT NULL,
     PRIMARY KEY (participant_id, profile_version)
 );
+
+-- NeuroAdaptive VR -- KANJI_EXPOSED.stages_authored is a count -- migration 0008 (up)
+-- Unity sends how many of the four S5 stages came from authored content (1-4); the column and
+-- the projection took it as a boolean. Every stored value was "1" (the glyph) until the set A
+-- objects arrived on 23 Oct 2026; with them stage 1 counts too, "2"::boolean fails and
+-- KANJI_EXPOSED would stop projecting. true -> 1 loses nothing: no row was ever false.
+
+ALTER TABLE kanji_exposures ALTER COLUMN stages_authored TYPE SMALLINT USING stages_authored::int;
+
+-- proj_apply (0003) is rewritten by replacing its one cast, so the rest of its body stays as is.
+DO $$
+DECLARE def TEXT := pg_get_functiondef('proj_apply(session_events)'::regprocedure);
+BEGIN
+    IF position('(p ->> ''stages_authored'')::boolean' IN def) = 0 THEN
+        RAISE EXCEPTION '0008: proj_apply no longer casts stages_authored to boolean';
+    END IF;
+    EXECUTE replace(def, '(p ->> ''stages_authored'')::boolean', '(p ->> ''stages_authored'')::smallint');
+END $$;

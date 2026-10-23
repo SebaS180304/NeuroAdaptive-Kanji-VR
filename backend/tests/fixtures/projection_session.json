@@ -442,7 +442,7 @@
      2000,
      3000
     ],
-    "stages_authored": false,
+    "stages_authored": 1,
     "audio_played": true,
     "audio_source": "TTS_PLACEHOLDER",
     "assembly": "RAY"

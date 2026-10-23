@@ -206,6 +206,20 @@ async def test_projection_is_idempotent(projected) -> None:
     assert await _scalar(_SNAPSHOT, s=s) == before
 
 
+@pytest.mark.asyncio
+async def test_stages_authored_is_a_count(projected) -> None:
+    # Unity sends how many of the four S5 stages came from authored content. It was always 1
+    # (the glyph) until the set A objects arrived on 23 Oct; now stage 1 counts too.
+    session_id = await _new_session()
+    exposed = _ev("KANJI_EXPOSED", 100, state="S5_STANDARDIZED_LEARNING", kanji_id="KANJI_HI", kanji_char="火",
+                  exposure_index=1, discovery_type="Pictographic", exposure_ms=9000, stage_ms=[2000, 2000, 2000, 3000],
+                  stages_authored=2, object_source="BLENDER_FBX", audio_played=True, audio_source="AUTHORED",
+                  assembly="RAY")
+    await _insert_and_project(session_id, [exposed])
+    assert await _scalar("SELECT count(*) FROM projection_errors WHERE session_id = :s", s=session_id) == 0
+    assert await _scalar("SELECT stages_authored FROM kanji_exposures WHERE session_id = :s", s=session_id) == 2
+
+
 def _ev(event_type: str, ms, **fields) -> dict:
     payload = {"schema_version": 1, "state": "S7_EXPERIMENTAL_RETRIEVAL",
                "session_elapsed_ms": ms, "esl": "LOW", "lal": "LOW"}
