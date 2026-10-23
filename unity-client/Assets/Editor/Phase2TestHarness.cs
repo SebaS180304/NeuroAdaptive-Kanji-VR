@@ -1881,6 +1881,14 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             if (assigned != 0 && assigned != rows.Length) p.Add($"{assigned}/5 kanji con objeto: se mezclan real y placeholder (D-F6-26)");
             if (boxes > 0 || assigned != rows.Length) p.Add($"{boxes} cajas y {assigned}/5 asignados: los cinco FBX del set A ya existen (D-F6-26, 22 oct 19:45)");
+            // KANJI_EXPOSED.object_source tells the real object from a placeholder (set B has no objects yet).
+            foreach (var r in rows)
+            {
+                var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{r.kanji}.asset");
+                if (item != null && KanjiDiscoveryController.ObjectSourceOf(item.anchorObjectPrefab) != "BLENDER_FBX") p.Add($"{r.kanji} no registra BLENDER_FBX");
+            }
+            var noObject = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>("Assets/Resources/kanji/KANJI_YAMA.asset");
+            if (noObject != null && KanjiDiscoveryController.ObjectSourceOf(noObject.anchorObjectPrefab) != "PLACEHOLDER") p.Add("KANJI_YAMA (sin objeto) no registra PLACEHOLDER");
             Check("X10", "Objetos de S5 del set A: cinco prefabs del tamano de referencia, los cinco asignados o ninguno, nunca una caja (D-F6-26)",
                   p.Count == 0, p.Count == 0 ? $"{rows.Length - boxes} modelos, {boxes} cajas · asignados {assigned}/5" : Join(p));
         }

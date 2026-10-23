@@ -46,6 +46,9 @@ namespace NeuroAdaptiveVR.Controllers
             if (board == null) board = FindAnyObjectByType<StudioTrialPresenter>();
         }
 
+        /// <summary>What KANJI_EXPOSED.object_source records for stage 1: the Blender object or the labelled placeholder.</summary>
+        public static string ObjectSourceOf(GameObject anchorObjectPrefab) => anchorObjectPrefab != null ? "BLENDER_FBX" : "PLACEHOLDER";
+
         /// <summary>Shows stage 1, 2 or 3 for this kanji.</summary>
         /// <param name="progress">Short text for the note line, e.g. "kanji 2 of 5".</param>
         /// <returns>True if the stage came from authored content, false if it is a placeholder.</returns>

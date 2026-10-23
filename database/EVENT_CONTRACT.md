@@ -116,7 +116,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
 | `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names); since 30 Sep the stimulus fields `feedback_shown`, `feedback_audio_source`, `feedback_audio_ms`, `result_sound`, `result_sound_offset_ms`, `result_sound_ms`, `card_animation` — see §5.9; since 30 Sep (F3.3) also `idle_ms`, `idle_episodes`, `idle_longest_ms` and their thresholds — see §5.10 |
-| `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build) — S5, spec §7.6 |
+| `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored`, `object_source` (`BLENDER_FBX`, `PLACEHOLDER`; since 23 Oct), `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build) — S5, spec §7.6 |
 | `ASSEMBLY_SEGMENT_PLACED` | `kanji_id`, `exposure_index`, `attempt` (1-based, counts right and wrong), `slot_index` (1-based), `segment_id`, `expected_segment_id`, `is_correct`, `selected_ms` and `placed_ms` (from the start of this kanji's assembly), `hint_shown`, `segments_authored` — one per placement attempt, spec §5.3, decision D4 |
 | `ASSEMBLY_COMPLETED` | `kanji_id`, `exposure_index`, `duration_ms`, `incorrect_attempts`, `segment_count`, `segments_placed`, `hints_shown`, `row_order` (segment ids left to right as presented), `segments_authored`, `forced_by_researcher` — spec §5.3 |
 | `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `active_props` and `active_movers` (object names), `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` (the base seed of the environment), `seed_source` (`SESSION`, `FALLBACK` without a session, `OVERRIDE` in tests), `selection_seed` (derived for this level) — spec §8.1 |
@@ -631,6 +631,12 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**23 October 2026 — `KANJI_EXPOSED.object_source`.** One new payload key, no
+version bump: `BLENDER_FBX` when stage 1 of S5 showed the kanji's object from
+the modelling chat, `PLACEHOLDER` when it showed the labelled placeholder (D-F6-26:
+a session never mixes the two). Rows written before this date lack the key;
+read them through `stages_authored` as before. No projection reads it.
 
 **14 October 2026 — migration `0003` and the adaptation loop (F5a).** The events
 of §5.12, written since 13 October, are now projected: `ADAPTATION_DECISION` into

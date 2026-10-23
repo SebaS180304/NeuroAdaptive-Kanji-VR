@@ -156,6 +156,7 @@ namespace NeuroAdaptiveVR.Core
                     { "exposure_ms", Ms(t0) },
                     { "stage_ms", stageMs },
                     { "stages_authored", authored },
+                    { "object_source", KanjiDiscoveryController.ObjectSourceOf(discovery != null ? item.AnchorObjectPrefab : null) },
                     { "audio_played", clip != null && pronunciation != null },
                     { "audio_source", PronunciationAudioController.SourceOf(clip) },
                     // RAY: ASSEMBLY_SEGMENT_PLACED / ASSEMBLY_COMPLETED follow.
