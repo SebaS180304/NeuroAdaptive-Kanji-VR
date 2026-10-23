@@ -1,8 +1,8 @@
 {
-  "blend": "C:\\Users\\drdom\\Documents\\JapaneseVR\\models\\JapaneseVR_v220_desde_blend1.blend",
+  "blend": "C:\\Users\\drdom\\Documents\\JapaneseVR\\models\\JapaneseVR_v226.blend",
   "blender": "5.2.2 LTS",
   "scene": "SALA_PROPUESTA",
-  "out": "C:\\Users\\drdom\\Documents\\JapaneseVR\\export\\Sala_v148_20261023_1004",
+  "out": "C:\\Users\\drdom\\Documents\\JapaneseVR\\export\\Sala_v148_20261023_1139",
   "dirty_at_start": false,
   "raices_omitidas": [
     "LAY3_Guia_+40",
@@ -69,10 +69,12 @@
       "texturas": [
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\01_Chabudai_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "01_Chabudai_Izq",
@@ -111,10 +113,12 @@
       "texturas": [
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\01_Chabudai_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "02A_Zabuton_Der",
@@ -153,10 +157,12 @@
       "texturas": [
         "textures\\T_Zabuton_Indigo_Seigaiha_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\02A_Zabuton_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "02A_Zabuton_Izq",
@@ -195,10 +201,12 @@
       "texturas": [
         "textures\\T_Zabuton_Indigo_Seigaiha_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\02A_Zabuton_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "02B_Zabuton_Der",
@@ -237,10 +245,12 @@
       "texturas": [
         "textures\\T_Zabuton_Salvia_Asanoha_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\02B_Zabuton_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "02B_Zabuton_Izq",
@@ -279,10 +289,12 @@
       "texturas": [
         "textures\\T_Zabuton_Salvia_Asanoha_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\02B_Zabuton_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "02C_Zabuton_Der",
@@ -321,10 +333,12 @@
       "texturas": [
         "textures\\T_Zabuton_Oxido_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\02C_Zabuton_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "02C_Zabuton_Izq",
@@ -363,10 +377,12 @@
       "texturas": [
         "textures\\T_Zabuton_Oxido_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\02C_Zabuton_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "03_Fuzukue",
@@ -406,10 +422,12 @@
       "texturas": [
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\03_Fuzukue.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\03_Fuzukue.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "04_Zaisu",
@@ -450,10 +468,12 @@
         "textures\\T_Wood_Dark_BaseColor.png",
         "textures\\T_Zabuton_Indigo_Seigaiha_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\04_Zaisu.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\04_Zaisu.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "05_Librero",
@@ -494,10 +514,12 @@
         "textures\\T_Book_Atlas_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\05_Librero.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\05_Librero.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "07_Bonsai",
@@ -547,10 +569,12 @@
         "textures\\T_Stone_Grey_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\07_Bonsai.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\07_Bonsai.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "08_Reloj",
@@ -593,10 +617,43 @@
         "textures\\T_Clock_Dial_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\08_Reloj.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\08_Reloj.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_08_Manecilla_Hora",
+          "padre_antes": "SM_08_Reloj",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            10.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_08_Manecilla_Minuto",
+          "padre_antes": "SM_08_Reloj",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            -0.0,
+            120.0,
+            -0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "10_Repisa_Maneki",
@@ -640,10 +697,28 @@
       "texturas": [
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\10_Repisa_Maneki.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\10_Repisa_Maneki.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_10_Maneki_Neko",
+          "padre_antes": "SM_10_Repisa",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "11_Cuadro_Fuji",
@@ -688,10 +763,12 @@
         "textures\\T_Wood_Dark_BaseColor.png",
         "textures\\T_Wood_Light_Aged_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\11_Cuadro_Fuji.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\11_Cuadro_Fuji.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "12_Juego_Te_Der",
@@ -733,10 +810,43 @@
         "textures\\T_Ceramic_Tea_Seigaiha_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\12_Juego_Te_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_12_Tetera",
+          "padre_antes": "SM_12_Bandeja",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            42.891
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_12_Tazas",
+          "padre_antes": "SM_12_Bandeja",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "12_Juego_Te_Izq",
@@ -778,10 +888,43 @@
         "textures\\T_Ceramic_Tea_Seigaiha_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\12_Juego_Te_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_12_Tetera",
+          "padre_antes": "SM_12_Bandeja",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            42.891
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_12_Tazas",
+          "padre_antes": "SM_12_Bandeja",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "09B_Andon",
@@ -825,10 +968,43 @@
         "textures\\T_Paper_Washi_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\09B_Andon.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\09B_Andon.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_09B_Andon_Papel",
+          "padre_antes": "SM_09B_Andon_Madera",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_09B_Colgante",
+          "padre_antes": "SM_09B_Andon_Madera",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "13B_Caligrafia",
@@ -882,10 +1058,178 @@
         "textures\\T_Paper_Washi_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\13B_Caligrafia.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\13B_Caligrafia.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_13B_Barra_Tinta",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            24.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Bunchin",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            1.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Fieltro",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            -1.5
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Gotero",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            20.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Papel",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            5.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Pincel_Reposo",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -6.053,
+            -14.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Pincel_Suelto",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            77.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Reposapinceles",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            -14.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Suzuri",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            -9.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Suzuribako_Caja",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            -5.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_13B_Suzuribako_Tapa",
+          "padre_antes": "13B_Caligrafia",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            -2.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "15B_Ventana_Der",
@@ -927,10 +1271,43 @@
         "textures\\T_Paper_Washi_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\15B_Ventana_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_15B_Der_Hoja_Delantera",
+          "padre_antes": "SM_15B_Der_Marco",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_15B_Der_Hoja_Trasera",
+          "padre_antes": "SM_15B_Der_Marco",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "15B_Ventana_Izq",
@@ -972,10 +1349,43 @@
         "textures\\T_Paper_Washi_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\15B_Ventana_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_15B_Izq_Hoja_Delantera",
+          "padre_antes": "SM_15B_Izq_Marco",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_15B_Izq_Hoja_Trasera",
+          "padre_antes": "SM_15B_Izq_Marco",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "16B_Cortina_Barra_Der",
@@ -1016,10 +1426,12 @@
         "textures\\T_Bamboo_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Barra_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "16B_Cortina_Barra_Izq",
@@ -1060,10 +1472,12 @@
         "textures\\T_Bamboo_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Barra_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "16B_Cortina_Hoja_Der",
@@ -1102,10 +1516,12 @@
       "texturas": [
         "textures\\T_Gasa_Marfil_Seigaiha_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Der.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Hoja_Der.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "16B_Cortina_Hoja_Izq",
@@ -1144,10 +1560,12 @@
       "texturas": [
         "textures\\T_Gasa_Marfil_Seigaiha_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Izq.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Hoja_Izq.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "17B_Pizarron",
@@ -1190,10 +1608,28 @@
       "texturas": [
         "textures\\T_Wood_Ebano_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\17B_Pizarron.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\17B_Pizarron.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_17B_Interfaz",
+          "padre_antes": "SM_17B_Pizarron",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "18B_Atril",
@@ -1235,10 +1671,28 @@
       "texturas": [
         "textures\\T_Wood_Ebano_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\18B_Atril.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\18B_Atril.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_18B_Interfaz",
+          "padre_antes": "SM_18B_Atril",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            65.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "19B_Tatami",
@@ -1279,10 +1733,12 @@
         "textures\\T_Tatami_Heri_BaseColor.png",
         "textures\\T_Tatami_Igusa_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\19B_Tatami.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\19B_Tatami.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "20B_Muros",
@@ -1325,10 +1781,12 @@
         "textures\\T_Wood_Dark_BaseColor.png",
         "textures\\T_Wood_Zocalo_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\20B_Muros.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\20B_Muros.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "21B_Techo",
@@ -1369,10 +1827,12 @@
         "textures\\T_Wood_Ceiling_Sugi_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\21B_Techo.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\21B_Techo.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "22B_Papelera",
@@ -1415,10 +1875,28 @@
         "textures\\T_Paper_Washi_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\22B_Papelera.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\22B_Papelera.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_22B_Papeles",
+          "padre_antes": "SM_22B_Papelera",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "LAY3_Shoji",
@@ -1460,10 +1938,43 @@
         "textures\\T_Paper_Washi_BaseColor.png",
         "textures\\T_Wood_Dark_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY3_Shoji.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\LAY3_Shoji.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "SM_14_Panel_Delantero",
+          "padre_antes": "SM_14_Marco",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "SM_14_Panel_Trasero",
+          "padre_antes": "SM_14_Marco",
+          "tipo_padre_antes": "MESH",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "LAY_06D",
@@ -1504,10 +2015,28 @@
         "textures\\T_Box_Decals_RGBA.png",
         "textures\\T_Cardboard_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06D.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06D.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "LAY_06D_Carton_Abierto",
+          "padre_antes": "LAY_06D",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            90.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "LAY_06E",
@@ -1548,10 +2077,28 @@
         "textures\\T_Box_Decals_RGBA.png",
         "textures\\T_Wood_Light_Aged_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06E.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06E.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "LAY_06E_Caja_Te",
+          "padre_antes": "LAY_06E",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            -5.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "LAY_06F",
@@ -1592,10 +2139,28 @@
         "textures\\T_Box_Decals_RGBA.png",
         "textures\\T_Paper_Red_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06F.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06F.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "LAY_06F_Caja_Roja",
+          "padre_antes": "LAY_06F",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            7.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     },
     {
       "hueco": "LAY_06S",
@@ -1643,349 +2208,508 @@
         "textures\\T_Paper_Seigaiha_BaseColor.png",
         "textures\\T_Wood_Weathered_BaseColor.png"
       ],
-      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06S.fbx",
+      "fbx": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06S.fbx",
       "verificado": true,
       "omitidos_dentro": [],
-      "colecciones_omitidas": []
+      "colecciones_omitidas": [],
+      "aplanados_v3": [
+        {
+          "objeto": "LAY_06A_Caja_Madera",
+          "padre_antes": "LAY_06S",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "LAY_06B_Carton_Cerrado",
+          "padre_antes": "LAY_06S",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            4.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "objeto": "LAY_06C_Regalo_Seigaiha",
+          "padre_antes": "LAY_06S",
+          "tipo_padre_antes": "EMPTY",
+          "rot_local_antes_deg": [
+            0.0,
+            -0.0,
+            -6.0
+          ],
+          "escala_local_antes": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "empties_quitados_v3": []
     }
   ],
   "checks": [
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\01_Chabudai_Der.fbx",
       "meshes": 1,
       "tris": 444,
       "expected_meshes": 1,
       "expected_tris": 444,
       "ok": true,
-      "bytes": 30764
+      "max_desvio_vertice_m": 7.300048299977713e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 30748
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\01_Chabudai_Izq.fbx",
       "meshes": 1,
       "tris": 444,
       "expected_meshes": 1,
       "expected_tris": 444,
       "ok": true,
-      "bytes": 30764
+      "max_desvio_vertice_m": 7.300048299977713e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 30748
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\02A_Zabuton_Der.fbx",
       "meshes": 1,
       "tris": 394,
       "expected_meshes": 1,
       "expected_tris": 394,
       "ok": true,
-      "bytes": 27884
+      "max_desvio_vertice_m": 4.8607544417306367e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 27868
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\02A_Zabuton_Izq.fbx",
       "meshes": 1,
       "tris": 394,
       "expected_meshes": 1,
       "expected_tris": 394,
       "ok": true,
-      "bytes": 27884
+      "max_desvio_vertice_m": 4.8607544417306367e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 27868
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\02B_Zabuton_Der.fbx",
       "meshes": 1,
       "tris": 394,
       "expected_meshes": 1,
       "expected_tris": 394,
       "ok": true,
-      "bytes": 27884
+      "max_desvio_vertice_m": 4.8607544417306367e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 27868
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\02B_Zabuton_Izq.fbx",
       "meshes": 1,
       "tris": 394,
       "expected_meshes": 1,
       "expected_tris": 394,
       "ok": true,
-      "bytes": 27884
+      "max_desvio_vertice_m": 4.8607544417306367e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 27868
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\02C_Zabuton_Der.fbx",
       "meshes": 1,
       "tris": 394,
       "expected_meshes": 1,
       "expected_tris": 394,
       "ok": true,
-      "bytes": 27804
+      "max_desvio_vertice_m": 4.8607544417306367e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 27788
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\02C_Zabuton_Izq.fbx",
       "meshes": 1,
       "tris": 394,
       "expected_meshes": 1,
       "expected_tris": 394,
       "ok": true,
-      "bytes": 27804
+      "max_desvio_vertice_m": 4.8607544417306367e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 27788
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\03_Fuzukue.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\03_Fuzukue.fbx",
       "meshes": 1,
       "tris": 700,
       "expected_meshes": 1,
       "expected_tris": 700,
       "ok": true,
-      "bytes": 38108
+      "max_desvio_vertice_m": 7.300048299977713e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 38092
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\04_Zaisu.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\04_Zaisu.fbx",
       "meshes": 1,
       "tris": 548,
       "expected_meshes": 1,
       "expected_tris": 548,
       "ok": true,
+      "max_desvio_vertice_m": 7.300048299977713e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
       "bytes": 37100
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\05_Librero.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\05_Librero.fbx",
       "meshes": 2,
       "tris": 1660,
       "expected_meshes": 2,
       "expected_tris": 1660,
       "ok": true,
-      "bytes": 58508
+      "max_desvio_vertice_m": 1.341104507446289e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 58492
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\07_Bonsai.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\07_Bonsai.fbx",
       "meshes": 5,
       "tris": 3796,
       "expected_meshes": 5,
       "expected_tris": 3796,
       "ok": true,
+      "max_desvio_vertice_m": 7.450580596923828e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
       "bytes": 206028
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\08_Reloj.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\08_Reloj.fbx",
       "meshes": 3,
       "tris": 596,
       "expected_meshes": 3,
       "expected_tris": 596,
       "ok": true,
-      "bytes": 40444
+      "max_desvio_vertice_m": 2.0634079582646568e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 40140
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\10_Repisa_Maneki.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\10_Repisa_Maneki.fbx",
       "meshes": 2,
       "tris": 1775,
       "expected_meshes": 2,
       "expected_tris": 1775,
       "ok": true,
-      "bytes": 78348
+      "max_desvio_vertice_m": 4.470348358154297e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 78028
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\11_Cuadro_Fuji.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\11_Cuadro_Fuji.fbx",
       "meshes": 1,
       "tris": 232,
       "expected_meshes": 1,
       "expected_tris": 232,
       "ok": true,
-      "bytes": 33324
+      "max_desvio_vertice_m": 4.1211023926734924e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 33308
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\12_Juego_Te_Der.fbx",
       "meshes": 3,
       "tris": 1648,
       "expected_meshes": 3,
       "expected_tris": 1648,
       "ok": true,
-      "bytes": 63084
+      "max_desvio_vertice_m": 2.843204424245981e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 65196
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\12_Juego_Te_Izq.fbx",
       "meshes": 3,
       "tris": 1648,
       "expected_meshes": 3,
       "expected_tris": 1648,
       "ok": true,
-      "bytes": 63084
+      "max_desvio_vertice_m": 2.843204424245981e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 65196
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\09B_Andon.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\09B_Andon.fbx",
       "meshes": 3,
       "tris": 1196,
       "expected_meshes": 3,
       "expected_tris": 1196,
       "ok": true,
-      "bytes": 59116
+      "max_desvio_vertice_m": 6.335732099300232e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 58940
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\13B_Caligrafia.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\13B_Caligrafia.fbx",
       "meshes": 11,
       "tris": 1287,
       "expected_meshes": 11,
       "expected_tris": 1287,
       "ok": true,
-      "bytes": 100028
+      "max_desvio_vertice_m": 7.616943393123275e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 103740
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\15B_Ventana_Der.fbx",
       "meshes": 3,
       "tris": 1128,
       "expected_meshes": 3,
       "expected_tris": 1128,
       "ok": true,
-      "bytes": 50892
+      "max_desvio_vertice_m": 1.6763806343078613e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 50796
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\15B_Ventana_Izq.fbx",
       "meshes": 3,
       "tris": 1128,
       "expected_meshes": 3,
       "expected_tris": 1128,
       "ok": true,
-      "bytes": 50780
+      "max_desvio_vertice_m": 1.6763806343078613e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 50732
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Barra_Der.fbx",
       "meshes": 1,
       "tris": 612,
       "expected_meshes": 1,
       "expected_tris": 612,
       "ok": true,
-      "bytes": 35772
+      "max_desvio_vertice_m": 9.010275172030794e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 35756
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Barra_Izq.fbx",
       "meshes": 1,
       "tris": 612,
       "expected_meshes": 1,
       "expected_tris": 612,
       "ok": true,
-      "bytes": 35772
+      "max_desvio_vertice_m": 9.010275172030794e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 35756
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Der.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Hoja_Der.fbx",
       "meshes": 1,
       "tris": 2,
       "expected_meshes": 1,
       "expected_tris": 2,
       "ok": true,
+      "max_desvio_vertice_m": 1.4609041601383033e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
       "bytes": 20588
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Izq.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\16B_Cortina_Hoja_Izq.fbx",
       "meshes": 1,
       "tris": 2,
       "expected_meshes": 1,
       "expected_tris": 2,
       "ok": true,
+      "max_desvio_vertice_m": 1.4609041601383033e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
       "bytes": 20588
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\17B_Pizarron.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\17B_Pizarron.fbx",
       "meshes": 2,
       "tris": 1822,
       "expected_meshes": 2,
       "expected_tris": 1822,
       "ok": true,
-      "bytes": 69084
+      "max_desvio_vertice_m": 2.4400651454925537e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 68908
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\18B_Atril.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\18B_Atril.fbx",
       "meshes": 2,
       "tris": 942,
       "expected_meshes": 2,
       "expected_tris": 942,
       "ok": true,
-      "bytes": 52652
+      "max_desvio_vertice_m": 1.341104507446289e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 52748
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\19B_Tatami.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\19B_Tatami.fbx",
       "meshes": 1,
       "tris": 1860,
       "expected_meshes": 1,
       "expected_tris": 1860,
       "ok": true,
-      "bytes": 58956
+      "max_desvio_vertice_m": 9.027509131682427e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 58940
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\20B_Muros.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\20B_Muros.fbx",
       "meshes": 1,
       "tris": 1152,
       "expected_meshes": 1,
       "expected_tris": 1152,
       "ok": true,
+      "max_desvio_vertice_m": 8.302300674141647e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
       "bytes": 46892
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\21B_Techo.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\21B_Techo.fbx",
       "meshes": 1,
       "tris": 1892,
       "expected_meshes": 1,
       "expected_tris": 1892,
       "ok": true,
+      "max_desvio_vertice_m": 8.259061849445711e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
       "bytes": 58316
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\22B_Papelera.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\22B_Papelera.fbx",
       "meshes": 2,
       "tris": 498,
       "expected_meshes": 2,
       "expected_tris": 498,
       "ok": true,
-      "bytes": 48764
+      "max_desvio_vertice_m": 3.7990655851310376e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 48668
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY3_Shoji.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\LAY3_Shoji.fbx",
       "meshes": 3,
       "tris": 1352,
       "expected_meshes": 3,
       "expected_tris": 1352,
       "ok": true,
-      "bytes": 54732
+      "max_desvio_vertice_m": 2.384185791015625e-07,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 54684
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06D.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06D.fbx",
       "meshes": 1,
       "tris": 112,
       "expected_meshes": 1,
       "expected_tris": 112,
       "ok": true,
-      "bytes": 25756
+      "max_desvio_vertice_m": 6.143906154658885e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 25724
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06E.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06E.fbx",
       "meshes": 1,
       "tris": 92,
       "expected_meshes": 1,
       "expected_tris": 92,
       "ok": true,
-      "bytes": 25372
+      "max_desvio_vertice_m": 3.0719530773294423e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 25596
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06F.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06F.fbx",
       "meshes": 1,
       "tris": 90,
       "expected_meshes": 1,
       "expected_tris": 90,
       "ok": true,
-      "bytes": 25260
+      "max_desvio_vertice_m": 2.47107803102985e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 25500
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06S.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\huecos\\LAY_06S.fbx",
       "meshes": 3,
       "tris": 1292,
       "expected_meshes": 3,
       "expected_tris": 1292,
       "ok": true,
-      "bytes": 67516
+      "max_desvio_vertice_m": 8.940696716308594e-08,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 68396
     },
     {
-      "file": "export\\Sala_v148_20261023_1004\\Sala_v148_completa.fbx",
+      "file": "export\\Sala_v148_20261023_1139\\Sala_v148_completa.fbx",
       "meshes": 71,
       "tris": 32926,
       "expected_meshes": 71,
       "expected_tris": 32926,
       "ok": true,
-      "bytes": 1077596
+      "max_desvio_vertice_m": 1.5079651186407615e-06,
+      "sin_emparejar": [],
+      "mallas_con_lcl_no_identidad": [],
+      "bytes": 1157692
     }
   ],
   "completa": {
-    "fbx": "export\\Sala_v148_20261023_1004\\Sala_v148_completa.fbx",
+    "fbx": "export\\Sala_v148_20261023_1139\\Sala_v148_completa.fbx",
     "huecos": 36,
     "mallas": 71,
     "tris": 32926,

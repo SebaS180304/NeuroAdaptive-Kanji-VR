@@ -1884,7 +1884,7 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>
-        /// X11. The v148 room is the one in the re-export from the approved file (D-F6-42):
+        /// X11. The v148 room is the phase-test export (D-F6-45, Sala_v148_20261023_1139):
         /// every slot of its manifest stands at its manifest position and Y rotation (the
         /// clock at 2.50 m, decision 9) with its model as a child, ESL slots at scale 1,
         /// the podium model handed to ControlsIntro, no collider on any model, and the old
@@ -1911,13 +1911,9 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (model != null)
                     foreach (var child in model.GetComponentsInChildren<Transform>(true).Where(c => c != model))
                     {
-                        var src = PrefabUtility.GetCorrespondingObjectFromSource(child);
-                        if (src != null)
-                        {
-                            var (wantPos, wantRot) = JapaneseRoomIntegration.ExpectedPose(src);
-                            if (Vector3.Distance(child.localPosition, wantPos) > 0.0005f || Quaternion.Angle(child.localRotation, wantRot) > 0.1f)
-                                p.Add($"{h.hueco}/{child.name} con la pose del FBX sin corregir (ejes de Blender)");
-                        }
+                        // D-F6-45: the export flattens meshes parented to a mesh, so every piece hangs from its model and keeps its up
+                        if (child.GetComponent<MeshRenderer>() != null && child.parent != model) p.Add($"{h.hueco}/{child.name} cuelga de {child.parent.name}");
+                        if (Vector3.Angle(child.up, model.up) > 1f) p.Add($"{h.hueco}/{child.name} inclinado {Vector3.Angle(child.up, model.up):F0} grados");
                         if (child.name.EndsWith("_Interfaz") && child.gameObject.activeSelf) p.Add($"{h.hueco}/{child.name} encendido sobre el canvas");
                     }
                 placed++;
@@ -1931,7 +1927,7 @@ namespace NeuroAdaptiveVR.EditorTools
                     if (c.gameObject.activeSelf && c.name != "JapaneseRoom" && c.name != "CatShelves" && c.name != "Exterior_Front") p.Add($"sala vieja encendida: {c.name}");
             var floor = GameObject.Find("Studio/Floor");
             if (floor != null && floor.GetComponent<MeshRenderer>().enabled) p.Add("el piso viejo se ve");
-            Check("X11", "Sala v148 del re-export aprobado: cada hueco en su sitio del manifest, sin collider, sala vieja apagada (D-F6-42)",
+            Check("X11", "Sala v148 de la prueba: cada hueco en su sitio del manifest, piezas planas, sin collider, sala vieja apagada (D-F6-45)",
                   p.Count == 0, p.Count == 0 ? $"{placed}/{manifest.huecos.Length} huecos · pendientes: {Join(JapaneseRoomIntegration.Pending)}" : Join(p));
         }
 

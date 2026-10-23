@@ -26,8 +26,8 @@ namespace NeuroAdaptiveVR.EditorTools
     /// </summary>
     public static class JapaneseRoomIntegration
     {
-        // The re-export from the approved JapaneseVR_v220.blend1 (D-F6-42, board 23 Oct 10:40).
-        private const string ExportDir = @"C:\Users\drdom\Documents\JapaneseVR\export\Sala_v148_20261023_1004";
+        // The room of the phase test: JapaneseVR_v226.blend with the upright 18B v2 (D-F6-45).
+        private const string ExportDir = @"C:\Users\drdom\Documents\JapaneseVR\export\Sala_v148_20261023_1139";
         private const string ArtDir = "Assets/Art/JapaneseRoom";
         public const string ManifestCopy = ArtDir + "/manifest.json";
 
@@ -121,7 +121,6 @@ namespace NeuroAdaptiveVR.EditorTools
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(asset, parent);
                 model.name = h.hueco;
                 foreach (var c in model.GetComponentsInChildren<Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
-                FixChildAxes(model.transform);
                 foreach (var screen in model.GetComponentsInChildren<MeshRenderer>(true).Where(r => r.name.EndsWith("_Interfaz")))
                     screen.gameObject.SetActive(false);   // the board and podium canvases are the interface (§3); the plane would z-fight them
 
@@ -162,8 +161,7 @@ namespace NeuroAdaptiveVR.EditorTools
             foreach (var fbx in Directory.GetFiles(huecos, "*.fbx")) File.Copy(fbx, Path.Combine(root, Path.GetFileName(fbx)), true);
             foreach (var png in Directory.GetFiles(huecos, "*.png", SearchOption.AllDirectories))
             {
-                var dst = Path.Combine(root, "Textures", Path.GetFileName(png));
-                if (!File.Exists(dst)) File.Copy(png, dst);
+                File.Copy(png, Path.Combine(root, "Textures", Path.GetFileName(png)), true);   // every .fbm carries the same copies
             }
             File.Copy(Path.Combine(ExportDir, "manifest.json"), Path.Combine(root, "manifest.json"), true);
             AssetDatabase.Refresh();
@@ -179,32 +177,6 @@ namespace NeuroAdaptiveVR.EditorTools
             imp.importCameras = false;
             imp.importLights = false;          // the ESL never touches lighting (spec 8.3)
             if (changed) imp.SaveAndReimport();
-        }
-
-        // The FBX exporter baked the meshes into Unity axes but left the transforms of meshes parented
-        // to another mesh in Blender axes, behind a leftover conversion C = (270, 180, 0): they come
-        // out lying down (the maneki-neko 10 cm under its shelf, the clock hands below the dial).
-        // Pieces whose up axis is still up in the FBX were converted and are left alone.
-        private static readonly Quaternion LeftoverConversion = Quaternion.Euler(270f, 180f, 0f);
-
-        /// <summary>The local pose a piece must have in the scene, from its pose in the imported FBX.</summary>
-        public static (Vector3 pos, Quaternion rot) ExpectedPose(Transform fbxPiece)
-        {
-            Vector3 p = fbxPiece.localPosition; Quaternion r = fbxPiece.localRotation;
-            if (Vector3.Angle(r * Vector3.up, Vector3.up) <= 45f) return (p, r);
-            var c = LeftoverConversion; var ci = Quaternion.Inverse(c);
-            return (c * p, c * (r * ci) * ci);   // its own rotation (R·C⁻¹, still about Blender axes) goes into Unity axes like the position
-        }
-
-        private static void FixChildAxes(Transform root)
-        {
-            foreach (var child in root.GetComponentsInChildren<Transform>(true))
-            {
-                var src = child == root ? null : PrefabUtility.GetCorrespondingObjectFromSource(child);
-                if (src == null) continue;
-                var (p, r) = ExpectedPose(src);
-                child.SetLocalPositionAndRotation(p, r);
-            }
         }
 
         private static string AnimationPath(Transform t) => t.parent == null ? t.name : AnimationPath(t.parent) + "/" + t.name;
