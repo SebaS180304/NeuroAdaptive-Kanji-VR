@@ -1001,31 +1001,32 @@ namespace NeuroAdaptiveVR.EditorTools
         /// </summary>
         private static readonly Dictionary<string, (float h0, float h1, float v0, float v1)> LayoutOfRecord = new()
         {
-            // measured 1 Oct 2026 from the eye (0, 1.36, 0); degrees, + right / + up
-            { "FloorLamp_T1",               (-29.2f, -22.2f, -24.6f,  5.8f) },
-            { "Plant_T1",                   (-38.3f, -23.2f, -32.0f, -6.7f) },
-            { "Wastebasket_T2",             ( 20.4f,  27.0f, -26.1f, -18.1f) },
-            { "Bookshelf_T3",               (-39.7f, -28.2f, -23.4f, -6.5f) },
-            { "WallPicture_T2",             (-37.0f, -29.7f,  12.0f, 19.3f) },
-            { "SideTable_T1",               ( 25.4f,  39.0f, -25.1f, -10.4f) },
-            { "WallShelf_T2",               ( 25.6f,  37.9f,  12.1f, 20.6f) },
-            { "Chair_T3",                   ( 31.0f,  43.8f, -28.1f, -7.8f) },
-            { "StackedBoxes_T3",            ( 22.6f,  32.7f, -35.6f, -22.9f) },
-            { "WallClock_T3",               ( -2.9f,   2.9f,  15.6f, 21.1f) },
-            // added 5 Oct 2026 (MIRAI: one more tier-2 prop so MEDIUM varies between seeds)
-            { "DeskItems_T2",               ( 27.1f,  36.7f, -12.1f, -7.8f) },
-            { "CurtainLeft_T2",             (-37.7f, -32.9f,  -5.8f, 11.8f) },
-            { "OutsideFigureLeft_T3",       (-39.3f, -24.9f,  -7.7f,  1.7f) },
-            { "CurtainRight_T2",            ( 32.9f,  37.7f,  -5.8f, 11.8f) },
-            { "OutsideFigureRight_T3",      ( 24.9f,  39.3f,  -7.7f,  1.7f) },
-            // Peripheral animals (Diseno_Sala_ESL.md §10.2), room v148, eye at 1.60 m, over their
-            // whole path; measured in Unity 22 Oct with reference-size boxes (D-F6-33). The birds
-            // keep the spheres' ids.
-            { "PeripheralEvent_WindowLeft",           (-34.2f, -26.5f, -11.7f, -3.4f) },   // wings folded when perched
-            { "PeripheralEvent_WindowRight",          ( 26.5f,  34.2f, -11.7f, -3.4f) },
-            { "PeripheralEvent_Shelf",                ( 34.2f,  45.5f,   7.7f, 11.7f) },
-            { "PeripheralEvent_CatWindowLeft",        (-35.3f, -26.1f, -11.4f, -7.2f) },   // standing (D-F6-34)
-            { "PeripheralEvent_CatWindowRight",       ( 26.0f,  35.3f, -11.4f, -7.2f) },
+            // Room v148 with the eye at 1.60 m (D-F6-25), measured in Unity on 23 Oct 2026 from the eye
+            // (0, 1.60, 0), the meshes of the approved re-export (D-F6-33); degrees, + right / + up.
+            // Differences > 1 deg from Diseno_Sala_ESL.md §10.3 are explained in the day draft: the clock
+            // at 2.50 m (decision 9), the silhouettes on their current path, the bird mesh smaller than its box.
+            { "FloorLamp_T1",               (-35.3f, -24.9f,  11.5f, 34.2f) },
+            { "Plant_T1",                   (-37.6f, -28.0f, -25.5f, -11.3f) },
+            { "Wastebasket_T2",             ( 26.4f,  31.3f, -22.2f, -16.4f) },
+            { "Bookshelf_T3",               (-52.3f, -40.9f, -20.5f, -4.4f) },   // out of view, accepted (decision 8)
+            { "WallPicture_T2",             (-35.8f, -29.3f,   4.8f, 10.2f) },
+            { "SideTable_T1",               ( 30.2f,  43.1f, -21.5f, -14.1f) },
+            { "WallShelf_T2",               ( 29.3f,  37.0f,   4.8f, 10.6f) },
+            { "Chair_T3",                   ( 36.3f,  45.6f, -22.3f, -13.8f) },
+            { "StackedBoxes_T3",            (-44.2f, -26.1f, -23.3f, -8.7f) },   // now on the left (v148)
+            { "WallClock_T3",               ( -2.1f,   3.1f,  10.5f, 15.6f) },
+            { "DeskItems_T2",               ( 30.8f,  41.8f, -16.6f, -14.0f) },
+            { "CurtainLeft_T2",             (-41.0f, -29.1f, -14.0f,  4.7f) },
+            { "OutsideFigureLeft_T3",       (-39.5f, -24.7f, -11.1f, -1.4f) },
+            { "CurtainRight_T2",            ( 29.1f,  41.0f, -14.0f,  4.7f) },
+            { "OutsideFigureRight_T3",      ( 24.7f,  39.5f, -11.1f, -1.4f) },
+            // Peripheral animals (Diseno_Sala_ESL.md §10.2) over their whole path, with their Blender
+            // meshes; the cat over its baked clip. The birds keep the spheres' ids.
+            { "PeripheralEvent_WindowLeft",           (-34.0f, -26.4f, -11.0f, -2.8f) },
+            { "PeripheralEvent_WindowRight",          ( 26.4f,  34.0f, -11.0f, -2.8f) },
+            { "PeripheralEvent_Shelf",                ( 34.1f,  45.7f,   8.3f, 12.3f) },
+            { "PeripheralEvent_CatWindowLeft",        (-35.1f, -26.3f, -11.5f, -6.4f) },
+            { "PeripheralEvent_CatWindowRight",       ( 26.3f,  35.1f, -11.5f, -6.4f) },
             { "PeripheralEvent_ButterflyWindowLeft",  (-32.6f, -25.4f,  -3.4f,  0.2f) },
             { "PeripheralEvent_ButterflyWindowRight", ( 25.4f,  32.6f,  -3.4f,  0.2f) },
         };
@@ -1053,16 +1054,23 @@ namespace NeuroAdaptiveVR.EditorTools
 
             // Union of the angular boxes of every mesh of an object (and, for a
             // mover, of every sampled pose); flags the card overlap per pose.
+            var baked = new Mesh();
             AngularBox Measure(Transform obj, out bool overCards)
             {
                 var box = new AngularBox { H0 = 999f, H1 = -999f, V0 = 999f, V1 = -999f, ZMin = 999f };
                 bool covers = false;
                 void Add()
                 {
-                    foreach (var mf in obj.GetComponentsInChildren<MeshFilter>(true))
+                    // The cat's skinned mesh is baked at the sampled pose: its renderer only updates once a frame.
+                    var shapes = obj.GetComponentsInChildren<MeshFilter>(true).Where(mf => mf.sharedMesh != null).Select(MeshCorners)
+                        .Concat(obj.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(sk =>
+                        {
+                            sk.BakeMesh(baked, true);
+                            return baked.vertices.Select(v => sk.transform.TransformPoint(v)).ToArray().AsEnumerable();
+                        }));
+                    foreach (var shape in shapes)
                     {
-                        if (mf == null || mf.sharedMesh == null) continue;
-                        var a = AngularOf(MeshCorners(mf));
+                        var a = AngularOf(shape);
                         box.H0 = Mathf.Min(box.H0, a.H0); box.H1 = Mathf.Max(box.H1, a.H1);
                         box.V0 = Mathf.Min(box.V0, a.V0); box.V1 = Mathf.Max(box.V1, a.V1);
                         box.ZMin = Mathf.Min(box.ZMin, a.ZMin);
@@ -1135,12 +1143,13 @@ namespace NeuroAdaptiveVR.EditorTools
             foreach (var name in LayoutOfRecord.Keys)
                 if (!seen.Contains(name)) problems.Add($"{name} missing from the scene");
 
-            Check("E13", "El layout del ESL es el de registro (1 oct) y nada tapa las tarjetas",
+            Check("E13", "El layout del ESL es el de registro (sala v148, 23 oct) y nada tapa las tarjetas",
                   seen.Count > 0 && problems.Count == 0,
                   problems.Count == 0
                       ? $"{seen.Count} objetos en su sitio · fuera de 22-40 (informativo): " +
                         (outsideBand.Count == 0 ? "ninguno" : Join(outsideBand))
-                      : Join(problems.Distinct().Take(12)));
+                      : Join(problems.Distinct()));
+            UnityEngine.Object.DestroyImmediate(baked);
         }
 
         // ==================================================================
@@ -1324,14 +1333,26 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Run(0.6, 0f, 0f);
 
-            // Room targets measured with the head turned: each one leaves, by its limit.
+            // Room targets of the v148 room (D-F6-25): their centres from the eye at 1.60 m, relative to
+            // the board direction, measured in Unity on 23 Oct (D-F6-33; Medicion_D7_HeadAway.md §8).
+            // Each one leaves, by its limit. The task above did not move: it went up 0.24 m with the eye.
             var room = new (string name, float yaw, float pitch, string limit)[]
             {
-                ("reloj", -2.5f, 20.3f, "PITCH_UP"), ("repisa", 26.2f, 15.3f, "YAW"),
-                ("planta", -26.7f, -7.1f, "YAW"), ("ventana derecha", 31.2f, 0.8f, "YAW"),
-                ("silla", 35.0f, -6.5f, "YAW"), ("cajas", 18.6f, -23.4f, "PITCH_DOWN"),
-                ("techo", 0.9f, 52.3f, "PITCH_UP"),
+                ("repisa", 33.2f, 5.1f, "YAW"), ("planta", -32.6f, -21.0f, "YAW"),
+                ("ventana derecha", 27.1f, -7.3f, "YAW"), ("silla", 41.1f, -20.4f, "YAW"),
+                ("cajas", -35.4f, -17.7f, "YAW"), ("techo", 0.0f, 45.1f, "PITCH_UP"),
+                ("tatami delante", 0.0f, -55.7f, "PITCH_DOWN"),
             };
+            // The v148 clock sits inside the task region (7.9-12.9 deg up, centre 10.5): looking at it is not
+            // HEAD_AWAY with the frozen thresholds. Listed so the harness says so, not as a rule (duda 7 para PM).
+            var insideNow = new (string name, float yaw, float pitch)[] { ("reloj", 0.5f, 10.5f) };
+            foreach (var x in insideNow)
+            {
+                int before = events.Count;
+                Run(1.0, x.yaw, x.pitch);
+                if (events.Count != before) p.Add($"{x.name} ({x.yaw}, {x.pitch}) ya sale de la region: actualizar Medicion_D7 §8");
+            }
+            Run(0.6, 0f, 0f);
             int roomOk = 0;
             foreach (var x in room)
             {
@@ -1348,8 +1369,8 @@ namespace NeuroAdaptiveVR.EditorTools
             Run(0.6, 0f, 0f);
             if (events.Count != beforeGlance + 2) p.Add("una mirada rapida de 450 ms a la ventana no conto");
 
-            Check("X4", "HEAD_AWAY/RETURNED: umbral, permanencia, histeresis, onset, cierre por tracking, numeracion y angulos medidos en visor (D7)",
-                  p.Count == 0, p.Count == 0 ? $"{events.Count} eventos · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms · tarea {task.Length}/{task.Length} dentro · sala {roomOk}/{room.Length} fuera" : Join(p));
+            Check("X4", "HEAD_AWAY/RETURNED: umbral, permanencia, histeresis, onset, cierre por tracking, numeracion; tarea medida en visor (D7), sala v148 en Unity (D-F6-33)",
+                  p.Count == 0, p.Count == 0 ? $"{events.Count} eventos · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms · tarea {task.Length}/{task.Length} dentro · sala {roomOk}/{room.Length} fuera · dentro de la region: {string.Join(", ", insideNow.Select(x => x.name))} (duda 7)" : Join(p));
 
             var q = new List<string>();
             var idle = new IdleTracker(IdleTracker.Thresholds.Default);
