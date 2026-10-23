@@ -1,6 +1,6 @@
 # Implementation Plan: Phase 6 week → M3 (Tue 20 – Fri 23 Oct 2026)
 
-Written 20 Oct 2026, updated 21 Oct (Wed 21 dev tasks, F-PROFILE brief). **Aligned up to: D-F6-11**
+Written 20 Oct 2026, updated 21 Oct (Wed 21 dev tasks, F-PROFILE brief). **Aligned up to: D-F6-44** (the Fri 23 section; older sections were written up to D-F6-11)
 (`Estado_Actual.md`). Replaces the Research Web Portal v1 plan, archived in
 `tasks/archive/portal_v1_{plan,todo}.md`. Its open items are carried over unchanged:
 the headset runs of Tasks 1.8–1.10 and Checkpoint B (here Task 1, and Task 3, which absorbs run 2), and
@@ -196,3 +196,102 @@ T12 Checkpoint D (only if time is left)
    V1.8 chart; calibration shows the latest session with the range of all; endpoint
    shape as above. Cross-session link: option (b), a disclosure list (web design chat).
 8. ~~Canvas 38 (cross-session link, V1.5 group filter)~~ Validated by Sebas, 21 Oct.
+
+---
+
+## Fri 23 Oct: Unity integration and validation run (D-F6-35)
+
+Written 23 Oct, updated the same morning. **Aligned up to: D-F6-44.** Sources: board D-F6-25 – D-F6-42,
+`Plan_Fase6.md` §9 (vie 23), `Diseno_Sala_ESL.md` §10.2–§10.3, the export manifest
+the **new** room export from the approved `.blend1` (D-F6-42; Sebas hands over its folder; the 19:36 export `Sala_v148_20261022_1936` is not used), the `*_animacion.md` sheets in
+`JapaneseVR/references/JapaneseVRScene/`, `JapaneseVR/COORDINACION_22oct.md`.
+
+### What is already in the repo (22 Oct, do not redo)
+| Item | Commit | Left for today |
+|---|---|---|
+| Eye at 1.60 m, task +0.24 m, clock 2.50 m (D-F6-25) | `1f3892d` | check that the v148 board 17B lines up with the raised task surface (Z 1.24–2.14) |
+| `XR Origin (XR Rig).prefab` reverted (D-F6-29) | `stash@{0}`, tree clean | verify only |
+| Spheres replaced by 7 animal events, §10.2 paths, provisional cat sill (D-F6-28, D-F6-32) | `368c401`, `6525086`, `9c761a9`, `bde0bc6` | swap the box stand-ins for the FBX meshes |
+| Set A prefabs as reference boxes, all-or-none menu (D-F6-26) | `c493456` | run with the FBX, turn 車 |
+| v148 room menu | `JapaneseRoomIntegration.cs` **untracked** | rewrite against the manifest of the new export (below) |
+| Cat walking on four box legs moved by `PeripheralAnimation`, 4.0 s | `9c761a9` | **replaced** in Task 22: D-F6-38 plays the FBX's baked clips instead |
+
+### Findings that shape the plan
+1. **The untracked room script does not match the manifest.** It finds FBX by older codes
+   (`16B_Hoja`, `15B_L`, `24`, `06`, `14`) that no export file has, and it leaves out 8 slots
+   (chabudai ×2, zabuton ×6, tea sets ×2) and 18B (seen in the 19:36 manifest; the new export
+   is expected to keep its format). Rewrite it to read the `manifest.json` of the folder Sebas
+   hands over (D-F6-42), never `Sala_v148_20261022_1936`
+   (`huecos[].fbx`, `unity_pos`, `unity_rot_y_deg`), with one small table mapping the
+   ESL slots to their slot names. Copy the `huecos/` FBX into `Assets/Art/JapaneseRoom/`, with
+   their `.fbm` folders. The one known difference: the clock stays at 2.50 m
+   (decision 9), not the 2.367 in the manifest, written down as a D-F6-33 note.
+2. **The cat is the one exception to D-F6-27 (D-F6-38 – D-F6-40).** `25B_Gato.fbx` is imported as
+   **Generic** with Bake Axis Conversion and `importAnimation = true`, and its baked clips play
+   through an Animator; `PeripheralAnimation` no longer moves the cat (the box-leg code of
+   `9c761a9` goes). The event lasts 8.08 s in the scheduler (D-F6-39) and the provisional sill
+   is ≥ 0.40 m deep (D-F6-40). According to `25B_Gato_ficha.md`, the `EVENTO_VentanaDerecha` / `_Izquierda` clips
+   carry the root motion: the origin is the stop point, the cat comes in from +0.47 m, turns 180° and walks back
+   out. So the event root sits at the stop point (x 2.25) facing along the sill, and nothing
+   moves it along the §10.2 Bézier. `CAMINATA_LUGAR` / `_AVANCE` are imported and not used
+   (D-F6-38, refined 23 Oct 10:10). Still its own commit.
+3. **Bird, butterfly, silhouette and the 5 kanji match their contracts** (separate pieces, pivots
+   as in the sheets). Bird has no head piece: the perched head turn stays a root turn ≤ 15°.
+4. **`asset_source` fits in one line**: `KANJI_EXPOSED` already carries `audio_source`; add
+   `object_source` = `BLENDER_FBX` | `PLACEHOLDER` from `KanjiDiscoveryController`. The backend
+   stores the payload as is, so no migration.
+5. HEAD_AWAY thresholds are frozen (F5a). The task kept its angles from the eye (+0.24 m on both),
+   so the re-measure should confirm ±24° / +12° / −22°. If a v148 prop falls inside the region,
+   that goes to PM as a question, and the thresholds stay as they are.
+
+### Dependency graph
+```
+new room export (D-F6-42, from Sebas) ─┐
+T18 pre-flight + revert map ──┬─> T19 room v148 ──> T20 re-measure (E13, X4, D7 doc)
+                              │                         │
+                              ├─> T21 bird/butterfly/silhouette meshes ─┤
+                              ├─> T22 cat (Generic, baked clips) ───────┤
+                              └─> T23 kanji set A ─> T23b object_source ┤
+                                                                        v
+                                             T24 harness green + Link framerate
+                                                                        v
+                                             T25 validation run S1→S9 ─> freeze ─> T13 phase test
+                                                                        v
+                                             T26 day draft + tell Sebas
+```
+T19 waits for the new export. In the meantime: T18, T21, T23, T23b, and T22, which no
+longer waits for anything. The measurements in T20 need the room and the animals in their final
+meshes, so T20 runs after T19, T21 and T22.
+
+### Revert map (D-F6-25, D-F6-31)
+If the run fails **because of the room**, revert, newest first, every commit that only exists
+for v148: today's T22, T21, T20, T19, then `bde0bc6`, `9c761a9`, `6525086`, `368c401`,
+`1f3892d`. That brings back the 1.36 m room with the three spheres. The kanji commits (T23,
+T23b) are independent and stay. T18 dry-runs this sequence in a throwaway worktree, so the
+revert is known to apply cleanly before it is needed.
+
+**Dry run, 23 Oct (T18, on `bde0bc6`):** `bde0bc6`, `9c761a9`, `6525086` and `1f3892d` revert
+clean. `368c401` conflicts only in `Phase2TestHarness.cs`, because `c493456` (X10, kanji) sits
+next to X9. Resolution: keep the `SetAObjectCases();` call and the whole X10 method (`/// X10.` up to
+its `Check("X10", …)`), drop the `PeripheralAnimalCases();` call and the X9 method. With that,
+1f3892d reverts clean too: eye back to 1.36 m, no X9, X10 intact. Run the dry run again once
+today's commits are in.
+
+### Risks
+| Risk | Impact | Mitigation |
+|---|---|---|
+| An animal kind never shows up in the run (random draw) | Med | The tester looks at each animal when it appears (rows only exist with a DWELL or ORIENTING). If a kind is never drawn, the draft says so and Sebas decides whether that counts as a pass |
+| v148 materials look wrong in URP (ToUrp shortcut) | Low | Camera capture from the eye before the headset; fix per material |
+| Frame drops through Link (33k tris room + 3.4k cat skinning) | Med | Measure in the HUD during S4, S5 and S7; if the frame time is over budget, look at the cat skinning and the room's realtime shadows first |
+| Revert conflicts in `JapaneseLearningStudio.unity` | High | Dry run in T18 |
+| The 18B waits for another room re-export (D-F6-44); the run and the test wait for it | High | Task 19 goes in without the 18B; 19b is a menu run, the 18B wiring and the C correction trimmed by X11 |
+| The room waits for the re-export (D-F6-42) — done 10:40 | Med | T18, T21, T22, T23 and T23b go first; T19 is a menu run plus a capture once the folder arrives |
+| The baked cat clips do not line up with the sill once in Unity (axis, mirror, stop point) | Med | Camera capture from the eye during each of the two clips; the envelope measured in Unity rules (D-F6-41) |
+
+### Open questions (Fri 23)
+1. ~~Cat~~ → resolved by D-F6-38 – D-F6-40.
+2. ~~`.blend` vs `.blend1`~~ → resolved by D-F6-42 (re-export from the approved file).
+3. ~~Silhouette trajectory~~ → stays as it is now (Sebas, 23 Oct); its reference box is the one in D-F6-41.
+4. ~~Which cat clips~~ → D-F6-38 (refined 23 Oct 10:10): each window plays its `EVENTO_*`; the
+   two `CAMINATA_*` are not used.
+5. ~~Clash with `9c761a9`~~ → the commit for Task 22 removes the box cat's code; `9c761a9` is not reverted (Sebas, 23 Oct).

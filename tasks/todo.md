@@ -1,7 +1,7 @@
 # Todo: Phase 6 week → M3 (20 – 23 Oct)
 
 Plan: `tasks/plan.md`. Previous list (portal v1): `tasks/archive/portal_v1_todo.md`.
-**Aligned up to: D-F6-17** (`Estado_Actual.md`, the alignment board; it wins over this list).
+**Aligned up to: D-F6-44** (Fri 23 section; older sections stay at D-F6-17) (`Estado_Actual.md`, the alignment board; it wins over this list).
 Every commit: message file in Downloads, shown to Sebas first, one change each.
 
 ---
@@ -221,7 +221,7 @@ does not wait). Copy stays as `Contenido_UI_F-PROFILE.md` (D-F6-6) where the can
 
 ---
 
-## Thu 22 Oct: phase test
+## Thu 22 Oct: phase test (moved to Fri 23, after Task 25: D-F6-35)
 
 ### [ ] Task 13: Phase test with a participant with no Japanese
 - [ ] Before: consent approved (D-F6-9, protocol Part B of `Consentimiento_Protocolo_Sesion_v0.md`), participant at 11:00 (Sebas), `/health/db` OK. No commits and no backend restart before 12:00 (board §1)
@@ -241,6 +241,89 @@ does not wait). Copy stays as `Contenido_UI_F-PROFILE.md` (D-F6-6) where the can
 ---
 
 ## Fri 23 Oct: M3
+
+Integration first, then the validation run, then the freeze, then Task 13 (D-F6-35). Each
+block gets its own commit, so it can be reverted (revert map in `plan.md`). Exports in
+`C:/Users/drdom/Documents/JapaneseVR/` (never the `FALLIDO_*` files).
+
+### [x] Task 18: Pre-flight (no code) · done 23 Oct
+- [x] `git diff --quiet -- "unity-client/**/XR Origin (XR Rig).prefab"`: the prefab is the committed one, the change sits in `stash@{0}` (D-F6-29)
+- [x] Eye 1.60 m and task +0.24 m are in `1f3892d` (D-F6-25): Camera Offset y = 1.60 in the scene
+- [x] Harness run as it stands: write down which cases are red before starting (E13 is red on purpose since `1f3892d`) → **85/86, only E13 red** (props measured from the 1.36 m eye); X4, X9, X10 green; scene left clean
+- [x] Dry-run the revert map in a throwaway worktree (`git worktree add`, `git revert --no-commit` newest first): applies clean → clean except `368c401` in `Phase2TestHarness.cs`; the resolution is written down in `plan.md` (keep X10, drop X9)
+**Deps:** none. **Scope:** XS
+
+### [x] Task 19: Room v148 from its new export (D-F6-25, D-F6-32, D-F6-40, D-F6-42)
+- [x] **Waits for the new export folder from the approved `.blend1`; Sebas hands it over.** `Sala_v148_20261022_1936` is not used. Until it arrives: Tasks 18, 21, 22, 23, 23b
+- [x] `JapaneseRoomIntegration` reads the `manifest.json` of that folder: every slot placed at `unity_pos` / `unity_rot_y_deg`; the ESL slots keep their GameObject, `EnvironmentProp` and name; the clock stays at 2.50 m (decision 9, noted)
+- [x] Old primitive room switched off, not deleted; provisional cat sill kept (≥ 0.40 m deep since Task 22); no collider on any prop
+- [x] Camera capture from the 1.60 m eye: the room looks like the v148 render; the board 17B lines up with the raised task (Z 1.24–2.14)
+- [x] 18B podium held back until its re-export with the screen at 25° from the vertical (D-F6-44): S2 keeps the box podium; wiring the new 18B is Task 19b
+→ `6dea19c`: 35/36 slots, 18B pending (Task 19b); X11 green, E13 red until Task 20.
+**Verify:** menu runs with 0 MISSING against the new manifest; capture compared with `LAY3_CAM_Ojo_160`. **Commit:** `feat(unity): build the v148 room from its manifest`
+**Deps:** 18, the new export. **Files:** `Editor/JapaneseRoomIntegration.cs`, scene, `Art/JapaneseRoom/**`. **Scope:** M
+
+### [ ] Task 19b: The new room export and the 18B podium (D-F6-44)
+- [ ] **Waits for the new `export/Sala_v148_*` folder** (full room, manifest compared with `Sala_v148_20261023_1004`: only the 18B changes)
+- [ ] `ExportDir` points at it; `Pending` empty; the menu runs with 0 MISSING; the 18B goes to `ControlsIntro` and its screen canvas lies on the model's top (25° from the vertical, centre 1.22 m)
+- [ ] Children that arrive with their transforms applied: X11 says which; the C = (270, 180, 0) correction comes off **only** for those
+- [ ] X11 green with 36/36; camera capture of S2 from the eye
+**Commit:** its own, `feat(unity): wire the upright 18B podium from the room re-export`. **Deps:** 19, the new export. **Scope:** S
+
+### [ ] Task 21: Bird, butterfly and silhouette meshes (D-F6-27, D-F6-28)
+- [ ] `23B_Pajaro.fbx` and `26B_Mariposa.fbx` replace the box stand-ins under each event's `Model`; the wing pieces get the names `PeripheralAnimation` already looks for (Wing L/R); pivots as in the sheets
+- [ ] `24B_Silueta.fbx` under `OutsideFigureLeft_T3` / `Right_T3`, **current trajectory unchanged**
+- [ ] Not one sphere left in the v148 room (X9 asserts it); bird 0.4 / 0.7 / 0.4 s with its wings folded while perched; butterfly as in §10.2
+**Verify:** X9 green; Play with one event of each kind forced, seen from the eye. **Commit:** `feat(unity): give the bird, the butterfly and the silhouette their Blender meshes`
+**Deps:** 18. **Scope:** M
+
+### [ ] Task 22: Cat from its rigged FBX (D-F6-38, D-F6-39, D-F6-40)
+- [ ] `25B_Gato.fbx` imported as **Generic**, Bake Axis Conversion on, `importAnimation = true`; an Animator plays its baked clips. Each window plays its own `EVENTO_VentanaDerecha` / `_Izquierda` clip (8.08 s, root motion included); the two `CAMINATA_*` clips are imported and not used (D-F6-38, refined 23 Oct 10:10)
+- [ ] `PeripheralAnimation` no longer moves the cat: the box-leg, head and tail code of `9c761a9` goes in this commit, without reverting `9c761a9` (Sebas, 23 Oct), and so does the cat's §10.2 Bézier. The event root sits at the stop point (x 2.25) facing along the sill
+- [ ] The scheduler records the cat's event as 8.08 s (D-F6-39; still under HIGH's 10 s minimum interval)
+- [ ] Provisional sill ≥ 0.40 m deep (D-F6-40), simple block, no collider, the colour of the window sill
+- [ ] X9 cat checks rewritten: Animator plays the right clip per window, 8.08 s, starts and ends out of view, ≤ 3 Hz; nothing in `PeripheralAnimation` moves its bones
+**Verify:** X9 green; Play with each cat event forced, camera capture from the eye at entry, head turn, half turn and exit. **Commit:** its own, `feat(unity): play the cat's baked walk from its rigged FBX`
+**Deps:** 18. **Files:** `PeripheralAnimation.cs`, `PeripheralEventScheduler.cs`, `Phase2TestHarness.cs`, scene, `Art/Peripheral/**`. **Scope:** M
+
+### [ ] Task 20: Re-measure in Unity (D-F6-25, D-F6-33, D-F6-41)
+- [ ] E13: the `LayoutOfRecord` rows of the v148 props and the animals measured in Unity with the E13 method; every difference > 1° from §10.3 noted with its cause in the day draft; a misplaced object gets fixed. The cat is measured over its baked clip, not a Bézier
+- [ ] Reference boxes of D-F6-41: cat ≈ 0.12 × 0.37 × 0.38 m, silhouette 0.34 × 0.34 × 1.36 m. **If the envelope measured in Unity on the imported FBX is different (the cat gave 0.49 × 0.12 × 0.43), the Unity one is used**, and the difference with its cause goes in the day draft
+- [ ] X4: the HEAD_AWAY task region measured at the 1.60 m eye; thresholds stay at ±24 / +12 / −22 unless a prop falls inside, and then it is a question for PM
+- [ ] `Claude outputs/Medicion_D7_HeadAway.md`: a new section "v148 room, eye 1.60 m (23 Oct)" with the angles, the method and the result
+**Verify:** E13 and X4 green. **Commit:** `test(unity): measure the v148 room's layout of record`
+**Deps:** 19, 21, 22. **Scope:** S
+
+### [ ] Task 23: Set A objects (D-F6-26)
+- [ ] The five `KANJI_0N_*.fbx` copied to `Assets/Art/KanjiLessonAssets/`; the menu assigns all five (or none)
+- [ ] 車 turned so its top faces the player (ESTADO.md: the cart is read from above); checked with a camera capture from the eye in S5
+- [ ] X10 green: five prefabs, all assigned, no boxes left
+**Commit:** `feat(unity): show the five set A objects from Blender in S5`. **Deps:** 18. **Scope:** S
+
+### [ ] Task 23b: `object_source` in `KANJI_EXPOSED`
+- [ ] `object_source` = `BLENDER_FBX` | `PLACEHOLDER`, next to `audio_source`; harness case asserts both values
+**Commit:** separate, `feat(telemetry): say whether the S5 object is real or a placeholder`. **Deps:** 23. **Scope:** XS
+
+### Checkpoint: integration
+- [ ] Every block committed on its own (messages in Downloads, shown to Sebas first); `graphify update .`
+
+### [ ] Task 24: Harness green and a smooth headset over Link
+- [ ] Whole harness green
+- [ ] Quest 2 over Link: frame rate steady at the headset's refresh in S4, S5 and S7, no ASW and no dropped-frame spikes (Oculus Debug Tool performance HUD), with the animals on show
+**Deps:** 19–23b. **Scope:** XS (no code unless a drop shows up)
+
+### [ ] Task 25: Validation run S1 → S9 (D-F6-35)
+- [ ] Set A, `BEHAVIOR_ADAPTIVE`, visit 1, a test code; Inspector changes reverted after the run; scene never saved in Play
+- [ ] `verify_adaptation` and `verify_projection`: 0 discrepancies
+- [ ] `select object_name, kind, count(*) from distractor_interactions where session_id = '<id>' and object_group = 'PERIPHERAL' group by 1, 2;` → the animals are there (which kinds were drawn goes in the draft)
+- [ ] `KANJI_EXPOSED`: `object_source = BLENDER_FBX` for all five
+- [ ] If it fails because of the room: apply the revert map, go back to the 1.36 m room with the spheres (D-F6-31), run again
+- [ ] **Passed → freeze** (no commits, no backend restarts) until the phase test ends; tell Sebas so he can set the time
+**Deps:** 24, **19b (the test waits for the new 18B, D-F6-44)**. **Scope:** XS (no code)
+
+### [ ] Task 26: Day draft
+- [ ] `Claude outputs/Borrador_Plan_Fase6_9_23oct.md`: what was integrated, commits, D-F6-33 differences, the run's session id and results, "Dudas para PM" (dated) or "Sin dudas · 23 oct"
+**Deps:** 25 (written as the day goes).
 
 ### [ ] Task 15: Criteria evidence of F5a and F6
 - [ ] Declare the 3 sessions of 28–29 Sep with duplicated events (`d3f19117`, `dc28e1ea`, `fc835228`); not deleted (PM, 20 Oct)
