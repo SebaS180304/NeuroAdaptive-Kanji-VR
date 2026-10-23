@@ -266,31 +266,35 @@ block gets its own commit, so it can be reverted (revert map in `plan.md`). Expo
 ### [ ] Task 19b: The new room export and the 18B podium (D-F6-44)
 - [ ] **Waits for the new `export/Sala_v148_*` folder** (full room, manifest compared with `Sala_v148_20261023_1004`: only the 18B changes)
 - [ ] `ExportDir` points at it; `Pending` empty; the menu runs with 0 MISSING; the 18B goes to `ControlsIntro` and its screen canvas lies on the model's top (25° from the vertical, centre 1.22 m)
-- [ ] Children that arrive with their transforms applied: X11 says which; the C = (270, 180, 0) correction comes off **only** for those
+- [ ] The export comes from `export_sala_v148_fbx_v3.py`, which flattens the child meshes: the 18 pieces arrive with correct axes and the hierarchy may change in any slot (D-F6-44, refined 11:10). **First, one of the 18** (the maneki-neko of `10_Repisa_Maneki`): imported raw, without the correction, it stands on its shelf at the same world bounds as today (y 2.21–2.43, z 3.74–3.86); X11 against its FBX
+- [ ] Then the C = (270, 180, 0) correction (`FixChildAxes`, `ExpectedPose`) comes out **in this same commit**, and so does X11's per-piece check against it; it was only for `Sala_v148_20261023_1004`. X11 keeps a guard that fits flattened pieces, chosen once the hierarchy is seen
 - [ ] X11 green with 36/36; camera capture of S2 from the eye
 **Commit:** its own, `feat(unity): wire the upright 18B podium from the room re-export`. **Deps:** 19, the new export. **Scope:** S
 
-### [ ] Task 21: Bird, butterfly and silhouette meshes (D-F6-27, D-F6-28)
-- [ ] `23B_Pajaro.fbx` and `26B_Mariposa.fbx` replace the box stand-ins under each event's `Model`; the wing pieces get the names `PeripheralAnimation` already looks for (Wing L/R); pivots as in the sheets
-- [ ] `24B_Silueta.fbx` under `OutsideFigureLeft_T3` / `Right_T3`, **current trajectory unchanged**
-- [ ] Not one sphere left in the v148 room (X9 asserts it); bird 0.4 / 0.7 / 0.4 s with its wings folded while perched; butterfly as in §10.2
+### [x] Task 21: Bird, butterfly and silhouette meshes (D-F6-27, D-F6-28)
+- [x] `23B_Pajaro.fbx` and `26B_Mariposa.fbx` replace the box stand-ins under each event's `Model`; the wing pieces get the names `PeripheralAnimation` already looks for (Wing L/R); pivots as in the sheets
+- [x] `24B_Silueta.fbx` under `OutsideFigureLeft_T3` / `Right_T3`, **current trajectory unchanged**
+- [x] Not one sphere left in the v148 room (X9 asserts it); bird 0.4 / 0.7 / 0.4 s with its wings folded while perched; butterfly as in §10.2
+→ `76a05d9`: wings on WingL/WingR pivots (bird 0° perched, 10°-80° flying; butterfly 10°-70°), silhouettes facing their walk; X9 green, 86/87 (E13 until Task 20).
 **Verify:** X9 green; Play with one event of each kind forced, seen from the eye. **Commit:** `feat(unity): give the bird, the butterfly and the silhouette their Blender meshes`
 **Deps:** 18. **Scope:** M
 
-### [ ] Task 22: Cat from its rigged FBX (D-F6-38, D-F6-39, D-F6-40)
-- [ ] `25B_Gato.fbx` imported as **Generic**, Bake Axis Conversion on, `importAnimation = true`; an Animator plays its baked clips. Each window plays its own `EVENTO_VentanaDerecha` / `_Izquierda` clip (8.08 s, root motion included); the two `CAMINATA_*` clips are imported and not used (D-F6-38, refined 23 Oct 10:10)
-- [ ] `PeripheralAnimation` no longer moves the cat: the box-leg, head and tail code of `9c761a9` goes in this commit, without reverting `9c761a9` (Sebas, 23 Oct), and so does the cat's §10.2 Bézier. The event root sits at the stop point (x 2.25) facing along the sill
-- [ ] The scheduler records the cat's event as 8.08 s (D-F6-39; still under HIGH's 10 s minimum interval)
-- [ ] Provisional sill ≥ 0.40 m deep (D-F6-40), simple block, no collider, the colour of the window sill
-- [ ] X9 cat checks rewritten: Animator plays the right clip per window, 8.08 s, starts and ends out of view, ≤ 3 Hz; nothing in `PeripheralAnimation` moves its bones
+### [x] Task 22: Cat from its rigged FBX (D-F6-38, D-F6-39, D-F6-40)
+- [x] `25B_Gato.fbx` imported as **Generic**, Bake Axis Conversion on, `importAnimation = true`; an Animator plays its baked clips. Each window plays its own `EVENTO_VentanaDerecha` / `_Izquierda` clip (8.08 s, root motion included); the two `CAMINATA_*` clips are imported and not used (D-F6-38, refined 23 Oct 10:10)
+- [x] `PeripheralAnimation` no longer moves the cat: the box-leg, head and tail code of `9c761a9` goes in this commit, without reverting `9c761a9` (Sebas, 23 Oct), and so does the cat's §10.2 Bézier. The event root sits at the stop point (x 2.25) facing along the sill
+- [x] The scheduler records the cat's event as 8.08 s (D-F6-39; still under HIGH's 10 s minimum interval)
+- [x] Provisional sill ≥ 0.40 m deep (D-F6-40), simple block, no collider, the colour of the window sill
+- [x] X9 cat checks rewritten: Animator plays the right clip per window, 8.08 s, starts and ends out of view, ≤ 3 Hz; nothing in `PeripheralAnimation` moves its bones
+→ clip sampled with `SampleAnimation` (8.083 s); stop (±2.25, 0.665, 4.15); sill x 1.64-3.39 × z 4.02-4.42; Unity envelope at the stop 0.12 × 0.37 × 0.37 (D-F6-41 box: 0.12 × 0.37 × 0.38); X9 green, 86/87.
 **Verify:** X9 green; Play with each cat event forced, camera capture from the eye at entry, head turn, half turn and exit. **Commit:** its own, `feat(unity): play the cat's baked walk from its rigged FBX`
 **Deps:** 18. **Files:** `PeripheralAnimation.cs`, `PeripheralEventScheduler.cs`, `Phase2TestHarness.cs`, scene, `Art/Peripheral/**`. **Scope:** M
 
-### [ ] Task 20: Re-measure in Unity (D-F6-25, D-F6-33, D-F6-41)
-- [ ] E13: the `LayoutOfRecord` rows of the v148 props and the animals measured in Unity with the E13 method; every difference > 1° from §10.3 noted with its cause in the day draft; a misplaced object gets fixed. The cat is measured over its baked clip, not a Bézier
-- [ ] Reference boxes of D-F6-41: cat ≈ 0.12 × 0.37 × 0.38 m, silhouette 0.34 × 0.34 × 1.36 m. **If the envelope measured in Unity on the imported FBX is different (the cat gave 0.49 × 0.12 × 0.43), the Unity one is used**, and the difference with its cause goes in the day draft
-- [ ] X4: the HEAD_AWAY task region measured at the 1.60 m eye; thresholds stay at ±24 / +12 / −22 unless a prop falls inside, and then it is a question for PM
-- [ ] `Claude outputs/Medicion_D7_HeadAway.md`: a new section "v148 room, eye 1.60 m (23 Oct)" with the angles, the method and the result
+### [x] Task 20: Re-measure in Unity (D-F6-25, D-F6-33, D-F6-41)
+- [x] E13: the `LayoutOfRecord` rows of the v148 props and the animals measured in Unity with the E13 method; every difference > 1° from §10.3 noted with its cause in the day draft; a misplaced object gets fixed. The cat is measured over its baked clip, not a Bézier
+- [x] Reference boxes of D-F6-41: cat ≈ 0.12 × 0.37 × 0.38 m, silhouette 0.34 × 0.34 × 1.36 m. **If the envelope measured in Unity on the imported FBX is different (the cat gave 0.49 × 0.12 × 0.43), the Unity one is used**, and the difference with its cause goes in the day draft
+- [x] X4: the HEAD_AWAY task region measured at the 1.60 m eye; thresholds stay at ±24 / +12 / −22 unless a prop falls inside, and then it is a question for PM
+- [x] `Claude outputs/Medicion_D7_HeadAway.md`: a new section "v148 room, eye 1.60 m (23 Oct)" with the angles, the method and the result
+→ 87/87. E13: 22 v148 rows measured in Unity, the cat over its baked clip; > 1° from §10.3 only the clock (2.50 m), the silhouettes (current path) and the window birds (mesh smaller than the box), all explained in the draft. X4: v148 room targets; **the clock is inside the task region** (centre 10.5° vs +12°), reported by X4 and as duda 7 for PM; thresholds unchanged. `Medicion_D7_HeadAway.md` §10.
 **Verify:** E13 and X4 green. **Commit:** `test(unity): measure the v148 room's layout of record`
 **Deps:** 19, 21, 22. **Scope:** S
 
