@@ -107,6 +107,7 @@ namespace NeuroAdaptiveVR.EditorTools
             JapaneseRoomCases();
             ClockProbeCases();
             CurtainCases();
+            ObjectApproachCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -2076,6 +2077,37 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X13", "Cortinas del piloto: hoja subdividida con viento por shader, alfa 0,90 fijo, tiempo del viento desde la seed (D-F6-50, D-F6-53)",
                   p.Count == 0, p.Count == 0 ? "2 hojas · alfa 0.90 · transparentes · viento con la fase de EnvironmentMotion" : Join(p));
+        }
+
+        /// <summary>
+        /// X14. S5 stage 1 with the object coming closer (D-F6-49): from the board anchor to 0.72 m from the eye
+        /// in 1 s, levitating ±1.5 cm every 2 s and turning ±20 deg every 6 s, back at 8 s; the reading at 1.5, 3.5
+        /// and 5.5 s. Built behind a switch that stays OFF in the scene until MIRAI answers (A-9, D-F6-57).
+        /// </summary>
+        private static void ObjectApproachCases()
+        {
+            var p = new List<string>();
+            var s5 = UnityEngine.Object.FindFirstObjectByType<S5LearningBlockController>(FindObjectsInactive.Include);
+            if (s5 == null) p.Add("no hay S5LearningBlockController");
+            else if (new SerializedObject(s5).FindProperty("objectApproach").boolValue) p.Add("el interruptor de D-F6-49 esta ENCENDIDO: debe quedar apagado hasta A-9");
+            var anchor = new Vector3(0f, 1.78f, 1.88f);
+            float maxBob = 0f, maxTurn = 0f, nearDist = 0f;
+            for (float t = 0f; t <= KanjiDiscoveryController.ApproachSeconds + 1e-4f; t += 0.02f)
+            {
+                var (pos, turnDeg) = KanjiDiscoveryController.ApproachPose(anchor, t);
+                if (t >= 1f && t <= 7f) { maxBob = Mathf.Max(maxBob, Mathf.Abs(pos.y - KanjiDiscoveryController.NearPoint.y)); maxTurn = Mathf.Max(maxTurn, Mathf.Abs(turnDeg)); }
+                if (Mathf.Abs(t - 1f) < 0.011f) nearDist = Vector3.Distance(pos, Eye);
+            }
+            var start = KanjiDiscoveryController.ApproachPose(anchor, 0f).pos;
+            var end = KanjiDiscoveryController.ApproachPose(anchor, KanjiDiscoveryController.ApproachSeconds).pos;
+            if (Vector3.Distance(start, anchor) > 0.001f || Vector3.Distance(end, anchor) > 0.001f) p.Add("no sale o no vuelve al ancla del pizarron");
+            if (Mathf.Abs(nearDist - 0.72f) > 0.01f) p.Add($"a 1 s queda a {nearDist:F2} m del ojo, no a 0,72");
+            if (maxBob > 0.0151f || maxBob < 0.014f) p.Add($"levita {maxBob * 100f:F1} cm");
+            if (maxTurn > 20.01f || maxTurn < 19.9f) p.Add($"gira {maxTurn:F1} grados");
+            var times = KanjiDiscoveryController.ObjectReadingSeconds;
+            if (!times.SequenceEqual(new[] { 1.5f, 3.5f, 5.5f })) p.Add("la lectura no suena a 1,5 / 3,5 / 5,5 s");
+            Check("X14", "S5 etapa 1 con el objeto que se acerca (D-F6-49): poses y tiempos; interruptor APAGADO hasta A-9",
+                  p.Count == 0, p.Count == 0 ? $"apagado · 0,72 m a 1 s · ±{maxBob * 100f:F1} cm · ±{maxTurn:F0} grados · lectura 1,5/3,5/5,5 s · vuelve a los {KanjiDiscoveryController.ApproachSeconds} s" : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)

@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using NeuroAdaptiveVR.Data;
 using UnityEngine;
 
@@ -71,6 +73,54 @@ namespace NeuroAdaptiveVR.Controllers
         }
 
         public void Hide() => ClearSpawned();
+
+        // ---- Stage 1 with the object coming closer (D-F6-49; behind S5's switch, off until A-9) ----
+
+        /// <summary>Length of stage 1 when the object comes closer, levitates and goes back.</summary>
+        public const float ApproachSeconds = 8f;
+        /// <summary>Where it levitates: in line between the eye and the board anchor, 0.72 m from the eye, ≈ 12° below the gaze.</summary>
+        public static readonly Vector3 NearPoint = new(0f, 1.45f, 0.70f);
+        /// <summary>When the reading plays, seconds into stage 1.</summary>
+        public static readonly float[] ObjectReadingSeconds = { 1.5f, 3.5f, 5.5f };
+        private const float BobMetres = 0.015f, BobPeriod = 2f, TurnDegrees = 20f, TurnPeriod = 6f;
+
+        /// <summary>
+        /// Position and turn (degrees about the world vertical, on top of the prefab's own rotation) at t seconds
+        /// into stage 1: 0-1 s from the anchor to NearPoint, 1-7 s levitating and turning, 7-8 s back. A pure
+        /// function of t, the same for every participant; the harness samples it (X14).
+        /// </summary>
+        public static (Vector3 pos, float turnDeg) ApproachPose(Vector3 anchor, float t)
+        {
+            static float Smooth(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
+            if (t < 1f) return (Vector3.Lerp(anchor, NearPoint, Smooth(t)), 0f);
+            if (t < 7f)
+            {
+                float u = t - 1f;
+                return (NearPoint + Vector3.up * (BobMetres * Mathf.Sin(2f * Mathf.PI * u / BobPeriod)),
+                        TurnDegrees * Mathf.Sin(2f * Mathf.PI * u / TurnPeriod));
+            }
+            return (Vector3.Lerp(NearPoint, anchor, Smooth(t - 7f)), 0f);
+        }
+
+        /// <summary>Runs stage 1's approach on the spawned object; onReading is called at each reading time.</summary>
+        public IEnumerator Approach(Action onReading)
+        {
+            if (_spawned == null) yield break;
+            var obj = _spawned.transform;
+            Vector3 anchor = obj.position;
+            Quaternion baseRotation = obj.rotation;
+            float t0 = Time.realtimeSinceStartup;
+            int next = 0;
+            for (float t = 0f; t < ApproachSeconds; t = Time.realtimeSinceStartup - t0)
+            {
+                var (pos, turn) = ApproachPose(anchor, t);
+                obj.SetPositionAndRotation(pos, Quaternion.Euler(0f, turn, 0f) * baseRotation);
+                while (next < ObjectReadingSeconds.Length && t >= ObjectReadingSeconds[next]) { onReading?.Invoke(); next++; }
+                yield return null;
+                if (_spawned == null) yield break;
+            }
+            obj.SetPositionAndRotation(anchor, baseRotation);
+        }
 
         private void ClearSpawned()
         {

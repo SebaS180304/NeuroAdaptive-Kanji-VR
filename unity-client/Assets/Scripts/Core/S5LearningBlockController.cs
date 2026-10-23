@@ -62,6 +62,10 @@ namespace NeuroAdaptiveVR.Core
                  "3 s since 25 September: at 1 s the next kanji arrived before the last one settled.")]
         [SerializeField] private float betweenKanjiSeconds = 3f;
 
+        [Tooltip("D-F6-49: stage 1 brings the object to 0.72 m, levitating, and plays its reading 3 times (8 s). " +
+                 "OFF until MIRAI answers (A-9): with it off, stage 1 stays as before.")]
+        [SerializeField] private bool objectApproach = false;
+
         private bool _trialClosed;
         private TrialResult _lastResult;
 
@@ -123,11 +127,16 @@ namespace NeuroAdaptiveVR.Core
                 int authored = 0;
                 float t0 = Time.realtimeSinceStartup;
 
+                int objectAudioPlays = 0;
                 for (int stage = 1; stage < KanjiDiscoveryController.StageCount; stage++)
                 {
                     float ts = Time.realtimeSinceStartup;
-                    if (discovery != null && discovery.ShowStage(item, stage, progress)) authored++;
-                    yield return new WaitForSecondsRealtime(derivationStageSeconds);
+                    bool shown = discovery != null && discovery.ShowStage(item, stage, progress);
+                    if (shown) authored++;
+                    if (objectApproach && stage == 1 && shown)
+                        yield return discovery.Approach(() => { pronunciation?.PlayInitialExposure(item); objectAudioPlays++; });
+                    else
+                        yield return new WaitForSecondsRealtime(derivationStageSeconds);
                     stageMs.Add(Ms(ts));
                 }
                 discovery?.Hide();
@@ -157,6 +166,7 @@ namespace NeuroAdaptiveVR.Core
                     { "stage_ms", stageMs },
                     { "stages_authored", authored },
                     { "object_source", KanjiDiscoveryController.ObjectSourceOf(discovery != null ? item.AnchorObjectPrefab : null) },
+                    { "object_audio_plays", objectAudioPlays },   // D-F6-49: 3 with the approach on, 0 off
                     { "audio_played", clip != null && pronunciation != null },
                     { "audio_source", PronunciationAudioController.SourceOf(clip) },
                     // RAY: ASSEMBLY_SEGMENT_PLACED / ASSEMBLY_COMPLETED follow.
