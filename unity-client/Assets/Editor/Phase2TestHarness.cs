@@ -1756,7 +1756,7 @@ namespace NeuroAdaptiveVR.EditorTools
             if (entries.Count != 7 || Count(PeripheralAnimation.Kind.Bird) != 3 || Count(PeripheralAnimation.Kind.Cat) != 2 || Count(PeripheralAnimation.Kind.Butterfly) != 2)
                 p.Add($"sorteo: {entries.Count} entradas, pajaro {Count(PeripheralAnimation.Kind.Bird)}, gato {Count(PeripheralAnimation.Kind.Cat)}, mariposa {Count(PeripheralAnimation.Kind.Butterfly)} (se esperan 7: 3/2/2)");
             var length = new Dictionary<PeripheralAnimation.Kind, float> {
-                { PeripheralAnimation.Kind.Bird, 1.5f }, { PeripheralAnimation.Kind.Cat, 8.08f }, { PeripheralAnimation.Kind.Butterfly, 3.0f } };
+                { PeripheralAnimation.Kind.Bird, 2.3f }, { PeripheralAnimation.Kind.Cat, 8.08f }, { PeripheralAnimation.Kind.Butterfly, 6.0f } };   // D-F6-48: bird and butterfly at twice the time
             foreach (var a in ok)
             {
                 if (Mathf.Abs(a.DurationSeconds - length[a.AnimalKind]) > 0.01f) p.Add($"{a.name} dura {a.DurationSeconds:F3} s");

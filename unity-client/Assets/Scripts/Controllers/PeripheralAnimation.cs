@@ -14,9 +14,9 @@ namespace NeuroAdaptiveVR.Controllers
     /// Paths are in world coordinates (room v148, eye at 1.60 m), quadratic Béziers
     /// (start, control, end):
     /// - Bird: in along (pathStart, pathControl, rest) in inSeconds, perched
-    ///   restSeconds, out along the same curve reversed in outSeconds (0.4 / 0.7 / 0.4).
+    ///   restSeconds, out along the same curve reversed in outSeconds (0.8 / 0.7 / 0.8, D-F6-48).
     /// - Butterfly: in along (pathStart, pathControl, rest), then out along (rest,
-    ///   outControl, outEnd); no rest; a ±4 cm vertical ripple at 1 Hz on top.
+    ///   outControl, outEnd) (2.8 + 3.2 s, D-F6-48); no rest; a ±4 cm vertical ripple at 1 Hz on top.
     /// - Cat: the one exception to "Unity moves it" (D-F6-38). Its rigged 25B mesh plays
     ///   the baked EVENTO clip of its window (8.08 s, D-F6-39): it walks in along the
     ///   outer sill, stands turning its head towards the room, turns round and walks
