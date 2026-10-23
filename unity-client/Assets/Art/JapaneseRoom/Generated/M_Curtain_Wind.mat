@@ -29,12 +29,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _GustDepth: 0.25
+    - _GustPeriod: 6
     - _Height: 1.385
+    - _RippleDepth: 0.25
+    - _RipplePeriod: 4
+    - _RippleWaveLength: 0.45
     - _TopY: 0
-    - _WindAmplitude: 0.035
-    - _WindPeriod: 3.5
+    - _WindAmplitude: 0.06
     - _WindTime: 0
-    - _WindWaveLength: 0.9
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 0.9}
   m_BuildTextureStacks: []

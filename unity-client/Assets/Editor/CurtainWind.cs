@@ -17,6 +17,33 @@ namespace NeuroAdaptiveVR.EditorTools
         private const int Columns = 12, Rows = 24;
         public const float Alpha = 0.90f;   // D-F6-53: transmittance ≤ 10 %, the same in every level and session
 
+        // D-F6-61 (camino a, Diseno_Sala_ESL.md §10.2): d = A · hang² · G(t) · R(x, t), towards the room only, with
+        // G = 0.75 + 0.25 sin(2π t / 6 s) and R = 0.75 + 0.25 sin(2π (x / 0.45 m − t / 4 s)). Written as
+        // (1 − depth) + depth · sin, both peak at 1, so d peaks at A (the 6 cm limit) also at the ±40 % fallback.
+        public const float Amplitude = 0.06f, GustSeconds = 6f, GustDepth = 0.25f;
+        public const float RippleDepth = 0.25f, RippleWaveLength = 0.45f, RippleSeconds = 4f;
+
+        /// <summary>Displacement towards the room (m) at x across the sheet, hang 0 at the bar to 1 at the hem,
+        /// at wind time t: the same formula as the shader, sampled by the harness (X13).</summary>
+        public static float Displacement(float x, float hang, float t, float rippleDepth = RippleDepth)
+        {
+            float gust = 1f - GustDepth + GustDepth * Mathf.Sin(2f * Mathf.PI * t / GustSeconds);
+            float ripple = 1f - rippleDepth + rippleDepth * Mathf.Sin(2f * Mathf.PI * (x / RippleWaveLength - t / RippleSeconds));
+            return Amplitude * hang * hang * gust * ripple;
+        }
+
+        /// <summary>The D-F6-61 values on the material; alpha stays where Apply put it.</summary>
+        public static void Configure(Material mat)
+        {
+            mat.SetFloat("_WindAmplitude", Amplitude);
+            mat.SetFloat("_GustPeriod", GustSeconds);
+            mat.SetFloat("_GustDepth", GustDepth);
+            mat.SetFloat("_RippleDepth", RippleDepth);
+            mat.SetFloat("_RippleWaveLength", RippleWaveLength);
+            mat.SetFloat("_RipplePeriod", RippleSeconds);
+            EditorUtility.SetDirty(mat);
+        }
+
         public static void Apply(GameObject sheet)
         {
             var mf = sheet.GetComponentInChildren<MeshFilter>(true);
@@ -52,7 +79,7 @@ namespace NeuroAdaptiveVR.EditorTools
             var b = grid.bounds;
             mat.SetFloat("_TopY", b.max.y);
             mat.SetFloat("_Height", b.size.y);
-            EditorUtility.SetDirty(mat);
+            Configure(mat);
             mr.sharedMaterial = mat;
         }
 

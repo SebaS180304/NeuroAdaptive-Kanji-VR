@@ -972,6 +972,17 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>Oriented box of a mesh in world space, from the transform as it is now.</summary>
+        // A curtain sheet with the wind shader: its renderer bounds miss what the shader moves (§10.3, D-F6-60).
+        private static bool IsWindSheet(MeshFilter mf)
+            => mf.sharedMesh != null && mf.GetComponent<Renderer>() is Renderer r && r.sharedMaterial != null && r.sharedMaterial.HasProperty("_WindTime");
+
+        // The sheet at rest pushed the full 6 cm towards the room, the far side of its E13 box.
+        private static IEnumerable<Vector3> WindReachCorners(MeshFilter mf)
+        {
+            var push = mf.transform.TransformDirection(mf.sharedMesh.normals[0]).normalized * CurtainWind.Amplitude;
+            return MeshCorners(mf).Select(c => c + push);
+        }
+
         private static IEnumerable<Vector3> MeshCorners(MeshFilter mf)
         {
             var b = mf.sharedMesh.bounds;
@@ -1020,9 +1031,9 @@ namespace NeuroAdaptiveVR.EditorTools
             { "StackedBoxes_T3",            (-44.2f, -26.1f, -23.3f, -8.7f) },   // now on the left (v148)
             { "WallClock_T3",               (-40.0f, -36.4f,   5.0f,  9.4f) },   // pilot: over the left window, out of the task region (D-F6-54)
             { "DeskItems_T2",               ( 30.8f,  41.8f, -16.6f, -14.0f) },
-            { "CurtainLeft_T2",             (-41.0f, -29.1f, -14.0f,  4.7f) },
+            { "CurtainLeft_T2",             (-40.5f, -30.4f, -13.9f,  4.2f) },   // pilot: no turn, wind up to 6 cm towards the room (D-F6-60)
             { "OutsideFigureLeft_T3",       (-39.5f, -24.7f, -11.1f, -1.4f) },
-            { "CurtainRight_T2",            ( 29.1f,  41.0f, -14.0f,  4.7f) },
+            { "CurtainRight_T2",            ( 30.4f,  40.5f, -13.9f,  4.2f) },
             { "OutsideFigureRight_T3",      ( 24.7f,  39.5f, -11.1f, -1.4f) },
             // Peripheral animals (Diseno_Sala_ESL.md §10.2) over their whole path, with their Blender
             // meshes; the cat over its baked clip. The birds keep the spheres' ids.
@@ -1068,6 +1079,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 {
                     // The cat's skinned mesh is baked at the sampled pose: its renderer only updates once a frame.
                     var shapes = obj.GetComponentsInChildren<MeshFilter>(true).Where(mf => mf.sharedMesh != null).Select(MeshCorners)
+                        .Concat(obj.GetComponentsInChildren<MeshFilter>(true).Where(IsWindSheet).Select(WindReachCorners))
                         .Concat(obj.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(sk =>
                         {
                             sk.BakeMesh(baked, true);
@@ -2052,9 +2064,10 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>
-        /// X13. Curtains of the pilot (D-F6-50, D-F6-53): each sheet is a subdivided mesh with the wind shader,
+        /// X13. Curtains of the pilot (D-F6-50, D-F6-53, D-F6-61): each sheet is a subdivided mesh with the wind shader,
         /// transparent with alpha 0.90 fixed in its material (no level, session or seed changes it), and its wind
-        /// time comes from EnvironmentMotion, i.e. from the seed and the time since activation, like the sway.
+        /// time comes from EnvironmentMotion, i.e. from the seed and the time since activation. Since D-F6-61 the
+        /// sheet no longer turns as a whole and the wind pushes towards the room only, 0 at the bar, at most 6 cm.
         /// </summary>
         private static void CurtainCases()
         {
@@ -2071,13 +2084,38 @@ namespace NeuroAdaptiveVR.EditorTools
                 {
                     if (Mathf.Abs(m.GetColor("_BaseColor").a - 0.90f) > 0.001f) p.Add($"{name}: alfa {m.GetColor("_BaseColor").a:F3}");
                     if (m.renderQueue < 3000) p.Add($"{name}: no es transparente (cola {m.renderQueue})");
+                    // D-F6-61: the material carries the formula's values, within the limits (A ≤ 6 cm, every component ≤ 0.5 Hz)
+                    foreach (var (prop, want) in new[] { ("_WindAmplitude", CurtainWind.Amplitude), ("_GustPeriod", CurtainWind.GustSeconds),
+                                                         ("_GustDepth", CurtainWind.GustDepth), ("_RippleDepth", CurtainWind.RippleDepth),
+                                                         ("_RippleWaveLength", CurtainWind.RippleWaveLength), ("_RipplePeriod", CurtainWind.RippleSeconds) })
+                        if (!m.HasProperty(prop) || Mathf.Abs(m.GetFloat(prop) - want) > 1e-4f) p.Add($"{name}: {prop} {(m.HasProperty(prop) ? m.GetFloat(prop).ToString("F3") : "no existe")}, no {want}");
                 }
+                // D-F6-61: a sheet with wind no longer turns as a whole (the ±5 deg pendulum is gone)
+                var rest = slot.transform.localRotation;
+                motion.PoseAt(slot.transform.localPosition, rest, 0.25f, out _, out var turned);
+                if (Quaternion.Angle(rest, turned) > 0.01f) p.Add($"{name}: la hoja entera gira {Quaternion.Angle(rest, turned):F1} grados (pendulo)");
                 var mf = r.GetComponent<MeshFilter>();
                 if (mf == null || mf.sharedMesh == null || mf.sharedMesh.vertexCount < 100) p.Add($"{name}: la hoja no esta subdividida ({(mf != null && mf.sharedMesh != null ? mf.sharedMesh.vertexCount : 0)} vertices)");
                 if (Mathf.Abs(motion.WindSecondsAt(0f) - motion.Phase * motion.SwayPeriodSeconds) > 1e-4f) p.Add($"{name}: el viento no arranca en la fase de la seed");
             }
-            Check("X13", "Cortinas del piloto: hoja subdividida con viento por shader, alfa 0,90 fijo, tiempo del viento desde la seed (D-F6-50, D-F6-53)",
-                  p.Count == 0, p.Count == 0 ? "2 hojas · alfa 0.90 · transparentes · viento con la fase de EnvironmentMotion" : Join(p));
+            // The formula over the sheet and a full gust and ripple cycle (12 s), at ±25 % and at the ±40 % fallback:
+            // 0 at the bar, never towards the wall (d ≥ 0), never past A
+            float dMin = float.MaxValue, dMax = 0f, atBar = 0f;
+            foreach (var depth in new[] { CurtainWind.RippleDepth, 0.40f })
+                for (float t = 0f; t <= 12f; t += 0.1f)
+                    for (float x = -0.475f; x <= 0.475f; x += 0.05f)
+                        for (float h = 0f; h <= 1.0001f; h += 0.1f)
+                        {
+                            float d = CurtainWind.Displacement(x, h, t, depth);
+                            dMin = Mathf.Min(dMin, d); dMax = Mathf.Max(dMax, d);
+                            if (h == 0f) atBar = Mathf.Max(atBar, Mathf.Abs(d));
+                        }
+            if (dMin < 0f) p.Add($"el viento empuja hacia la pared ({dMin * 100f:F2} cm)");
+            if (dMax > CurtainWind.Amplitude + 1e-5f) p.Add($"el viento pasa de 6 cm ({dMax * 100f:F2} cm)");
+            if (atBar > 1e-6f) p.Add("la hoja se despega de la barra");
+            if (CurtainWind.GustSeconds < 2f || CurtainWind.RippleSeconds < 2f) p.Add("alguna componente pasa de 0,5 Hz");
+            Check("X13", "Cortinas del piloto: hoja subdividida, viento solo hacia la sala sin pendulo, alfa 0,90 fijo, tiempo del viento desde la seed (D-F6-50, D-F6-53, D-F6-61)",
+                  p.Count == 0, p.Count == 0 ? $"2 hojas · alfa 0.90 · sin giro · d de 0 a {dMax * 100f:F1} cm, 0 en la barra · rafaga {CurtainWind.GustSeconds} s, ondulacion ±{CurtainWind.RippleDepth * 100f:F0} % de {CurtainWind.RippleWaveLength} m y {CurtainWind.RippleSeconds} s" : Join(p));
         }
 
         /// <summary>

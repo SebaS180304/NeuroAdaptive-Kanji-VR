@@ -1,7 +1,11 @@
 // Curtain sheet of the pilot (D-F6-50, D-F6-53; Diseno_Sala_ESL.md §10.2, "Cortinas del piloto").
-// Wind by vertex displacement: a slow wave that travels down the sheet, zero at the bar and growing to the
-// hem, so it never pulls away from the bar and needs no collisions. Its clock is _WindTime, which
-// EnvironmentMotion sets from the session seed and the time since activation (reconstructible like the sway).
+// Wind by vertex displacement (D-F6-61, camino a): d = A · hang² · G(t) · R(x, t), along the
+// sheet's normal towards the room only (d ≥ 0, so it never reaches the wall 15 cm behind), zero at the bar,
+// at most A at the hem. G = (1 − g) + g sin(2π t / Tg) is a slow gust and R = (1 − r) + r sin(2π (x / λ − t / Tr))
+// a ripple that travels across the sheet (g = r = 0.25: §10.2); the normals are
+// recalculated from d, so the ripple reads as bands of light and shade moving slowly. Its clock is _WindTime,
+// which EnvironmentMotion sets from the session seed and the time since activation (reconstructible).
+// CurtainWind.Displacement in the editor is the same formula, sampled by the harness (X13).
 // Transparent with the alpha of _BaseColor, fixed in the material: the wind moves vertices, never opacity.
 // Lambert from the main light plus ambient, two-sided; no fresnel, specular or emission (rule 9).
 Shader "NeuroAdaptive/CurtainWind"
@@ -10,9 +14,12 @@ Shader "NeuroAdaptive/CurtainWind"
     {
         _BaseMap ("Base map", 2D) = "white" {}
         _BaseColor ("Base colour (alpha fixed at 0.90)", Color) = (1, 1, 1, 0.9)
-        _WindAmplitude ("Amplitude at the hem (m)", Float) = 0.035
-        _WindWaveLength ("Wave length down the sheet (m)", Float) = 0.9
-        _WindPeriod ("Period (s)", Float) = 3.5
+        _WindAmplitude ("Peak displacement at the hem (m), at most 0.06", Float) = 0.06
+        _GustPeriod ("Gust period (s)", Float) = 6
+        _GustDepth ("Gust depth (±fraction)", Float) = 0.25
+        _RippleDepth ("Ripple depth (±fraction)", Float) = 0.25
+        _RippleWaveLength ("Ripple wave length across the sheet (m)", Float) = 0.45
+        _RipplePeriod ("Ripple period (s)", Float) = 4
         _TopY ("Bar height, object space (m)", Float) = 0
         _Height ("Sheet height (m)", Float) = 1.3
         _WindTime ("Wind time (s), set by EnvironmentMotion", Float) = 0
@@ -45,8 +52,11 @@ Shader "NeuroAdaptive/CurtainWind"
                 float4 _BaseMap_ST;
                 half4 _BaseColor;
                 float _WindAmplitude;
-                float _WindWaveLength;
-                float _WindPeriod;
+                float _GustPeriod;
+                float _GustDepth;
+                float _RippleDepth;
+                float _RippleWaveLength;
+                float _RipplePeriod;
                 float _TopY;
                 float _Height;
                 float _WindTime;
@@ -76,13 +86,25 @@ Shader "NeuroAdaptive/CurtainWind"
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
                 float3 p = input.positionOS.xyz;
-                float hang = saturate((_TopY - p.y) / max(_Height, 1e-3));     // 0 at the bar, 1 at the hem
-                float phase = TWO_PI * (_WindTime / max(_WindPeriod, 1e-3) - (_TopY - p.y) / max(_WindWaveLength, 1e-3));
-                p += normalize(input.normalOS) * (_WindAmplitude * hang * hang * sin(phase));
+                float3 n0 = normalize(input.normalOS);
+                float height = max(_Height, 1e-3);
+                float hang = saturate((_TopY - p.y) / height);                  // 0 at the bar, 1 at the hem
+                float gust = 1.0 - _GustDepth + _GustDepth * sin(TWO_PI * _WindTime / max(_GustPeriod, 1e-3));
+                // shortcut: the width runs along object x, as in the 16B sheets; a sheet across z needs p.z here
+                float k = TWO_PI / max(_RippleWaveLength, 1e-3);
+                float phase = k * p.x - TWO_PI * _WindTime / max(_RipplePeriod, 1e-3);
+                float ripple = 1.0 - _RippleDepth + _RippleDepth * sin(phase);
+                float scale = _WindAmplitude * gust;
+                p += n0 * (scale * hang * hang * ripple);
+
+                // Normal of the displaced sheet: n0 minus the gradient of d in the sheet's plane
+                float dddx = scale * hang * hang * _RippleDepth * cos(phase) * k;
+                float dddy = (_TopY - input.positionOS.y) < height ? -scale * ripple * 2.0 * hang / height : 0.0;
+                float3 n = normalize(n0 - float3(dddx, dddy, 0.0));
 
                 o.positionCS = TransformObjectToHClip(p);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                o.normalWS = TransformObjectToWorldNormal(n);
                 o.fogFactor = ComputeFogFactor(o.positionCS.z);
                 return o;
             }
