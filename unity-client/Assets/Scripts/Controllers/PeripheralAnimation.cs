@@ -69,7 +69,8 @@ namespace NeuroAdaptiveVR.Controllers
             _model = transform.Find("Model");
             if (_model == null) { Debug.LogError($"[PeripheralAnimation] {name} has no Model child."); enabled = false; return false; }
             _wings = Parts("Wing"); _tails = Parts("Tail"); _heads = Parts("Head"); _legs = Parts("Leg");
-            _wingRest = Rest(_wings); _tailRest = Rest(_tails); _headRest = Rest(_heads); _legRest = Rest(_legs);
+            // Wing pivots are built at the mesh's own pose (PeripheralMeshIntegration): their rest is identity, never the pose last sampled.
+            _wingRest = System.Array.ConvertAll(_wings, _ => Quaternion.identity); _tailRest = Rest(_tails); _headRest = Rest(_heads); _legRest = Rest(_legs);
             return true;
         }
 
