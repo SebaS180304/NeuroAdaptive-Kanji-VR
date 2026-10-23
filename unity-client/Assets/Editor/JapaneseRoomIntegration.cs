@@ -35,9 +35,6 @@ namespace NeuroAdaptiveVR.EditorTools
         private const string Movers = "Studio/EnvironmentalLayer/Movers/";
         private const string Fixed = "Studio/Room/JapaneseRoom/";
         private const string Podium = "18B_Atril";
-        // shortcut: the podium waits for the room re-export with its screen at 25° from the vertical (D-F6-44);
-        // until then ControlsIntro keeps its box podium. Empty this set, and point ExportDir at that folder, when it arrives.
-        public static readonly HashSet<string> Pending = new() { Podium };
         private const float ClockHeight = 2.50f;   // not the manifest's 2.367: it clears the raised board (decision 9)
 
         // ESL slots (Plan_Integracion_Sala_Japonesa.md §3). A slot with several slots of the
@@ -97,7 +94,6 @@ namespace NeuroAdaptiveVR.EditorTools
             var report = new List<string>();
             foreach (var h in manifest.huecos)
             {
-                if (Pending.Contains(h.hueco)) { report.Add($"{h.hueco} waits for its re-export"); continue; }
                 var path = $"{ArtDir}/{h.hueco}.fbx";
                 ConfigureImporter(path);
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);

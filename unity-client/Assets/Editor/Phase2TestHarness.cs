@@ -1897,7 +1897,7 @@ namespace NeuroAdaptiveVR.EditorTools
             if (manifest == null) { Check("X11", "Sala v148 del manifest", false, "no hay " + JapaneseRoomIntegration.ManifestCopy); return; }
             if (manifest.dirty_at_start) p.Add("el manifest viene de un .blend con cambios sin guardar");
             int placed = 0;
-            foreach (var h in manifest.huecos.Where(h => !JapaneseRoomIntegration.Pending.Contains(h.hueco)))
+            foreach (var h in manifest.huecos)
             {
                 var t = JapaneseRoomIntegration.Placed(h.hueco);
                 if (t == null) { p.Add($"{h.hueco} no esta en la escena"); continue; }
@@ -1920,7 +1920,25 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             var intro = UnityEngine.Object.FindFirstObjectByType<ControlsIntro>(FindObjectsInactive.Include);
             var podium = intro == null ? null : new SerializedObject(intro).FindProperty("podiumModel").objectReferenceValue;
-            if ((podium == null) != JapaneseRoomIntegration.Pending.Contains("18B_Atril")) p.Add(podium == null ? "ControlsIntro sin el atril 18B" : "el atril 18B esta asignado y espera su re-export");
+            if (podium == null) p.Add("ControlsIntro sin el atril 18B");
+            else
+            {
+                // D-F6-45: the S2 canvas lies on the 18B screen, centre (0, 1.15, 1.02), 25 deg from the vertical.
+                var screen = ((GameObject)podium).GetComponentsInChildren<MeshRenderer>(true).FirstOrDefault(r => r.name.EndsWith("_Interfaz"));
+                var so = new SerializedObject(intro);
+                var centre = so.FindProperty("screenCenter").vector3Value;
+                float tilt = so.FindProperty("screenTilt").floatValue, height = so.FindProperty("screenSize").vector2Value.y;
+                if (screen == null) p.Add("el 18B no trae su pantalla");
+                else
+                {
+                    bool was = screen.gameObject.activeSelf; screen.gameObject.SetActive(true);
+                    var b = screen.bounds;
+                    screen.gameObject.SetActive(was);
+                    if (Vector3.Distance(b.center, centre) > 0.01f) p.Add($"canvas de S2 en {centre:F3}, pantalla del 18B en {b.center:F3}");
+                    if (Mathf.Abs(b.size.y - height * Mathf.Cos(tilt * Mathf.Deg2Rad)) > 0.01f || Mathf.Abs(b.size.z - height * Mathf.Sin(tilt * Mathf.Deg2Rad)) > 0.01f)
+                        p.Add($"la pantalla del 18B no esta a {tilt} grados de la vertical (alto {b.size.y:F3}, fondo {b.size.z:F3})");
+                }
+            }
             var room = GameObject.Find("Studio/Room");
             if (room != null)
                 foreach (Transform c in room.transform)
@@ -1928,7 +1946,7 @@ namespace NeuroAdaptiveVR.EditorTools
             var floor = GameObject.Find("Studio/Floor");
             if (floor != null && floor.GetComponent<MeshRenderer>().enabled) p.Add("el piso viejo se ve");
             Check("X11", "Sala v148 de la prueba: cada hueco en su sitio del manifest, piezas planas, sin collider, sala vieja apagada (D-F6-45)",
-                  p.Count == 0, p.Count == 0 ? $"{placed}/{manifest.huecos.Length} huecos · pendientes: {Join(JapaneseRoomIntegration.Pending)}" : Join(p));
+                  p.Count == 0, p.Count == 0 ? $"{placed}/{manifest.huecos.Length} huecos · atril 18B con el canvas de S2 encima" : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)
