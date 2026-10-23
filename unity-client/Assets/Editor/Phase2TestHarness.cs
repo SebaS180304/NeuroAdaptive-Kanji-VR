@@ -104,6 +104,7 @@ namespace NeuroAdaptiveVR.EditorTools
             DistractorCases();
             PeripheralAnimalCases();
             SetAObjectCases();
+            JapaneseRoomCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -1817,6 +1818,58 @@ namespace NeuroAdaptiveVR.EditorTools
             if (assigned != 0 && assigned != rows.Length) p.Add($"{assigned}/5 kanji con objeto: se mezclan real y placeholder (D-F6-26)");
             Check("X10", "Objetos de S5 del set A: cinco prefabs del tamano de referencia, los cinco asignados o ninguno, nunca una caja (D-F6-26)",
                   p.Count == 0, p.Count == 0 ? $"{rows.Length - boxes} modelos, {boxes} cajas · asignados {assigned}/5" : Join(p));
+        }
+
+        /// <summary>
+        /// X11. The v148 room is the one in the re-export from the approved file (D-F6-42):
+        /// every slot of its manifest stands at its manifest position and Y rotation (the
+        /// clock at 2.50 m, decision 9) with its model as a child, ESL slots at scale 1,
+        /// the podium model handed to ControlsIntro, no collider on any model, and the old
+        /// primitive room switched off (the cat sills and the exterior backdrop stay).
+        /// </summary>
+        private static void JapaneseRoomCases()
+        {
+            var p = new List<string>();
+            var manifest = JapaneseRoomIntegration.LoadManifest();
+            if (manifest == null) { Check("X11", "Sala v148 del manifest", false, "no hay " + JapaneseRoomIntegration.ManifestCopy); return; }
+            if (manifest.dirty_at_start) p.Add("el manifest viene de un .blend con cambios sin guardar");
+            int placed = 0;
+            foreach (var h in manifest.huecos.Where(h => !JapaneseRoomIntegration.Pending.Contains(h.hueco)))
+            {
+                var t = JapaneseRoomIntegration.Placed(h.hueco);
+                if (t == null) { p.Add($"{h.hueco} no esta en la escena"); continue; }
+                var want = JapaneseRoomIntegration.Position(h);
+                if (Vector3.Distance(t.position, want) > 0.001f) p.Add($"{h.hueco} en {t.position:F3}, manifest {want:F3}");
+                if (Mathf.Abs(Mathf.DeltaAngle(t.eulerAngles.y, h.unity_rot_y_deg)) > 0.1f) p.Add($"{h.hueco} gira {t.eulerAngles.y:F1}, manifest {h.unity_rot_y_deg:F1}");
+                if (t.GetComponent<EnvironmentProp>() != null && t.localScale != Vector3.one) p.Add($"{t.name} con escala {t.localScale:F2}");
+                if (t.GetComponentsInChildren<MeshRenderer>(true).Length == 0 && t.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length == 0) p.Add($"{h.hueco} sin malla");
+                if (t.GetComponentsInChildren<Collider>(true).Length > 0) p.Add($"{h.hueco} tiene collider");
+                var model = t.name == h.hueco ? t : t.Find(h.hueco);
+                if (model != null)
+                    foreach (var child in model.GetComponentsInChildren<Transform>(true).Where(c => c != model))
+                    {
+                        var src = PrefabUtility.GetCorrespondingObjectFromSource(child);
+                        if (src != null)
+                        {
+                            var (wantPos, wantRot) = JapaneseRoomIntegration.ExpectedPose(src);
+                            if (Vector3.Distance(child.localPosition, wantPos) > 0.0005f || Quaternion.Angle(child.localRotation, wantRot) > 0.1f)
+                                p.Add($"{h.hueco}/{child.name} con la pose del FBX sin corregir (ejes de Blender)");
+                        }
+                        if (child.name.EndsWith("_Interfaz") && child.gameObject.activeSelf) p.Add($"{h.hueco}/{child.name} encendido sobre el canvas");
+                    }
+                placed++;
+            }
+            var intro = UnityEngine.Object.FindFirstObjectByType<ControlsIntro>(FindObjectsInactive.Include);
+            var podium = intro == null ? null : new SerializedObject(intro).FindProperty("podiumModel").objectReferenceValue;
+            if ((podium == null) != JapaneseRoomIntegration.Pending.Contains("18B_Atril")) p.Add(podium == null ? "ControlsIntro sin el atril 18B" : "el atril 18B esta asignado y espera su re-export");
+            var room = GameObject.Find("Studio/Room");
+            if (room != null)
+                foreach (Transform c in room.transform)
+                    if (c.gameObject.activeSelf && c.name != "JapaneseRoom" && c.name != "CatShelves" && c.name != "Exterior_Front") p.Add($"sala vieja encendida: {c.name}");
+            var floor = GameObject.Find("Studio/Floor");
+            if (floor != null && floor.GetComponent<MeshRenderer>().enabled) p.Add("el piso viejo se ve");
+            Check("X11", "Sala v148 del re-export aprobado: cada hueco en su sitio del manifest, sin collider, sala vieja apagada (D-F6-42)",
+                  p.Count == 0, p.Count == 0 ? $"{placed}/{manifest.huecos.Length} huecos · pendientes: {Join(JapaneseRoomIntegration.Pending)}" : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)

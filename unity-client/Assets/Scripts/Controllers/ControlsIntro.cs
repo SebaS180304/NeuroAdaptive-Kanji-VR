@@ -44,6 +44,8 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private Material standMaterial;
         [Tooltip("Lights the real buttons on the participant's controllers.")]
         [SerializeField] private ControllerCallouts callouts;
+        [Tooltip("The v148 podium model (18B), placed by the room integration. Empty = the podium is built from boxes.")]
+        [SerializeField] private GameObject podiumModel;
 
         [Header("Podium (world, metres)")]
         [Tooltip("Centre of the screen.")]
@@ -197,10 +199,18 @@ namespace NeuroAdaptiveVR.Controllers
             float columnTop = topLow.y - 0.02f;
             float columnZ = screenCenter.z + 0.02f;
 
-            Box("Base", new Vector3(0f, 0.02f, columnZ), new Vector3(0.52f, 0.04f, 0.40f), Quaternion.identity, bodyColor);
-            Box("Column", new Vector3(0f, columnTop * 0.5f, columnZ), new Vector3(0.30f, columnTop, 0.22f), Quaternion.identity, bodyColor);
-            var top = Box("Top", screenCenter + tilt * new Vector3(0f, 0f, 0.025f),
-                          new Vector3(screenSize.x + 0.06f, screenSize.y + 0.06f, 0.04f), tilt, bodyColor);
+            if (podiumModel != null)
+            {
+                podiumModel.transform.SetParent(_root.transform, true);   // shown and hidden with the podium
+                podiumModel.SetActive(true);
+            }
+            else
+            {
+                Box("Base", new Vector3(0f, 0.02f, columnZ), new Vector3(0.52f, 0.04f, 0.40f), Quaternion.identity, bodyColor);
+                Box("Column", new Vector3(0f, columnTop * 0.5f, columnZ), new Vector3(0.30f, columnTop, 0.22f), Quaternion.identity, bodyColor);
+                Box("Top", screenCenter + tilt * new Vector3(0f, 0f, 0.025f),
+                    new Vector3(screenSize.x + 0.06f, screenSize.y + 0.06f, 0.04f), tilt, bodyColor);
+            }
 
             // --- the screen: a world-space canvas on the top, facing the participant
             var cgo = new GameObject("IntroCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));

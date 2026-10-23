@@ -1,0 +1,1997 @@
+{
+  "blend": "C:\\Users\\drdom\\Documents\\JapaneseVR\\models\\JapaneseVR_v220_desde_blend1.blend",
+  "blender": "5.2.2 LTS",
+  "scene": "SALA_PROPUESTA",
+  "out": "C:\\Users\\drdom\\Documents\\JapaneseVR\\export\\Sala_v148_20261023_1004",
+  "dirty_at_start": false,
+  "raices_omitidas": [
+    "LAY3_Guia_+40",
+    "LAY3_Guia_Muro_+40",
+    "LAY3_Guia_-40",
+    "LAY3_Guia_Muro_-40",
+    "LAY3_Guia_+25.7",
+    "LAY3_Guia_Muro_+25.7",
+    "LAY3_Guia_-25.7",
+    "LAY3_Guia_Muro_-25.7",
+    "LAY3_Guia_+22.2",
+    "LAY3_Guia_Muro_+22.2",
+    "LAY3_Guia_-22.2",
+    "LAY3_Guia_Muro_-22.2",
+    "LAY3_Reserva_Jugador",
+    "LAY3_Hueco_Pizarron",
+    "LAY3_Hueco_Tarjetas",
+    "LAY3_Hueco_Atril",
+    "LAY3_Exterior_Provisional",
+    "LAY3_Evento_Ventana_Izq",
+    "LAY3_Silueta_Recorrido_Izq",
+    "LAY3_Evento_Ventana_Der",
+    "LAY3_Silueta_Recorrido_Der",
+    "LAY3_Evento_Repisa",
+    "LAY3_CAM_Ojo_160",
+    "LAY3_CAM_Aerea",
+    "LAY3_CAM_Inversa"
+  ],
+  "huecos": [
+    {
+      "hueco": "01_Chabudai_Der",
+      "fuente": "01_Chabudai_Der",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "01_Chabudai",
+      "tipo": "instancia",
+      "blender_loc": [
+        5.85,
+        3.3954,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        3.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.25,
+        0.0,
+        0.9954
+      ],
+      "unity_rot_y_deg": -3.0,
+      "mallas": 1,
+      "tris": 444,
+      "materiales": [
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "01_Chabudai_Izq",
+      "fuente": "01_Chabudai_Izq",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "01_Chabudai",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.3005,
+        3.6817,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        45.503
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.2995,
+        0.0,
+        1.2817
+      ],
+      "unity_rot_y_deg": -45.503,
+      "mallas": 1,
+      "tris": 444,
+      "materiales": [
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "02A_Zabuton_Der",
+      "fuente": "02A_Zabuton_Der",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_02A",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.81,
+        3.4254,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        -96.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        3.21,
+        0.0,
+        1.0254
+      ],
+      "unity_rot_y_deg": 96.0,
+      "mallas": 1,
+      "tris": 394,
+      "materiales": [
+        "M_Fabric_Indigo_Seigaiha"
+      ],
+      "texturas": [
+        "textures\\T_Zabuton_Indigo_Seigaiha_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "02A_Zabuton_Izq",
+      "fuente": "02A_Zabuton_Izq",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_02A",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.6063,
+        3.0179,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        123.053
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.9937,
+        0.0,
+        0.6179
+      ],
+      "unity_rot_y_deg": -123.053,
+      "mallas": 1,
+      "tris": 394,
+      "materiales": [
+        "M_Fabric_Indigo_Seigaiha"
+      ],
+      "texturas": [
+        "textures\\T_Zabuton_Indigo_Seigaiha_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "02B_Zabuton_Der",
+      "fuente": "02B_Zabuton_Der",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_02B",
+      "tipo": "instancia",
+      "blender_loc": [
+        5.81,
+        4.3054,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        7.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.21,
+        0.0,
+        1.9054
+      ],
+      "unity_rot_y_deg": -7.0,
+      "mallas": 1,
+      "tris": 394,
+      "materiales": [
+        "M_Fabric_Salvia_Asanoha"
+      ],
+      "texturas": [
+        "textures\\T_Zabuton_Salvia_Asanoha_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "02B_Zabuton_Izq",
+      "fuente": "02B_Zabuton_Izq",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_02B",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.6795,
+        4.348,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        -14.519
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.9205,
+        0.0,
+        1.948
+      ],
+      "unity_rot_y_deg": 14.519,
+      "mallas": 1,
+      "tris": 394,
+      "materiales": [
+        "M_Fabric_Salvia_Asanoha"
+      ],
+      "texturas": [
+        "textures\\T_Zabuton_Salvia_Asanoha_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "02C_Zabuton_Der",
+      "fuente": "02C_Zabuton_Der",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_02C",
+      "tipo": "instancia",
+      "blender_loc": [
+        5.9,
+        2.4954,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        176.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.3,
+        0.0,
+        0.0954
+      ],
+      "unity_rot_y_deg": -176.0,
+      "mallas": 1,
+      "tris": 394,
+      "materiales": [
+        "M_Fabric_Oxido"
+      ],
+      "texturas": [
+        "textures\\T_Zabuton_Oxido_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "02C_Zabuton_Izq",
+      "fuente": "02C_Zabuton_Izq",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_02C",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.9074,
+        3.1335,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        -117.094
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -1.6926,
+        0.0,
+        0.7335
+      ],
+      "unity_rot_y_deg": 117.094,
+      "mallas": 1,
+      "tris": 394,
+      "materiales": [
+        "M_Fabric_Oxido"
+      ],
+      "texturas": [
+        "textures\\T_Zabuton_Oxido_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "03_Fuzukue",
+      "fuente": "03_Fuzukue",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "03_Fuzukue",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.2999,
+        6.0199,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.6999,
+        0.0,
+        3.6199
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 700,
+      "materiales": [
+        "M_Metal_Brass",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\03_Fuzukue.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "04_Zaisu",
+      "fuente": "04_Zaisu",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "04_Zaisu",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.3751,
+        5.5836,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        -154.839
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.7751,
+        0.0,
+        3.1836
+      ],
+      "unity_rot_y_deg": 154.839,
+      "mallas": 1,
+      "tris": 548,
+      "materiales": [
+        "M_Fabric_Indigo_Seigaiha",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Dark_BaseColor.png",
+        "textures\\T_Zabuton_Indigo_Seigaiha_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\04_Zaisu.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "05_Librero",
+      "fuente": "05_Librero",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "05_Librero",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.181,
+        5.6662,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        90.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -3.419,
+        0.0,
+        3.2662
+      ],
+      "unity_rot_y_deg": -90.0,
+      "mallas": 2,
+      "tris": 1660,
+      "materiales": [
+        "M_Book_Covers",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Book_Atlas_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\05_Librero.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "07_Bonsai",
+      "fuente": "07_Bonsai",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "07_Bonsai",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.7006,
+        5.3683,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        26.325
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -1.8994,
+        0.0,
+        2.9683
+      ],
+      "unity_rot_y_deg": -26.325,
+      "mallas": 5,
+      "tris": 3796,
+      "materiales": [
+        "M_Bark_Pine",
+        "M_Ceramic_Indigo_Seigaiha",
+        "M_Ceramic_Ivory",
+        "M_Moss",
+        "M_Pine_Foliage",
+        "M_Stone_Grey",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Bark_Pine_BaseColor.png",
+        "textures\\T_Ceramic_Indigo_Seigaiha_BaseColor.png",
+        "textures\\T_Moss_BaseColor.png",
+        "textures\\T_Pine_Foliage_BaseColor.png",
+        "textures\\T_Stone_Grey_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\07_Bonsai.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "08_Reloj",
+      "fuente": "08_Reloj",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "08_Reloj",
+      "tipo": "instancia",
+      "blender_loc": [
+        3.6342,
+        6.3,
+        2.3672
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        0.0342,
+        2.3672,
+        3.9
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 3,
+      "tris": 596,
+      "materiales": [
+        "M_Clock_Dial",
+        "M_Metal_Brass",
+        "M_Paint_Indigo",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Clock_Dial_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\08_Reloj.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "10_Repisa_Maneki",
+      "fuente": "10_Repisa_Maneki",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "10_Repisa_Maneki",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.0912,
+        6.3,
+        2.105
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.4912,
+        2.105,
+        3.9
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 2,
+      "tris": 1775,
+      "materiales": [
+        "M_Ceramic_Gold",
+        "M_Ceramic_Ivory",
+        "M_Metal_Brass",
+        "M_Paint_Black",
+        "M_Paint_Red",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\10_Repisa_Maneki.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "11_Cuadro_Fuji",
+      "fuente": "11_Cuadro_Fuji",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "11_Cuadro_Fuji",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.1088,
+        6.3,
+        2.2
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.4912,
+        2.2,
+        3.9
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 232,
+      "materiales": [
+        "M_Painting_Fuji",
+        "M_Paper_Ivory",
+        "M_Wood_Dark",
+        "M_Wood_Light_Aged"
+      ],
+      "texturas": [
+        "textures\\T_Painting_Fuji_BaseColor.png",
+        "textures\\T_Paper_Washi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png",
+        "textures\\T_Wood_Light_Aged_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\11_Cuadro_Fuji.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "12_Juego_Te_Der",
+      "fuente": "12_Juego_Te_Der",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "12_Juego_Te",
+      "tipo": "instancia",
+      "blender_loc": [
+        5.85,
+        3.4154,
+        0.32
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        168.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.25,
+        0.32,
+        1.0154
+      ],
+      "unity_rot_y_deg": -168.0,
+      "mallas": 3,
+      "tris": 1648,
+      "materiales": [
+        "M_Ceramic_Ivory",
+        "M_Ceramic_Tea_Seigaiha",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Ceramic_Tea_Seigaiha_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "12_Juego_Te_Izq",
+      "fuente": "12_Juego_Te_Izq",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "12_Juego_Te",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.2863,
+        3.6957,
+        0.32
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        45.503
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.3137,
+        0.32,
+        1.2957
+      ],
+      "unity_rot_y_deg": -45.503,
+      "mallas": 3,
+      "tris": 1648,
+      "materiales": [
+        "M_Ceramic_Ivory",
+        "M_Ceramic_Tea_Seigaiha",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Ceramic_Tea_Seigaiha_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "09B_Andon",
+      "fuente": "INST_09B_Andon",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "09B_Andon",
+      "tipo": "instancia",
+      "blender_loc": [
+        2.7,
+        3.96,
+        2.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -0.9,
+        2.0,
+        1.56
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 3,
+      "tris": 1196,
+      "materiales": [
+        "M_Felt_Black",
+        "M_Metal_Brass",
+        "M_Paper_Washi_Andon",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Felt_Black_BaseColor.png",
+        "textures\\T_Paper_Washi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\09B_Andon.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "13B_Caligrafia",
+      "fuente": "INST_13B_Caligrafia",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "13B_Caligrafia",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.2922,
+        5.9953,
+        0.35
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.6922,
+        0.35,
+        3.5953
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 11,
+      "tris": 1287,
+      "materiales": [
+        "M_Bamboo",
+        "M_Brush_Hair",
+        "M_Calligraphy_Decals",
+        "M_Ceramic_Indigo_Glaze",
+        "M_Felt_Black",
+        "M_Ink_Black",
+        "M_Ink_Wet",
+        "M_Lacquer_Red",
+        "M_Paper_Ivory",
+        "M_Stone_Inkstone",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Bamboo_BaseColor.png",
+        "textures\\T_Calligraphy_Decals_RGBA.png",
+        "textures\\T_Felt_Black_BaseColor.png",
+        "textures\\T_Inkstone_BaseColor.png",
+        "textures\\T_Paper_Washi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\13B_Caligrafia.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "15B_Ventana_Der",
+      "fuente": "INST_15B_Ventana_Der",
+      "coleccion": [
+        "LAY3_Ventanas"
+      ],
+      "instancia_de": "15B_Ventana_Der",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.0912,
+        6.36,
+        0.63
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.4912,
+        0.63,
+        3.96
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 3,
+      "tris": 1128,
+      "materiales": [
+        "M_Paint_Black",
+        "M_Paper_Washi_Daylight",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Paper_Washi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "15B_Ventana_Izq",
+      "fuente": "INST_15B_Ventana_Izq",
+      "coleccion": [
+        "LAY3_Ventanas"
+      ],
+      "instancia_de": "15B_Ventana_Izq",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.1088,
+        6.36,
+        0.63
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.4912,
+        0.63,
+        3.96
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 3,
+      "tris": 1128,
+      "materiales": [
+        "M_Paint_Black",
+        "M_Paper_Washi_Daylight",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Paper_Washi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "16B_Cortina_Barra_Der",
+      "fuente": "INST_16B_Cortina_Barra_Der",
+      "coleccion": [
+        "LAY3_Ventanas"
+      ],
+      "instancia_de": "16B_Cortina_Barra",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.0912,
+        6.3,
+        1.915
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.4912,
+        1.915,
+        3.9
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 612,
+      "materiales": [
+        "M_Bamboo",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Bamboo_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "16B_Cortina_Barra_Izq",
+      "fuente": "INST_16B_Cortina_Barra_Izq",
+      "coleccion": [
+        "LAY3_Ventanas"
+      ],
+      "instancia_de": "16B_Cortina_Barra",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.1088,
+        6.3,
+        1.915
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.4912,
+        1.915,
+        3.9
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 612,
+      "materiales": [
+        "M_Bamboo",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Bamboo_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "16B_Cortina_Hoja_Der",
+      "fuente": "INST_16B_Cortina_Hoja_Der",
+      "coleccion": [
+        "LAY3_Ventanas"
+      ],
+      "instancia_de": "16B_Cortina_Hoja",
+      "tipo": "instancia",
+      "blender_loc": [
+        6.2926,
+        6.175,
+        1.915
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        2.6926,
+        1.915,
+        3.775
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 2,
+      "materiales": [
+        "M_Fabric_Gasa_Marfil"
+      ],
+      "texturas": [
+        "textures\\T_Gasa_Marfil_Seigaiha_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Der.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "16B_Cortina_Hoja_Izq",
+      "fuente": "INST_16B_Cortina_Hoja_Izq",
+      "coleccion": [
+        "LAY3_Ventanas"
+      ],
+      "instancia_de": "16B_Cortina_Hoja",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.9074,
+        6.175,
+        1.915
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.6926,
+        1.915,
+        3.775
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 2,
+      "materiales": [
+        "M_Fabric_Gasa_Marfil"
+      ],
+      "texturas": [
+        "textures\\T_Gasa_Marfil_Seigaiha_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Izq.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "17B_Pizarron",
+      "fuente": "INST_17B_Pizarron",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "17B_Pizarron",
+      "tipo": "instancia",
+      "blender_loc": [
+        3.6,
+        4.4,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -0.0,
+        0.0,
+        2.0
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 2,
+      "tris": 1822,
+      "materiales": [
+        "M_Interface_Pizarron",
+        "M_Metal_Brass",
+        "M_Pizarra_Verde",
+        "M_Rubber_Black",
+        "M_Wood_Interactivo"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Ebano_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\17B_Pizarron.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "18B_Atril",
+      "fuente": "INST_18B_Atril",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "18B_Atril",
+      "tipo": "instancia",
+      "blender_loc": [
+        3.6,
+        3.42,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -0.0,
+        0.0,
+        1.02
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 2,
+      "tris": 942,
+      "materiales": [
+        "M_Interface_Atril",
+        "M_Metal_Brass",
+        "M_Pizarra_Verde",
+        "M_Wood_Interactivo"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Ebano_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\18B_Atril.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "19B_Tatami",
+      "fuente": "INST_19B_Tatami",
+      "coleccion": [
+        "LAY3_Arquitectura"
+      ],
+      "instancia_de": "19B_Tatami",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -3.6,
+        0.0,
+        -2.4
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 1860,
+      "materiales": [
+        "M_Tatami_Heri",
+        "M_Tatami_Igusa"
+      ],
+      "texturas": [
+        "textures\\T_Tatami_Heri_BaseColor.png",
+        "textures\\T_Tatami_Igusa_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\19B_Tatami.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "20B_Muros",
+      "fuente": "INST_20B_Muros",
+      "coleccion": [
+        "LAY3_Arquitectura"
+      ],
+      "instancia_de": "20B_Muros",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -3.6,
+        0.0,
+        -2.4
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 1152,
+      "materiales": [
+        "M_Plaster_Ivory",
+        "M_Wood_Dark",
+        "M_Wood_Zocalo"
+      ],
+      "texturas": [
+        "textures\\T_Plaster_Ivory_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png",
+        "textures\\T_Wood_Zocalo_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\20B_Muros.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "21B_Techo",
+      "fuente": "INST_21B_Techo",
+      "coleccion": [
+        "LAY3_Arquitectura"
+      ],
+      "instancia_de": "21B_Techo",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -3.6,
+        0.0,
+        -2.4
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 1892,
+      "materiales": [
+        "M_Wood_Ceiling_Light",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Wood_Ceiling_Sugi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\21B_Techo.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "22B_Papelera",
+      "fuente": "INST_22B_Papelera",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "22B_Papelera",
+      "tipo": "instancia",
+      "blender_loc": [
+        5.5796,
+        5.998,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        1.9796,
+        0.0,
+        3.598
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 2,
+      "tris": 498,
+      "materiales": [
+        "M_Bamboo_Weave",
+        "M_Paper_Ivory",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Bamboo_Weave_BaseColor.png",
+        "textures\\T_Paper_Washi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\22B_Papelera.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "LAY3_Shoji",
+      "fuente": "LAY3_Shoji",
+      "coleccion": [
+        "LAY3_Ventanas"
+      ],
+      "instancia_de": "14_Shoji",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.8,
+        -0.06,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        -180.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -1.8,
+        0.0,
+        -2.46
+      ],
+      "unity_rot_y_deg": 180.0,
+      "mallas": 3,
+      "tris": 1352,
+      "materiales": [
+        "M_Paint_Black",
+        "M_Paper_Ivory",
+        "M_Wood_Dark"
+      ],
+      "texturas": [
+        "textures\\T_Paper_Washi_BaseColor.png",
+        "textures\\T_Wood_Dark_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY3_Shoji.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "LAY_06D",
+      "fuente": "LAY_06D",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_06D",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.4998,
+        5.9192,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.1002,
+        0.0,
+        3.5192
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 112,
+      "materiales": [
+        "M_Box_Decals",
+        "M_Cardboard"
+      ],
+      "texturas": [
+        "textures\\T_Box_Decals_RGBA.png",
+        "textures\\T_Cardboard_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06D.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "LAY_06E",
+      "fuente": "LAY_06E",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_06E",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.7112,
+        5.6085,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.8888,
+        0.0,
+        3.2085
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 92,
+      "materiales": [
+        "M_Box_Decals",
+        "M_Wood_Light_Aged"
+      ],
+      "texturas": [
+        "textures\\T_Box_Decals_RGBA.png",
+        "textures\\T_Wood_Light_Aged_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06E.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "LAY_06F",
+      "fuente": "LAY_06F",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_06F",
+      "tipo": "instancia",
+      "blender_loc": [
+        1.0616,
+        5.597,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.5384,
+        0.0,
+        3.197
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 1,
+      "tris": 90,
+      "materiales": [
+        "M_Box_Decals",
+        "M_Paper_Red"
+      ],
+      "texturas": [
+        "textures\\T_Box_Decals_RGBA.png",
+        "textures\\T_Paper_Red_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06F.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    },
+    {
+      "hueco": "LAY_06S",
+      "fuente": "LAY_06S",
+      "coleccion": [
+        "LAY3_Props"
+      ],
+      "instancia_de": "LAY_06S",
+      "tipo": "instancia",
+      "blender_loc": [
+        0.9732,
+        5.9436,
+        0.0
+      ],
+      "blender_rot_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "blender_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "unity_pos": [
+        -2.6268,
+        0.0,
+        3.5436
+      ],
+      "unity_rot_y_deg": -0.0,
+      "mallas": 3,
+      "tris": 1292,
+      "materiales": [
+        "M_Box_Decals",
+        "M_Cardboard",
+        "M_Cardboard_Tape",
+        "M_Paper_Red",
+        "M_Paper_Seigaiha",
+        "M_Wood_Weathered"
+      ],
+      "texturas": [
+        "textures\\T_Box_Decals_RGBA.png",
+        "textures\\T_Cardboard_BaseColor.png",
+        "textures\\T_Paper_Red_BaseColor.png",
+        "textures\\T_Paper_Seigaiha_BaseColor.png",
+        "textures\\T_Wood_Weathered_BaseColor.png"
+      ],
+      "fbx": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06S.fbx",
+      "verificado": true,
+      "omitidos_dentro": [],
+      "colecciones_omitidas": []
+    }
+  ],
+  "checks": [
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Der.fbx",
+      "meshes": 1,
+      "tris": 444,
+      "expected_meshes": 1,
+      "expected_tris": 444,
+      "ok": true,
+      "bytes": 30764
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\01_Chabudai_Izq.fbx",
+      "meshes": 1,
+      "tris": 444,
+      "expected_meshes": 1,
+      "expected_tris": 444,
+      "ok": true,
+      "bytes": 30764
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Der.fbx",
+      "meshes": 1,
+      "tris": 394,
+      "expected_meshes": 1,
+      "expected_tris": 394,
+      "ok": true,
+      "bytes": 27884
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\02A_Zabuton_Izq.fbx",
+      "meshes": 1,
+      "tris": 394,
+      "expected_meshes": 1,
+      "expected_tris": 394,
+      "ok": true,
+      "bytes": 27884
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Der.fbx",
+      "meshes": 1,
+      "tris": 394,
+      "expected_meshes": 1,
+      "expected_tris": 394,
+      "ok": true,
+      "bytes": 27884
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\02B_Zabuton_Izq.fbx",
+      "meshes": 1,
+      "tris": 394,
+      "expected_meshes": 1,
+      "expected_tris": 394,
+      "ok": true,
+      "bytes": 27884
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Der.fbx",
+      "meshes": 1,
+      "tris": 394,
+      "expected_meshes": 1,
+      "expected_tris": 394,
+      "ok": true,
+      "bytes": 27804
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\02C_Zabuton_Izq.fbx",
+      "meshes": 1,
+      "tris": 394,
+      "expected_meshes": 1,
+      "expected_tris": 394,
+      "ok": true,
+      "bytes": 27804
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\03_Fuzukue.fbx",
+      "meshes": 1,
+      "tris": 700,
+      "expected_meshes": 1,
+      "expected_tris": 700,
+      "ok": true,
+      "bytes": 38108
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\04_Zaisu.fbx",
+      "meshes": 1,
+      "tris": 548,
+      "expected_meshes": 1,
+      "expected_tris": 548,
+      "ok": true,
+      "bytes": 37100
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\05_Librero.fbx",
+      "meshes": 2,
+      "tris": 1660,
+      "expected_meshes": 2,
+      "expected_tris": 1660,
+      "ok": true,
+      "bytes": 58508
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\07_Bonsai.fbx",
+      "meshes": 5,
+      "tris": 3796,
+      "expected_meshes": 5,
+      "expected_tris": 3796,
+      "ok": true,
+      "bytes": 206028
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\08_Reloj.fbx",
+      "meshes": 3,
+      "tris": 596,
+      "expected_meshes": 3,
+      "expected_tris": 596,
+      "ok": true,
+      "bytes": 40444
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\10_Repisa_Maneki.fbx",
+      "meshes": 2,
+      "tris": 1775,
+      "expected_meshes": 2,
+      "expected_tris": 1775,
+      "ok": true,
+      "bytes": 78348
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\11_Cuadro_Fuji.fbx",
+      "meshes": 1,
+      "tris": 232,
+      "expected_meshes": 1,
+      "expected_tris": 232,
+      "ok": true,
+      "bytes": 33324
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Der.fbx",
+      "meshes": 3,
+      "tris": 1648,
+      "expected_meshes": 3,
+      "expected_tris": 1648,
+      "ok": true,
+      "bytes": 63084
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\12_Juego_Te_Izq.fbx",
+      "meshes": 3,
+      "tris": 1648,
+      "expected_meshes": 3,
+      "expected_tris": 1648,
+      "ok": true,
+      "bytes": 63084
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\09B_Andon.fbx",
+      "meshes": 3,
+      "tris": 1196,
+      "expected_meshes": 3,
+      "expected_tris": 1196,
+      "ok": true,
+      "bytes": 59116
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\13B_Caligrafia.fbx",
+      "meshes": 11,
+      "tris": 1287,
+      "expected_meshes": 11,
+      "expected_tris": 1287,
+      "ok": true,
+      "bytes": 100028
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Der.fbx",
+      "meshes": 3,
+      "tris": 1128,
+      "expected_meshes": 3,
+      "expected_tris": 1128,
+      "ok": true,
+      "bytes": 50892
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\15B_Ventana_Izq.fbx",
+      "meshes": 3,
+      "tris": 1128,
+      "expected_meshes": 3,
+      "expected_tris": 1128,
+      "ok": true,
+      "bytes": 50780
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Der.fbx",
+      "meshes": 1,
+      "tris": 612,
+      "expected_meshes": 1,
+      "expected_tris": 612,
+      "ok": true,
+      "bytes": 35772
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Barra_Izq.fbx",
+      "meshes": 1,
+      "tris": 612,
+      "expected_meshes": 1,
+      "expected_tris": 612,
+      "ok": true,
+      "bytes": 35772
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Der.fbx",
+      "meshes": 1,
+      "tris": 2,
+      "expected_meshes": 1,
+      "expected_tris": 2,
+      "ok": true,
+      "bytes": 20588
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\16B_Cortina_Hoja_Izq.fbx",
+      "meshes": 1,
+      "tris": 2,
+      "expected_meshes": 1,
+      "expected_tris": 2,
+      "ok": true,
+      "bytes": 20588
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\17B_Pizarron.fbx",
+      "meshes": 2,
+      "tris": 1822,
+      "expected_meshes": 2,
+      "expected_tris": 1822,
+      "ok": true,
+      "bytes": 69084
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\18B_Atril.fbx",
+      "meshes": 2,
+      "tris": 942,
+      "expected_meshes": 2,
+      "expected_tris": 942,
+      "ok": true,
+      "bytes": 52652
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\19B_Tatami.fbx",
+      "meshes": 1,
+      "tris": 1860,
+      "expected_meshes": 1,
+      "expected_tris": 1860,
+      "ok": true,
+      "bytes": 58956
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\20B_Muros.fbx",
+      "meshes": 1,
+      "tris": 1152,
+      "expected_meshes": 1,
+      "expected_tris": 1152,
+      "ok": true,
+      "bytes": 46892
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\21B_Techo.fbx",
+      "meshes": 1,
+      "tris": 1892,
+      "expected_meshes": 1,
+      "expected_tris": 1892,
+      "ok": true,
+      "bytes": 58316
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\22B_Papelera.fbx",
+      "meshes": 2,
+      "tris": 498,
+      "expected_meshes": 2,
+      "expected_tris": 498,
+      "ok": true,
+      "bytes": 48764
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY3_Shoji.fbx",
+      "meshes": 3,
+      "tris": 1352,
+      "expected_meshes": 3,
+      "expected_tris": 1352,
+      "ok": true,
+      "bytes": 54732
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06D.fbx",
+      "meshes": 1,
+      "tris": 112,
+      "expected_meshes": 1,
+      "expected_tris": 112,
+      "ok": true,
+      "bytes": 25756
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06E.fbx",
+      "meshes": 1,
+      "tris": 92,
+      "expected_meshes": 1,
+      "expected_tris": 92,
+      "ok": true,
+      "bytes": 25372
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06F.fbx",
+      "meshes": 1,
+      "tris": 90,
+      "expected_meshes": 1,
+      "expected_tris": 90,
+      "ok": true,
+      "bytes": 25260
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\huecos\\LAY_06S.fbx",
+      "meshes": 3,
+      "tris": 1292,
+      "expected_meshes": 3,
+      "expected_tris": 1292,
+      "ok": true,
+      "bytes": 67516
+    },
+    {
+      "file": "export\\Sala_v148_20261023_1004\\Sala_v148_completa.fbx",
+      "meshes": 71,
+      "tris": 32926,
+      "expected_meshes": 71,
+      "expected_tris": 32926,
+      "ok": true,
+      "bytes": 1077596
+    }
+  ],
+  "completa": {
+    "fbx": "export\\Sala_v148_20261023_1004\\Sala_v148_completa.fbx",
+    "huecos": 36,
+    "mallas": 71,
+    "tris": 32926,
+    "verificado": true
+  },
+  "texturas_copiadas": [],
+  "ok": true,
+  "guardado_blend": "ninguno (solo lectura)"
+}
