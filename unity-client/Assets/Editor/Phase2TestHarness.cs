@@ -105,6 +105,7 @@ namespace NeuroAdaptiveVR.EditorTools
             PeripheralAnimalCases();
             SetAObjectCases();
             JapaneseRoomCases();
+            ClockProbeCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -1009,12 +1010,12 @@ namespace NeuroAdaptiveVR.EditorTools
             { "Plant_T1",                   (-37.6f, -28.0f, -25.5f, -11.3f) },
             { "Wastebasket_T2",             ( 26.4f,  31.3f, -22.2f, -16.4f) },
             { "Bookshelf_T3",               (-52.3f, -40.9f, -20.5f, -4.4f) },   // out of view, accepted (decision 8)
-            { "WallPicture_T2",             (-35.8f, -29.3f,   4.8f, 10.2f) },
+            { "WallPicture_T2",             (-33.3f, -26.5f,   4.9f, 10.5f) },   // pilot: 0.25 m towards the board (D-F6-55)
             { "SideTable_T1",               ( 30.2f,  43.1f, -21.5f, -14.1f) },
             { "WallShelf_T2",               ( 29.3f,  37.0f,   4.8f, 10.6f) },
             { "Chair_T3",                   ( 36.3f,  45.6f, -22.3f, -13.8f) },
             { "StackedBoxes_T3",            (-44.2f, -26.1f, -23.3f, -8.7f) },   // now on the left (v148)
-            { "WallClock_T3",               ( -2.1f,   3.1f,  10.5f, 15.6f) },
+            { "WallClock_T3",               (-40.0f, -36.4f,   5.0f,  9.4f) },   // pilot: over the left window, out of the task region (D-F6-54)
             { "DeskItems_T2",               ( 30.8f,  41.8f, -16.6f, -14.0f) },
             { "CurtainLeft_T2",             (-41.0f, -29.1f, -14.0f,  4.7f) },
             { "OutsideFigureLeft_T3",       (-39.5f, -24.7f, -11.1f, -1.4f) },
@@ -1343,17 +1344,8 @@ namespace NeuroAdaptiveVR.EditorTools
                 ("ventana derecha", 27.1f, -7.3f, "YAW"), ("silla", 41.1f, -20.4f, "YAW"),
                 ("cajas", -35.4f, -17.7f, "YAW"), ("techo", 0.0f, 45.1f, "PITCH_UP"),
                 ("tatami delante", 0.0f, -55.7f, "PITCH_DOWN"),
+                ("reloj", -38.2f, 4.6f, "YAW"),   // D-F6-54: off the centre, over the left window (it sat inside the region in the 23 Oct test)
             };
-            // The v148 clock sits inside the task region (7.9-12.9 deg up, centre 10.5): looking at it is not
-            // HEAD_AWAY with the frozen thresholds. Listed so the harness says so, not as a rule (duda 7 para PM).
-            var insideNow = new (string name, float yaw, float pitch)[] { ("reloj", 0.5f, 10.5f) };
-            foreach (var x in insideNow)
-            {
-                int before = events.Count;
-                Run(1.0, x.yaw, x.pitch);
-                if (events.Count != before) p.Add($"{x.name} ({x.yaw}, {x.pitch}) ya sale de la region: actualizar Medicion_D7 §8");
-            }
-            Run(0.6, 0f, 0f);
             int roomOk = 0;
             foreach (var x in room)
             {
@@ -1371,7 +1363,7 @@ namespace NeuroAdaptiveVR.EditorTools
             if (events.Count != beforeGlance + 2) p.Add("una mirada rapida de 450 ms a la ventana no conto");
 
             Check("X4", "HEAD_AWAY/RETURNED: umbral, permanencia, histeresis, onset, cierre por tracking, numeracion; tarea medida en visor (D7), sala v148 en Unity (D-F6-33)",
-                  p.Count == 0, p.Count == 0 ? $"{events.Count} eventos · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms · tarea {task.Length}/{task.Length} dentro · sala {roomOk}/{room.Length} fuera · dentro de la region: {string.Join(", ", insideNow.Select(x => x.name))} (duda 7)" : Join(p));
+                  p.Count == 0, p.Count == 0 ? $"{events.Count} eventos · retorno #1 en {ret.DurationMs} ms · onset {away.OnsetOffsetMs} ms · tarea {task.Length}/{task.Length} dentro · sala {roomOk}/{room.Length} fuera" : Join(p));
 
             var q = new List<string>();
             var idle = new IdleTracker(IdleTracker.Thresholds.Default);
@@ -1995,6 +1987,65 @@ namespace NeuroAdaptiveVR.EditorTools
             if (floor != null && floor.GetComponent<MeshRenderer>().enabled) p.Add("el piso viejo se ve");
             Check("X11", "Sala v148 de la prueba: cada hueco en su sitio del manifest, piezas planas, sin collider, sala vieja apagada (D-F6-45)",
                   p.Count == 0, p.Count == 0 ? $"{placed}/{manifest.huecos.Length} huecos · atril 18B con el canvas de S2 encima" : Join(p));
+        }
+
+        /// <summary>
+        /// X12. D7 probe on the pilot's clock and painting (D-F6-54 - D-F6-56): their boxes measured in the
+        /// scene, relative to the board direction as HeadAwayMonitor sees them, both active (HIGH). Looking
+        /// at the clock's centre must give HEAD_AWAY by yaw and a DWELL named after the clock. Heads turn
+        /// short of a target (2-6 deg in D7), and DWELL goes to the nearest box: the share of looks named
+        /// after the painting is measured and reported, not failed (accepted and declared, D-F6-56).
+        /// </summary>
+        private static void ClockProbeCases()
+        {
+            var p = new List<string>();
+            var board = GameObject.Find("Studio/LearningBoard");
+            Data.AngularBox? BoxOf(string path)
+            {
+                var go = GameObject.Find(path);
+                if (go == null || board == null) return null;
+                var a = AngularOf(go.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).SelectMany(MeshCorners));
+                float boardPitch = Mathf.Atan2(board.transform.position.y - Eye.y, board.transform.position.z - Eye.z) * Mathf.Rad2Deg;
+                return new Data.AngularBox { Name = go.name, Group = "PROP", YawMin = a.H0, YawMax = a.H1, PitchMin = a.V0 - boardPitch, PitchMax = a.V1 - boardPitch };
+            }
+            var clock = BoxOf("Studio/EnvironmentalLayer/Props/WallClock_T3");
+            var picture = BoxOf("Studio/EnvironmentalLayer/Props/WallPicture_T2");
+            if (clock == null || picture == null) { Check("X12", "Sonda de D7: reloj y cuadro del piloto", false, "falta el reloj o el cuadro"); return; }
+            var boxes = new List<Data.AngularBox> { clock.Value, picture.Value };
+            var task = HeadAwayThresholds.Default;
+            float cy = (clock.Value.YawMin + clock.Value.YawMax) / 2f, cp = (clock.Value.PitchMin + clock.Value.PitchMax) / 2f;
+
+            // One look of 1.5 s at (yaw, pitch), from the board and back: which HEAD_AWAY limit and which DWELL it gives.
+            (string limit, string dwell) Look(float yaw, float pitch)
+            {
+                var away = new HeadAwayDetector(task);
+                var dwell = new DwellDetector(DistractorThresholds.Default);
+                string limit = null, name = null; double t = 0; const double dt = 1.0 / 72.0;
+                void Step(double seconds, float y, float pt)
+                {
+                    for (int i = 0; i < (int)Math.Round(seconds / dt); i++)
+                    {
+                        t += dt;
+                        var a = away.Step(t, y, pt); if (a != null && a.Value.Kind == HeadAwayDetector.Kind.Away) limit = a.Value.Limit;
+                        bool outside = Math.Abs(y) > task.YawLimitDeg || pt > task.PitchUpLimitDeg || pt < -task.PitchDownLimitDeg;
+                        var d = dwell.Step(t, y, pt, outside, boxes); if (d != null) name = d.Value.ObjectName;
+                    }
+                }
+                Step(1.0, 0f, 0f); Step(1.5, yaw, pitch); Step(1.0, 0f, 0f);
+                return (limit, name);
+            }
+
+            var centre = Look(cy, cp);
+            if (centre.limit != "YAW") p.Add($"mirar el centro del reloj ({cy:F1}, {cp:F1}) no dio HEAD_AWAY por yaw ({centre.limit ?? "nada"})");
+            if (centre.dwell != "WallClock_T3") p.Add($"mirar el centro del reloj dio DWELL a nombre de {centre.dwell ?? "nada"}");
+            var four = Look(cy + 4f, cp);
+            int looks = 0, onPicture = 0;
+            for (float shortBy = 2f; shortBy <= 6.001f; shortBy += 0.5f) { looks++; if (Look(cy + shortBy, cp).dwell == "WallPicture_T2") onPicture++; }
+            float switchYaw = (clock.Value.YawMax + picture.Value.YawMin) / 2f;
+            Check("X12", "Sonda de D7 (piloto): mirar el reloj da HEAD_AWAY por yaw y DWELL a nombre del reloj; parte que cae en el cuadro, medida (D-F6-56)",
+                  p.Count == 0, p.Count == 0
+                      ? $"centro del reloj ({cy:F1}, {cp:F1}): {centre.limit}, {centre.dwell} · 4 grados corta: {four.dwell} · cabeza 2-6 grados corta: {onPicture}/{looks} al cuadro · cambio en {switchYaw:F2}"
+                      : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)

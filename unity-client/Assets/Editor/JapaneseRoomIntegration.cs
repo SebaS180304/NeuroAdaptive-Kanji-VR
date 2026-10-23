@@ -35,7 +35,14 @@ namespace NeuroAdaptiveVR.EditorTools
         private const string Movers = "Studio/EnvironmentalLayer/Movers/";
         private const string Fixed = "Studio/Room/JapaneseRoom/";
         private const string Podium = "18B_Atril";
-        private const float ClockHeight = 2.50f;   // not the manifest's 2.367: it clears the raised board (decision 9)
+        // Slots placed off their manifest pose for the pilot (D-F6-54, D-F6-55): the clock leaves the task region
+        // for the front wall over the left window, and the Fuji painting moves 0.25 m towards the board to make room.
+        // The board gives box centres (z 3.875 / 3.885); the pivots stay on the wall at z 3.90, faces against it.
+        private static readonly Dictionary<string, Vector3> Moved = new()
+        {
+            { "08_Reloj", new Vector3(-3.05f, 2.22f, 3.90f) },
+            { "11_Cuadro_Fuji", new Vector3(-2.241f, 2.20f, 3.90f) },
+        };
 
         // ESL slots (Plan_Integracion_Sala_Japonesa.md §3). A slot with several slots of the
         // manifest (the four piles of boxes) stays at the origin and each pile keeps its pose.
@@ -67,7 +74,7 @@ namespace NeuroAdaptiveVR.EditorTools
             => File.Exists(ManifestCopy) ? JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestCopy)) : null;
 
         public static Vector3 Position(Hueco h)
-            => new(h.unity_pos[0], h.hueco == "08_Reloj" ? ClockHeight : h.unity_pos[1], h.unity_pos[2]);
+            => Moved.TryGetValue(h.hueco, out var moved) ? moved : new Vector3(h.unity_pos[0], h.unity_pos[1], h.unity_pos[2]);
 
         /// <summary>The transform that stands at the slot's manifest pose: the ESL slot, the pile inside it, or the fixed piece.</summary>
         public static Transform Placed(string hueco)
