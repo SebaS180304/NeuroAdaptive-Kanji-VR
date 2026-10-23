@@ -366,41 +366,47 @@ block gets its own commit, so it can be reverted (revert map in `plan.md`). Expo
 ### [x] Task 26b: pending docs commit
 - [x] `docs(tasks)`: Tasks 24–25 closed with run `6a3c4800`, migration 0008 noted
 
-### [ ] Task 27: Bird 2.3 s and butterfly 6.0 s (D-F6-48)
-- [ ] Bird events (3): in 0.8 s, perched 0.7 s, out 0.8 s; butterflies (2): down 2.8 s, up 3.2 s; curves, rests and draw unchanged
-- [ ] X9 durations 2.3 / 8.08 / 6.0 s; wings ≤ 3 Hz (2 beats per bird leg), ripple 1 Hz
-- [ ] E13 rows of the butterflies measured again
+### [x] Task 27: Bird 2.3 s and butterfly 6.0 s (D-F6-48)
+- [x] Bird events (3): in 0.8 s, perched 0.7 s, out 0.8 s; butterflies (2): down 2.8 s, up 3.2 s; curves, rests and draw unchanged
+- [x] X9 durations 2.3 / 8.08 / 6.0 s; wings ≤ 3 Hz (2 beats per bird leg), ripple 1 Hz
+- [x] E13 rows of the butterflies measured again
 **Verify:** harness green; one flight captured from the eye. **Scope:** S
+→ `f8ddc9c`: bird 0.8 + 0.7 + 0.8 s, butterfly 2.8 + 3.2 s; X9 2.3 / 8.08 / 6.0 s; E13 unchanged.
 
-### [ ] Task 28: Cat 0.16 m out, butterfly at x 2.75 (D-F6-52)
-- [ ] Cat events: stop x ±2.41, entry ±2.88, same baked clips (no re-bake); sill still under it (x 1.64–3.39)
-- [ ] Butterflies: in at (±2.75, 1.55, 4.20), out at (±2.75, 1.58, 4.20); controls and lowest point unchanged; bird unchanged
-- [ ] X9: cat and butterfly start and end behind the paper half (sashes x 2.476–3.346, mirrored)
-- [ ] E13 rows of cats and butterflies measured in Unity against §10.2 (cat 26.5°–37.4°, butterfly 25.0°–34.2°); > 1° noted with cause
+### [x] Task 28: Cat 0.16 m out, butterfly at x 2.75 (D-F6-52)
+- [x] Cat events: stop x ±2.41, entry ±2.88, same baked clips (no re-bake); sill still under it (x 1.64–3.39)
+- [x] Butterflies: in at (±2.75, 1.55, 4.20), out at (±2.75, 1.58, 4.20); controls and lowest point unchanged; bird unchanged
+- [x] X9: cat and butterfly start and end behind the paper half (sashes x 2.476–3.346, mirrored)
+- [x] E13 rows of cats and butterflies measured in Unity against §10.2 (cat 26.5°–37.4°, butterfly 25.0°–34.2°); > 1° noted with cause
 **Verify:** harness green; captures from the eye at the start and at the stop. **Scope:** S
+→ `06ac193`: cat stop ±2.41 (in from ±2.88), butterfly ±2.75; X9 projects every point from the eye onto the sash (paper half); E13 cat 28.1–36.6° (1.6° inside §10.2's envelope estimate), butterfly within 1°.
 
-### [ ] Task 29: Clock and Fuji painting moved (D-F6-54, D-F6-55)
-- [ ] `WallClock_T3` centre (−3.05, 2.22, 3.875), face against the wall; `WallPicture_T2` centre (−2.241, 2.20, 3.885); the integration's clock-height override becomes this two-row table; X11 follows it
-- [ ] E13 rows measured in Unity (§10.3: clock −40.0° to −36.4° · 5.0° to 9.4°; painting −33.3° to −26.4° · 4.9° to 10.5°)
-- [ ] D7 probe: looking at the clock's centre gives `HEAD_AWAY` (YAW) and a `DWELL` named `WallClock_T3`. **Accepted and declared (D-F6-56):** record what share of the looks at the clock comes out named after the painting, with the head on the clock's centre and 4° short of it (expected by the nearest-box rule: none at the centre, all at 4° short, the switch at −34.85°); write the result in the day draft and `Medicion_D7_HeadAway.md`. No further moves, no change to D5
-- [ ] X4: the clock leaves "inside the region" for the room targets; `Medicion_D7_HeadAway.md` new section
+### [x] Task 29: Clock and Fuji painting moved (D-F6-54, D-F6-55)
+- [x] `WallClock_T3` centre (−3.05, 2.22, 3.875), face against the wall; `WallPicture_T2` centre (−2.241, 2.20, 3.885); the integration's clock-height override becomes this two-row table; X11 follows it
+- [x] E13 rows measured in Unity (§10.3: clock −40.0° to −36.4° · 5.0° to 9.4°; painting −33.3° to −26.4° · 4.9° to 10.5°)
+- [x] D7 probe: looking at the clock's centre gives `HEAD_AWAY` (YAW) and a `DWELL` named `WallClock_T3`. **Accepted and declared (D-F6-56):** record what share of the looks at the clock comes out named after the painting, with the head on the clock's centre and 4° short of it (expected by the nearest-box rule: none at the centre, all at 4° short, the switch at −34.85°); write the result in the day draft and `Medicion_D7_HeadAway.md`. No further moves, no change to D5
+- [x] X4: the clock leaves "inside the region" for the room targets; `Medicion_D7_HeadAway.md` new section
 **Verify:** harness green; X4 without "dentro de la region". **Scope:** M
+→ `8085acd`: clock (−3.05, 2.22, 3.875), painting (−2.241, 2.20, 3.885); E13 within 0.1° of §10.3; X12 probe: clock centre → HEAD_AWAY YAW + DWELL clock; 4° short → painting; 2–6° short → 6/9 (≈ 67 %) to the painting, switch at −34.84°; X4 clock in the room targets.
 
-### [ ] Task 30: Curtain wind by shader, alpha 0.90 (D-F6-50, D-F6-53) — after Task 28
-- [ ] Vertex wind anchored at the bar, phase from the seed (like E12), no collisions; the sway stays
-- [ ] Transparent material, alpha 0.90 fixed on the whole sheet, every level and session; no fresnel, emission or angle-dependent shine; the wind never animates alpha
-- [ ] §10.2 checks: contrast drop ≤ 10 % (opaque vs 0.90); a full wind cycle with each animal at its entry shows none of it
-- [ ] Harness: alpha 0.90 on both sheets, wind phase deterministic per seed
+### [x] Task 30: Curtain wind by shader, alpha 0.90 (D-F6-50, D-F6-53) — after Task 28
+- [x] Vertex wind anchored at the bar, phase from the seed (like E12), no collisions; the sway stays
+- [x] Transparent material, alpha 0.90 fixed on the whole sheet, every level and session; no fresnel, emission or angle-dependent shine; the wind never animates alpha
+- [x] §10.2 checks: contrast drop ≤ 10 % (opaque vs 0.90); a full wind cycle with each animal at its entry shows none of it
+- [x] Harness: alpha 0.90 on both sheets, wind phase deterministic per seed
 **Verify:** harness green; captures from the eye. **Scope:** M
+→ `78147c6`: 12 × 24 grid sheets, NeuroAdaptive/CurtainWind (URP, transparent, alpha 0.90 fixed, Lambert only), wind time from EnvironmentMotion (seed + time since activation); X13.
 
-### [ ] Task 31: S5 stage 1, the object comes closer (D-F6-49) — **switched OFF for the test, on only after A-9 (MIRAI)**
-- [ ] 0–1 s from (0, 1.78, 1.88) to (0, 1.45, 0.70); 1–7 s levitating ±1.5 cm every 2 s, turning ±20° every 6 s; reading at 1.5, 3.5, 5.5 s; 7–8 s back to the board; stage 1 = 8 s
-- [ ] `KANJI_EXPOSED.object_audio_plays` (3 on, 0 off), contract §5 and §11
-- [ ] Behind a serialized switch, off in the scene; harness case on poses and times with it on
+### [x] Task 31: S5 stage 1, the object comes closer (D-F6-49) — **switched ON for the test (D-F6-58, closes A-9)**
+- [x] 0–1 s from (0, 1.78, 1.88) to (0, 1.45, 0.70); 1–7 s levitating ±1.5 cm every 2 s, turning ±20° every 6 s; reading at 1.5, 3.5, 5.5 s; 7–8 s back to the board; stage 1 = 8 s
+- [x] `KANJI_EXPOSED.object_audio_plays` (3 on, 0 off), contract §5 and §11
+- [x] Behind a serialized switch; harness case on poses and times with it on
+- [x] D-F6-58: the switch goes ON in the scene, in its own commit; X14 now requires it on
 **Verify:** harness green; capture of the object at 0.72 m. **Scope:** M
+→ `c0fb44e`: ApproachPose / Approach in KanjiDiscoveryController, `objectApproach` OFF in S5, `object_audio_plays` 0 off / 3 on, contract; X14. Harness 90/90. D-F6-58: switch ON in the scene, X14 requires it on; harness 91/91.
 
 ### [ ] Task 32: Harness, headset and a new validation run (D-F6-57)
-- [ ] Whole harness green; Quest 2 over Link at 72 Hz without stutters (frame samples at S4, S5 and S7)
-- [ ] New run S1 → S9, set A, `BEHAVIOR_ADAPTIVE`, visit 1, new test code: `verify_adaptation` and `verify_projection` clean, animals in `distractor_interactions`, `object_source = BLENDER_FBX`, `object_audio_plays = 0` (switch off)
+- [ ] Whole harness green; Quest 2 over Link at 72 Hz without stutters (`Logs/framerate.csv`, read after the run; no commands during Play)
+- [ ] New run S1 → S9, set A, `BEHAVIOR_ADAPTIVE`, visit 1, new test code: `verify_adaptation` and `verify_projection` clean, animals in `distractor_interactions`, `object_source = BLENDER_FBX`, `object_audio_plays = 3` on each of the five kanji and S5 ≈ +30 s over `6a3c4800` (switch on, D-F6-58)
 - [ ] **Passed → frozen** until the test ends; tell Sebas so he sets the time
 **Deps:** 27–31. **Scope:** XS (no code)

@@ -309,7 +309,7 @@ commits stay because they do not depend on the room.
 
 Written 23 Oct during the freeze and updated with **D-F6-57**: the test moves to the end of the
 day and goes **with** these changes. Order: D-F6-48 (T27) → D-F6-52 (T28) → D-F6-54 – D-F6-56
-(T29) → D-F6-50 with D-F6-53 (T30) → D-F6-49 behind a switch left OFF (T31); then a new
+(T29) → D-F6-50 with D-F6-53 (T30) → D-F6-49 behind its switch (T31; OFF in D-F6-57, ON since D-F6-58); then a new
 validation run with the D-F6-35 criteria and the freeze (T32). A change that does not pass in
 time is reverted and the test goes without it. Sources: board D-F6-46 – D-F6-57 and A-9,
 `Diseno_Sala_ESL.md` (75 626 bytes, "Alineado hasta: D-F6-55") §10.2 (*Tiempos, Entradas y
@@ -329,7 +329,7 @@ Cortinas del piloto*) and §10.3 (*Reloj y cuadro del piloto*), `Medicion_D7_Hea
 T27 bird 2.3 s, butterfly 6.0 s (D-F6-48)
 T28 cat +0.16 m, butterfly x 2.75 (D-F6-52) ──────────────> T30 curtain wind + alpha 0.90 (D-F6-50, -53)
 T29 clock (-3.05, 2.22, 3.875) + Fuji (-2.241, 2.20, 3.885) (D-F6-54 - -56)
-T31 S5 object approach (D-F6-49) ── behind a switch, OFF for the test, on only after A-9 (MIRAI)
+T31 S5 object approach (D-F6-49) ── behind a switch, ON for the test (D-F6-58)
 all ──> T32 harness green, headset at 72 Hz, new validation run, freeze
 ```
 Each task touches its own objects; T30 needs T28 first (no entry may depend on the curtain
@@ -352,8 +352,9 @@ before it lets light through, D-F6-52 and D-F6-53). Each goes in its own commit.
    of targets at ≈ 32°, and a head at −32° to −34° sits inside the painting's box with its 3°
    margin. The probe also tries the clock with the head 4° short; if the `DWELL` goes to the
    painting, it goes to PM (duda 16). **D-F6-56: accepted and declared**; the probe records the share of looks named after the painting (centre and 4° short), the per-object analysis groups clock and painting in HIGH (`Cambios_Spec_v1_4.md` row 17), and nothing moves further.
-4. **T31 is built switched off and stays off for the test** (D-F6-57). Its code, telemetry and
-   harness case go in now; switching it on is one value and one commit when A-9 says yes.
+4. **T31 is built switched off (D-F6-57) and switched on for the test (D-F6-58).** D-F6-58 does not wait
+   for MIRAI (informed in the M3 note, closes A-9): one value in the scene, its own commit; S5 grows ≈ 30 s
+   and its audio exposure is not comparable with earlier sessions (declared).
 5. **T30 is a transparent material.** Alpha 0.90 lives in the material, so no level, session or
    seed changes it; the wind moves vertices only, with no fresnel, emission or angle-dependent
    shine (rule 9). §10.2 asks for two checks: contrast against the background drops by ≤ 10 %
