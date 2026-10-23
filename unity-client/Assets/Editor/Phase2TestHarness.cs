@@ -1025,10 +1025,11 @@ namespace NeuroAdaptiveVR.EditorTools
             { "PeripheralEvent_WindowLeft",           (-34.0f, -26.4f, -11.0f, -2.8f) },
             { "PeripheralEvent_WindowRight",          ( 26.4f,  34.0f, -11.0f, -2.8f) },
             { "PeripheralEvent_Shelf",                ( 34.1f,  45.7f,   8.3f, 12.3f) },
-            { "PeripheralEvent_CatWindowLeft",        (-35.1f, -26.3f, -11.5f, -6.4f) },
-            { "PeripheralEvent_CatWindowRight",       ( 26.3f,  35.1f, -11.5f, -6.4f) },
-            { "PeripheralEvent_ButterflyWindowLeft",  (-32.6f, -25.4f,  -3.4f,  0.2f) },
-            { "PeripheralEvent_ButterflyWindowRight", ( 25.4f,  32.6f,  -3.4f,  0.2f) },
+            // Cat and butterfly entries of the pilot (D-F6-52): the cat's stop at x 2.41, the butterfly in and out at x 2.75.
+            { "PeripheralEvent_CatWindowLeft",        (-36.6f, -28.1f, -11.3f, -6.3f) },
+            { "PeripheralEvent_CatWindowRight",       ( 28.1f,  36.6f, -11.3f, -6.3f) },
+            { "PeripheralEvent_ButterflyWindowLeft",  (-33.9f, -25.5f,  -3.6f,  0.3f) },
+            { "PeripheralEvent_ButterflyWindowRight", ( 25.5f,  33.9f,  -3.6f,  0.3f) },
         };
 
         private const float LayoutToleranceDeg = 0.5f;
@@ -1797,6 +1798,16 @@ namespace NeuroAdaptiveVR.EditorTools
                     else if (a.AnimalKind == PeripheralAnimation.Kind.Butterfly && (lo < 9.9f || hi > 80.1f)) p.Add($"{a.name}: alas {lo:F0}-{hi:F0} grados");
                 }
             }
+            // D-F6-52: the cat and the butterfly start and end behind the paper half of their window, seen
+            // from the eye, so no entry depends on the curtain (a mover that is not always there).
+            foreach (var a in anims.Where(x => x != null && x.AnimalKind != PeripheralAnimation.Kind.Bird))
+                foreach (var t in new[] { 0f, a.DurationSeconds })
+                {
+                    var outside = PointsSeenOffThePaper(a, t);
+                    if (outside > 0) p.Add($"{a.name} asoma junto a la mitad de papel en t = {t:F2} s ({outside} puntos)");
+                }
+            anims.ForEach(x => x?.Pose(0f));
+
             // D-F6-28: not one sphere left in the v148 room; the silhouettes are 24B, facing the way they walk.
             var studio = GameObject.Find("Studio");
             var spheres = studio == null ? new List<MeshFilter>() : studio.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh != null && f.sharedMesh.name == "Sphere" && f.GetComponent<MeshRenderer>().enabled).ToList();
@@ -1812,6 +1823,33 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X9", "Eventos perifericos: animales (D-F6-28): sorteo 3/2/2, duraciones, entran y salen, reposan en su sitio, <= 3 Hz",
                   p.Count == 0, p.Count == 0 ? Join(entries.Select(t => t.name)) : Join(p));
+        }
+
+        // The paper half of each window (sashes of 15B, room v148): x 2.476-3.346 (mirrored on the left),
+        // y 0.655-1.745, front face at z 3.919. A point is hidden if the ray from the eye crosses that face on the paper.
+        private static int PointsSeenOffThePaper(PeripheralAnimation a, float t)
+        {
+            a.Pose(t);
+            var eye = new Vector3(0f, 1.60f, 0f);
+            var points = new List<Vector3>();
+            foreach (var mf in a.Model.GetComponentsInChildren<MeshFilter>(true))
+                if (mf.sharedMesh != null) points.AddRange(mf.sharedMesh.vertices.Select(v => mf.transform.TransformPoint(v)));
+            var baked = new Mesh();
+            foreach (var sk in a.Model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                sk.BakeMesh(baked, true);
+                points.AddRange(baked.vertices.Select(v => sk.transform.TransformPoint(v)));
+            }
+            UnityEngine.Object.DestroyImmediate(baked);
+            int outside = 0;
+            foreach (var w in points)
+            {
+                if (w.z <= 3.919f) { outside++; continue; }
+                var q = eye + (w - eye) * ((3.919f - eye.z) / (w.z - eye.z));
+                float x = Mathf.Abs(q.x);
+                if (x < 2.476f || x > 3.346f || q.y < 0.655f || q.y > 1.745f) outside++;
+            }
+            return outside;
         }
 
         /// <summary>

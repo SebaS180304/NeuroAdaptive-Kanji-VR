@@ -342,7 +342,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 89077436}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.5697911, z: -0, w: 0.8217896}
+  m_LocalRotation: {x: -0, y: -0.56960213, z: -0, w: 0.8219206}
   m_LocalPosition: {x: 0.829, y: 0.26, z: -0.25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2230,7 +2230,7 @@ Transform:
   m_GameObject: {fileID: 518205752}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.25, y: 0.665, z: 4.15}
+  m_LocalPosition: {x: 2.41, y: 0.665, z: 4.15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5302,7 +5302,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1048881013}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.82366735, z: -0, w: 0.5670733}
+  m_LocalRotation: {x: -0, y: 0.82371545, z: -0, w: 0.56700337}
   m_LocalPosition: {x: -0.66400003, y: 0.505, z: 0.21999979}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5920,7 +5920,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1178730920}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.70754105, z: -0, w: 0.7066723}
+  m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
   m_LocalPosition: {x: -0.56999993, y: 0.19999993, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6258,7 +6258,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1250766260}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.82366735, z: -0, w: 0.5670733}
+  m_LocalRotation: {x: -0, y: -0.82371545, z: -0, w: 0.56700337}
   m_LocalPosition: {x: 0.66400003, y: 0.505, z: 0.21999979}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -7364,7 +7364,7 @@ Transform:
   m_GameObject: {fileID: 1500928024}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.25, y: 0.665, z: 4.15}
+  m_LocalPosition: {x: -2.41, y: 0.665, z: 4.15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -7913,10 +7913,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.PeripheralAnimation
   kind: 2
-  pathStart: {x: 2.62, y: 1.55, z: 4.2}
+  pathStart: {x: 2.75, y: 1.55, z: 4.2}
   pathControl: {x: 2.3, y: 1.3, z: 4.2}
   outControl: {x: 2.3, y: 1.45, z: 4.2}
-  outEnd: {x: 2.62, y: 1.58, z: 4.2}
+  outEnd: {x: 2.75, y: 1.58, z: 4.2}
   inSeconds: 2.8
   restSeconds: 0
   outSeconds: 3.2
@@ -8057,10 +8057,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.PeripheralAnimation
   kind: 2
-  pathStart: {x: -2.62, y: 1.55, z: 4.2}
+  pathStart: {x: -2.75, y: 1.55, z: 4.2}
   pathControl: {x: -2.3, y: 1.3, z: 4.2}
   outControl: {x: -2.3, y: 1.45, z: 4.2}
-  outEnd: {x: -2.62, y: 1.58, z: 4.2}
+  outEnd: {x: -2.75, y: 1.58, z: 4.2}
   inSeconds: 2.8
   restSeconds: 0
   outSeconds: 3.2
@@ -9764,7 +9764,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1876820984}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.70754105, z: -0, w: 0.7066723}
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
   m_LocalPosition: {x: 0.56999993, y: 0.19999993, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
