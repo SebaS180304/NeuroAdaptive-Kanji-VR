@@ -302,3 +302,68 @@ commits stay because they do not depend on the room.
 4. ~~Which cat clips~~ → D-F6-38 (refined 23 Oct 10:10): each window plays its `EVENTO_*`; the
    two `CAMINATA_*` are not used.
 5. ~~Clash with `9c761a9`~~ → the commit for Task 22 removes the box cat's code; `9c761a9` is not reverted (Sebas, 23 Oct).
+
+---
+
+## Before the phase test: pilot changes (D-F6-46 – D-F6-57)
+
+Written 23 Oct during the freeze and updated with **D-F6-57**: the test moves to the end of the
+day and goes **with** these changes. Order: D-F6-48 (T27) → D-F6-52 (T28) → D-F6-54 – D-F6-56
+(T29) → D-F6-50 with D-F6-53 (T30) → D-F6-49 behind a switch left OFF (T31); then a new
+validation run with the D-F6-35 criteria and the freeze (T32). A change that does not pass in
+time is reverted and the test goes without it. Sources: board D-F6-46 – D-F6-57 and A-9,
+`Diseno_Sala_ESL.md` (75 626 bytes, "Alineado hasta: D-F6-55") §10.2 (*Tiempos, Entradas y
+Cortinas del piloto*) and §10.3 (*Reloj y cuadro del piloto*), `Medicion_D7_HeadAway.md` §10.
+
+### Checked before the test (23 Oct, read only)
+- The scene runs S4 at `baselineTimeScale = 1`: the validation run `6a3c4800` spent 111 s in S4
+  (60 + 45 s) and 143 s in S5, the fixed timings. It lasted 9.5 min because Sebas answered fast
+  (1.5–3.8 s per trial) and knows S1–S2; trials have no time limit. A first-time participant
+  should take longer (a guess of 15–20 min; the protocol says 25–30).
+
+### First, once the test ends
+- The pending `docs(tasks)` commit (Tasks 24–25 closed, migration 0008 noted), message shown first.
+
+### Dependency graph
+```
+T27 bird 2.3 s, butterfly 6.0 s (D-F6-48)
+T28 cat +0.16 m, butterfly x 2.75 (D-F6-52) ──────────────> T30 curtain wind + alpha 0.90 (D-F6-50, -53)
+T29 clock (-3.05, 2.22, 3.875) + Fuji (-2.241, 2.20, 3.885) (D-F6-54 - -56)
+T31 S5 object approach (D-F6-49) ── behind a switch, OFF for the test, on only after A-9 (MIRAI)
+all ──> T32 harness green, headset at 72 Hz, new validation run, freeze
+```
+Each task touches its own objects; T30 needs T28 first (no entry may depend on the curtain
+before it lets light through, D-F6-52 and D-F6-53). Each goes in its own commit.
+
+### Findings that shape it
+1. **T27 changes durations, not paths.** E13 samples the same curves; only the butterfly's rows
+   are measured again, since its 1 Hz ripple meets the path at other phases over 6 s.
+2. **T28 needs a new "hidden at both ends" rule in X9:** the cat (stop 2.41, entry 2.88) and the
+   butterfly (x 2.75) start and end behind the paper half (sashes x 2.476–3.346, mirrored on the
+   left), whatever the curtain does. §10.2 gives the pilot angles to compare (cat 26.5°–37.4° ·
+   −11.7° to −5.5°; butterfly 25.0°–34.2° · −4.4° to 0.9°).
+3. **T29 replaces the clock override of the room integration.** Today `JapaneseRoomIntegration`
+   moves only the clock's height (2.50 m); the pilot moves the clock and the painting off their
+   manifest poses, so the override becomes a two-row table, and X11 checks those poses.
+   **The D7 probe** runs the head detector and `DistractorMonitor` on the new layout: looking at
+   the clock's centre (≈ −38° yaw) must give `HEAD_AWAY` by yaw and a `DWELL` named
+   `WallClock_T3`, not `WallPicture_T2`; X4 moves the clock from "inside the region" to the room
+   targets. **Risk:** the 3.1° between the two is geometric; D7 measured heads turning 2–6° short
+   of targets at ≈ 32°, and a head at −32° to −34° sits inside the painting's box with its 3°
+   margin. The probe also tries the clock with the head 4° short; if the `DWELL` goes to the
+   painting, it goes to PM (duda 16). **D-F6-56: accepted and declared**; the probe records the share of looks named after the painting (centre and 4° short), the per-object analysis groups clock and painting in HIGH (`Cambios_Spec_v1_4.md` row 17), and nothing moves further.
+4. **T31 is built switched off and stays off for the test** (D-F6-57). Its code, telemetry and
+   harness case go in now; switching it on is one value and one commit when A-9 says yes.
+5. **T30 is a transparent material.** Alpha 0.90 lives in the material, so no level, session or
+   seed changes it; the wind moves vertices only, with no fresnel, emission or angle-dependent
+   shine (rule 9). §10.2 asks for two checks: contrast against the background drops by ≤ 10 %
+   (opaque vs 0.90), and a full wind cycle with each animal at its entry shows no pixel of it.
+
+### Risks
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Looking at the clock gives a `DWELL` named after the painting (heads turn short) | Med | Accepted (D-F6-56): measured in the T29 probe, clock and painting grouped in HIGH |
+| A transparent curtain sorts badly against the animals behind it | Med | Captures from the eye, queue set explicitly (T30 checks of §10.2) |
+| MIRAI says no to four readings | Low | T31 stays off; nothing depends on it |
+| A change is not ready before the test | Med | Each in its own commit: revert it and the test goes without it (D-F6-57) |
+| Wind shader cost through Link | Low | Measured in the next headset run, as in Task 24 |

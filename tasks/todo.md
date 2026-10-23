@@ -309,24 +309,26 @@ block gets its own commit, so it can be reverted (revert map in `plan.md`). Expo
 ### [x] Task 23b: `object_source` in `KANJI_EXPOSED`
 - [x] `object_source` = `BLENDER_FBX` | `PLACEHOLDER`, next to `audio_source`; harness case asserts both values
 **Commit:** separate, `feat(telemetry): say whether the S5 object is real or a placeholder`. **Deps:** 23. **Scope:** XS
-→ `6cba1c9`. **Found on the way:** `kanji_exposures.stages_authored` is BOOLEAN and the projection casts the payload with `::boolean`, but Unity sends a count. Until now it was always 1; with the set A objects it is 2, and `'2'::boolean` fails, so every S5 exposure of the run would fail to project (verify_projection). Fix pending Sebas's OK (see the day draft).
+→ `6cba1c9`. **Found on the way:** `kanji_exposures.stages_authored` is BOOLEAN and the projection casts the payload with `::boolean`, but Unity sends a count. Until now it was always 1; with the set A objects it is 2, and `'2'::boolean` fails, so every S5 exposure of the run would fail to project (verify_projection). Fixed with Sebas's OK: migration 0008 (`1baad59`), column SMALLINT, projection reads the count; up/down/up on the dev DB, pytest 209/209; it does not depend on the room, so it stays out of the revert map.
 
 ### Checkpoint: integration
 - [ ] Every block committed on its own (messages in Downloads, shown to Sebas first); `graphify update .`
 
-### [ ] Task 24: Harness green and a smooth headset over Link
-- [ ] Whole harness green
-- [ ] Quest 2 over Link: frame rate steady at the headset's refresh in S4, S5 and S7, no ASW and no dropped-frame spikes (Oculus Debug Tool performance HUD), with the animals on show
+### [x] Task 24: Harness green and a smooth headset over Link
+- [x] Whole harness green
+- [x] Quest 2 over Link: frame rate steady at the headset's refresh in S4, S5 and S7, no ASW and no dropped-frame spikes (Oculus Debug Tool performance HUD), with the animals on show
 **Deps:** 19–23b. **Scope:** XS (no code unless a drop shows up)
+→ 23 Oct: harness 87/87; 72 Hz, frame time 13.9 ms mean and GPU ≤ 5.9 ms sampled in S1; no stutters seen by Sebas in the whole session (S4/S5/S7 not sampled).
 
-### [ ] Task 25: Validation run S1 → S9 (D-F6-35)
-- [ ] Set A, `BEHAVIOR_ADAPTIVE`, visit 1, a test code; Inspector changes reverted after the run; scene never saved in Play
-- [ ] `verify_adaptation` and `verify_projection`: 0 discrepancies
-- [ ] `select object_name, kind, count(*) from distractor_interactions where session_id = '<id>' and object_group = 'PERIPHERAL' group by 1, 2;` → the animals are there (which kinds were drawn goes in the draft)
-- [ ] `KANJI_EXPOSED`: `object_source = BLENDER_FBX` for all five
-- [ ] If it fails because of the room: apply the revert map, go back to the 1.36 m room with the spheres (D-F6-31), run again
-- [ ] **Passed → freeze** (no commits, no backend restarts) until the phase test ends; tell Sebas so he can set the time
+### [x] Task 25: Validation run S1 → S9 (D-F6-35)
+- [x] Set A, `BEHAVIOR_ADAPTIVE`, visit 1, a test code; Inspector changes reverted after the run; scene never saved in Play
+- [x] `verify_adaptation` and `verify_projection`: 0 discrepancies
+- [x] `select object_name, kind, count(*) from distractor_interactions where session_id = '<id>' and object_group = 'PERIPHERAL' group by 1, 2;` → the animals are there (which kinds were drawn goes in the draft)
+- [x] `KANJI_EXPOSED`: `object_source = BLENDER_FBX` for all five
+- [x] If it fails because of the room: apply the revert map, go back to the 1.36 m room with the spheres (D-F6-31), run again
+- [x] **Passed → freeze** (no commits, no backend restarts) until the phase test ends; tell Sebas so he can set the time
 **Deps:** 24, **19b (the test waits for the new 18B, D-F6-44)**. **Scope:** XS (no code)
+→ 23 Oct, run `6a3c4800` (`TEST_VAL_2310`): COMPLETED in 9.5 min; verify_adaptation and verify_projection clean; cat and bird in distractor_interactions (butterfly not drawn, accepted by Sebas); 5 × BLENDER_FBX, stages_authored 2 projected (0008). Frozen until D-F6-57 lifted it.
 
 ### [ ] Task 26: Day draft
 - [ ] `Claude outputs/Borrador_Plan_Fase6_9_23oct.md`: what was integrated, commits, D-F6-33 differences, the run's session id and results, "Dudas para PM" (dated) or "Sin dudas · 23 oct"
@@ -354,3 +356,51 @@ block gets its own commit, so it can be reverted (revert map in `plan.md`). Expo
 ### Checkpoint M3
 - [ ] Plan_Fase6 §5 criteria 1–8 have evidence or are declared pending
 - [ ] Tags created; day draft `Claude outputs/Borrador_Plan_Fase6_9_23oct.md`
+
+---
+
+## Before the phase test: pilot changes (D-F6-46 – D-F6-57)
+
+**Aligned up to: D-F6-57.** The freeze of run `6a3c4800` is lifted: the test moves to the end of the day **with** these changes, in this order, one commit each (message shown first). If one does not pass in time, its commit is reverted and the test goes without it.
+
+### [x] Task 26b: pending docs commit
+- [x] `docs(tasks)`: Tasks 24–25 closed with run `6a3c4800`, migration 0008 noted
+
+### [ ] Task 27: Bird 2.3 s and butterfly 6.0 s (D-F6-48)
+- [ ] Bird events (3): in 0.8 s, perched 0.7 s, out 0.8 s; butterflies (2): down 2.8 s, up 3.2 s; curves, rests and draw unchanged
+- [ ] X9 durations 2.3 / 8.08 / 6.0 s; wings ≤ 3 Hz (2 beats per bird leg), ripple 1 Hz
+- [ ] E13 rows of the butterflies measured again
+**Verify:** harness green; one flight captured from the eye. **Scope:** S
+
+### [ ] Task 28: Cat 0.16 m out, butterfly at x 2.75 (D-F6-52)
+- [ ] Cat events: stop x ±2.41, entry ±2.88, same baked clips (no re-bake); sill still under it (x 1.64–3.39)
+- [ ] Butterflies: in at (±2.75, 1.55, 4.20), out at (±2.75, 1.58, 4.20); controls and lowest point unchanged; bird unchanged
+- [ ] X9: cat and butterfly start and end behind the paper half (sashes x 2.476–3.346, mirrored)
+- [ ] E13 rows of cats and butterflies measured in Unity against §10.2 (cat 26.5°–37.4°, butterfly 25.0°–34.2°); > 1° noted with cause
+**Verify:** harness green; captures from the eye at the start and at the stop. **Scope:** S
+
+### [ ] Task 29: Clock and Fuji painting moved (D-F6-54, D-F6-55)
+- [ ] `WallClock_T3` centre (−3.05, 2.22, 3.875), face against the wall; `WallPicture_T2` centre (−2.241, 2.20, 3.885); the integration's clock-height override becomes this two-row table; X11 follows it
+- [ ] E13 rows measured in Unity (§10.3: clock −40.0° to −36.4° · 5.0° to 9.4°; painting −33.3° to −26.4° · 4.9° to 10.5°)
+- [ ] D7 probe: looking at the clock's centre gives `HEAD_AWAY` (YAW) and a `DWELL` named `WallClock_T3`. **Accepted and declared (D-F6-56):** record what share of the looks at the clock comes out named after the painting, with the head on the clock's centre and 4° short of it (expected by the nearest-box rule: none at the centre, all at 4° short, the switch at −34.85°); write the result in the day draft and `Medicion_D7_HeadAway.md`. No further moves, no change to D5
+- [ ] X4: the clock leaves "inside the region" for the room targets; `Medicion_D7_HeadAway.md` new section
+**Verify:** harness green; X4 without "dentro de la region". **Scope:** M
+
+### [ ] Task 30: Curtain wind by shader, alpha 0.90 (D-F6-50, D-F6-53) — after Task 28
+- [ ] Vertex wind anchored at the bar, phase from the seed (like E12), no collisions; the sway stays
+- [ ] Transparent material, alpha 0.90 fixed on the whole sheet, every level and session; no fresnel, emission or angle-dependent shine; the wind never animates alpha
+- [ ] §10.2 checks: contrast drop ≤ 10 % (opaque vs 0.90); a full wind cycle with each animal at its entry shows none of it
+- [ ] Harness: alpha 0.90 on both sheets, wind phase deterministic per seed
+**Verify:** harness green; captures from the eye. **Scope:** M
+
+### [ ] Task 31: S5 stage 1, the object comes closer (D-F6-49) — **switched OFF for the test, on only after A-9 (MIRAI)**
+- [ ] 0–1 s from (0, 1.78, 1.88) to (0, 1.45, 0.70); 1–7 s levitating ±1.5 cm every 2 s, turning ±20° every 6 s; reading at 1.5, 3.5, 5.5 s; 7–8 s back to the board; stage 1 = 8 s
+- [ ] `KANJI_EXPOSED.object_audio_plays` (3 on, 0 off), contract §5 and §11
+- [ ] Behind a serialized switch, off in the scene; harness case on poses and times with it on
+**Verify:** harness green; capture of the object at 0.72 m. **Scope:** M
+
+### [ ] Task 32: Harness, headset and a new validation run (D-F6-57)
+- [ ] Whole harness green; Quest 2 over Link at 72 Hz without stutters (frame samples at S4, S5 and S7)
+- [ ] New run S1 → S9, set A, `BEHAVIOR_ADAPTIVE`, visit 1, new test code: `verify_adaptation` and `verify_projection` clean, animals in `distractor_interactions`, `object_source = BLENDER_FBX`, `object_audio_plays = 0` (switch off)
+- [ ] **Passed → frozen** until the test ends; tell Sebas so he sets the time
+**Deps:** 27–31. **Scope:** XS (no code)
