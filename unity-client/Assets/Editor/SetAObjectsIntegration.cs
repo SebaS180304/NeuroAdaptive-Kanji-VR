@@ -19,6 +19,7 @@ namespace NeuroAdaptiveVR.EditorTools
     public static class SetAObjectsIntegration
     {
         private const string ArtDir = "Assets/Art/KanjiLessonAssets";
+        private const string ExportRoot = @"C:\Users\drdom\Documents\JapaneseVR\KanjiLessonAssets";   // NN_CODE/export/KANJI_NN_CODE.fbx
         private static readonly (string kanjiId, string code)[] SetA =
         {
             ("KANJI_TSUKI", "01_TSUKI"), ("KANJI_KURUMA", "02_KURUMA"), ("KANJI_HI", "03_HI"),
@@ -28,6 +29,12 @@ namespace NeuroAdaptiveVR.EditorTools
         [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set A", priority = 301)]
         public static void Run()
         {
+            foreach (var (_, code) in SetA)
+            {
+                var src = Path.Combine(ExportRoot, code, "export", $"KANJI_{code}.fbx");
+                if (File.Exists(src)) File.Copy(src, Path.GetFullPath(Path.Combine(Application.dataPath, "..", ArtDir, Path.GetFileName(src))), true);
+            }
+            AssetDatabase.Refresh();
             var models = AssetDatabase.FindAssets("t:Model", new[] { ArtDir }).Select(AssetDatabase.GUIDToAssetPath).ToList();
             var found = SetA.Select(s => (s.kanjiId, s.code, path: models.FirstOrDefault(m => Path.GetFileName(m).Contains(s.code)))).ToList();
             var missing = found.Where(f => f.path == null).Select(f => f.code).ToList();
@@ -48,6 +55,8 @@ namespace NeuroAdaptiveVR.EditorTools
 
                 var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));
                 foreach (var c in instance.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
+                // The cart is read from above: its top to the player, the axle vertical (+90° X in Blender, ESTADO.md 02).
+                if (code == "02_KURUMA") instance.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
                 var prefab = PrefabUtility.SaveAsPrefabAsset(instance, $"{prefabDir}/{code}.prefab");
                 Object.DestroyImmediate(instance);
 

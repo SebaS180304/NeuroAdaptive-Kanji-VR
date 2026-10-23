@@ -1853,7 +1853,8 @@ namespace NeuroAdaptiveVR.EditorTools
             var p = new List<string>();
             var rows = new (string kanji, string code, Vector3 size)[]
             {
-                ("KANJI_TSUKI", "01_TSUKI", new Vector3(0.23f, 0.30f, 0.08f)), ("KANJI_KURUMA", "02_KURUMA", new Vector3(0.40f, 0.18f, 0.24f)),
+                ("KANJI_TSUKI", "01_TSUKI", new Vector3(0.23f, 0.30f, 0.08f)),
+                ("KANJI_KURUMA", "02_KURUMA", new Vector3(0.24f, 0.40f, 0.24f)),   // approved 24 W x 40 D x 24 H, shown from above: axle vertical (ESTADO.md 02)
                 ("KANJI_HI", "03_HI", new Vector3(0.24f, 0.30f, 0.16f)), ("KANJI_TAKE", "04_TAKE", new Vector3(0.24f, 0.35f, 0.12f)),
                 ("KANJI_ISHI", "05_ISHI", new Vector3(0.30f, 0.28f, 0.18f)),
             };
@@ -1879,6 +1880,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 }
             }
             if (assigned != 0 && assigned != rows.Length) p.Add($"{assigned}/5 kanji con objeto: se mezclan real y placeholder (D-F6-26)");
+            if (boxes > 0 || assigned != rows.Length) p.Add($"{boxes} cajas y {assigned}/5 asignados: los cinco FBX del set A ya existen (D-F6-26, 22 oct 19:45)");
             Check("X10", "Objetos de S5 del set A: cinco prefabs del tamano de referencia, los cinco asignados o ninguno, nunca una caja (D-F6-26)",
                   p.Count == 0, p.Count == 0 ? $"{rows.Length - boxes} modelos, {boxes} cajas · asignados {assigned}/5" : Join(p));
         }
