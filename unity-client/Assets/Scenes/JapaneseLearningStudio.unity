@@ -5319,6 +5319,7 @@ MonoBehaviour:
   meaningSeconds: 2
   readingSeconds: 2
   betweenKanjiSeconds: 3
+  objectApproach: 0
 --- !u!82 &1019401299
 AudioSource:
   m_ObjectHideFlags: 0
@@ -7480,6 +7481,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1125460835585896871, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1019401308}
+    - targetCorrespondingSourceObject: {fileID: 1125460835585896871, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1410280783}
   m_SourcePrefab: {fileID: 100100000, guid: c13c7675ec2e2cf4f95666075bef65f2, type: 3}
 --- !u!114 &1410280776 stripped
 MonoBehaviour:
@@ -7492,6 +7496,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc7573d9f97bbaf4ca5aa46b18b8a30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.GameFlowController
+--- !u!114 &1410280783
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1019401263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c84173b5bc251a1498b83efe65377b9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.FrameRateLog
 --- !u!1001 &1418665989
 PrefabInstance:
   m_ObjectHideFlags: 0

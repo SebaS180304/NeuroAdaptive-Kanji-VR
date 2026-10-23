@@ -108,6 +108,7 @@ namespace NeuroAdaptiveVR.EditorTools
             ClockProbeCases();
             CurtainCases();
             ObjectApproachCases();
+            FrameRateCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -2108,6 +2109,26 @@ namespace NeuroAdaptiveVR.EditorTools
             if (!times.SequenceEqual(new[] { 1.5f, 3.5f, 5.5f })) p.Add("la lectura no suena a 1,5 / 3,5 / 5,5 s");
             Check("X14", "S5 etapa 1 con el objeto que se acerca (D-F6-49): poses y tiempos; interruptor APAGADO hasta A-9",
                   p.Count == 0, p.Count == 0 ? $"apagado · 0,72 m a 1 s · ±{maxBob * 100f:F1} cm · ±{maxTurn:F0} grados · lectura 1,5/3,5/5,5 s · vuelve a los {KanjiDiscoveryController.ApproachSeconds} s" : Join(p));
+        }
+
+        /// <summary>
+        /// X15. The frame-rate log of a block (FrameRateLog): frames, seconds, mean fps, frames over 20 ms and
+        /// the worst frame, from the frame times alone, so a headset run can be read afterwards without
+        /// anyone running commands in the editor while it plays.
+        /// </summary>
+        private static void FrameRateCases()
+        {
+            var p = new List<string>();
+            var stats = new FrameRateLog.Stats();
+            for (int i = 0; i < 720; i++) stats.Add(1f / 72f);   // 10 s at 72 Hz
+            stats.Add(0.050f);                                    // one 50 ms hitch
+            if (stats.Frames != 721) p.Add($"{stats.Frames} frames");
+            if (Mathf.Abs(stats.Seconds - 10.05f) > 0.001f) p.Add($"{stats.Seconds:F3} s");
+            if (stats.Over20Ms != 1) p.Add($"{stats.Over20Ms} frames > 20 ms");
+            if (Mathf.Abs(stats.WorstMs - 50f) > 0.01f) p.Add($"peor {stats.WorstMs:F1} ms");
+            if (Mathf.Abs(stats.MeanFps - 721f / 10.05f) > 0.01f) p.Add($"{stats.MeanFps:F2} fps");
+            Check("X15", "Registro de framerate por bloque: frames, segundos, fps medio, frames > 20 ms y el peor",
+                  p.Count == 0, p.Count == 0 ? $"10 s a 72 Hz + un tiron: {stats.MeanFps:F1} fps, {stats.Over20Ms} > 20 ms, peor {stats.WorstMs:F0} ms" : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)
