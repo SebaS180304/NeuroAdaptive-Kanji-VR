@@ -1735,12 +1735,13 @@ namespace NeuroAdaptiveVR.EditorTools
             if (entries.Count != 7 || Count(PeripheralAnimation.Kind.Bird) != 3 || Count(PeripheralAnimation.Kind.Cat) != 2 || Count(PeripheralAnimation.Kind.Butterfly) != 2)
                 p.Add($"sorteo: {entries.Count} entradas, pajaro {Count(PeripheralAnimation.Kind.Bird)}, gato {Count(PeripheralAnimation.Kind.Cat)}, mariposa {Count(PeripheralAnimation.Kind.Butterfly)} (se esperan 7: 3/2/2)");
             var length = new Dictionary<PeripheralAnimation.Kind, float> {
-                { PeripheralAnimation.Kind.Bird, 1.5f }, { PeripheralAnimation.Kind.Cat, 4.0f }, { PeripheralAnimation.Kind.Butterfly, 3.0f } };
+                { PeripheralAnimation.Kind.Bird, 1.5f }, { PeripheralAnimation.Kind.Cat, 8.08f }, { PeripheralAnimation.Kind.Butterfly, 3.0f } };
             foreach (var a in ok)
             {
-                if (Mathf.Abs(a.DurationSeconds - length[a.AnimalKind]) > 0.01f) p.Add($"{a.name} dura {a.DurationSeconds} s");
+                if (Mathf.Abs(a.DurationSeconds - length[a.AnimalKind]) > 0.01f) p.Add($"{a.name} dura {a.DurationSeconds:F3} s");
                 if (a.RateHz > 3f) p.Add($"{a.name} se mueve a {a.RateHz} Hz");
                 if (a.Model == null) { p.Add($"{a.name} sin Model"); continue; }
+                if (a.AnimalKind == PeripheralAnimation.Kind.Cat) { CatCase(a, p); continue; }
                 a.Pose(0f);
                 float start = a.Model.localPosition.magnitude;
                 a.Pose((a.DurationSeconds - a.RestSeconds) * 0.5f + a.RestSeconds * 0.5f);
@@ -1774,21 +1775,6 @@ namespace NeuroAdaptiveVR.EditorTools
                     else if (a.AnimalKind == PeripheralAnimation.Kind.Bird && (perched > 1f || lo < 9.9f || hi > 80.1f)) p.Add($"{a.name}: alas {perched:F0} grados posado, {lo:F0}-{hi:F0} en vuelo");
                     else if (a.AnimalKind == PeripheralAnimation.Kind.Butterfly && (lo < 9.9f || hi > 80.1f)) p.Add($"{a.name}: alas {lo:F0}-{hi:F0} grados");
                 }
-                if (a.AnimalKind == PeripheralAnimation.Kind.Cat)
-                {
-                    // D-F6-34: four rigid legs that swing while it walks and stay still while it stands.
-                    var legs = a.Model.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("Leg")).ToList();
-                    if (legs.Count != 4) p.Add($"{a.name} tiene {legs.Count} patas");
-                    else
-                    {
-                        a.Pose(0.2f);
-                        float walking = legs.Max(l => Quaternion.Angle(l.localRotation, Quaternion.identity));
-                        a.Pose((a.DurationSeconds - a.RestSeconds) * 0.5f + a.RestSeconds * 0.5f);
-                        float standing = legs.Max(l => Quaternion.Angle(l.localRotation, Quaternion.identity));
-                        a.Pose(0f);
-                        if (walking < 5f || standing > 0.5f) p.Add($"{a.name}: patas {walking:F0} grados caminando, {standing:F1} de pie");
-                    }
-                }
             }
             // D-F6-28: not one sphere left in the v148 room; the silhouettes are 24B, facing the way they walk.
             var studio = GameObject.Find("Studio");
@@ -1805,6 +1791,34 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X9", "Eventos perifericos: animales (D-F6-28): sorteo 3/2/2, duraciones, entran y salen, reposan en su sitio, <= 3 Hz",
                   p.Count == 0, p.Count == 0 ? Join(entries.Select(t => t.name)) : Join(p));
+        }
+
+        /// <summary>
+        /// X9, the cat (D-F6-38 - D-F6-40): the rigged 25B mesh playing its window's baked
+        /// EVENTO clip (8.08 s, the root's walk inside it). It starts and ends hidden 0.47 m
+        /// beyond its stop, stands at the stop while it turns its head, and nothing of the
+        /// old box cat is left.
+        /// </summary>
+        private static void CatCase(PeripheralAnimation a, List<string> p)
+        {
+            var skin = a.Model.GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (skin == null || a.Model.GetComponentsInChildren<MeshFilter>(true).Length > 0) { p.Add($"{a.name} no es la malla 25B con su rig"); return; }
+            string side = a.transform.position.x > 0f ? "EVENTO_VentanaDerecha" : "EVENTO_VentanaIzquierda";
+            if (a.BakedClip == null || !a.BakedClip.name.EndsWith(side)) { p.Add($"{a.name} reproduce {(a.BakedClip == null ? "nada" : a.BakedClip.name)}, no {side}"); return; }
+            var baked = new Mesh();
+            float Away(float t)   // horizontal distance from the stop to the middle of the body
+            {
+                a.Pose(t);
+                skin.BakeMesh(baked, true);
+                var c = skin.transform.TransformPoint(baked.bounds.center) - a.transform.position;
+                c.y = 0f;
+                return c.magnitude;
+            }
+            float start = Away(0f), stand = Away(3.2f), end = Away(a.DurationSeconds);
+            a.Pose(0f);
+            UnityEngine.Object.DestroyImmediate(baked);
+            if (start < 0.35f || end < 0.35f) p.Add($"{a.name} aparece o desaparece a la vista (inicio {start:F2} m, final {end:F2} m de la parada)");
+            if (stand > 0.12f) p.Add($"{a.name} no se para en su sitio ({stand:F2} m)");
         }
 
         /// <summary>

@@ -7,7 +7,7 @@ namespace NeuroAdaptiveVR.Controllers
     /// (Diseno_Sala_ESL.md §10.2; D-F6-22, D-F6-23, D-F6-27, D-F6-28). Blender makes
     /// the mesh, Unity moves it: this object stays at the rest pose and keeps the
     /// telemetry id (PeripheralEvent_*); its child "Model" travels along the §10.2
-    /// path. Parts named Wing*, Tail* or Head* under Model flap, sway or turn. Wing
+    /// path. Parts named Wing* or Head* under Model flap or turn. Wing
     /// pivots sit at the shoulder in Model axes, at the pose of the Blender mesh (bird:
     /// folded; butterfly: flat), and swing about the body axis (23B and 26B animation sheets).
     ///
@@ -17,10 +17,11 @@ namespace NeuroAdaptiveVR.Controllers
     ///   restSeconds, out along the same curve reversed in outSeconds (0.4 / 0.7 / 0.4).
     /// - Butterfly: in along (pathStart, pathControl, rest), then out along (rest,
     ///   outControl, outEnd); no rest; a ±4 cm vertical ripple at 1 Hz on top.
-    /// - Cat: walks the outer sill from pathStart to rest, stands turning its head
-    ///   about 30° towards the room, turns round and walks out (1.4 / 1.2 / 1.4). It
-    ///   never sits (D-F6-34): it walks by rotating its four rigid legs (Leg*).
-    ///   Parts named Leg* swing in a diagonal gait (front-left with back-right).
+    /// - Cat: the one exception to "Unity moves it" (D-F6-38). Its rigged 25B mesh plays
+    ///   the baked EVENTO clip of its window (8.08 s, D-F6-39): it walks in along the
+    ///   outer sill, stands turning its head towards the room, turns round and walks
+    ///   out, the root's walk baked in the clip. Model stays put at the stop, facing
+    ///   along the sill; nothing here moves its bones.
     ///
     /// Every path starts and ends hidden (behind the paper half and the curtain, or
     /// beyond 42°), so an animal never pops in or out (rule 9 of
@@ -41,8 +42,11 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private float inSeconds = 0.4f;
         [SerializeField] private float restSeconds = 0.7f;
         [SerializeField] private float outSeconds = 0.4f;
+        [Tooltip("Cat only: the baked EVENTO clip of this window (D-F6-38).")]
+        [SerializeField] private AnimationClip bakedClip;
 
-        private const float WingHz = 3f, StepHz = 1.5f, TailHz = 0.5f, RippleHz = 1f, RippleM = 0.04f;
+        // CatGaitHz: the step rate of the baked walk (25B sheet), under the 3 Hz rule.
+        private const float WingHz = 3f, CatGaitHz = 1.5f, RippleHz = 1f, RippleM = 0.04f;
         /// <summary>A flying bird's wings, raised from folded (0°) to glide, beating ±35° within the sheet's 10°-80°.</summary>
         public const float OpenWingDeg = 45f;
         /// <summary>The butterfly's wings never close below 10° (26B sheet: 10°-80°).</summary>
@@ -50,14 +54,15 @@ namespace NeuroAdaptiveVR.Controllers
 
         // Not kept across editor reloads, so a mesh swapped in by the editor tools is picked up.
         [System.NonSerialized] private Transform _model;
-        [System.NonSerialized] private Transform[] _wings, _tails, _heads, _legs;
-        [System.NonSerialized] private Quaternion[] _wingRest, _tailRest, _headRest, _legRest;
+        [System.NonSerialized] private Transform[] _wings, _heads;
+        [System.NonSerialized] private Quaternion[] _wingRest, _headRest;
         private float _shownAt;
 
-        public float DurationSeconds => inSeconds + restSeconds + outSeconds;
+        public float DurationSeconds => kind == Kind.Cat && bakedClip != null ? bakedClip.length : inSeconds + restSeconds + outSeconds;
         public float RestSeconds => restSeconds;
-        public float RateHz => Mathf.Max(kind == Kind.Cat ? StepHz : WingHz, RippleHz);
+        public float RateHz => Mathf.Max(kind == Kind.Cat ? CatGaitHz : WingHz, RippleHz);
         public Kind AnimalKind => kind;
+        public AnimationClip BakedClip => bakedClip;
         public Transform Model => Init() ? _model : null;
 
         private void Awake() => Init();
@@ -68,9 +73,9 @@ namespace NeuroAdaptiveVR.Controllers
             if (_model != null) return true;
             _model = transform.Find("Model");
             if (_model == null) { Debug.LogError($"[PeripheralAnimation] {name} has no Model child."); enabled = false; return false; }
-            _wings = Parts("Wing"); _tails = Parts("Tail"); _heads = Parts("Head"); _legs = Parts("Leg");
+            _wings = Parts("Wing"); _heads = Parts("Head");
             // Wing pivots are built at the mesh's own pose (PeripheralMeshIntegration): their rest is identity, never the pose last sampled.
-            _wingRest = System.Array.ConvertAll(_wings, _ => Quaternion.identity); _tailRest = Rest(_tails); _headRest = Rest(_heads); _legRest = Rest(_legs);
+            _wingRest = System.Array.ConvertAll(_wings, _ => Quaternion.identity); _headRest = Rest(_heads);
             return true;
         }
 
@@ -118,10 +123,6 @@ namespace NeuroAdaptiveVR.Controllers
                         ? Bezier(pathStart, pathControl, rest, Smooth(t / inSeconds))
                         : Bezier(rest, outControl, outEnd, Smooth((t - inSeconds - restSeconds) / outSeconds));
                     return p + new Vector3(0f, RippleM * Mathf.Sin(2f * Mathf.PI * RippleHz * t), 0f);
-                case Kind.Cat:
-                    if (t < inSeconds) return Vector3.Lerp(pathStart, rest, Smooth(t / inSeconds));
-                    if (t < inSeconds + restSeconds) { moving = false; return rest; }
-                    return Vector3.Lerp(rest, pathStart, Smooth((t - inSeconds - restSeconds) / outSeconds));
                 default: // bird
                     if (t < inSeconds) return Bezier(pathStart, pathControl, rest, Smooth(t / inSeconds));
                     if (t < inSeconds + restSeconds) { moving = false; return rest; }
@@ -133,12 +134,17 @@ namespace NeuroAdaptiveVR.Controllers
         public void Pose(float t)
         {
             if (!Init()) return;
+            if (kind == Kind.Cat)
+            {
+                if (bakedClip != null && _model.childCount > 0) bakedClip.SampleAnimation(_model.GetChild(0).gameObject, Mathf.Min(t, bakedClip.length));
+                return;
+            }
             Vector3 world = PathAt(t, out bool moving);
             Vector3 ahead = PathAt(t + 0.02f, out _);
             _model.position = world;
             Vector3 dir = ahead - world; dir.y = 0f;
             if (moving && dir.sqrMagnitude > 1e-8f) _model.rotation = Quaternion.LookRotation(dir.normalized);
-            else if (!moving) _model.rotation = Quaternion.LookRotation(kind == Kind.Cat ? new Vector3(-Mathf.Sign(transform.position.x), 0f, 0f) : Vector3.back);
+            else if (!moving) _model.rotation = Quaternion.LookRotation(Vector3.back);
 
             float tin = t - inSeconds;
             switch (kind)
@@ -149,18 +155,6 @@ namespace NeuroAdaptiveVR.Controllers
                     break;
                 case Kind.Butterfly:   // wings at 3 Hz the whole time
                     Swing(_wings, _wingRest, ButterflyMinWingDeg + 60f * Mathf.Abs(Mathf.Sin(Mathf.PI * WingHz * t)), Vector3.forward, true);
-                    break;
-                case Kind.Cat:         // legs at 1.5 Hz while walking, tail at 0.5 Hz, head about 30° towards the room while standing (D-F6-34)
-                    float stride = moving ? 25f * Mathf.Sin(2f * Mathf.PI * StepHz * t) : 0f;
-                    for (int i = 0; i < _legs.Length; i++)
-                    {
-                        string n = _legs[i].name;   // diagonal pairs move together: LegFL with LegBR, LegFR with LegBL
-                        float sign = n.EndsWith("FL") || n.EndsWith("BR") ? 1f : -1f;
-                        _legs[i].localRotation = _legRest[i] * Quaternion.AngleAxis(sign * stride, Vector3.right);
-                    }
-                    Swing(_tails, _tailRest, 20f * Mathf.Sin(2f * Mathf.PI * TailHz * t), Vector3.up, false);
-                    // facing the board along the sill, the room (−z) is a turn of −30° on the right window and +30° on the left
-                    Swing(_heads, _headRest, moving ? 0f : -Mathf.Sign(transform.position.x) * 30f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(tin / restSeconds)), Vector3.up, false);
                     break;
             }
         }
