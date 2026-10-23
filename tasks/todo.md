@@ -263,13 +263,14 @@ block gets its own commit, so it can be reverted (revert map in `plan.md`). Expo
 **Verify:** menu runs with 0 MISSING against the new manifest; capture compared with `LAY3_CAM_Ojo_160`. **Commit:** `feat(unity): build the v148 room from its manifest`
 **Deps:** 18, the new export. **Files:** `Editor/JapaneseRoomIntegration.cs`, scene, `Art/JapaneseRoom/**`. **Scope:** M
 
-### [ ] Task 19b: The new room export and the 18B podium (D-F6-44)
-- [ ] **Waits for the new `export/Sala_v148_*` folder** (full room, manifest compared with `Sala_v148_20261023_1004`: only the 18B changes)
-- [ ] `ExportDir` points at it; `Pending` empty; the menu runs with 0 MISSING; the 18B goes to `ControlsIntro` and its screen canvas lies on the model's top (25° from the vertical, centre 1.22 m)
-- [ ] The export comes from `export_sala_v148_fbx_v3.py`, which flattens the child meshes: the 18 pieces arrive with correct axes and the hierarchy may change in any slot (D-F6-44, refined 11:10). **First, one of the 18** (the maneki-neko of `10_Repisa_Maneki`): imported raw, without the correction, it stands on its shelf at the same world bounds as today (y 2.21–2.43, z 3.74–3.86); X11 against its FBX
-- [ ] Then the C = (270, 180, 0) correction (`FixChildAxes`, `ExpectedPose`) comes out **in this same commit**, and so does X11's per-piece check against it; it was only for `Sala_v148_20261023_1004`. X11 keeps a guard that fits flattened pieces, chosen once the hierarchy is seen
-- [ ] X11 green with 36/36; camera capture of S2 from the eye
+### [x] Task 19b: The new room export and the 18B podium (D-F6-44)
+- [x] **Waits for the new `export/Sala_v148_*` folder** (full room, manifest compared with `Sala_v148_20261023_1004`: only the 18B changes)
+- [x] `ExportDir` points at it; `Pending` empty; the menu runs with 0 MISSING; the 18B goes to `ControlsIntro` and its screen canvas lies on the model's top (25° from the vertical, centre 1.15 m since D-F6-45; was 1.22)
+- [x] The export comes from `export_sala_v148_fbx_v3.py`, which flattens the child meshes: the 18 pieces arrive with correct axes and the hierarchy may change in any slot (D-F6-44, refined 11:10). **First, one of the 18** (the maneki-neko of `10_Repisa_Maneki`): imported raw, without the correction, it stands on its shelf at the same world bounds as today (y 2.21–2.43, z 3.74–3.86); X11 against its FBX
+- [x] Then the C = (270, 180, 0) correction (`FixChildAxes`, `ExpectedPose`) comes out **in this same commit**, and so does X11's per-piece check against it; it was only for `Sala_v148_20261023_1004`. X11 keeps a guard that fits flattened pieces, chosen once the hierarchy is seen
+- [x] X11 green with 36/36; camera capture of S2 from the eye
 **Commit:** its own, `feat(unity): wire the upright 18B podium from the room re-export`. **Deps:** 19, the new export. **Scope:** S
+→ D-F6-45: `Sala_v148_20261023_1139` only. `cc83025`: room from it, C correction removed (maneki-neko at the same world bounds without it), X11 checks flattened pieces. `cb091f2`: 18B wired, S2 canvas at (0, 1.15, 1.02), 25° from the vertical, X11 checks it lies on the model's screen. 87/87.
 
 ### [x] Task 21: Bird, butterfly and silhouette meshes (D-F6-27, D-F6-28)
 - [x] `23B_Pajaro.fbx` and `26B_Mariposa.fbx` replace the box stand-ins under each event's `Model`; the wing pieces get the names `PeripheralAnimation` already looks for (Wing L/R); pivots as in the sheets
@@ -298,15 +299,17 @@ block gets its own commit, so it can be reverted (revert map in `plan.md`). Expo
 **Verify:** E13 and X4 green. **Commit:** `test(unity): measure the v148 room's layout of record`
 **Deps:** 19, 21, 22. **Scope:** S
 
-### [ ] Task 23: Set A objects (D-F6-26)
-- [ ] The five `KANJI_0N_*.fbx` copied to `Assets/Art/KanjiLessonAssets/`; the menu assigns all five (or none)
-- [ ] 車 turned so its top faces the player (ESTADO.md: the cart is read from above); checked with a camera capture from the eye in S5
-- [ ] X10 green: five prefabs, all assigned, no boxes left
+### [x] Task 23: Set A objects (D-F6-26)
+- [x] The five `KANJI_0N_*.fbx` copied to `Assets/Art/KanjiLessonAssets/`; the menu assigns all five (or none)
+- [x] 車 turned so its top faces the player (ESTADO.md: the cart is read from above); checked with a camera capture from the eye in S5
+- [x] X10 green: five prefabs, all assigned, no boxes left
 **Commit:** `feat(unity): show the five set A objects from Blender in S5`. **Deps:** 18. **Scope:** S
+→ `4f2a934`: 5 models, 0 boxes, 5/5 assigned; 車 turned −90° X on its prefab root (ESTADO.md 02), 0.24 × 0.40 × 0.24 as shown. 87/87.
 
-### [ ] Task 23b: `object_source` in `KANJI_EXPOSED`
-- [ ] `object_source` = `BLENDER_FBX` | `PLACEHOLDER`, next to `audio_source`; harness case asserts both values
+### [x] Task 23b: `object_source` in `KANJI_EXPOSED`
+- [x] `object_source` = `BLENDER_FBX` | `PLACEHOLDER`, next to `audio_source`; harness case asserts both values
 **Commit:** separate, `feat(telemetry): say whether the S5 object is real or a placeholder`. **Deps:** 23. **Scope:** XS
+→ `6cba1c9`. **Found on the way:** `kanji_exposures.stages_authored` is BOOLEAN and the projection casts the payload with `::boolean`, but Unity sends a count. Until now it was always 1; with the set A objects it is 2, and `'2'::boolean` fails, so every S5 exposure of the run would fail to project (verify_projection). Fix pending Sebas's OK (see the day draft).
 
 ### Checkpoint: integration
 - [ ] Every block committed on its own (messages in Downloads, shown to Sebas first); `graphify update .`

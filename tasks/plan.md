@@ -277,6 +277,13 @@ its `Check("X10", …)`), drop the `PeripheralAnimalCases();` call and the X9 me
 1f3892d reverts clean too: eye back to 1.36 m, no X9, X10 intact. Run the dry run again once
 today's commits are in.
 
+**Revert map as built (23 Oct, after Task 23b), newest first:** `cb091f2` (18B), `cc83025` (room
+11:39), `ea2d32b` (E13/X4 for v148), `aa36eb6` (cat), `95b47b4` (wing rest), `76a05d9` (bird,
+butterfly, silhouette), `6dea19c` (room 10:04), then `bde0bc6`, `9c761a9`, `6525086`, `368c401`
+(the one conflict, resolved as above), `1f3892d`. Dry run in a throwaway worktree: applies; eye
+back at 1.36 m, X9 and X11 gone, X10 and `object_source` (`4f2a934`, `6cba1c9`) stay. The kanji
+commits stay because they do not depend on the room.
+
 ### Risks
 | Risk | Impact | Mitigation |
 |---|---|---|
