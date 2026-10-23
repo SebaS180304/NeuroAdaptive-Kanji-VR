@@ -56,15 +56,28 @@ namespace NeuroAdaptiveVR.Controllers
         private float _phase;
         private float _startedAt;
 
+        // Curtain wind (D-F6-50): the sheet's shader bends it with _WindTime, fed from here so the wind is
+        // reconstructible like the sway, from (session seed, time since activation), never from Unity's clock.
+        private static readonly int WindTimeId = Shader.PropertyToID("_WindTime");
+        private Renderer[] _windRenderers;
+        private MaterialPropertyBlock _windBlock;
+
         /// <summary>Phase in [0, 1) of the cycle at activation. Exposed for the harness.</summary>
         public float Phase => _phase;
 
         public Mode MotionMode => mode;
+        public float SwayPeriodSeconds => swayPeriodSeconds;
+
+        /// <summary>Wind time of the sheet t seconds after activation: the sway's own cycle, in seconds.</summary>
+        public float WindSecondsAt(float secondsSinceActivation) => secondsSinceActivation + _phase * swayPeriodSeconds;
 
         private void Awake()
         {
             _origin = transform.localPosition;
             _restRotation = transform.localRotation;
+            _windRenderers = System.Array.FindAll(GetComponentsInChildren<Renderer>(true),
+                r => r.sharedMaterial != null && r.sharedMaterial.HasProperty(WindTimeId));
+            _windBlock = new MaterialPropertyBlock();
         }
 
         /// <summary>
@@ -121,6 +134,9 @@ namespace NeuroAdaptiveVR.Controllers
             float u = (Time.time - _startedAt) / swayPeriodSeconds + _phase;
             PoseAt(_origin, _restRotation, u, out _, out var rotation);
             transform.localRotation = rotation;
+            if (_windRenderers.Length == 0) return;
+            _windBlock.SetFloat(WindTimeId, WindSecondsAt(Time.time - _startedAt));
+            foreach (var r in _windRenderers) r.SetPropertyBlock(_windBlock);
         }
 
         private void UpdateTraverse()

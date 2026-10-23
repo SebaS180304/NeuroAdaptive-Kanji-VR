@@ -124,6 +124,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(asset, parent);
                 model.name = h.hueco;
                 foreach (var c in model.GetComponentsInChildren<Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
+                if (h.hueco.StartsWith("16B_Cortina_Hoja")) CurtainWind.Apply(model);   // wind and alpha 0.90 (D-F6-50, D-F6-53)
                 foreach (var screen in model.GetComponentsInChildren<MeshRenderer>(true).Where(r => r.name.EndsWith("_Interfaz")))
                     screen.gameObject.SetActive(false);   // the board and podium canvases are the interface (§3); the plane would z-fight them
 

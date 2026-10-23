@@ -106,6 +106,7 @@ namespace NeuroAdaptiveVR.EditorTools
             SetAObjectCases();
             JapaneseRoomCases();
             ClockProbeCases();
+            CurtainCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -2046,6 +2047,35 @@ namespace NeuroAdaptiveVR.EditorTools
                   p.Count == 0, p.Count == 0
                       ? $"centro del reloj ({cy:F1}, {cp:F1}): {centre.limit}, {centre.dwell} · 4 grados corta: {four.dwell} · cabeza 2-6 grados corta: {onPicture}/{looks} al cuadro · cambio en {switchYaw:F2}"
                       : Join(p));
+        }
+
+        /// <summary>
+        /// X13. Curtains of the pilot (D-F6-50, D-F6-53): each sheet is a subdivided mesh with the wind shader,
+        /// transparent with alpha 0.90 fixed in its material (no level, session or seed changes it), and its wind
+        /// time comes from EnvironmentMotion, i.e. from the seed and the time since activation, like the sway.
+        /// </summary>
+        private static void CurtainCases()
+        {
+            var p = new List<string>();
+            foreach (var name in new[] { "CurtainLeft_T2", "CurtainRight_T2" })
+            {
+                var slot = GameObject.Find("Studio/EnvironmentalLayer/Movers/" + name);
+                var motion = slot == null ? null : slot.GetComponent<EnvironmentMotion>();
+                var r = slot == null ? null : slot.GetComponentInChildren<MeshRenderer>(true);
+                if (motion == null || r == null) { p.Add($"{name} sin hoja o sin movimiento"); continue; }
+                var m = r.sharedMaterial;
+                if (m == null || m.shader == null || m.shader.name != "NeuroAdaptive/CurtainWind") p.Add($"{name}: shader {(m != null && m.shader != null ? m.shader.name : "ninguno")}");
+                else
+                {
+                    if (Mathf.Abs(m.GetColor("_BaseColor").a - 0.90f) > 0.001f) p.Add($"{name}: alfa {m.GetColor("_BaseColor").a:F3}");
+                    if (m.renderQueue < 3000) p.Add($"{name}: no es transparente (cola {m.renderQueue})");
+                }
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null || mf.sharedMesh.vertexCount < 100) p.Add($"{name}: la hoja no esta subdividida ({(mf != null && mf.sharedMesh != null ? mf.sharedMesh.vertexCount : 0)} vertices)");
+                if (Mathf.Abs(motion.WindSecondsAt(0f) - motion.Phase * motion.SwayPeriodSeconds) > 1e-4f) p.Add($"{name}: el viento no arranca en la fase de la seed");
+            }
+            Check("X13", "Cortinas del piloto: hoja subdividida con viento por shader, alfa 0,90 fijo, tiempo del viento desde la seed (D-F6-50, D-F6-53)",
+                  p.Count == 0, p.Count == 0 ? "2 hojas · alfa 0.90 · transparentes · viento con la fase de EnvironmentMotion" : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)
