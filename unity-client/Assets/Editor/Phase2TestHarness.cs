@@ -109,6 +109,8 @@ namespace NeuroAdaptiveVR.EditorTools
             CurtainCases();
             ObjectApproachCases();
             FrameRateCases();
+            RiceFieldCases();
+            PeripheralContrastCases();
             ProactiveCueCases();
             AdaptationLoopCases();
             ReconnectionCases();
@@ -2167,6 +2169,53 @@ namespace NeuroAdaptiveVR.EditorTools
             if (Mathf.Abs(stats.MeanFps - 721f / 10.05f) > 0.01f) p.Add($"{stats.MeanFps:F2} fps");
             Check("X15", "Registro de framerate por bloque: frames, segundos, fps medio, frames > 20 ms y el peor",
                   p.Count == 0, p.Count == 0 ? $"10 s a 72 Hz + un tiron: {stats.MeanFps:F1} fps, {stats.Over20Ms} > 20 ms, peor {stats.WorstMs:F0} ms" : Join(p));
+        }
+
+        /// <summary>
+        /// X16. The rice-field background (D-F6-86): the image on the panel behind the windows, the
+        /// image's aspect, its horizon at eye height (1.60 m), not upside down, static and unlit, no
+        /// collider, and outside the EnvironmentalLayer, so it is never an ESL prop or a DWELL target.
+        /// </summary>
+        private static void RiceFieldCases()
+        {
+            var p = new List<string>();
+            var panel = GameObject.Find(RiceFieldBackdrop.Backdrop);
+            if (panel == null) { Check("X16", "Fondo de arrozal", false, "no hay " + RiceFieldBackdrop.Backdrop); return; }
+            var r = panel.GetComponent<MeshRenderer>();
+            var mat = r == null ? null : r.sharedMaterial;
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(RiceFieldBackdrop.TexturePath);
+            if (tex == null) p.Add("falta " + RiceFieldBackdrop.TexturePath);
+            if (mat == null || mat.GetTexture("_BaseMap") != tex) p.Add("el panel no lleva la imagen del arrozal");
+            if (mat != null && mat.shader.name != "Universal Render Pipeline/Unlit") p.Add($"shader {mat.shader.name}, no Unlit");
+            if (mat != null && (mat.GetTextureScale("_BaseMap") != new Vector2(-1f, -1f) || mat.GetTextureOffset("_BaseMap") != Vector2.one))
+                p.Add("la imagen sale girada (la cara -Z del cubo lleva los UV a 180 grados)");
+            var s = panel.transform.lossyScale;
+            if (tex != null && Mathf.Abs(s.x / s.y - (float)tex.width / tex.height) > 0.01f) p.Add($"proporcion {s.x / s.y:F3}, imagen {(float)tex.width / tex.height:F3}");
+            float horizon = panel.transform.position.y + s.y / 2f - RiceFieldBackdrop.HorizonFromTop * s.y;
+            if (Mathf.Abs(horizon - RiceFieldBackdrop.EyeHeight) > 0.01f) p.Add($"horizonte a {horizon:F3} m, no a {RiceFieldBackdrop.EyeHeight} m");
+            if (panel.GetComponentInChildren<Collider>(true) != null) p.Add("tiene collider");
+            var layer = GameObject.Find("EnvironmentalLayer");
+            if (panel.GetComponentInParent<EnvironmentProp>(true) != null || (layer != null && panel.transform.IsChildOf(layer.transform)))
+                p.Add("esta en la capa del ESL");
+            if (panel.GetComponent<Animator>() != null || panel.GetComponent<EnvironmentMotion>() != null) p.Add("algo lo mueve");
+            Check("X16", "Fondo de arrozal (D-F6-86): imagen derecha, proporcion de la imagen, horizonte a la altura del ojo, unlit, sin collider, fuera del ESL",
+                  p.Count == 0, p.Count == 0 ? $"{tex.width}x{tex.height}, {s.x:F2} x {s.y:F3} m a z {panel.transform.position.z:F1}, horizonte {horizon:F2} m, final = {RiceFieldBackdrop.IsFinal}" : Join(p));
+        }
+
+        /// <summary>
+        /// X17. Contrast against the rice field from the eye (D-F6-93, PeripheralContrast): both silhouettes at
+        /// >= 2.7:1, the contrast they had against the sky. The animals are listed, not gated: against the sky
+        /// they already sat at 1.2-2.7:1 (sill, frame, wall behind them); their rule waits for PM (draft of 26 Oct).
+        /// </summary>
+        private static void PeripheralContrastCases()
+        {
+            var rows = PeripheralContrast.Measure();
+            var p = rows.Where(r => r.Name.StartsWith("OutsideFigure") && (r.Pixels == 0 || r.Ratio < PeripheralContrast.Minimum))
+                        .Select(r => $"{r.Name} {r.Ratio:F2}:1").ToList();
+            if (rows.Count(r => r.Name.StartsWith("OutsideFigure")) != 2) p.Add("no hay dos siluetas");
+            string all = string.Join(", ", rows.Select(r => $"{r.Name.Replace("PeripheralEvent_", "").Replace("OutsideFigure", "Silueta")} {r.Ratio:F2}"));
+            Check("X17", "Contraste desde el ojo contra el arrozal (D-F6-93): siluetas >= 2,7:1; animales listados",
+                  p.Count == 0, p.Count == 0 ? all : Join(p));
         }
 
         private static void Check(string id, string title, bool passed, string detail)
