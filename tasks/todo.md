@@ -22,7 +22,7 @@ Every task ends with a **Stop**: Sebas sees the result before the next dependent
 → Done 26 Oct (docs, gitignored, no commit). §3 has MANU's five answers crossed with the data. The repo PDF is the blank template, so it is declared that there are no per-trial notes. New finding P5 (look-alike kanji, linked to D-F6-71). F5a criterion 8 and F6 criterion 6 are ✅.
 **Stop:** Sebas sends the M3 note.
 
-### [ ] A2: rules-v2 live (D-F6-59, D-F6-79 to D-F6-82)
+### [x] A2: rules-v2 live (D-F6-59, D-F6-79 to D-F6-82)
 Order matters: (a) → (b) → (c) and (d) → run.
 - [x] (a) Two commits, with the messages already shown on 26 Oct: `feat(db)` migration 0009 with `schema.sql`, then `feat(adaptation)` behavior-v2/rules-v2 with tests and `EVENT_CONTRACT.md`. pytest 227/227 before each.
 - [x] (b) Between runs, headset off: `alembic upgrade head` → check `\d adaptation_decisions` (VARCHAR(16), new CHECKs) and `SELECT count(*) FROM v_adaptations` (180) → **only then** restart the backend.
@@ -33,12 +33,13 @@ Order matters: (a) → (b) → (c) and (d) → run.
   - The §3.7 origin line gets "{x} of them could also raise difficulty (rules-v2)." only when the participant has both `rules-v1` and `rules-v2` sessions. The profile endpoint carries each session's rules version (from `adaptation_decisions.rules_version`, read only, no migration).
   - Vitest: the phrase for each clause and action, the origin line with mixed, v1-only and v2-only participants, and the short name. pytest: the endpoint field.
 - [x] `reason_code` `UNDERCHALLENGED_ENVIRONMENT` with the LAL at LOW (D-F6-82): already in the code. Only check that the test exists.
+→ 26 Oct, **stop passed**: v2 run `add29817` (`DEV_UNITY`, set A): 20/20 decisions `behavior-v2`/`rules-v2`; S7-009 `UNDERCHALLENGED_FAST` LAL MEDIUM→LOW `APPLIED`, O4 `NEUTRAL/PERSISTED`; then `AT_LIMIT`; `verify_*` 0; ≈ 71 fps S5–S8 (start-up hitches S1 0.9 s, S2 1.8 s; S7 worst 223 ms, watch in C8).
 → 26 Oct: `0e912ac` (0009), `0653424` (v2). 0009 applied at 07:33 UTC with no session `IN_PROGRESS`: VARCHAR(16), new CHECKs, `v_adaptations` 180 rows. Backend restarted and running `behavior-v2` / `rules-v2`; restarted again for (d). (c) and (d): pytest 231/231, Vitest 136/136, `tsc` clean. The "both" groups are split by `evidence` (`FAST+NO_ENVIRONMENT`, §3.2). Profiles recomputed `--all`, `--check` 0 differences.
 **Verify:** pytest and Vitest green; `graphify update .`.
 **Stop:** a v2 run in the headset (S1 → S9, set A, `BEHAVIOR_ADAPTIVE`). Each decision has `estimator_version = behavior-v2`, `verify_adaptation` and `verify_projection` show 0 discrepancies, and the session looks right in the portal. Any `UNDERCHALLENGED` change shows the §3.8 phrase. MANU's profile (v1 only) keeps its origin line unchanged.
 **Scope:** M (two commits: backend O4 + profile field; dashboard phrase, name and origin line)
 
-### [ ] A2e: Portal closing (D-F6-96)
+### [x] A2e: Portal closing (D-F6-96)
 Source: `design-system.md`, written by web design.
 - [x] **Colour, now:** add `--color-state-underchallenged` to `dashboard/src/styles/tokens.css` (`#565B62` light, `#9AA0A8` dark, as in the design-system row). Put it in `STATE_DOT` of `EstimatedState.tsx` and remove the provisional comment. Check the other places that draw state colours: the timeline's estimated-state lane and its legend.
   - The token is in `Claude outputs/design-handoff/design-system.md` (row of 26 Oct, 16:45) but **not yet in the skill's copy** (`.claude/skills/research-dashboard-conventions/references/design-system.md`, last changed 21 Oct). Both are web design's; I only tell Sebas, and never edit either.
@@ -49,6 +50,8 @@ Source: `design-system.md`, written by web design.
 **Verify:** Vitest, `tsc`, Playwright green; the token's contrast as stated in its row.
 **Stop:** Sebas sees V1.5 (a v2 session) and V1.8 (MANU and a participant with "Not recorded") in light and dark.
 **Deps:** the colour can go any time; the badge waits for web design. It never takes hours from B4. **Scope:** S (two commits: colour; badge)
+
+→ 26 Oct: **stop passed**. Sebas checked V1.5 (`add29817`) and V1.8 (`DEV_UNITY`, MANU) and everything looks right.
 
 ### [ ] A3: Set B kanji objects (D-F6-43): when Modelado 3D delivers 山 門 女 手 雨
 - [ ] Only with all five FBX in `KanjiLessonAssets/NN_*/export/` (all five or none, as in D-F6-26).
@@ -129,6 +132,13 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 
 ---
 
+## F · For another day (not this week's plan)
+
+### [ ] F1: Two Playwright tests that fail on today's data (found 26 Oct, A2e)
+- [ ] `tests/e2e/quality.spec.ts`: `/research/quality` takes ≈ 20 s with 54 projected sessions; the page waits 5 s. Look at the query first (a slow check or a missing index), not at the test's timeout.
+- [ ] `tests/e2e/sessions.spec.ts:125`: it takes the newest completed adaptive session and expects the Adaptations table, but ABUDSITO `77a6c8af` (23 Oct) has 0 changes and the tab shows its empty text. Pick a session that has changes (and skip when none has), or test the empty text too.
+**Verify:** `npx playwright test` 40/40. **Scope:** S (backend query + one test). It never takes hours from B4.
+
 ## D · Noted only, not planned yet
 - F4 Unity pieces: the LSL marker output and the new S3 step (D-F6-74), from Mon 2 Nov, as an exception to the freeze.
 - Lure kanji (D-F6-71): only if MIRAI approves on Fri 30 (A-11).
@@ -163,7 +173,8 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
   3. **If one fails:** change only its material colour (darker against a light field, lighter against a dark one) until it reaches ≥ 2.7:1. Keep the same colour in every condition and level. Timing, path, shape and alpha stay as they are. Re-measure.
   4. Harness: a case with the approved colours per peripheral, plus the ratio table in the day draft.
 → 26 Oct: image final (Sebas), `arrozal_v1.png` 2172 × 724, panel 20 × 6.667 m at z 10, horizon 1.60 m, UVs turned back 180°, X16. Contrast (`PeripheralContrast`, X17): the method gives 2.80 / 2.62 for the silhouettes against the sky. Against the field: silhouettes 1.23 / 1.04 → `#34363B` (`M_Silueta_Arrozal`) 3.26 / 2.87. The animals were already 1.2–2.7 against the sky; their rule is question 10 for PM in the 26 Oct draft, and nothing is changed for them. Harness 93/93.
-- [ ] **E2b · Animals, "no worse than with the sky" (D-F6-97):**
+- [~] **E2b · Animals, "no worse than with the sky" (D-F6-97):**
+  → 26 Oct: measured at HIGH (seed 20260909, level and actives put back), repeatable to two decimals. Sky / field: window birds 1.37 / 1.26 and 1.48 / 1.25 → own materials ×0.38 linear (`*_Arrozal`, window birds only) 2.38 / 1.53; cat 1.20 / 1.38 and 1.18 / 1.24 (passes); shelf bird 1.19 (unchanged). **Butterfly: 5.73 / 5.70 against the sky at HIGH, 1.56 / 2.03 against the field; even black it would reach only ≈ 3.4 / 4.4, so the rule cannot be met (question 12 for PM).** X17 gates silhouettes, window birds and cat; butterfly listed. Harness 93/93.
   1. `PeripheralContrast.Measure()` sets the ESL to **HIGH** first and puts the previous level back afterwards, so the curtains and props behind each animal are the same in every run (question 11). Re-measure the **sky baseline** the same way (sky panel swapped in only while measuring), so both columns use the same scene.
   2. Targets per position: rice-field ratio ≥ sky ratio. Window birds (left, right) and butterflies (left, right) only. The cat already passes (check it still does at HIGH). The shelf bird does not change.
   3. Adjust only as much as needed, in a material of its own like `M_Silueta_Arrozal` (the FBX materials are read-only):
@@ -173,4 +184,4 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
   4. Harness X17: silhouettes ≥ 2.7:1, plus window birds and butterflies ≥ their sky value (stored in the case), measured at HIGH; the cat listed.
 - [ ] After approval, UI/UX documents the colours in `Diseno_Sala_ESL.md` §10 (D-F6-93, D-F6-97). Tell Sebas.
 **Verify:** harness green; captures from the eye of each peripheral against the field.
-**Stop:** Sebas approves the background, the silhouettes and the animals in the headset (D-F6-97). **Scope:** S → M (with the contrast step)
+**Stop:** Sebas approves the background, the silhouettes and the animals in the headset (D-F6-97). → 26 Oct: **seen and approved** with `PeripheralPreview` (ESL held at HIGH, every animal and both silhouettes in turn). Pending: butterfly (question 12), and UI/UX documents §10. **Scope:** S → M (with the contrast step)
