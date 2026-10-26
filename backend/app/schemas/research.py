@@ -97,7 +97,7 @@ class ProfileAdaptationGroup(BaseModel):
     """Changes of completed sessions with the same state, cause, dimension and direction."""
     key: str                              # "<state>.<cause or NONE>.<dimension>.<UP|DOWN>", the V1.5 ?group=
     learner_state: str
-    cause: str | None
+    cause: str | None                     # FAST+NO_ENVIRONMENT: UNDERCHALLENGED with both conditions met
     dimension: str
     direction: Literal["UP", "DOWN"]
     count: int
@@ -118,6 +118,7 @@ class ProfileTrendPoint(BaseModel):
     s7_mean_rt_ms: float | None
     no_change: int | None                 # None for STATIC: it never adapts
     decisions_recorded: bool | None       # False: adaptive with no decision rows (before 0003)
+    rules_version: str | None = None      # rules-v1 / rules-v2 (D-F6-92); None without decisions
 
 
 class LearnerProfileData(BaseModel):

@@ -30,6 +30,11 @@ lower the room without a relapse.
 | ``STABLE``, accuracy or pace dropped beyond the dispersion | ``NEUTRAL`` | ``HELD_WITH_DROP`` |
 | ``OVERLOADED`` or ``DISENGAGED`` | ``NEGATIVE`` | ``RELAPSED`` |
 
+Harder changes (``UNDERCHALLENGED_*``, rules-v2; D-F6-80): the rescue table,
+except that staying ``UNDERCHALLENGED`` is always ``NEUTRAL`` / ``PERSISTED``
+(no key indicator). ``STABLE`` after = ``RESOLVED`` (it held the harder task);
+``DISENGAGED`` or ``OVERLOADED`` = ``SWITCHED`` (it went too far).
+
 ``UNCERTAIN``: the change was not applied (the next answer reports the old
 level; ``NOT_APPLIED``) or S7 ended before the post window closed
 (``INCOMPLETE``).
@@ -57,6 +62,7 @@ from app.adaptation.estimator import (
     IMPULSIVE,
     OVERLOADED,
     STABLE,
+    UNDERCHALLENGED,
     EstimatorResult,
 )
 from app.adaptation.rules import DEFAULT_CONFIG, STABLE_RETURN
@@ -218,7 +224,9 @@ def classify(
     if now != was:
         return out(NEGATIVE, "SWITCHED", f"Negative: {now} instead of {was} after the change ({nums}).", post_s)
 
-    if was == OVERLOADED:
+    if was == UNDERCHALLENGED:
+        trend = 0   # D-F6-80: still underchallenged after a harder change is always PERSISTED
+    elif was == OVERLOADED:
         trend = _overload_trend(pre_s, post_s)
     elif pre_s.get("cause") == IMPULSIVE:
         trend = _impulsive_trend(pre_s, post_s)

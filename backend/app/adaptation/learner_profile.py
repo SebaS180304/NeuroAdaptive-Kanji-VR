@@ -13,8 +13,8 @@ session first:
   cause, dimension and direction, with outcome counts, O4 reasons and their ids per
   session.
 - ``trend``: each session's condition, kanji set and S7 numbers, and for adaptive
-  sessions the ``NO_CHANGE`` count and whether decisions were recorded at all (not
-  before migration 0003, 13 Oct).
+  sessions the ``NO_CHANGE`` count, whether decisions were recorded at all (not
+  before migration 0003, 13 Oct) and their rules version (D-F6-92).
 
 The profile never changes how a session starts (D-F6-1): nothing on that path
 reads it.
@@ -46,14 +46,15 @@ logger = logging.getLogger(__name__)
 
 _SESSIONS = text("""
 SELECT s.id::text AS session_id, s.condition::text AS condition, s.assigned_kanji_set AS kanji_set,
-       s.created_at, t.s7_trials, t.s7_correct, t.s7_mean_rt_ms, d.decisions, d.no_change
+       s.created_at, t.s7_trials, t.s7_correct, t.s7_mean_rt_ms, d.decisions, d.no_change, d.rules_version
 FROM experiment_sessions s
 CROSS JOIN LATERAL (
     SELECT count(*) AS s7_trials, count(*) FILTER (WHERE is_correct) AS s7_correct,
            round(avg(response_time_ms)::numeric, 1)::float AS s7_mean_rt_ms
     FROM trials WHERE session_id = s.id AND block_state = :s7) t
 CROSS JOIN LATERAL (
-    SELECT count(*) AS decisions, count(*) FILTER (WHERE action = 'NO_CHANGE') AS no_change
+    SELECT count(*) AS decisions, count(*) FILTER (WHERE action = 'NO_CHANGE') AS no_change,
+           max(rules_version) AS rules_version
     FROM adaptation_decisions WHERE session_id = s.id) d
 WHERE s.participant_id = :pid AND s.status = 'COMPLETED'
 ORDER BY s.created_at
@@ -63,7 +64,7 @@ _EVENTS = text("SELECT id, event_type, payload FROM session_events WHERE session
 
 # The O4 reason (RESOLVED, HELD_WITH_DROP, NOT_APPLIED, INCOMPLETE...) is only in the event payload.
 _CHANGES = text("""
-SELECT d.session_id::text AS session_id, d.decision_id, d.learner_state, d.cause, d.dimension,
+SELECT d.session_id::text AS session_id, d.decision_id, d.learner_state, d.cause, d.evidence, d.dimension,
        CASE WHEN d.to_level > d.from_level THEN 'UP' ELSE 'DOWN' END AS direction,
        d.outcome, e.payload->>'outcome_reason' AS reason,
        s.session_clock_started_at + d.decided_elapsed_ms * interval '1 millisecond' AS decided_at
@@ -100,9 +101,13 @@ def _calibration(session_id: str, events: list[dict[str, Any]]) -> dict[str, Any
 def _groups(changes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     groups: dict[str, dict[str, Any]] = {}
     for c in changes:
-        key = f"{c['learner_state']}.{c['cause'] or 'NONE'}.{c['dimension']}.{c['direction']}"
+        cause = c["cause"]
+        # UNDERCHALLENGED with FAST and NO_ENVIRONMENT both met has its own clause (Contenido_UI_F-PROFILE.md §3.2).
+        if c["learner_state"] == "UNDERCHALLENGED" and {"FAST", "NO_ENVIRONMENT"} <= set(c.get("evidence") or ()):
+            cause = "FAST+NO_ENVIRONMENT"
+        key = f"{c['learner_state']}.{cause or 'NONE'}.{c['dimension']}.{c['direction']}"
         g = groups.setdefault(key, {
-            "key": key, "learner_state": c["learner_state"], "cause": c["cause"],
+            "key": key, "learner_state": c["learner_state"], "cause": cause,
             "dimension": c["dimension"], "direction": c["direction"], "count": 0,
             "outcomes": {}, "outcome_reasons": {}, "decisions": {}, "last_decided_at": None,
         })
@@ -134,6 +139,8 @@ async def build(db: AsyncSession, participant_id: str) -> tuple[list[str], dict[
         # STATIC never adapts: None, not 0. False: an adaptive session with no decision rows.
         "no_change": None if s["condition"] == "STATIC" else s["no_change"],
         "decisions_recorded": None if s["condition"] == "STATIC" else s["decisions"] > 0,
+        # rules-v1 / rules-v2 (D-F6-92); None without decisions. A session never mixes versions.
+        "rules_version": s["rules_version"],
     } for s in sessions]
     profile = {"calibrations": calibrations, "adaptations": _groups(changes), "trend": trend}
     return [s["session_id"] for s in sessions], profile

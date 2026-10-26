@@ -107,8 +107,10 @@ async def test_dev_unity_profile_matches_its_completed_sessions() -> None:
             FROM trials WHERE session_id = :s AND block_state = 'S7_EXPERIMENTAL_RETRIEVAL'""",
                               s=t["session_id"]))[0]
         assert (t["s7_trials"], t["s7_correct"], t["s7_mean_rt_ms"]) == (s7["trials"], s7["correct"], s7["mean_rt"])
-        n = (await _rows("SELECT count(*) FILTER (WHERE action = 'NO_CHANGE') AS nc, count(*) AS d "
-                         "FROM adaptation_decisions WHERE session_id = :s", s=t["session_id"]))[0]
+        n = (await _rows("SELECT count(*) FILTER (WHERE action = 'NO_CHANGE') AS nc, count(*) AS d, "
+                         "max(rules_version) AS rv FROM adaptation_decisions WHERE session_id = :s",
+                         s=t["session_id"]))[0]
+        assert t["rules_version"] == n["rv"]          # D-F6-92: one rules version per session
         if t["condition"] == "STATIC":
             assert t["no_change"] is None and t["decisions_recorded"] is None
         else:
@@ -138,6 +140,7 @@ async def test_static_aborted_and_unrecorded_sessions(client, pretested) -> None
     trend = {t["session_id"]: t for t in profile["trend"]}
     assert trend[static]["decisions_recorded"] is None
     assert trend[adaptive]["decisions_recorded"] is False
+    assert trend[static]["rules_version"] is None and trend[adaptive]["rules_version"] is None
     assert aborted not in trend
 
 
@@ -308,3 +311,25 @@ async def test_the_profile_never_changes_how_a_session_starts(client, pretested)
     assert started[with_profile] == started[without]
     assert started[with_profile][1] == (HOME_LEVEL, HOME_LEVEL)
     assert not any("level" in k or k in ("esl", "lal") for k in started[with_profile][0])
+
+
+def _change(sid, did, cause, evidence, dimension="LAL", direction="DOWN"):
+    return {"session_id": sid, "decision_id": did, "learner_state": "UNDERCHALLENGED", "cause": cause,
+            "evidence": evidence, "dimension": dimension, "direction": direction,
+            "outcome": "NEUTRAL", "reason": "PERSISTED", "decided_at": None}
+
+
+def test_underchallenged_groups_split_fast_room_and_both() -> None:
+    # Contenido_UI_F-PROFILE.md §3.2: "both" has its own clause; the stored cause is FAST for it
+    from app.adaptation.learner_profile import _groups
+    groups = _groups([
+        _change("s1", "d1", "FAST", ["FAST"]),
+        _change("s1", "d2", "FAST", ["FAST", "NO_ENVIRONMENT"]),
+        _change("s1", "d3", "NO_ENVIRONMENT", ["NO_ENVIRONMENT"], "ESL", "UP"),
+        _change("s2", "d4", "FAST", ["NO_ENVIRONMENT", "FAST"]),
+    ])
+    assert {g["key"]: g["count"] for g in groups} == {
+        "UNDERCHALLENGED.FAST+NO_ENVIRONMENT.LAL.DOWN": 2,
+        "UNDERCHALLENGED.FAST.LAL.DOWN": 1,
+        "UNDERCHALLENGED.NO_ENVIRONMENT.ESL.UP": 1,
+    }

@@ -14,9 +14,12 @@ from app.adaptation.estimator import (
     AWAY,
     DISENGAGED,
     ENVIRONMENT,
+    FAST,
     IMPULSIVE,
+    NO_ENVIRONMENT,
     OVERLOADED,
     STABLE,
+    UNDERCHALLENGED,
     EstimatorResult,
 )
 from app.adaptation.estimator import ESTIMATOR_V1
@@ -98,6 +101,31 @@ def test_low_confidence_post_state_reads_as_stable():
     # under 0.5 the rule engine ignores a state; the outcome reads it the same way
     o = classify(RAISE, PRE_OVER, _res(OVERLOADED, confidence=0.4))
     assert (o.outcome, o.post["state"], o.post["estimated_state"]) == (POSITIVE, STABLE, OVERLOADED)
+
+
+# -- harder changes (UNDERCHALLENGED, D-F6-80) --------------------------------
+
+HARDER = {"decision_id": "d-S7-006", "trial_id": "S7-006", "reason_code": "UNDERCHALLENGED_FAST",
+          "learner_state": UNDERCHALLENGED, "action": "CHANGE_ASSISTANCE"}
+PRE_UC = _res(UNDERCHALLENGED, FAST, 0.75, acc_delta=0.1, rt_ratio=0.79, away_ms=0, env_dwell_ms=0)
+
+
+def test_harder_change_held_is_positive_resolved():
+    o = classify(HARDER, PRE_UC, _res(STABLE, acc_delta=0.0, rt_ratio=0.95))
+    assert (o.outcome, o.reason_code) == (POSITIVE, "RESOLVED")
+
+
+def test_harder_change_too_much_is_negative_switched():
+    o = classify(HARDER, PRE_UC, _res(OVERLOADED, confidence=0.8, acc_delta=-0.54, rt_ratio=1.6, rt_z=4.0))
+    assert (o.outcome, o.reason_code) == (NEGATIVE, "SWITCHED")
+
+
+def test_still_underchallenged_is_always_neutral_persisted():
+    # no trend: the room getting busier or quieter does not grade a harder change
+    for post in (_res(UNDERCHALLENGED, NO_ENVIRONMENT, 0.75, away_ms=0, env_dwell_ms=0),
+                 _res(UNDERCHALLENGED, FAST, 0.75, away_ms=0, env_dwell_ms=0, rt_ratio=0.6)):
+        o = classify(HARDER, _res(UNDERCHALLENGED, FAST, 0.75, away_ms=2000, env_dwell_ms=2000), post)
+        assert (o.outcome, o.reason_code) == (NEUTRAL, "PERSISTED")
 
 
 # -- returns towards MEDIUM --------------------------------------------------
