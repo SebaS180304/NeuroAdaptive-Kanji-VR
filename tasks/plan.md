@@ -1,6 +1,6 @@
 # Implementation Plan: week of 26 – 30 Oct 2026 (VR complete, MIRAI presentation)
 
-Written 26 Oct 2026. **Aligned up to: D-F6-92** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening.
+Written 26 Oct 2026. **Aligned up to: D-F6-97** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening.
 The M3 week's plan is archived in `tasks/archive/fase6_m3_{plan,todo}.md`. Its open items
 are carried over here or dropped as listed in the last section.
 
@@ -58,7 +58,7 @@ C7 hints + C3 sets B, C ───────────┴─► C8 validation
   return `PARTIAL` or `PERSISTED_WORSE`. The fix is a branch of about one line plus its test.
 - **Portal for `UNDERCHALLENGED` (D-F6-81, D-F6-92).**
   - The phrase is the definitive one from `Contenido_UI_F-PROFILE.md` §3.8 (template §3.1, clauses §3.2, actions §3.3, outcome labels §3.4). It was delivered on 26 Oct, so the provisional step is skipped. The short state name is "Low challenge (estimated)".
-  - The colour is the only provisional part: an existing neutral token until web design defines one.
+  - The colour is the only provisional part: an existing neutral token until web design defines one. **Defined (D-F6-96):** `--color-state-underchallenged` (Slate), task A2e.
   - The origin line (§3.7) adds "{x} of them could also raise difficulty (rules-v2)." only when a participant has sessions under both rule versions. That needs the rules version of each session in the profile JSON. The rules version is already stored with each decision, so this is read-only, without a migration.
 - **Hints and C3 follow `Diseno_UI_Kanji_Studio_v1.md` §9–§11** (delivered 26 Oct). The cue slot and the C3 crossfade already exist with placeholders (`KanjiLearningItem`, `StudioTrialPresenter`).
   - **Hints (§9):** zone A image and zone B strip on the `BoardCanvas`, with 250 ms fade-in, still until the answer, and gone at `ANSWER_SELECTED`. The audio cue becomes a speaker chip (D-F6-89). The text chip goes only where the real image exists (§9.6).
@@ -70,12 +70,19 @@ C7 hints + C3 sets B, C ───────────┴─► C8 validation
 - **The rice field is a static textured quad or panel** behind each window, sized to the
   window frame from the eye at 1.60 m. It is not part of the ESL and does not change the
   lighting (D-F6-86). It records whether it is final or a placeholder.
+- **Contrast of the peripherals against the rice field (D-F6-93): ≥ 2.7:1**, today's contrast
+  against the sky. Measure it from the eye camera in Unity with the same method before and
+  after the image goes in: the WCAG ratio of mean relative luminance, silhouette or animal
+  pixels against the background pixels around them, at each event's resting pose. If a
+  peripheral falls short, only its material colour changes (darker or lighter). The colour is
+  the same in every condition and level, and timing, path and shape stay as they are.
 
 ## Task list (detail in `tasks/todo.md`)
 
 ### A · Last week's leftovers (first)
 - [x] A1: findings §3 with MANU's answers; close F5a criterion 8 and F6 criterion 6. **Stop:** Sebas sends the M3 note
 - [ ] A2: rules-v2 live: (a) two commits, (b) 0009 then restart, (c) O4 fix, (d) portal phrase and colour; `reason_code` is already D-F6-82. **Stop:** a v2 run in the headset
+- [ ] A2e: portal closing (D-F6-96): the `--color-state-underchallenged` token now; the "Not recorded" badge when web design writes it into `design-system.md`; closes F6 criterion 4b. **Stop:** Sebas sees V1.5 and V1.8 in light and dark
 - [ ] A3: set B kanji objects (D-F6-43), when Modelado 3D delivers. **Stop:** Sebas sees them in S5 in the headset
 
 ### B · Presentation (Wed 28)
@@ -85,7 +92,7 @@ C7 hints + C3 sets B, C ───────────┴─► C8 validation
 
 ### E · Environment adjustments (D-F6-85, D-F6-86); hours never taken from B4
 - [ ] E1 (Tue 27): silhouettes closer, curtains drawn further, stronger wind; re-measure angles, `DWELL`, `HEAD_AWAY`, harness. **Stop:** Sebas approves the values in the headset
-- [ ] E2 (by Thu 29 pm): rice-field background fitted to the player camera. **Stop:** Sebas sees it in the headset
+- [ ] E2 (by Thu 29 pm): rice-field background fitted to the player camera; silhouettes ≥ 2.7:1 against it (D-F6-93, done). E2b: animals "no worse than with the sky" at each position, measured at ESL HIGH; only the window bird and the butterfly change (D-F6-97). **Stop:** Sebas approves the background, the silhouettes and the animals in the headset
 
 ### C · Thu 29 and Fri 30
 - [ ] C7: hints and C3 for sets B and C (a declared placeholder is allowed). **Stop:** Sebas sees them in the headset

@@ -1,7 +1,7 @@
 # Todo: week of 26 – 30 Oct (VR complete, MIRAI presentation)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/fase6_m3_todo.md`.
-**Aligned up to: D-F6-92** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92 (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-97** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92 (`Estado_Actual.md`, the board; it wins over this list).
 Every commit gets a message file in Downloads, is shown to Sebas first, and holds one change.
 Every task ends with a **Stop**: Sebas sees the result before the next dependent task starts.
 
@@ -24,18 +24,31 @@ Every task ends with a **Stop**: Sebas sees the result before the next dependent
 
 ### [ ] A2: rules-v2 live (D-F6-59, D-F6-79 to D-F6-82)
 Order matters: (a) → (b) → (c) and (d) → run.
-- [ ] (a) Two commits, with the messages already shown on 26 Oct: `feat(db)` migration 0009 with `schema.sql`, then `feat(adaptation)` behavior-v2/rules-v2 with tests and `EVENT_CONTRACT.md`. pytest 227/227 before each.
-- [ ] (b) Between runs, headset off: `alembic upgrade head` → check `\d adaptation_decisions` (VARCHAR(16), new CHECKs) and `SELECT count(*) FROM v_adaptations` (180) → **only then** restart the backend.
-- [ ] (c) O4 (D-F6-80): in `outcome.classify()`, still `UNDERCHALLENGED` after the change → always `NEUTRAL / PERSISTED` (no trend). `STABLE` → `RESOLVED` and the other states → `SWITCHED` already work. Add 3 tests (one per row). Update the docstring table and `Planteamiento_Tecnico_F5a.md` §5.3.
-- [ ] (d) Portal (D-F6-81, D-F6-92):
+- [x] (a) Two commits, with the messages already shown on 26 Oct: `feat(db)` migration 0009 with `schema.sql`, then `feat(adaptation)` behavior-v2/rules-v2 with tests and `EVENT_CONTRACT.md`. pytest 227/227 before each.
+- [x] (b) Between runs, headset off: `alembic upgrade head` → check `\d adaptation_decisions` (VARCHAR(16), new CHECKs) and `SELECT count(*) FROM v_adaptations` (180) → **only then** restart the backend.
+- [x] (c) O4 (D-F6-80): in `outcome.classify()`, still `UNDERCHALLENGED` after the change → always `NEUTRAL / PERSISTED` (no trend). `STABLE` → `RESOLVED` and the other states → `SWITCHED` already work. Add 3 tests (one per row). Update the docstring table and `Planteamiento_Tecnico_F5a.md` §5.3.
+- [x] (d) Portal (D-F6-81, D-F6-92):
   - `profileText.ts` gets the **definitive** `UNDERCHALLENGED` phrase from `Contenido_UI_F-PROFILE.md` §3.8. Use the §3.1 template, the §3.2 clauses (FAST, NO_ENVIRONMENT, both), the §3.3 actions (LAL down, ESL up) and the §3.4 outcome labels ("Held after", "Still low challenge after"). §3.5 and §3.6 apply as they are.
   - `EstimatedState.tsx` shows the short name "Low challenge (estimated)" where the state has visible text, with the enum in the tooltip. The colour comes from an existing neutral token and is marked provisional until web design defines it (D-F6-81).
   - The §3.7 origin line gets "{x} of them could also raise difficulty (rules-v2)." only when the participant has both `rules-v1` and `rules-v2` sessions. The profile endpoint carries each session's rules version (from `adaptation_decisions.rules_version`, read only, no migration).
   - Vitest: the phrase for each clause and action, the origin line with mixed, v1-only and v2-only participants, and the short name. pytest: the endpoint field.
-- [ ] `reason_code` `UNDERCHALLENGED_ENVIRONMENT` with the LAL at LOW (D-F6-82): already in the code. Only check that the test exists.
+- [x] `reason_code` `UNDERCHALLENGED_ENVIRONMENT` with the LAL at LOW (D-F6-82): already in the code. Only check that the test exists.
+→ 26 Oct: `0e912ac` (0009), `0653424` (v2). 0009 applied at 07:33 UTC with no session `IN_PROGRESS`: VARCHAR(16), new CHECKs, `v_adaptations` 180 rows. Backend restarted and running `behavior-v2` / `rules-v2`; restarted again for (d). (c) and (d): pytest 231/231, Vitest 136/136, `tsc` clean. The "both" groups are split by `evidence` (`FAST+NO_ENVIRONMENT`, §3.2). Profiles recomputed `--all`, `--check` 0 differences.
 **Verify:** pytest and Vitest green; `graphify update .`.
 **Stop:** a v2 run in the headset (S1 → S9, set A, `BEHAVIOR_ADAPTIVE`). Each decision has `estimator_version = behavior-v2`, `verify_adaptation` and `verify_projection` show 0 discrepancies, and the session looks right in the portal. Any `UNDERCHALLENGED` change shows the §3.8 phrase. MANU's profile (v1 only) keeps its origin line unchanged.
 **Scope:** M (two commits: backend O4 + profile field; dashboard phrase, name and origin line)
+
+### [ ] A2e: Portal closing (D-F6-96)
+Source: `design-system.md`, written by web design.
+- [x] **Colour, now:** add `--color-state-underchallenged` to `dashboard/src/styles/tokens.css` (`#565B62` light, `#9AA0A8` dark, as in the design-system row). Put it in `STATE_DOT` of `EstimatedState.tsx` and remove the provisional comment. Check the other places that draw state colours: the timeline's estimated-state lane and its legend.
+  - The token is in `Claude outputs/design-handoff/design-system.md` (row of 26 Oct, 16:45) but **not yet in the skill's copy** (`.claude/skills/research-dashboard-conventions/references/design-system.md`, last changed 21 Oct). Both are web design's; I only tell Sebas, and never edit either.
+- [x] **"Not recorded" badge, only once it is in `design-system.md`:** D-F6-16 form, validated on canvas v41 (V1.8, Tweak `manySessions`): 1 px dotted border, no fill, no mark, at the end of the badge row. It replaces the `983aaa7` form in `LearnerProfile.tsx` (the comment at the badge). Until web design writes it, nothing is applied (CLAUDE.md: visual values only from the design system).
+- [x] Vitest: state dot class for `UNDERCHALLENGED`, and the badge's class. Playwright `participants.spec.ts` green. Captures of V1.5 and V1.8 in light and dark.
+- [x] `Evidencia_Criterios_F6.md` criterion 4b: drop "(badge pendiente de validar)" and cite the commit.
+→ 26 Oct: `2236741` syncs the skill's `design-system.md` from design-handoff (Sebas). The token is in `tokens.css` (three blocks) and `STATE_DOT`. The timeline tooltip uses `stateLabel` ("Low challenge (estimated)"). The badge already had the validated form; `OutcomeChip.test.tsx` now pins it. Contrast tests: 6.9 / 6.4 / 6.5 as in design-system.md. Vitest 141/141, `tsc` clean. Playwright 38/40: two failures not caused by this change. `quality.spec` times out because `/research/quality` takes ≈ 20 s. `sessions.spec:125` assumes the newest adaptive session has changes, and ABUDSITO `77a6c8af` (23 Oct) has none.
+**Verify:** Vitest, `tsc`, Playwright green; the token's contrast as stated in its row.
+**Stop:** Sebas sees V1.5 (a v2 session) and V1.8 (MANU and a participant with "Not recorded") in light and dark.
+**Deps:** the colour can go any time; the badge waits for web design. It never takes hours from B4. **Scope:** S (two commits: colour; badge)
 
 ### [ ] A3: Set B kanji objects (D-F6-43): when Modelado 3D delivers 山 門 女 手 雨
 - [ ] Only with all five FBX in `KanjiLessonAssets/NN_*/export/` (all five or none, as in D-F6-26).
@@ -136,7 +149,28 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 **Scope:** M
 
 ### [ ] E2: Rice-field background (D-F6-86): when Sebas sends the image, by Thu 29 afternoon at the latest
-- [ ] A static unlit panel behind each window. It is sized and placed so that, seen from the eye at 1.60 m, the horizon sits at eye height and the image fills the window frame. Same in every condition and ESL level. The room lighting is unchanged.
-- [ ] Record whether the image is final or a placeholder (in the integration and the day draft).
-- [ ] Harness: the panel is present, it has no collider, and it is outside the `DWELL` and `HEAD_AWAY` boxes.
-**Stop:** Sebas sees it in the headset. **Scope:** S
+- [x] A static unlit panel behind each window. It is sized and placed so that, seen from the eye at 1.60 m, the horizon sits at eye height and the image fills the window frame. Same in every condition and ESL level. The room lighting is unchanged.
+- [x] Record whether the image is final or a placeholder (in the integration and the day draft).
+- [x] Harness: the panel is present, it has no collider, and it is outside the `DWELL` and `HEAD_AWAY` boxes.
+- [ ] **Contrast (D-F6-93), ≥ 2.7:1:**
+  1. **Baseline, before the image goes in.** From the eye camera at 1.60 m, capture each peripheral at its resting pose against the current sky:
+     - silhouette;
+     - bird at its 3 positions;
+     - cat at both windows;
+     - butterfly at both windows.
+     Ratio = (L_light + 0.05) / (L_dark + 0.05), with L the mean relative luminance (linear sRGB) of the figure pixels and of a background ring around it. This checks that the method reproduces the 2.7:1 known for the sky.
+  2. **With the rice field:** the same captures and the same ratio. Write a table per peripheral and position: sky, rice field, and pass or fail.
+  3. **If one fails:** change only its material colour (darker against a light field, lighter against a dark one) until it reaches ≥ 2.7:1. Keep the same colour in every condition and level. Timing, path, shape and alpha stay as they are. Re-measure.
+  4. Harness: a case with the approved colours per peripheral, plus the ratio table in the day draft.
+→ 26 Oct: image final (Sebas), `arrozal_v1.png` 2172 × 724, panel 20 × 6.667 m at z 10, horizon 1.60 m, UVs turned back 180°, X16. Contrast (`PeripheralContrast`, X17): the method gives 2.80 / 2.62 for the silhouettes against the sky. Against the field: silhouettes 1.23 / 1.04 → `#34363B` (`M_Silueta_Arrozal`) 3.26 / 2.87. The animals were already 1.2–2.7 against the sky; their rule is question 10 for PM in the 26 Oct draft, and nothing is changed for them. Harness 93/93.
+- [ ] **E2b · Animals, "no worse than with the sky" (D-F6-97):**
+  1. `PeripheralContrast.Measure()` sets the ESL to **HIGH** first and puts the previous level back afterwards, so the curtains and props behind each animal are the same in every run (question 11). Re-measure the **sky baseline** the same way (sky panel swapped in only while measuring), so both columns use the same scene.
+  2. Targets per position: rice-field ratio ≥ sky ratio. Window birds (left, right) and butterflies (left, right) only. The cat already passes (check it still does at HIGH). The shelf bird does not change.
+  3. Adjust only as much as needed, in a material of its own like `M_Silueta_Arrozal` (the FBX materials are read-only):
+     - **butterfly:** body and wings darker (figure 0.07 against a lighter field);
+     - **bird:** one colour for both windows. Left wants a darker bird (field lighter than the bird) and right a lighter one (field darker), so first test a common brightness scale on both plumage materials. **If no single colour passes both windows, stop and tell Sebas:** the options are a colour per window or keeping one side as measured, and that is his call.
+     Same colour in every condition and level.
+  4. Harness X17: silhouettes ≥ 2.7:1, plus window birds and butterflies ≥ their sky value (stored in the case), measured at HIGH; the cat listed.
+- [ ] After approval, UI/UX documents the colours in `Diseno_Sala_ESL.md` §10 (D-F6-93, D-F6-97). Tell Sebas.
+**Verify:** harness green; captures from the eye of each peripheral against the field.
+**Stop:** Sebas approves the background, the silhouettes and the animals in the headset (D-F6-97). **Scope:** S → M (with the contrast step)
