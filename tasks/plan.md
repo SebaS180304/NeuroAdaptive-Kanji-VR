@@ -83,7 +83,7 @@ C7 hints + C3 sets B, C ───────────┴─► C8 validation
 - [x] A1: findings §3 with MANU's answers; close F5a criterion 8 and F6 criterion 6. **Stop:** Sebas sends the M3 note
 - [ ] A2: rules-v2 live: (a) two commits, (b) 0009 then restart, (c) O4 fix, (d) portal phrase and colour; `reason_code` is already D-F6-82. **Stop:** a v2 run in the headset
 - [ ] A2e: portal closing (D-F6-96): the `--color-state-underchallenged` token now; the "Not recorded" badge when web design writes it into `design-system.md`; closes F6 criterion 4b. **Stop:** Sebas sees V1.5 and V1.8 in light and dark
-- [ ] A3: set B kanji objects (D-F6-43), when Modelado 3D delivers. **Stop:** Sebas sees them in S5 in the headset
+- [x] A3: set B kanji objects (D-F6-43), when Modelado 3D delivers. **Stop:** Sebas sees them in S5 in the headset → 27 Oct: integrated, seen and approved in S5
 
 ### B · Presentation (Wed 28)
 - [ ] B4: set A hints (D-F6-63) and C3 (D-F6-64), chips removed where a real hint exists. **Blocked by** the UI/UX design and the shapes from Modelado 3D. **Stop:** Sebas sees them in the headset

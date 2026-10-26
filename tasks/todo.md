@@ -53,11 +53,12 @@ Source: `design-system.md`, written by web design.
 
 → 26 Oct: **stop passed**. Sebas checked V1.5 (`add29817`) and V1.8 (`DEV_UNITY`, MANU) and everything looks right.
 
-### [ ] A3: Set B kanji objects (D-F6-43): when Modelado 3D delivers 山 門 女 手 雨
-- [ ] Only with all five FBX in `KanjiLessonAssets/NN_*/export/` (all five or none, as in D-F6-26).
-- [ ] Integrate them the way set A was integrated (Task 23 of the archived list): `object_source = BLENDER_FBX`. Use the harness case for poses and S5 approach.
+### [x] A3: Set B kanji objects (D-F6-43): when Modelado 3D delivers 山 門 女 手 雨
+- [x] Only with all five FBX in `KanjiLessonAssets/NN_*/export/` (all five or none, as in D-F6-26).
+- [x] Integrate them the way set A was integrated (Task 23 of the archived list): `object_source = BLENDER_FBX`. Use the harness case for poses and S5 approach.
 **Verify:** harness green; one capture per object from the eye.
 **Stop:** Sebas sees set B in S5 in the headset.
+→ Done: menu «Integrar objetos del set B», harness X18 (envelopes per FICHA, no animation, no rotated child; 07 門's leaves stay shut) and X18b (set C still PLACEHOLDER), 95/95. Eye captures checked: 09 手 palm to the player, thumb on their left; 08 女 nose only. **Seen and approved by Sebas in S5.**
 **Deps:** the delivery. Never ahead of B4. **Scope:** S
 
 ---
