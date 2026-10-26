@@ -1,7 +1,7 @@
 # Todo: week of 26 – 30 Oct (VR complete, MIRAI presentation)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/fase6_m3_todo.md`.
-**Aligned up to: D-F6-97** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92 (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-99** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92 (`Estado_Actual.md`, the board; it wins over this list).
 Every commit gets a message file in Downloads, is shown to Sebas first, and holds one change.
 Every task ends with a **Stop**: Sebas sees the result before the next dependent task starts.
 
@@ -153,16 +153,26 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
   - silhouette path moved toward the window until torso and head show above the sill;
   - curtains gathered toward the walls by 25 % and 40 % of the sheet width;
   - wind A = 0.09 m and 0.12 m, with the ripple and gust unchanged. Keep everything else from D-F6-61: alpha 0.90, ≤ 0.5 Hz, no opacity motion.
-- [ ] After approval: E13 angles (D-F6-33), the `DWELL` boxes, the D7 probe for `HEAD_AWAY`, X9/X13 and the shader/harness limit (`at most 0.06` → the approved A). Note every difference > 1° with its cause. UI/UX then documents §10.
+- [ ] **One silhouette always in HIGH (D-F6-99):** waits for UI/UX's text in `Diseno_Sala_ESL.md` §8.3 / §10 (Tue 27).
+  - Read it first, especially whether the draw can still add the second silhouette or never does.
+  - Where: the Movers draw of `EnvironmentalStimulationController.ActivateGroup`. Today HIGH takes 2–3 movers by tier, curtains (T2) first, so a silhouette (T3) shows only when the draw gives 3 (≈ 22–27 % each). The HIGH set becomes curtains plus one silhouette, the side from the level's seeded generator.
+  - Same in every condition. LOW and MEDIUM have no silhouettes, so they do not change. `ENVIRONMENT_APPLIED` already lists `active_movers`, so no new telemetry.
+  - Harness: a new E case over 200 seeds. Every HIGH has one silhouette (or what the text says), both sides appear in roughly half each, and the same seed gives the same side. E7, E8b and E11 stay green.
+- [ ] After approval: E13 angles (D-F6-33), the `DWELL` boxes, the D7 probe for `HEAD_AWAY` (D-F6-99 asks for it again), X9/X13, X17 (silhouette contrast at the new distance) and the shader/harness limit (`at most 0.06` → the approved A). Note every difference > 1° with its cause. UI/UX then documents §10.
+- [ ] `Claude outputs/Cambios_Spec_v1_4.md` (mine): add the 26 Oct changes for PM's full spec (D-F6-88):
+  - the rice field (D-F6-86) and the peripheral colours (D-F6-93, D-F6-97);
+  - the butterfly seen less against the field (D-F6-98);
+  - one silhouette always in HIGH (D-F6-99, §8.3);
+  - the E1 values once approved.
 **Verify:** harness green; captures from the eye.
 **Stop:** Sebas approves the values in the headset.
-**Scope:** M
+**Scope:** M (D-F6-99 is one more commit of its own)
 
-### [ ] E2: Rice-field background (D-F6-86): when Sebas sends the image, by Thu 29 afternoon at the latest
+### [x] E2: Rice-field background (D-F6-86): when Sebas sends the image, by Thu 29 afternoon at the latest
 - [x] A static unlit panel behind each window. It is sized and placed so that, seen from the eye at 1.60 m, the horizon sits at eye height and the image fills the window frame. Same in every condition and ESL level. The room lighting is unchanged.
 - [x] Record whether the image is final or a placeholder (in the integration and the day draft).
 - [x] Harness: the panel is present, it has no collider, and it is outside the `DWELL` and `HEAD_AWAY` boxes.
-- [ ] **Contrast (D-F6-93), ≥ 2.7:1:**
+- [x] **Contrast (D-F6-93), ≥ 2.7:1:**
   1. **Baseline, before the image goes in.** From the eye camera at 1.60 m, capture each peripheral at its resting pose against the current sky:
      - silhouette;
      - bird at its 3 positions;
@@ -173,7 +183,7 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
   3. **If one fails:** change only its material colour (darker against a light field, lighter against a dark one) until it reaches ≥ 2.7:1. Keep the same colour in every condition and level. Timing, path, shape and alpha stay as they are. Re-measure.
   4. Harness: a case with the approved colours per peripheral, plus the ratio table in the day draft.
 → 26 Oct: image final (Sebas), `arrozal_v1.png` 2172 × 724, panel 20 × 6.667 m at z 10, horizon 1.60 m, UVs turned back 180°, X16. Contrast (`PeripheralContrast`, X17): the method gives 2.80 / 2.62 for the silhouettes against the sky. Against the field: silhouettes 1.23 / 1.04 → `#34363B` (`M_Silueta_Arrozal`) 3.26 / 2.87. The animals were already 1.2–2.7 against the sky; their rule is question 10 for PM in the 26 Oct draft, and nothing is changed for them. Harness 93/93.
-- [~] **E2b · Animals, "no worse than with the sky" (D-F6-97):**
+- [x] **E2b · Animals, "no worse than with the sky" (D-F6-97):**
   → 26 Oct: measured at HIGH (seed 20260909, level and actives put back), repeatable to two decimals. Sky / field: window birds 1.37 / 1.26 and 1.48 / 1.25 → own materials ×0.38 linear (`*_Arrozal`, window birds only) 2.38 / 1.53; cat 1.20 / 1.38 and 1.18 / 1.24 (passes); shelf bird 1.19 (unchanged). **Butterfly: 5.73 / 5.70 against the sky at HIGH, 1.56 / 2.03 against the field; even black it would reach only ≈ 3.4 / 4.4, so the rule cannot be met (question 12 for PM).** X17 gates silhouettes, window birds and cat; butterfly listed. Harness 93/93.
   1. `PeripheralContrast.Measure()` sets the ESL to **HIGH** first and puts the previous level back afterwards, so the curtains and props behind each animal are the same in every run (question 11). Re-measure the **sky baseline** the same way (sky panel swapped in only while measuring), so both columns use the same scene.
   2. Targets per position: rice-field ratio ≥ sky ratio. Window birds (left, right) and butterflies (left, right) only. The cat already passes (check it still does at HIGH). The shelf bird does not change.
@@ -184,4 +194,4 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
   4. Harness X17: silhouettes ≥ 2.7:1, plus window birds and butterflies ≥ their sky value (stored in the case), measured at HIGH; the cat listed.
 - [ ] After approval, UI/UX documents the colours in `Diseno_Sala_ESL.md` §10 (D-F6-93, D-F6-97). Tell Sebas.
 **Verify:** harness green; captures from the eye of each peripheral against the field.
-**Stop:** Sebas approves the background, the silhouettes and the animals in the headset (D-F6-97). → 26 Oct: **seen and approved** with `PeripheralPreview` (ESL held at HIGH, every animal and both silhouettes in turn). Pending: butterfly (question 12), and UI/UX documents §10. **Scope:** S → M (with the contrast step)
+**Stop:** Sebas approves the background, the silhouettes and the animals in the headset (D-F6-97). → 26 Oct: **seen and approved** with `PeripheralPreview` (ESL held at HIGH, every animal and both silhouettes in turn). Butterfly left as it is and declared (D-F6-98, closes question 12). Pending only: UI/UX documents §10. **Scope:** S → M (with the contrast step)

@@ -1,6 +1,6 @@
 # Implementation Plan: week of 26 – 30 Oct 2026 (VR complete, MIRAI presentation)
 
-Written 26 Oct 2026. **Aligned up to: D-F6-97** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening.
+Written 26 Oct 2026. **Aligned up to: D-F6-99** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening.
 The M3 week's plan is archived in `tasks/archive/fase6_m3_{plan,todo}.md`. Its open items
 are carried over here or dropped as listed in the last section.
 
@@ -91,7 +91,7 @@ C7 hints + C3 sets B, C ───────────┴─► C8 validation
 - [ ] B6: captures of Unity and the portal for the deck (Wed 28 afternoon). **Stop:** Sebas has the files
 
 ### E · Environment adjustments (D-F6-85, D-F6-86); hours never taken from B4
-- [ ] E1 (Tue 27): silhouettes closer, curtains drawn further, stronger wind; re-measure angles, `DWELL`, `HEAD_AWAY`, harness. **Stop:** Sebas approves the values in the headset
+- [ ] E1 (Tue 27): silhouettes closer, curtains drawn further, stronger wind, and one silhouette always in HIGH with the side alternated by the seed (D-F6-99, once UI/UX writes it in `Diseno_Sala_ESL.md`); re-measure angles, `DWELL`, `HEAD_AWAY`, X17, harness. **Stop:** Sebas approves the values in the headset
 - [ ] E2 (by Thu 29 pm): rice-field background fitted to the player camera; silhouettes ≥ 2.7:1 against it (D-F6-93, done). E2b: animals "no worse than with the sky" at each position, measured at ESL HIGH; only the window bird and the butterfly change (D-F6-97). **Stop:** Sebas approves the background, the silhouettes and the animals in the headset
 
 ### C · Thu 29 and Fri 30
