@@ -7,14 +7,16 @@ using UnityEngine;
 namespace NeuroAdaptiveVR.EditorTools
 {
     /// <summary>
-    /// Stage-1 objects of S5 for set A (D-F6-20, D-F6-26): 月 車 火 竹 石 from the
-    /// modelling chat's KanjiLessonAssets export. All five or none: if one is missing,
-    /// nothing is assigned and the session keeps the labelled placeholders for all
-    /// five (never real and placeholder mixed in one session). A pre-test substitute
+    /// Stage-1 objects of S5 for set A (D-F6-20, D-F6-26): 月 車 火 竹 石, and set B
+    /// (D-F6-43): 山 門 女 手 雨, from the modelling chat's KanjiLessonAssets export.
+    /// All five of a set or none: if one is missing, nothing of that set is assigned and
+    /// its sessions keep the labelled placeholders for all five (never real and
+    /// placeholder mixed in one session). A pre-test substitute
     /// has no object and keeps its placeholder, declared. Same object in every
     /// condition and ESL level: it lives in the kanji's KanjiLearningItem, not in the
     /// Environmental Layer. KanjiDiscoveryController instantiates it at objectAnchor;
-    /// the models' pivot is the centre of their envelope, front −Z (ESTADO.md).
+    /// the models' pivot is the centre of their envelope, front −Z (ESTADO.md). 07 門's
+    /// leaves are separate meshes pivoted on their hinges and never open (no animation).
     /// </summary>
     public static class SetAObjectsIntegration
     {
@@ -26,21 +28,32 @@ namespace NeuroAdaptiveVR.EditorTools
             ("KANJI_TAKE", "04_TAKE"), ("KANJI_ISHI", "05_ISHI"),
         };
 
-        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set A", priority = 301)]
-        public static void Run()
+        private static readonly (string kanjiId, string code)[] SetB =
         {
-            foreach (var (_, code) in SetA)
+            ("KANJI_YAMA", "06_YAMA"), ("KANJI_MON", "07_MON"), ("KANJI_ONNA", "08_ONNA"),
+            ("KANJI_TE", "09_TE"), ("KANJI_AME", "10_AME"),
+        };
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set A", priority = 301)]
+        public static void Run() => Integrate("A", SetA);
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set B", priority = 302)]
+        public static void RunSetB() => Integrate("B", SetB);
+
+        private static void Integrate(string set, (string kanjiId, string code)[] kanji)
+        {
+            foreach (var (_, code) in kanji)
             {
                 var src = Path.Combine(ExportRoot, code, "export", $"KANJI_{code}.fbx");
                 if (File.Exists(src)) File.Copy(src, Path.GetFullPath(Path.Combine(Application.dataPath, "..", ArtDir, Path.GetFileName(src))), true);
             }
             AssetDatabase.Refresh();
             var models = AssetDatabase.FindAssets("t:Model", new[] { ArtDir }).Select(AssetDatabase.GUIDToAssetPath).ToList();
-            var found = SetA.Select(s => (s.kanjiId, s.code, path: models.FirstOrDefault(m => Path.GetFileName(m).Contains(s.code)))).ToList();
+            var found = kanji.Select(s => (s.kanjiId, s.code, path: models.FirstOrDefault(m => Path.GetFileName(m).Contains(s.code)))).ToList();
             var missing = found.Where(f => f.path == null).Select(f => f.code).ToList();
             if (missing.Count > 0)
             {
-                Debug.LogError("[Set A] Missing " + string.Join(", ", missing) + ": nothing assigned, all five stay placeholders (D-F6-26).");
+                Debug.LogError($"[Set {set}] Missing " + string.Join(", ", missing) + ": nothing assigned, all five stay placeholders (D-F6-26).");
                 return;
             }
 
@@ -61,11 +74,11 @@ namespace NeuroAdaptiveVR.EditorTools
                 Object.DestroyImmediate(instance);
 
                 var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{kanjiId}.asset");
-                if (item == null) { Debug.LogError($"[Set A] No KanjiLearningItem {kanjiId}"); return; }
-                Undo.RecordObject(item, "Set A objects");
+                if (item == null) { Debug.LogError($"[Set {set}] No KanjiLearningItem {kanjiId}"); return; }
+                Undo.RecordObject(item, $"Set {set} objects");
                 item.anchorObjectPrefab = prefab;
                 EditorUtility.SetDirty(item);
-                Debug.Log($"[Set A] {kanjiId} <- {prefab.name} ({path})");
+                Debug.Log($"[Set {set}] {kanjiId} <- {prefab.name} ({path})");
             }
             AssetDatabase.SaveAssets();
         }

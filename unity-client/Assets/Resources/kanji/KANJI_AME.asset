@@ -33,6 +33,6 @@ MonoBehaviour:
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   targetReadingAudio: {fileID: 8300000, guid: d934abc0522b10c4ba4bde31e12d602f, type: 3}
-  anchorObjectPrefab: {fileID: 0}
+  anchorObjectPrefab: {fileID: 2162512464405784849, guid: 1310a294cb7cc464595095276e2f97a5, type: 3}
   transformationAnimation: {fileID: 0}
   visualAssociationSprite: {fileID: 0}

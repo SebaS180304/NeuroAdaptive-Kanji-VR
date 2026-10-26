@@ -103,7 +103,7 @@ namespace NeuroAdaptiveVR.EditorTools
             HeadBehaviorCases();
             DistractorCases();
             PeripheralAnimalCases();
-            SetAObjectCases();
+            KanjiObjectCases();
             JapaneseRoomCases();
             ClockProbeCases();
             CurtainCases();
@@ -1890,21 +1890,36 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>
-        /// X10. Stage-1 objects of S5 for set A (D-F6-20, D-F6-26): five prefabs with the
-        /// reference envelope (±1 cm), pivot at the centre, no collider. All five kanji
-        /// carry an object or none does (never real and placeholder mixed in a session),
-        /// and a reference box is never assigned: boxes are scaffolding, not test content.
+        /// X10 / X18. Stage-1 objects of S5 for set A (D-F6-20, D-F6-26) and set B (D-F6-43): per set, five
+        /// prefabs with the reference envelope (±1 cm), pivot at the centre, no collider. All five kanji of a
+        /// set carry an object or none does (never real and placeholder mixed in a session), and a reference
+        /// box is never assigned: boxes are scaffolding, not test content.
         /// </summary>
-        private static void SetAObjectCases()
+        private static void KanjiObjectCases()
         {
-            var p = new List<string>();
-            var rows = new (string kanji, string code, Vector3 size)[]
+            ObjectSetCase("X10", "A", "D-F6-26, 22 oct 19:45", new (string, string, Vector3)[]
             {
                 ("KANJI_TSUKI", "01_TSUKI", new Vector3(0.23f, 0.30f, 0.08f)),
                 ("KANJI_KURUMA", "02_KURUMA", new Vector3(0.24f, 0.40f, 0.24f)),   // approved 24 W x 40 D x 24 H, shown from above: axle vertical (ESTADO.md 02)
                 ("KANJI_HI", "03_HI", new Vector3(0.24f, 0.30f, 0.16f)), ("KANJI_TAKE", "04_TAKE", new Vector3(0.24f, 0.35f, 0.12f)),
                 ("KANJI_ISHI", "05_ISHI", new Vector3(0.30f, 0.28f, 0.18f)),
-            };
+            });
+            // Unity sizes as each FICHA gives them after Bake Axis Conversion: W x H x D, front -Z.
+            ObjectSetCase("X18", "B", "D-F6-43, 26 oct 19:20", new (string, string, Vector3)[]
+            {
+                ("KANJI_YAMA", "06_YAMA", new Vector3(0.32f, 0.30f, 0.18f)), ("KANJI_MON", "07_MON", new Vector3(0.30f, 0.35f, 0.08f)),
+                ("KANJI_ONNA", "08_ONNA", new Vector3(0.20f, 0.30f, 0.22f)), ("KANJI_TE", "09_TE", new Vector3(0.22f, 0.28f, 0.06f)),
+                ("KANJI_AME", "10_AME", new Vector3(0.30f, 0.30f, 0.16f)),
+            });
+            // Set C has no objects yet: its kanji record PLACEHOLDER.
+            var noObject = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>("Assets/Resources/kanji/KANJI_HITO.asset");
+            Check("X18b", "Un kanji sin objeto (set C, KANJI_HITO) registra PLACEHOLDER",
+                  noObject != null && KanjiDiscoveryController.ObjectSourceOf(noObject.anchorObjectPrefab) == "PLACEHOLDER", "KANJI_HITO");
+        }
+
+        private static void ObjectSetCase(string id, string set, string source, (string kanji, string code, Vector3 size)[] rows)
+        {
+            var p = new List<string>();
             int assigned = 0, boxes = 0;
             foreach (var r in rows)
             {
@@ -1919,24 +1934,22 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (Vector3.Distance(b.size, r.size) > 0.0173f) p.Add($"{r.code} mide {b.size:F2}, referencia {r.size:F2}");   // 1 cm per axis
                 if (b.center.magnitude > 0.01f) p.Add($"{r.code} pivote fuera del centro ({b.center:F3})");
                 if (prefab.GetComponentsInChildren<Collider>(true).Length > 0) p.Add($"{r.code} tiene collider");
+                // Nothing in S5 animates an object: 07's door leaves stay shut on their hinge pivots (FICHA_07 note 1).
+                if (prefab.GetComponentsInChildren<Animator>(true).Length + prefab.GetComponentsInChildren<Animation>(true).Length > 0) p.Add($"{r.code} trae animacion");
+                foreach (var t in prefab.GetComponentsInChildren<Transform>(true))
+                    if (t != prefab.transform && t.localRotation != Quaternion.identity) p.Add($"{r.code}/{t.name} girado ({t.localEulerAngles:F0})");
                 var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{r.kanji}.asset");
                 if (item != null && item.anchorObjectPrefab != null)
                 {
                     assigned++;
                     if (item.anchorObjectPrefab.transform.Find("Model_Box") != null) p.Add($"{r.kanji} tiene asignada una caja");
                 }
-            }
-            if (assigned != 0 && assigned != rows.Length) p.Add($"{assigned}/5 kanji con objeto: se mezclan real y placeholder (D-F6-26)");
-            if (boxes > 0 || assigned != rows.Length) p.Add($"{boxes} cajas y {assigned}/5 asignados: los cinco FBX del set A ya existen (D-F6-26, 22 oct 19:45)");
-            // KANJI_EXPOSED.object_source tells the real object from a placeholder (set B has no objects yet).
-            foreach (var r in rows)
-            {
-                var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{r.kanji}.asset");
+                // KANJI_EXPOSED.object_source tells the real object from a placeholder.
                 if (item != null && KanjiDiscoveryController.ObjectSourceOf(item.anchorObjectPrefab) != "BLENDER_FBX") p.Add($"{r.kanji} no registra BLENDER_FBX");
             }
-            var noObject = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>("Assets/Resources/kanji/KANJI_YAMA.asset");
-            if (noObject != null && KanjiDiscoveryController.ObjectSourceOf(noObject.anchorObjectPrefab) != "PLACEHOLDER") p.Add("KANJI_YAMA (sin objeto) no registra PLACEHOLDER");
-            Check("X10", "Objetos de S5 del set A: cinco prefabs del tamano de referencia, los cinco asignados o ninguno, nunca una caja (D-F6-26)",
+            if (assigned != 0 && assigned != rows.Length) p.Add($"{assigned}/5 kanji con objeto: se mezclan real y placeholder (D-F6-26)");
+            if (boxes > 0 || assigned != rows.Length) p.Add($"{boxes} cajas y {assigned}/5 asignados: los cinco FBX del set {set} ya existen ({source})");
+            Check(id, $"Objetos de S5 del set {set}: cinco prefabs del tamano de referencia, los cinco asignados o ninguno, nunca una caja, sin animacion (D-F6-26)",
                   p.Count == 0, p.Count == 0 ? $"{rows.Length - boxes} modelos, {boxes} cajas · asignados {assigned}/5" : Join(p));
         }
 
