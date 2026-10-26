@@ -1,6 +1,6 @@
 # Design system · v1 (approved Oct 16)
 
-Alineado hasta: D-F6-11 (`Estado_Actual.md`, Oct 21 2026).
+Alineado hasta: D-F6-96 (`Estado_Actual.md`, Oct 26 2026).
 
 > **Status: v1 design COMPLETE.** Tokens approved Oct 16 2026 (light 23:15, dark
 > 23:18). Every screen, V1.1 to V1.11, validated by Oct 17 2026, 00:20 (see the log).
@@ -34,12 +34,14 @@ the URL. Status *Pending* = do not build the screen yet.
 | V1.5 Adaptations tab | *V1.5 Session View, Adaptations tab* and its dark artboard | Validated | Oct 17 2026, 00:08 |
 | V1.6 Plan and execution tab | *V1.6 Session View, Plan and execution tab* and its dark artboard | Validated | Oct 17 2026, 00:08 |
 | V1.7 Data quality | *V1.7 Data quality* (Tweaks: `noErrors`), dark variant | Validated; revised from real data and re-validated | Oct 17 2026, 00:02; Oct 19 2026, 23:54 |
-| V1.8 Participant View | *V1.8 Participant View* (Tweaks: `pretestDone` shows the "Open the pre-test" state), dark variant | Validated; revised from real data and re-validated | Oct 17 2026, 00:02; Oct 19 2026, 23:54 |
+| V1.8 Participant View (without the profile) | *Superseded Oct 21: V1.8 Participant View …* and its dark artboard, moved to the "Superseded" zone of the canvas | **Superseded** (D-F6-16): replaced by *V1.8 Participant View · Learner Profile*; do not build from it | Validated Oct 17 and Oct 19; superseded Oct 21 2026, 20:11 |
 | V1.10 Kanji pre-test | *V1.10 …* row (pick, register, one kanji, complete, states) and its dark row; summary without substitutions (Sebas, Oct 16, 23:57) | Validated | Oct 17 2026, 00:02 |
 | V1.11 Participant list (needs a scope entry from the dev chat) | *V1.11 Participant list (proposed)* and its dark artboard | Validated | Oct 17 2026, 00:20 |
 | F-PROFILE Learner Profile at the top of V1.8 | *V1.8 Participant View · Learner Profile* (Tweaks: `noSessions`, `oneSession`, `staticOnly`, `noChanges`, `manySessions`) and its dark artboard | Validated | Oct 21 2026, 14:14 |
 | F-PROFILE: "See [n] decisions in [k] sessions" and the V1.5 group filter | Learner Profile (`manySessions`) and V1.5 (`groupFilter`) artboards, canvas version 38 | Validated | Oct 21 2026, 18:22 |
 | F-PROFILE: aborted sessions never mentioned (scope line without the "[m] aborted…" clause) | same artboard, canvas version 39 | Validated | Oct 21 2026, 18:22 |
+| F-PROFILE: "Not recorded" outcome badge (D-F6-8, D-F6-16) | Learner Profile artboard, Tweak `manySessions`, second group, canvas version 41 | Validated (D-F6-96; validated by Sebas on the canvas, recorded Oct 26 with no date noted) | Recorded Oct 26 2026, 17:00 |
+| Estimated state `UNDERCHALLENGED`: color `--color-state-underchallenged` (D-F6-81) | *Tokens* artboard, "Estimated state" row, canvas version 42 | Defined by the design chat (D-F6-81: design web defines the color); shown to Sebas | Oct 26 2026, 16:45 |
 | F-PROFILE: canvas-only form written here (D-F6-11; the 12 form points of the dev chat's Task 11a-fix) | same artboards, canvas 30, 38 and 39; no new drawing | Recorded, nothing new to validate | Oct 21 2026, 19:40 |
 
 All artboards: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL`.
@@ -114,6 +116,7 @@ Every color is a CSS variable. Light is the default; dark is applied with
 | `--color-state-stable` | `#0B6A73` | `#3FB7C2` | Estimated state: stable |
 | `--color-state-disengaged` | `#9A6414` | `#F2C46D` | Estimated state: disengaged |
 | `--color-state-overloaded` | `#B83A22` | `#E5694F` | Estimated state: overloaded |
+| `--color-state-underchallenged` | `#565B62` | `#9AA0A8` | Estimated state: `UNDERCHALLENGED`, label "Low challenge (estimated)" (D-F6-59, D-F6-81; Oct 26). Slate on purpose: it is not a state the system rescues, and it must not read as a variant of Stable. 6.9:1 on white, 6.4:1 on Paper; dark 6.5:1 on surface. Same 10 px dot as the other states, always with its label; the enum goes in the tooltip. Replaces the provisional neutral color in `EstimatedState` |
 | `--color-outcome-positive` | `#0B6A73` | `#3FB7C2` | Outcome positive |
 | `--color-outcome-neutral` | `#C9CDD2` | `#3A3F47` | Outcome neutral (a fill read with its legend, not a control border; own values since Oct 18) |
 | `--color-outcome-negative` | `#B83A22` | `#E5694F` | Outcome negative |
@@ -361,6 +364,11 @@ Participant View*, both with dark variants.
 
 ### V1.8 Participant View
 
+> Superseded in part (D-F6-16): the page layout, the header and the trend chart
+> now follow "V1.8 Learner Profile (F-PROFILE)" below. The rules here still
+> apply to the status words, the sessions fact, the head-away column, the
+> pre-test lead sentences and the notes.
+
 - **Trend x-axis**: session order by start time, not `visit_number`. Ticks are the
   session numbers from the table, with the date in the tooltip, plus the visit
   number when it is above 1.
@@ -566,6 +574,14 @@ from `Contenido_UI_F-PROFILE.md` (UI/UX chat); this section only fixes the form.
   - *Empty texts* (STATIC only, no changes): body text with 12 px top padding
     and a 1 px `--color-border-subtle` top rule; the "See [d] decisions" link
     goes **below** the sentence, not beside it.
+  - *"Not recorded" badge* (D-F6-8, validated by D-F6-96): for changes applied
+    before Oct 14 with no stored outcome. Same 24 px pill as the other outcome
+    badges, **1 px dashed `--color-border-strong` border, no fill, no mark**,
+    `--color-text-muted` text, "Not recorded: [n]"; always the **last** item of
+    the badge row. It never counts in the "k of n" nor in the "Too few to tell"
+    threshold, like `UNCERTAIN`. Tooltip: "No outcome was recorded for these
+    changes" (`Contenido_UI_F-PROFILE.md` §3.4). Never shown for `UNDERCHALLENGED`
+    groups (rules-v2 always records the outcome).
   - *Badge tooltip*: the enum, then the subtype after a comma, no count:
     "POSITIVE", "POSITIVE, RESOLVED", "UNCERTAIN, INCOMPLETE".
   - *Across sessions*: 16 px top padding over the 1 px top rule, 8 px gap.
