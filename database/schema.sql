@@ -2,12 +2,12 @@
 -- NeuroAdaptive VR -- Esquema inicial de PostgreSQL (Fase 1)
 -- =====================================================================
 -- Este archivo es la referencia humana-legible del esquema que producen
--- las migraciones Alembic 0001_initial_schema a 0008_stages_authored_count
--- (backend/alembic/versions). Las partes de 0002 a 0008 son copia literal de
+-- las migraciones Alembic 0001_initial_schema a 0009_underchallenged
+-- (backend/alembic/versions). Las partes de 0002 a 0009 son copia literal de
 -- backend/alembic/versions/sql/000N_*_up.sql, en ese orden: 0002_schema_v1
 -- (1 oct 2026), 0003_adaptation (14 oct), 0004_kanji_pretest (16 oct),
 -- 0005_abort_stale_sessions y 0006_research_read (17 oct), 0007_learner_profile
--- (21 oct), 0008_stages_authored_count (23 oct).
+-- (21 oct), 0008_stages_authored_count (23 oct), 0009_underchallenged (26 oct).
 -- Los dos deben mantenerse identicos; si se autogenera una nueva
 -- migracion con Alembic, este archivo debe regenerarse con:
 --   pg_dump --schema-only --no-owner --no-privileges neuroadaptive_vr
@@ -2219,4 +2219,26 @@ BEGIN
         RAISE EXCEPTION '0008: proj_apply no longer casts stages_authored to boolean';
     END IF;
     EXECUTE replace(def, '(p ->> ''stages_authored'')::boolean', '(p ->> ''stages_authored'')::smallint');
+END $$;
+
+-- NeuroAdaptive VR -- UNDERCHALLENGED state (behavior-v2 / rules-v2) -- migration 0009 (up)
+-- D-F6-59: the estimator gains the state UNDERCHALLENGED (15 characters) with the causes FAST
+-- and NO_ENVIRONMENT (14). learner_state and cause were VARCHAR(12) with a CHECK listing the
+-- v1 values. v_adaptations reads both columns, so it is dropped and recreated from its own
+-- definition around the type change. Existing rows are untouched.
+
+DO $$
+DECLARE view_def TEXT := pg_get_viewdef('v_adaptations'::regclass, true);
+BEGIN
+    DROP VIEW v_adaptations;
+    ALTER TABLE adaptation_decisions
+        DROP CONSTRAINT adaptation_decisions_learner_state_check,
+        DROP CONSTRAINT adaptation_decisions_cause_check,
+        ALTER COLUMN learner_state TYPE VARCHAR(16),
+        ALTER COLUMN cause TYPE VARCHAR(16),
+        ADD CONSTRAINT adaptation_decisions_learner_state_check
+            CHECK (learner_state IN ('STABLE', 'DISENGAGED', 'OVERLOADED', 'UNDERCHALLENGED')),
+        ADD CONSTRAINT adaptation_decisions_cause_check
+            CHECK (cause IN ('ENVIRONMENT', 'AWAY', 'IMPULSIVE', 'FAST', 'NO_ENVIRONMENT'));
+    EXECUTE 'CREATE VIEW v_adaptations AS ' || view_def;
 END $$;
