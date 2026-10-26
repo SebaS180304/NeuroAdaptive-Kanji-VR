@@ -125,7 +125,7 @@ function GroupRow({ g, order }: { g: Group; order: ReturnType<typeof numbering> 
             Too few to tell
           </span>
         )}
-        {/* "Not recorded" keeps its 983aaa7 form until Sebas validates it on the canvas (D-F6-16). */}
+        {/* "Not recorded": OutcomeChip's dashed chip, the form validated by D-F6-96; always last (badges()). */}
         {badges(g).map((b) => (
           <OutcomeChip key={b.text} outcome={b.outcome === 'NOT_RECORDED' ? null : b.outcome} label={b.text} title={b.title} />
         ))}
