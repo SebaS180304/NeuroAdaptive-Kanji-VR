@@ -16,10 +16,15 @@ import pytest
 from app.adaptation.estimator import (
     AWAY,
     DISENGAGED,
+    ESTIMATOR_V1,
+    ESTIMATOR_V2,
     ENVIRONMENT,
     IMPULSIVE,
     OVERLOADED,
     STABLE,
+    FAST,
+    NO_ENVIRONMENT,
+    UNDERCHALLENGED,
     estimate,
 )
 from app.adaptation.indicators import WindowIndicators
@@ -43,7 +48,7 @@ def replays():
     out = {}
     for sid in (OBS_01, OBS_02):
         events = [e for e in data["events"] if e["session_id"] == sid]
-        _, rows = replay(events)
+        _, rows = replay(events, ESTIMATOR_V1)    # F3 recordings: the frozen v1 checks
         out[sid] = {row["trial"].trial_id: row["result"] for row in rows}
     return out
 
@@ -157,5 +162,70 @@ def test_confidence_scales_with_window_and_reliability():
 def test_result_serialises_for_the_decision_record():
     d = estimate(_window(away_ms=1600), _profile()).as_dict()
     assert d["state"] == DISENGAGED and d["evidence"] == ["away_ms"]
-    assert d["estimator_version"] == "behavior-v1"
+    assert d["estimator_version"] == ESTIMATOR_V2 and "UNDERCHALLENGED" in d["conditions"]
     assert json.loads(json.dumps(d)) == d
+
+
+# -- behavior-v2: UNDERCHALLENGED (D-F6-59) ----------------------------------
+
+QUICK = dict(rt_ratio=0.79, trial_rt_ratios=(0.79,) * 3)                 # MANU, 678b7806
+QUIET = dict(peripheral_count=1, orienting_count=0, orienting_rate=0.0)  # a peripheral, no look
+
+
+def test_fast_without_errors_is_underchallenged_fast():
+    r = estimate(_window(**QUICK), _profile())
+    assert (r.state, r.cause) == (UNDERCHALLENGED, FAST)
+    assert r.support == 0.75 and r.confidence == 0.75
+    assert [c.name for c in r.evidence] == [FAST]
+
+
+def test_no_look_at_the_room_is_underchallenged_no_environment():
+    r = estimate(_window(**QUIET), _profile())
+    assert (r.state, r.cause) == (UNDERCHALLENGED, NO_ENVIRONMENT)
+
+
+def test_both_conditions_give_full_support_and_fast_first():
+    r = estimate(_window(**QUICK, **QUIET), _profile())
+    assert (r.state, r.cause, r.support) == (UNDERCHALLENGED, FAST, 1.0)
+
+
+def test_no_environment_needs_a_peripheral_in_the_window():
+    assert estimate(_window(), _profile()).state == STABLE
+
+
+def test_no_environment_needs_orienting_at_most_the_practice_rate():
+    turned = dict(peripheral_count=2, orienting_count=1, orienting_rate=0.5)
+    assert estimate(_window(**turned), _profile(orienting_rate_ref=0.5)).state == UNDERCHALLENGED
+    assert estimate(_window(**turned), _profile(orienting_rate_ref=0.0)).state == STABLE
+    assert estimate(_window(**QUIET, away_ms=300), _profile()).state == STABLE
+
+
+def test_one_error_closes_the_gate():
+    r = estimate(_window(**QUICK, **QUIET, acc=2 / 3, acc_delta=-0.21), _profile())
+    assert r.state == STABLE
+
+
+def test_pace_above_the_threshold_is_not_fast():
+    assert estimate(_window(rt_ratio=0.86), _profile()).state == STABLE
+    assert estimate(_window(rt_ratio=0.85), _profile()).state == UNDERCHALLENGED
+
+
+def test_one_condition_is_not_enough_with_an_unreliable_profile():
+    one = estimate(_window(**QUICK), _profile(reliability=0.6))
+    both = estimate(_window(**QUICK, **QUIET), _profile(reliability=0.6))
+    assert one.confidence == pytest.approx(0.45) and both.confidence == pytest.approx(0.6)
+
+
+def test_disengaged_wins_over_underchallenged():
+    assert estimate(_window(**QUICK, away_ms=1600), _profile()).state == DISENGAGED
+
+
+def test_v1_never_reads_underchallenged():
+    r = estimate(_window(**QUICK, **QUIET), _profile(), version=ESTIMATOR_V1)
+    assert r.state == STABLE and r.version == ESTIMATOR_V1
+    assert "UNDERCHALLENGED" not in r.as_dict()["conditions"]
+
+
+def test_unknown_version_is_refused():
+    with pytest.raises(ValueError):
+        estimate(_window(), _profile(), version="behavior-v9")

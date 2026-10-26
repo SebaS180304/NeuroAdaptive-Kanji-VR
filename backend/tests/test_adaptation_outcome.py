@@ -19,6 +19,7 @@ from app.adaptation.estimator import (
     STABLE,
     EstimatorResult,
 )
+from app.adaptation.estimator import ESTIMATOR_V1
 from app.adaptation.outcome import NEGATIVE, NEUTRAL, POSITIVE, UNCERTAIN, classify
 from app.adaptation.replay import replay
 from app.adaptation.state import ADAPTATION_OUTCOME, SessionAdaptationState
@@ -144,7 +145,7 @@ def obs01():
 
 
 def test_replay_obs01_outcomes(obs01):
-    _, rows = replay(obs01)
+    _, rows = replay(obs01, ESTIMATOR_V1)
     out = {r["trial"].trial_id: r["outcome"] for r in rows if r["outcome"] is not None}
     # the LAL raise of S7-010 resolved the overload in S7-011..013
     assert (out["S7-010"].outcome, out["S7-010"].reason_code) == (POSITIVE, "RESOLVED")
@@ -155,7 +156,7 @@ def test_replay_obs01_outcomes(obs01):
 
 def test_live_path_marks_a_change_unity_never_applied(obs01):
     # the recording was STATIC: S7-011 still reports LAL MEDIUM after the raise of S7-010
-    state = SessionAdaptationState("BEHAVIOR_ADAPTIVE")
+    state = SessionAdaptationState("BEHAVIOR_ADAPTIVE", ESTIMATOR_V1)
     outcomes = []
     for e in obs01:
         state.feed(e["event_type"], e.get("payload") or {})
@@ -180,7 +181,7 @@ def _applied_copy(events):
 
 def test_live_path_classifies_after_the_cooldown_and_matches_replay(obs01):
     events = _applied_copy(obs01)
-    state = SessionAdaptationState("BEHAVIOR_ADAPTIVE")
+    state = SessionAdaptationState("BEHAVIOR_ADAPTIVE", ESTIMATOR_V1)
     outcomes = []
     for e in events:
         state.feed(e["event_type"], e.get("payload") or {})
@@ -192,12 +193,12 @@ def test_live_path_classifies_after_the_cooldown_and_matches_replay(obs01):
 
 def test_rebuild_does_not_repeat_outcomes(obs01):
     events = _applied_copy(obs01)
-    rebuilt = SessionAdaptationState.rebuild("BEHAVIOR_ADAPTIVE", events)
+    rebuilt = SessionAdaptationState.rebuild("BEHAVIOR_ADAPTIVE", events, ESTIMATOR_V1)
     assert rebuilt.take_outcomes() == []
 
 
 def test_leaving_s7_with_an_open_change_is_uncertain():
-    state = SessionAdaptationState("BEHAVIOR_ADAPTIVE")
+    state = SessionAdaptationState("BEHAVIOR_ADAPTIVE", ESTIMATOR_V1)
     from app.adaptation.state import _OpenChange
     state._open.append(_OpenChange(dict(RAISE), PRE_OVER, 15))
     state.feed("STATE_ENTERED", {"state": "S8_IMMEDIATE_ASSESSMENT", "session_elapsed_ms": 1})

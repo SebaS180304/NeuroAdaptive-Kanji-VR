@@ -16,9 +16,14 @@ from app.adaptation.estimator import (
     AWAY,
     DISENGAGED,
     ENVIRONMENT,
+    ESTIMATOR_V1,
+    FAST,
     IMPULSIVE,
+    NO_ENVIRONMENT,
     OVERLOADED,
     STABLE,
+    UNDERCHALLENGED,
+    Condition,
     EstimatorResult,
 )
 from app.adaptation.replay import replay
@@ -55,17 +60,18 @@ def _clean_test_participants():
     yield
 
 
-def _result(state=STABLE, cause=None, confidence=1.0, trial=1):
+def _result(state=STABLE, cause=None, confidence=1.0, trial=1, underchallenged=()):
     return EstimatorResult(
         trial_id=f"S7-{trial:03d}", state=state, cause=cause, confidence=confidence, support=1.0,
-        disengaged=(), overloaded=(), indicators={},
+        disengaged=(), overloaded=(), indicators={}, underchallenged=underchallenged,
     )
 
 
 def _run(states, esl="MEDIUM", lal="MEDIUM", trial_ms=TRIAL_MS, config=DEFAULT_CONFIG):
     """Feed one state per trial (S7-001 onwards); returns the decisions and the final engine state.
 
-    Each item is a state, or a (state, cause) / (state, cause, confidence) tuple.
+    Each item is a state, or a (state, cause) / (state, cause, confidence) tuple, or
+    (state, cause, confidence, underchallenged conditions).
     """
     engine = initial_state(esl, lal, S7_START)
     decisions = []
@@ -75,7 +81,8 @@ def _run(states, esl="MEDIUM", lal="MEDIUM", trial_ms=TRIAL_MS, config=DEFAULT_C
         state = item[0]
         cause = item[1] if len(item) > 1 else None
         conf = item[2] if len(item) > 2 else 1.0
-        d, engine = decide(_result(state, cause, conf, i), i, S7_START + i * trial_ms, engine, config)
+        uc = item[3] if len(item) > 3 else ()
+        d, engine = decide(_result(state, cause, conf, i, uc), i, S7_START + i * trial_ms, engine, config)
         decisions.append(d)
     return decisions, engine
 
@@ -271,7 +278,7 @@ def test_decision_serialises_for_the_message():
     decisions, _ = _run([O] * 4)
     d = decisions[3].as_dict()
     assert d["action"] == CHANGE_ASSISTANCE and d["proactive_cues"] is True
-    assert d["rules_version"] == "rules-v1"
+    assert d["rules_version"] == "rules-v2"
     assert json.loads(json.dumps(d)) == d
 
 
@@ -291,7 +298,7 @@ def decisions():
     out = {}
     for sid in (OBS_01, OBS_02):
         events = [e for e in data["events"] if e["session_id"] == sid]
-        _, rows = replay(events)
+        _, rows = replay(events, ESTIMATOR_V1)    # F3 recordings: the frozen v1 checks
         out[sid] = {row["trial"].trial_id: row["decision"] for row in rows}
     return out
 
@@ -320,3 +327,65 @@ def test_obs01_early_overload_is_not_acted_on(decisions):
 def test_obs02_never_changes(decisions):
     assert not any(x.is_change for x in decisions[OBS_02].values())
     assert len(decisions[OBS_02]) == 20
+
+
+# -- rules-v2: UNDERCHALLENGED (D-F6-59) --------------------------------------
+
+
+def _uc(fast, no_environment):
+    return (Condition("no_errors", True, None, None), Condition(FAST, fast, None, 0.85),
+            Condition(NO_ENVIRONMENT, no_environment, None, None))
+
+
+U_FAST = (UNDERCHALLENGED, FAST, 1.0, _uc(True, False))
+U_ENV = (UNDERCHALLENGED, NO_ENVIRONMENT, 1.0, _uc(False, True))
+U_BOTH = (UNDERCHALLENGED, FAST, 1.0, _uc(True, True))
+
+
+def test_underchallenged_by_the_room_raises_the_environment():
+    decisions, _ = _run([U_ENV] * 4)
+    assert _changes(decisions) == [(4, ESL, "MEDIUM", "HIGH")]
+    d = decisions[3]
+    assert d.reason_code == "UNDERCHALLENGED_ENVIRONMENT" and d.proactive_cues is False
+    assert d.explanation.startswith("Raised the environment from MEDIUM to HIGH")
+    assert d.version == "rules-v2"
+
+
+def test_underchallenged_fast_lowers_the_assistance_without_cues():
+    decisions, _ = _run([U_FAST] * 4)
+    assert _changes(decisions) == [(4, LAL, "MEDIUM", "LOW")]
+    assert decisions[3].reason_code == "UNDERCHALLENGED_FAST" and decisions[3].proactive_cues is False
+
+
+def test_both_lower_the_assistance_first_then_raise_the_environment():
+    decisions, _ = _run([U_BOTH] * 10)
+    assert _changes(decisions) == [(4, LAL, "MEDIUM", "LOW"), (9, ESL, "MEDIUM", "HIGH")]
+    assert decisions[8].reason_code == "UNDERCHALLENGED_ENVIRONMENT"
+    assert "the assistance is already at its minimum" in decisions[8].explanation
+
+
+def test_fast_alone_with_the_assistance_at_low_is_at_limit():
+    decisions, _ = _run([U_FAST] * 6, lal="LOW")
+    assert _changes(decisions) == []
+    assert decisions[3].reason_code == AT_LIMIT
+
+
+def test_stable_never_returns_a_harder_change():
+    decisions, engine = _run([U_ENV] * 4 + [S] * 16)
+    assert _changes(decisions) == [(4, ESL, "MEDIUM", "HIGH")]
+    assert engine.esl == "HIGH" and engine.moved == ()
+
+
+def test_disengaged_or_overloaded_undo_a_harder_change():
+    decisions, _ = _run([U_ENV] * 4 + [ENV] * 5)
+    assert _changes(decisions) == [(4, ESL, "MEDIUM", "HIGH"), (9, ESL, "HIGH", "MEDIUM")]
+    decisions, _ = _run([U_FAST] * 4 + [O] * 5)
+    assert _changes(decisions) == [(4, LAL, "MEDIUM", "LOW"), (9, LAL, "LOW", "MEDIUM")]
+
+
+def test_a_v1_result_is_decided_as_rules_v1():
+    engine = initial_state("MEDIUM", "MEDIUM", S7_START)
+    r = EstimatorResult(trial_id="S7-001", state=STABLE, cause=None, confidence=1.0, support=1.0,
+                        disengaged=(), overloaded=(), version=ESTIMATOR_V1)
+    d, _ = decide(r, 1, S7_START + TRIAL_MS, engine)
+    assert d.version == "rules-v1"

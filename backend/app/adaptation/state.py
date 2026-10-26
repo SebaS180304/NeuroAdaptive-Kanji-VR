@@ -26,6 +26,10 @@ it, and at the answer of N+3 the window N+1…N+3 is classified.
 leaving S7 with a change still open classifies it ``UNCERTAIN``. A rebuild
 discards the outcomes it recomputes: they were already stored.
 
+**Version.** A new session runs with the current estimator (and the rules
+that go with it); a rebuild keeps the version its stored decisions name, so a
+session never changes version halfway (D-F6-59).
+
 STATIC, and every state other than S7, never reaches the estimator
 (criterion 5): ``adaptation_allowed`` gates it.
 """
@@ -35,13 +39,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping
 
-from app.adaptation.estimator import DEFAULT_THRESHOLDS, ESTIMATOR_VERSION, EstimatorResult, estimate
+from app.adaptation.estimator import (
+    DEFAULT_THRESHOLDS,
+    ESTIMATOR_VERSION,
+    ESTIMATOR_VERSIONS,
+    EstimatorResult,
+    estimate,
+)
 from app.adaptation.indicators import window_indicators, window_trials
 from app.adaptation.outcome import POST_WINDOW, classify
 from app.adaptation.profile import S6Profile, build_profile
 from app.adaptation.rules import (
     DEFAULT_CONFIG,
-    RULES_VERSION,
     Decision,
     EngineState,
     adaptation_allowed,
@@ -104,8 +113,8 @@ class PendingDecision:
             "evidence": estimator.get("evidence"),
             "conditions": estimator.get("conditions"),
             "support": estimator.get("support"),
-            "estimator_version": ESTIMATOR_VERSION,
-            "rules_version": RULES_VERSION,
+            "estimator_version": estimator.get("estimator_version"),
+            "rules_version": self.decision.version,
             "thresholds": {"estimator": DEFAULT_THRESHOLDS.as_dict(), "rules": DEFAULT_CONFIG.as_dict()},
         })
         return payload
@@ -121,6 +130,16 @@ class _OpenChange:
     applied: bool | None = None
 
 
+def stored_version(events: Iterable[Mapping[str, Any]]) -> str | None:
+    """The estimator version of a session's stored decisions, or None if it has none."""
+    for event in events:
+        if event["event_type"] == ADAPTATION_DECISION:
+            version = (event.get("payload") or {}).get("estimator_version")
+            if version in ESTIMATOR_VERSIONS:
+                return version
+    return None
+
+
 def decision_id_for(trial_id: str | None) -> str:
     """One decision per trial, so the trial names it; rebuilds agree with the live run."""
     return f"d-{trial_id}"
@@ -129,8 +148,9 @@ def decision_id_for(trial_id: str | None) -> str:
 class SessionAdaptationState:
     """Everything the live path needs to decide for one session."""
 
-    def __init__(self, condition: str | None) -> None:
+    def __init__(self, condition: str | None, version: str = ESTIMATOR_VERSION) -> None:
         self.condition = condition
+        self.version = version
         self.builder = TrialStreamBuilder()
         self.profile: S6Profile | None = None
         self.engine: EngineState | None = None
@@ -164,7 +184,7 @@ class SessionAdaptationState:
 
         trials = self.builder.records
         window = window_indicators(window_trials(trials, record.trial_id), self.profile)
-        result = estimate(window, self.profile)
+        result = estimate(window, self.profile, version=self.version)
         seq = record.trial_sequence or int(record.trial_id.split("-")[1])
         decision, self.engine = decide(result, seq, record.answered_ms, self.engine)
         self.decisions[record.trial_id] = decision
@@ -210,9 +230,11 @@ class SessionAdaptationState:
                                     None if started is None else int(started))
 
     @classmethod
-    def rebuild(cls, condition: str | None, events: Iterable[Mapping[str, Any]]) -> "SessionAdaptationState":
+    def rebuild(cls, condition: str | None, events: Iterable[Mapping[str, Any]],
+                version: str | None = None) -> "SessionAdaptationState":
         """The state after the stored events, e.g. when the WebSocket reconnects."""
-        state = cls(condition)
+        events = list(events)
+        state = cls(condition, version or stored_version(events) or ESTIMATOR_VERSION)
         for event in events:
             state.feed(event["event_type"], event.get("payload") or {})
         state.take_outcomes()     # already stored by the live run

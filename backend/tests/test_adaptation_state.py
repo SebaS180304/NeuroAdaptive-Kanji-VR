@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from app.adaptation.estimator import ESTIMATOR_V1
 from app.adaptation.rules import CHANGE_ASSISTANCE, COOLDOWN, NO_CHANGE
 from app.adaptation.state import SessionAdaptationState
 
@@ -33,7 +34,7 @@ def events():
 
 
 def _feed(condition, evs):
-    state = SessionAdaptationState(condition)
+    state = SessionAdaptationState(condition, ESTIMATOR_V1)    # F3 recordings: the frozen v1 checks
     pending = [p for e in evs if (p := state.feed(e["event_type"], e.get("payload") or {})) is not None]
     return state, pending
 
@@ -76,7 +77,7 @@ def test_rebuild_gives_the_same_state(events):
     live, pending = _feed("BEHAVIOR_ADAPTIVE", evs)
     cut = next(i for i, e in enumerate(evs) if e["event_type"] == "ANSWER_SELECTED"
                and (e["payload"] or {}).get("trial_id") == "S7-012")
-    rebuilt = SessionAdaptationState.rebuild("BEHAVIOR_ADAPTIVE", evs[:cut])
+    rebuilt = SessionAdaptationState.rebuild("BEHAVIOR_ADAPTIVE", evs[:cut], ESTIMATOR_V1)
     for e in evs[cut:]:
         rebuilt.feed(e["event_type"], e.get("payload") or {})
     assert rebuilt.engine == live.engine

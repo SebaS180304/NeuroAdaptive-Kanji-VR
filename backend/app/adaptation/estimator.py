@@ -1,5 +1,9 @@
 """
-Estimator v1: state, cause and confidence of one window (Planteamiento_Tecnico_F5a.md §4.3).
+Estimator: state, cause and confidence of one window (Planteamiento_Tecnico_F5a.md §4.3).
+
+Two versions, picked per session (``estimate(..., version=)``): ``behavior-v1``
+(F5a, frozen) and ``behavior-v2`` (D-F6-59), which adds ``UNDERCHALLENGED``.
+A session is always replayed with the version it ran with.
 
 Readable rules, not a trained model: with two recorded sessions there is
 nothing to train on, and every decision has to be explainable.
@@ -8,7 +12,15 @@ nothing to train on, and every decision has to be explainable.
 | --- | --- |
 | ``DISENGAGED`` | ``away_ms`` ≥ 1500 **or** ``env_dwell_ms`` ≥ 1500 **or** ``fast_errors`` ≥ 2 |
 | ``OVERLOADED`` | ``slow_errors`` ≥ 2 **or** (``rt_z`` ≥ 2 **and** ``acc_delta`` ≤ −0.34) **or** (``idle_eff_ratio`` ≥ 0.3 **and** ``acc_delta`` ≤ −0.34) |
+| ``UNDERCHALLENGED`` (v2) | no error and ``acc_delta`` ≥ 0, **and** ``FAST`` (``rt_ratio`` ≤ 0.85) **or** ``NO_ENVIRONMENT`` |
 | ``STABLE`` | None of the above |
+
+- ``NO_ENVIRONMENT``: ``away_ms`` = 0, ``env_dwell_ms`` = 0 and ``orienting_rate``
+  ≤ the S6 one, with at least one peripheral event in the window (without a
+  stimulus, not looking says nothing). ``FAST`` 0.85 is provisional, to be fixed
+  with the behavioural dry run. Priority: DISENGAGED > OVERLOADED >
+  UNDERCHALLENGED > STABLE. Cause: ``FAST`` when it holds (the engine lowers
+  the assistance first), else ``NO_ENVIRONMENT``; support = (2 + met) / 4.
 
 - If both hold, ``DISENGAGED`` wins: attention elsewhere explains the
   performance, and acting on difficulty would treat the symptom.
@@ -46,15 +58,21 @@ from typing import Any
 from app.adaptation.indicators import WindowIndicators
 from app.adaptation.profile import S6Profile
 
-ESTIMATOR_VERSION = "behavior-v1"
+ESTIMATOR_V1 = "behavior-v1"
+ESTIMATOR_V2 = "behavior-v2"
+ESTIMATOR_VERSIONS = (ESTIMATOR_V1, ESTIMATOR_V2)
+ESTIMATOR_VERSION = ESTIMATOR_V2          # what new sessions run with
 
 STABLE = "STABLE"
 DISENGAGED = "DISENGAGED"
 OVERLOADED = "OVERLOADED"
+UNDERCHALLENGED = "UNDERCHALLENGED"
 
 ENVIRONMENT = "ENVIRONMENT"
 AWAY = "AWAY"
 IMPULSIVE = "IMPULSIVE"
+FAST = "FAST"
+NO_ENVIRONMENT = "NO_ENVIRONMENT"
 
 
 @dataclass(frozen=True)
@@ -66,6 +84,7 @@ class EstimatorThresholds:
     rt_z: float = 2.0
     acc_drop: float = -0.34              # acc_delta ≤ this, together with rt_z or idle
     idle_eff_ratio: float = 0.3
+    fast_ratio: float = 0.85             # v2, UNDERCHALLENGED: provisional (D-F6-59)
     full_window: int = 3
 
     def as_dict(self) -> dict[str, Any]:
@@ -98,6 +117,7 @@ class EstimatorResult:
     disengaged: tuple[Condition, ...]
     overloaded: tuple[Condition, ...]
     indicators: dict[str, Any] = field(default_factory=dict)
+    underchallenged: tuple[Condition, ...] = ()     # v2 only: the gate, then FAST and NO_ENVIRONMENT
     version: str = ESTIMATOR_VERSION
 
     @property
@@ -107,10 +127,18 @@ class EstimatorResult:
             return tuple(c for c in self.disengaged if c.met)
         if self.state == OVERLOADED:
             return tuple(c for c in self.overloaded if c.met)
+        if self.state == UNDERCHALLENGED:
+            return tuple(c for c in self.underchallenged[1:] if c.met)
         return ()
 
     def as_dict(self) -> dict[str, Any]:
         """Plain dict for ADAPTATION_DECISION and the replay."""
+        conditions = {
+            DISENGAGED: [c.as_dict() for c in self.disengaged],
+            OVERLOADED: [c.as_dict() for c in self.overloaded],
+        }
+        if self.underchallenged:
+            conditions[UNDERCHALLENGED] = [c.as_dict() for c in self.underchallenged]
         return {
             "trial_id": self.trial_id,
             "state": self.state,
@@ -118,10 +146,7 @@ class EstimatorResult:
             "confidence": round(self.confidence, 3),
             "support": round(self.support, 3),
             "evidence": [c.name for c in self.evidence],
-            "conditions": {
-                DISENGAGED: [c.as_dict() for c in self.disengaged],
-                OVERLOADED: [c.as_dict() for c in self.overloaded],
-            },
+            "conditions": conditions,
             "indicators": self.indicators,
             "estimator_version": self.version,
         }
@@ -139,8 +164,11 @@ def estimate(
     window: WindowIndicators,
     profile: S6Profile,
     thresholds: EstimatorThresholds = DEFAULT_THRESHOLDS,
+    version: str = ESTIMATOR_VERSION,
 ) -> EstimatorResult:
     """State, cause and confidence of one window against the S6 profile."""
+    if version not in ESTIMATOR_VERSIONS:
+        raise ValueError(f"unknown estimator version {version!r}")
     th = thresholds
     acc = window.acc_delta
 
@@ -167,12 +195,34 @@ def estimate(
         ),
     )
 
+    underchallenged: tuple[Condition, ...] = ()
+    if version != ESTIMATOR_V1:
+        errors = window.n - round(window.acc * window.n)
+        orienting_ref = profile.orienting_rate_ref or 0.0
+        underchallenged = (
+            Condition("no_errors", errors == 0 and acc is not None and acc >= 0,
+                      {"errors": errors, "acc_delta": _round(acc)}, {"errors": 0, "acc_delta": 0}),
+            Condition(FAST, window.rt_ratio is not None and window.rt_ratio <= th.fast_ratio,
+                      _round(window.rt_ratio), th.fast_ratio),
+            Condition(
+                NO_ENVIRONMENT,
+                window.peripheral_count > 0 and window.away_ms == 0 and window.env_dwell_ms == 0
+                and (window.orienting_rate or 0.0) <= orienting_ref,
+                {"away_ms": window.away_ms, "env_dwell_ms": window.env_dwell_ms,
+                 "orienting_rate": _round(window.orienting_rate), "peripheral_count": window.peripheral_count},
+                {"away_ms": 0, "env_dwell_ms": 0, "orienting_rate": _round(orienting_ref), "peripheral_count": 1},
+            ),
+        )
+
     d_met = sum(c.met for c in disengaged)
     o_met = sum(c.met for c in overloaded)
+    u_met = sum(c.met for c in underchallenged[1:]) if underchallenged and underchallenged[0].met else 0
     if d_met:
         state, support = DISENGAGED, _support(d_met, len(disengaged))
     elif o_met:
         state, support = OVERLOADED, _support(o_met, len(overloaded))
+    elif u_met:
+        state, support = UNDERCHALLENGED, _support(u_met, len(underchallenged) - 1)
     else:
         state, support = STABLE, 1.0
 
@@ -189,6 +239,8 @@ def estimate(
             cause = AWAY
         else:
             cause = IMPULSIVE
+    elif state == UNDERCHALLENGED:
+        cause = FAST if underchallenged[1].met else NO_ENVIRONMENT
 
     coverage = min(window.n, th.full_window) / th.full_window
     confidence = coverage * profile.reliability * support
@@ -202,4 +254,6 @@ def estimate(
         disengaged=disengaged,
         overloaded=overloaded,
         indicators=window.as_dict(),
+        underchallenged=underchallenged,
+        version=version,
     )

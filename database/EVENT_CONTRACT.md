@@ -338,15 +338,15 @@ other row, plus `source = "BACKEND"`.
 | `dimension` | string or null | `ESL` or `LAL`; null with `NO_CHANGE` |
 | `from_level`, `to_level` | string or null | one step on LOW…HIGH; null with `NO_CHANGE` |
 | `proactive_cues` | bool | true only when LAL goes up (D9) |
-| `learner_state` | string | `STABLE`, `DISENGAGED` or `OVERLOADED` |
-| `cause` | string or null | `ENVIRONMENT`, `AWAY` or `IMPULSIVE` for `DISENGAGED`; null otherwise |
+| `learner_state` | string | `STABLE`, `DISENGAGED` or `OVERLOADED`; also `UNDERCHALLENGED` from `behavior-v2` |
+| `cause` | string or null | `ENVIRONMENT`, `AWAY` or `IMPULSIVE` for `DISENGAGED`; `FAST` or `NO_ENVIRONMENT` for `UNDERCHALLENGED`; null otherwise |
 | `confidence` | float | 0–1; states under 0.5 are ignored by the rules |
-| `reason_code` | string | why: the state (`OVERLOADED`, `DISENGAGED_ENVIRONMENT`, `STABLE_RETURN`…) or what blocked it (`INITIAL_WINDOW`, `COOLDOWN`, `HYSTERESIS`, `TAIL_FREEZE`, `AT_LIMIT`, `LOW_CONFIDENCE`, `STABLE`) |
+| `reason_code` | string | why: the state (`OVERLOADED`, `DISENGAGED_ENVIRONMENT`, `UNDERCHALLENGED_FAST`, `UNDERCHALLENGED_ENVIRONMENT`, `STABLE_RETURN`…) or what blocked it (`INITIAL_WINDOW`, `COOLDOWN`, `HYSTERESIS`, `TAIL_FREEZE`, `AT_LIMIT`, `LOW_CONFIDENCE`, `STABLE`) |
 | `explanation` | string | readable sentence, in English |
 | `cooldown_until_trial` | int or null | last trial sequence of the cooldown in force |
 | `decision_latency_ms` | float | from the arrival of the answer to the send of `DECISION` |
 | `indicators`, `evidence`, `conditions`, `support` | object, list, object, float | the estimator's window and the conditions that held |
-| `estimator_version`, `rules_version`, `thresholds` | string, string, object | what decided, with the thresholds in force |
+| `estimator_version`, `rules_version`, `thresholds` | string, string, object | what decided, with the thresholds in force: `behavior-v1` / `rules-v1` (F5a) or `behavior-v2` / `rules-v2` (D-F6-59, from 26 Oct 2026). A session keeps one version, and the replay uses it |
 
 #### `ADAPTATION_APPLIED` / `ADAPTATION_SKIPPED` — Unity
 

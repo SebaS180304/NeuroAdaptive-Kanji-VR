@@ -16,6 +16,12 @@ done with the same behaviour.
 
     # one JSON object per S7 trial, for diffs and evidence
     python -m app.adaptation.replay 87761ce6 --json
+
+    # with another estimator version than the session's own
+    python -m app.adaptation.replay 678b7806 --version behavior-v2
+
+A session replays with the estimator version of its stored decisions (a v1
+session stays v1); one without decisions (STATIC) with the current version.
 """
 
 from __future__ import annotations
@@ -26,11 +32,12 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from app.adaptation.estimator import estimate
+from app.adaptation.estimator import ESTIMATOR_VERSION, ESTIMATOR_VERSIONS, estimate
 from app.adaptation.indicators import window_indicators, window_trials
 from app.adaptation.outcome import POST_WINDOW, classify
 from app.adaptation.profile import build_profile
 from app.adaptation.rules import decide, initial_state
+from app.adaptation.state import stored_version
 from app.adaptation.trials import S7_STATE, build_trials
 
 
@@ -74,9 +81,10 @@ def s7_entry(events: Iterable[Mapping[str, Any]]) -> Mapping[str, Any]:
     return {}
 
 
-def replay(events: Iterable[Mapping[str, Any]]) -> tuple[Any, list[dict[str, Any]]]:
+def replay(events: Iterable[Mapping[str, Any]], version: str | None = None) -> tuple[Any, list[dict[str, Any]]]:
     """Profile and one row per answered S7 trial, as the live path computes them."""
     events = list(events)
+    version = version or stored_version(events) or ESTIMATOR_VERSION
     trials = build_trials(events)
     profile = build_profile(trials)
     entry = s7_entry(events)
@@ -88,7 +96,7 @@ def replay(events: Iterable[Mapping[str, Any]]) -> tuple[Any, list[dict[str, Any
         if trial.phase != "S7":
             continue
         window = window_indicators(window_trials(trials, trial.trial_id), profile)
-        result = estimate(window, profile)
+        result = estimate(window, profile, version=version)
         seq = trial.trial_sequence or int(trial.trial_id.split("-")[1])
         decision, engine = decide(result, seq, trial.answered_ms, engine)
         row = {"trial": trial, "window": window, "result": result, "decision": decision, "outcome": None}
@@ -109,12 +117,12 @@ def _fmt(value: float | None, pattern: str = "{:.2f}") -> str:
 
 def print_table(session: str, profile, rows: list[dict[str, Any]]) -> None:
     p = profile.as_dict()
-    print(f"Session {session}")
+    print(f"Session {session} · {rows[0]['result'].version if rows else '—'}")
     print(f"S6 profile: rt_ref {p['rt_ref']} (global {p['rt_ref_global']}) · spread {p['rt_spread']} · "
           f"acc {p['acc_ref']} · idle_eff {p['idle_eff_ref']} · n {p['n_trials']} · reliability {p['reliability']}")
     print()
     head = f"{'trial':7} {'type':5} {'rt':>6} {'ok':2}  {'ratio':>5} {'z':>6} {'acc':>6} {'fast':>4} {'slow':>4} " \
-           f"{'away':>5} {'dwell':>5} {'orient':>6} {'idle':>6}  {'state':10} {'cause':11} {'conf':>4}  {'decision'}"
+           f"{'away':>5} {'dwell':>5} {'orient':>6} {'idle':>6}  {'state':15} {'cause':14} {'conf':>4}  {'decision'}"
     print(head)
     print("-" * len(head))
     for row in rows:
@@ -122,7 +130,7 @@ def print_table(session: str, profile, rows: list[dict[str, Any]]) -> None:
         print(f"{t.trial_id:7} {t.trial_type[:2]:5} {t.rt_ms:6d} {'ok' if t.is_correct else 'x':2}  "
               f"{_fmt(w.rt_ratio):>5} {_fmt(w.rt_z, '{:.1f}'):>6} {_fmt(w.acc_delta):>6} {w.fast_errors:4d} {w.slow_errors:4d} "
               f"{w.away_ms:5d} {w.env_dwell_ms:5d} {_fmt(w.orienting_rate):>6} {_fmt(w.idle_eff_ratio):>6}  "
-              f"{r.state:10} {(r.cause or ''):11} {r.confidence:4.2f}  {_fmt_decision(row['decision'])}")
+              f"{r.state:15} {(r.cause or ''):14} {r.confidence:4.2f}  {_fmt_decision(row['decision'])}")
     changes = [row["decision"] for row in rows if row["decision"].is_change]
     print()
     print(f"{len(changes)} change(s)")
@@ -145,10 +153,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("session", help="session id or id prefix (e.g. 87761ce6)")
     parser.add_argument("--file", type=Path, help="read events from a JSON export instead of the database")
     parser.add_argument("--json", action="store_true", help="one JSON object per S7 trial")
+    parser.add_argument("--version", choices=ESTIMATOR_VERSIONS,
+                        help="estimator version (default: the session's own, else the current one)")
     args = parser.parse_args(argv)
 
     events = load_from_file(args.file, args.session) if args.file else load_from_db(args.session)
-    profile, rows = replay(events)
+    profile, rows = replay(events, args.version)
     if args.json:
         for row in rows:
             out = {**row["result"].as_dict(), "decision": row["decision"].as_dict(),

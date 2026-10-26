@@ -1,5 +1,9 @@
 """
-Rule engine v1: from the estimator's state to an action (Planteamiento_Tecnico_F5a.md §5).
+Rule engine: from the estimator's state to an action (Planteamiento_Tecnico_F5a.md §5).
+
+``rules-v2`` (D-F6-59) is ``rules-v1`` plus the ``UNDERCHALLENGED`` rows below,
+which only ``behavior-v2`` produces; each decision carries the rules version
+that goes with its estimator version, so a v1 session replays as ``rules-v1``.
 
 One decision per answered S7 trial, ``NO_CHANGE`` included, so the record also
 shows when the system chose not to act and why.
@@ -27,8 +31,14 @@ only trials played at the new level.
 | ``DISENGAGED`` | ``ENVIRONMENT`` or ``AWAY`` | ESL one step down | ``DISENGAGED_ENVIRONMENT`` / ``DISENGAGED_AWAY`` |
 | ``DISENGAGED`` | ``IMPULSIVE`` | ESL one step down; if ESL is already LOW, LAL one step up | ``DISENGAGED_IMPULSIVE`` |
 | ``OVERLOADED`` | — | LAL one step up, with proactive cues (D9) | ``OVERLOADED`` |
+| ``UNDERCHALLENGED`` (v2) | ``NO_ENVIRONMENT`` | ESL one step up | ``UNDERCHALLENGED_ENVIRONMENT`` |
+| ``UNDERCHALLENGED`` (v2) | ``FAST`` | LAL one step down; if LAL is already LOW and ``NO_ENVIRONMENT`` also holds, ESL one step up | ``UNDERCHALLENGED_FAST`` / ``UNDERCHALLENGED_ENVIRONMENT`` |
 | ``STABLE`` after a change | — | The dimension the engine moved last, one step back towards MEDIUM | ``STABLE_RETURN`` |
 | Any, at the limit | — | ``NO_CHANGE`` | ``AT_LIMIT`` |
+
+A change that makes the task harder (ESL up, LAL down) is never returned by
+``STABLE``: only ``DISENGAGED`` or ``OVERLOADED`` undo it, as they act the
+other way anyway (D-F6-59).
 
 ``IMPULSIVE`` with ESL above LOW lowering the ESL is a reading of the plan,
 which only states the ESL-at-LOW row. *To validate.*
@@ -51,13 +61,21 @@ from app.adaptation.estimator import (
     AWAY,
     DISENGAGED,
     ENVIRONMENT,
+    ESTIMATOR_V1,
+    ESTIMATOR_V2,
+    FAST,
     IMPULSIVE,
+    NO_ENVIRONMENT,
     OVERLOADED,
     STABLE,
+    UNDERCHALLENGED,
     EstimatorResult,
 )
 
-RULES_VERSION = "rules-v1"
+RULES_V1 = "rules-v1"
+RULES_V2 = "rules-v2"
+RULES_FOR = {ESTIMATOR_V1: RULES_V1, ESTIMATOR_V2: RULES_V2}
+RULES_VERSION = RULES_V2                  # what new sessions run with
 
 S7_STATE = "S7_EXPERIMENTAL_RETRIEVAL"
 ADAPTIVE_CONDITIONS = frozenset({"BEHAVIOR_ADAPTIVE", "MULTIMODAL_ADAPTIVE"})
@@ -116,7 +134,7 @@ class EngineState:
     cooldown_until: int = 0                 # trial sequence; NO_CHANGE up to and including it
     streak_state: str | None = None         # state of the current run of eligible windows
     streak_len: int = 0
-    moved: tuple[str, ...] = ()             # dimensions the engine moved off MEDIUM, oldest first
+    moved: tuple[str, ...] = ()             # dimensions the engine eased off MEDIUM, oldest first
     changes: int = 0
 
     def level(self, dimension: str) -> str:
@@ -224,6 +242,12 @@ def _evidence_text(result: EstimatorResult) -> str:
             parts.append(f"{c.value / 1000:.1f} s looking at objects in the room")
         elif c.name == "fast_errors":
             parts.append(f"{c.value} fast wrong answers")
+        elif c.name == FAST:
+            parts.append(f"answers at {_fmt_ratio(ind.get('rt_ratio'))} your practice pace")
+        elif c.name == NO_ENVIRONMENT:
+            parts.append(f"no look at the room in {ind.get('peripheral_count', 0)} peripheral events")
+    if result.state == UNDERCHALLENGED and parts:
+        parts.insert(0, "no errors in the last 3 trials")
     if result.state == DISENGAGED and result.cause == ENVIRONMENT and not any(
         c.name == "env_dwell_ms" for c in result.evidence
     ):
@@ -251,13 +275,15 @@ def decide(
     cfg = config
     seq = trial_sequence
 
+    version = RULES_FOR.get(result.version, RULES_VERSION)
+
     def no_change(reason: str, text: str, new_state: EngineState) -> tuple[Decision, EngineState]:
         return Decision(
             trial_id=result.trial_id, trial_sequence=seq, action=NO_CHANGE, dimension=None,
             from_level=None, to_level=None, proactive_cues=False, learner_state=result.state,
             cause=result.cause, confidence=result.confidence, reason_code=reason, explanation=text,
             cooldown_until_trial=state.cooldown_until if seq <= state.cooldown_until else None,
-            estimator=result.as_dict(),
+            estimator=result.as_dict(), version=version,
         ), new_state
 
     # 1 · initial window: neither acts nor counts for the hysteresis
@@ -307,6 +333,12 @@ def decide(
             dimension, delta = LAL, +1
         else:
             dimension, delta = ESL, -1
+    elif result.state == UNDERCHALLENGED:
+        no_environment = any(c.name == NO_ENVIRONMENT and c.met for c in result.underchallenged)
+        if result.cause == FAST and not (no_environment and state.lal == LEVELS[0]):
+            dimension, delta, reason = LAL, -1, f"{UNDERCHALLENGED}_{FAST}"      # LAL at LOW: AT_LIMIT
+        else:
+            dimension, delta, reason = ESL, +1, f"{UNDERCHALLENGED}_{ENVIRONMENT}"
     else:  # unknown state: never act on it
         return no_change(STABLE_NO_ACTION, f"Unknown state {result.state}.", counted)
 
@@ -324,7 +356,8 @@ def decide(
     # 6 · change one dimension by one step
     cooldown_until = seq + cfg.cooldown_trials
     moved = tuple(d for d in state.moved if d != dimension)
-    if to_level != HOME_LEVEL:
+    harder = (dimension == ESL) == (delta > 0)          # ESL up or LAL down: STABLE never returns it
+    if to_level != HOME_LEVEL and not harder:
         moved = moved + (dimension,)
     new_state = replace(
         counted,
@@ -355,6 +388,8 @@ def decide(
         why = _evidence_text(result)
         if reason == f"{DISENGAGED}_{IMPULSIVE}" and dimension == LAL:
             why += "; the environment is already at its minimum"
+        elif result.cause == FAST and dimension == ESL:
+            why += "; the assistance is already at its minimum"
     explanation = f"{_verb(dimension, delta)} from {from_level} to {to_level}: {why}."
 
     decision = Decision(
@@ -363,6 +398,6 @@ def decide(
         proactive_cues=dimension == LAL and delta > 0,          # D9: only when the assistance goes up
         learner_state=result.state, cause=result.cause, confidence=result.confidence,
         reason_code=reason, explanation=explanation, cooldown_until_trial=cooldown_until,
-        estimator=result.as_dict(),
+        estimator=result.as_dict(), version=version,
     )
     return decision, new_state
