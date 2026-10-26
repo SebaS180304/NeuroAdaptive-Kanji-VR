@@ -176,7 +176,7 @@ function Adaptations({ data, order }: { data: Data; order: ReturnType<typeof num
       className="col-span-16 flex flex-col gap-3 self-start rounded-(--radius-panel) border bg-(--color-surface) px-6 py-5 min-[1056px]:col-span-10">
       <h3 className="type-subtitle m-0">What followed each adaptation</h3>
       {body}
-      {recorded.length > 0 && <p className="type-caption m-0 text-(--color-text-muted)">{adaptationsOrigin(recorded.length)}</p>}
+      {recorded.length > 0 && <p className="type-caption m-0 text-(--color-text-muted)">{adaptationsOrigin(recorded.length, recorded.filter((t) => t.rules_version === 'rules-v2').length)}</p>}
       {older > 0 && <p title={UNRECORDED_TIP} className="type-caption m-0 text-(--color-text-muted)">{unrecorded(older)}</p>}
     </section>
   )

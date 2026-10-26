@@ -71,6 +71,14 @@ export function calibrationOrigin(points: Point[]): string {
 function clause(g: Group): string {
   if (g.learner_state === 'STABLE') return 'After two steady windows'
   if (g.learner_state === 'OVERLOADED') return 'When answers got slower and less accurate than in practice (estimated overload)'
+  if (g.learner_state === 'UNDERCHALLENGED') {
+    // FAST+NO_ENVIRONMENT: both conditions met (the backend groups them apart, §3.2).
+    if (g.cause === 'NO_ENVIRONMENT')
+      return 'When answers were all correct and the view stayed on the task while room events happened (estimated low challenge, steady on task)'
+    if (g.cause === 'FAST+NO_ENVIRONMENT')
+      return 'When answers were all correct, faster than in practice, and the view stayed on the task while room events happened (estimated low challenge, fast and steady on task)'
+    return 'When answers were all correct and faster than in practice (estimated low challenge, fast)'
+  }
   if (g.cause === 'ENVIRONMENT') return 'When attention went to the room, on objects or peripheral events (estimated disengagement, room)'
   if (g.cause === 'AWAY') return 'When the view left the task area (estimated disengagement, looking away)'
   if (g.cause === 'IMPULSIVE') return 'When answers came quickly and were wrong (estimated disengagement, quick errors)'
@@ -87,11 +95,12 @@ function action(g: Group): string {
 }
 
 const CLASSIFIED = ['POSITIVE', 'NEUTRAL', 'NEGATIVE'] as const
-const LABEL: Record<(typeof CLASSIFIED)[number], [string, string]> = {   // [rescue, return to MEDIUM]
-  POSITIVE: ['Recovered after', 'Held after'],
-  NEUTRAL: ['No clear change after', 'Held, with a dip'],
-  NEGATIVE: ['Worse after', 'Slipped after'],
+const LABEL: Record<(typeof CLASSIFIED)[number], [string, string, string]> = {   // [rescue, return to MEDIUM, harder (§3.4)]
+  POSITIVE: ['Recovered after', 'Held after', 'Held after'],
+  NEUTRAL: ['No clear change after', 'Held, with a dip', 'Still low challenge after'],
+  NEGATIVE: ['Worse after', 'Slipped after', 'Slipped after'],
 }
+const column = (g: Group) => (isReturn(g) ? 1 : g.learner_state === 'UNDERCHALLENGED' ? 2 : 0)
 const UNCERTAIN_LABEL: Record<string, string> = { NOT_APPLIED: "Can't tell: not applied", INCOMPLETE: "Can't tell: S7 ended first" }
 
 const classified = (g: Group) => CLASSIFIED.reduce((n, o) => n + (g.outcomes[o] ?? 0), 0)
@@ -103,7 +112,7 @@ export function groupSentence(g: Group): string {
   const base = `${clause(g)}, ${action(g)} ${times(g.count)}`
   if (tooFew(g)) return `${base}.`
   const top = [...CLASSIFIED].sort((a, b) => (g.outcomes[b] ?? 0) - (g.outcomes[a] ?? 0))[0]!
-  const label = LABEL[top][isReturn(g) ? 1 : 0]
+  const label = LABEL[top][column(g)]
   return `${base}; ${label[0]!.toLowerCase()}${label.slice(1)} ${g.outcomes[top]} of ${classified(g)}.`
 }
 
@@ -117,7 +126,7 @@ export function badges(g: Group): Badge[] {
   const out: Badge[] = []
   for (const o of CLASSIFIED) {
     const n = g.outcomes[o]
-    if (n) out.push({ outcome: o, text: `${LABEL[o][isReturn(g) ? 1 : 0]}: ${n}`, title: title(o, reasons(o)) })
+    if (n) out.push({ outcome: o, text: `${LABEL[o][column(g)]}: ${n}`, title: title(o, reasons(o)) })
   }
   for (const [r, n] of reasons('UNCERTAIN').sort(([a], [b]) => (a === 'NOT_APPLIED' ? -1 : b === 'NOT_APPLIED' ? 1 : 0)))
     out.push({ outcome: 'UNCERTAIN', text: `${UNCERTAIN_LABEL[r] ?? "Can't tell"}: ${n}`, title: `UNCERTAIN, ${r}` })
@@ -128,8 +137,10 @@ export function badges(g: Group): Badge[] {
 
 const s = (n: number) => (n === 1 ? '' : 's')
 
-export const adaptationsOrigin = (adaptive: number) =>
-  `From ${adaptive} completed adaptive session${s(adaptive)}. STATIC sessions never adapt and aren't counted here.`
+// v2: sessions decided by rules-v2. Named only when v1 and v2 sessions are mixed (D-F6-92, §3.7).
+export const adaptationsOrigin = (adaptive: number, v2: number) =>
+  `From ${adaptive} completed adaptive session${s(adaptive)}. STATIC sessions never adapt and aren't counted here.` +
+  (v2 > 0 && v2 < adaptive ? ` ${v2} of them could also raise difficulty (rules-v2).` : '')
 
 // By completed sessions (Contenido_UI_F-PROFILE.md §5): with 1 or 2 there is no trend yet, so it isn't named.
 export function staticOnly(n: number): string {

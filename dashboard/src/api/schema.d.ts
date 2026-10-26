@@ -803,6 +803,8 @@ export interface components {
             no_change: number | null;
             /** Decisions Recorded */
             decisions_recorded: boolean | null;
+            /** Rules Version */
+            rules_version?: string | null;
         };
         /** QualityCheck */
         QualityCheck: {

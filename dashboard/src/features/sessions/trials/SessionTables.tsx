@@ -6,7 +6,7 @@ import { Missing } from '@/components/Missing'
 import { LoadingNotice, OfflineNotice } from '@/components/Notice'
 import { clockMs, formatPercent } from '@/lib/format'
 import { AdaptationsTab } from './AdaptationsTab'
-import { EstimatedState } from './EstimatedState'
+import { EstimatedState, stateLabel } from './EstimatedState'
 import { KeyValues } from './KeyValues'
 import { type SessionStatus } from '@/components/SessionStatus'
 import { PlanTab, StopNote } from './PlanTab'
@@ -276,7 +276,7 @@ function Inspector({ t, windowN, noDecision }: { t: Trial | null; windowN: numbe
               <dl className="type-body m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
                 <dt className="text-(--color-text-muted)">Estimated state</dt>
                 <dd className="m-0 text-right">
-                  {t.learner_state ? title(t.learner_state) : '—'}
+                  {t.learner_state ? stateLabel(t.learner_state) : '—'}
                   {t.decision_confidence !== null && `, confidence ${t.decision_confidence.toFixed(2)}`}
                 </dd>
                 <dt className="text-(--color-text-muted)">Change</dt>

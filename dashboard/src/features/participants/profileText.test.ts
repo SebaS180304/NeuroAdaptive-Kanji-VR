@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Schemas } from '@/api/client'
 import {
-  acrossSentence, badges, calibrationRows, groupSentence, practiceSentence, scopeLine, staticOnly, tooFew,
+  acrossSentence, adaptationsOrigin, badges, calibrationRows, groupSentence, practiceSentence, scopeLine, staticOnly, tooFew,
 } from './profileText'
 
 type Cal = Schemas['ProfileCalibration']
@@ -71,6 +71,27 @@ describe('Learner Profile copy (Contenido_UI_F-PROFILE.md)', () => {
     const back = badges(group({ learner_state: 'STABLE', direction: 'DOWN', outcomes: { POSITIVE: 1, NEUTRAL: 1, NEGATIVE: 1 },
       outcome_reasons: { POSITIVE: { HELD: 1 }, NEUTRAL: { HELD_WITH_DROP: 1 }, NEGATIVE: { RELAPSED: 1 } } }))
     expect(back.map((b) => b.text)).toEqual(['Held after: 1', 'Held, with a dip: 1', 'Slipped after: 1'])
+  })
+
+  it('words UNDERCHALLENGED with the §3.8 phrase: harder task, held or still low challenge after', () => {
+    const uc = (over: Partial<Group>) => group({ learner_state: 'UNDERCHALLENGED', cause: 'FAST', dimension: 'LAL', direction: 'DOWN', ...over })
+    expect(groupSentence(uc({ count: 2 }))).toBe(
+      'When answers were all correct and faster than in practice (estimated low challenge, fast), assistance (LAL) was lowered 2 times.')
+    expect(groupSentence(uc({ cause: 'NO_ENVIRONMENT', dimension: 'ESL', direction: 'UP' }))).toBe(
+      'When answers were all correct and the view stayed on the task while room events happened (estimated low challenge, steady on task), the environment level (ESL) was raised 1 time.')
+    expect(groupSentence(uc({ cause: 'FAST+NO_ENVIRONMENT' }))).toBe(
+      'When answers were all correct, faster than in practice, and the view stayed on the task while room events happened (estimated low challenge, fast and steady on task), assistance (LAL) was lowered 1 time.')
+    expect(groupSentence(uc({ count: 3, outcomes: { POSITIVE: 2, NEUTRAL: 1 } }))).toMatch(/was lowered 3 times; held after 2 of 3\.$/)
+    const b = badges(uc({ outcomes: { POSITIVE: 1, NEUTRAL: 1, NEGATIVE: 1 },
+      outcome_reasons: { POSITIVE: { RESOLVED: 1 }, NEUTRAL: { PERSISTED: 1 }, NEGATIVE: { SWITCHED: 1 } } }))
+    expect(b.map((x) => x.text)).toEqual(['Held after: 1', 'Still low challenge after: 1', 'Slipped after: 1'])
+  })
+
+  it('adds the rules-v2 line to the origin only when both rule versions are present (D-F6-92)', () => {
+    const base = "From 3 completed adaptive sessions. STATIC sessions never adapt and aren't counted here."
+    expect(adaptationsOrigin(3, 0)).toBe(base)
+    expect(adaptationsOrigin(3, 3)).toBe(base)
+    expect(adaptationsOrigin(3, 1)).toBe(`${base} 1 of them could also raise difficulty (rules-v2).`)
   })
 
   it('says STATIC never adapts, also with a single session', () => {
