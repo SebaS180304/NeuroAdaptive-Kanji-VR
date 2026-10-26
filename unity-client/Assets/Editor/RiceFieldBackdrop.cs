@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -31,7 +32,41 @@ namespace NeuroAdaptiveVR.EditorTools
         public const string SilhouetteMaterialPath = "Assets/Art/Peripheral/M_Silueta_Arrozal.mat";
         public static readonly Color Silhouette = new Color32(0x34, 0x36, 0x3B, 0xFF);
 
+        // D-F6-97: the window birds no worse than against the sky (1.37 / 1.48:1 at ESL HIGH). Lighter never passes the
+        // left window, so every bird material is scaled down in linear colour: 0.40 is the edge (1.49 right), 0.38 keeps
+        // a margin. Own copies, on the two window birds only: the shelf bird (indoors) keeps the FBX materials.
+        public const float WindowBirdScale = 0.38f;
+        public static readonly string[] WindowBirds = { "PeripheralEvent_WindowLeft", "PeripheralEvent_WindowRight" };
+
         public static float Height => Width / Aspect;
+
+        private static void WindowBirdColour()
+        {
+            var layer = GameObject.Find("EnvironmentalLayer");
+            var copies = new System.Collections.Generic.Dictionary<string, Material>();
+            foreach (var bird in layer.GetComponentsInChildren<Transform>(true).Where(t => WindowBirds.Contains(t.name)))
+                foreach (var r in bird.GetComponentsInChildren<Renderer>(true))
+                {
+                    Undo.RecordObject(r, "Arrozal");
+                    r.sharedMaterials = r.sharedMaterials.Select(m => Copy(m, copies)).ToArray();
+                }
+            AssetDatabase.SaveAssets();
+        }
+
+        // The FBX material's colour times WindowBirdScale, in linear space; reused when it already exists.
+        private static Material Copy(Material source, System.Collections.Generic.Dictionary<string, Material> copies)
+        {
+            string baseName = source.name.EndsWith("_Arrozal") ? source.name.Substring(0, source.name.Length - 8) : source.name;
+            if (copies.TryGetValue(baseName, out var done)) return done;
+            string path = $"Assets/Art/Peripheral/{baseName}_Arrozal.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var original = AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Peripheral/23B_Pajaro.fbx").OfType<Material>().First(m => m.name == baseName);
+            if (mat == null) { mat = new Material(original) { name = baseName + "_Arrozal" }; AssetDatabase.CreateAsset(mat, path); }
+            var c = original.GetColor("_BaseColor").linear;
+            mat.SetColor("_BaseColor", new Color(c.r * WindowBirdScale, c.g * WindowBirdScale, c.b * WindowBirdScale, c.a).gamma);
+            EditorUtility.SetDirty(mat);
+            return copies[baseName] = mat;
+        }
 
         private static void SilhouetteColour()
         {
@@ -99,6 +134,7 @@ namespace NeuroAdaptiveVR.EditorTools
             foreach (var c in panel.GetComponents<Collider>()) Undo.DestroyObjectImmediate(c);
 
             SilhouetteColour();
+            WindowBirdColour();
             EditorSceneManager.MarkSceneDirty(panel.scene);
             Debug.Log($"[Arrozal] {TexturePath} on {Backdrop}: {Width:F2} x {Height:F3} m at z {Distance}, centre y {CentreY:F3}, horizon at {EyeHeight} m; final = {IsFinal}");
         }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NeuroAdaptiveVR.Controllers;
+using NeuroAdaptiveVR.Data;
 using UnityEditor;
 using UnityEngine;
 
@@ -39,6 +40,14 @@ namespace NeuroAdaptiveVR.EditorTools
             foreach (var a in layer.GetComponentsInChildren<PeripheralAnimation>(true))
                 targets.Add((a.name, a.gameObject, () => a.Pose(RestTime(a))));
 
+            // D-F6-97: always at ESL HIGH (the level with the animals), seed of the harness, so the curtains and props
+            // behind each figure are the same in every run. Everything under the layer is put back as it was afterwards.
+            var esl = Object.FindFirstObjectByType<EnvironmentalStimulationController>(FindObjectsInactive.Include);
+            var actives = layer.GetComponentsInChildren<Transform>(true).Select(t => (t.gameObject, t.gameObject.activeSelf)).ToList();
+            var level = esl.CurrentLevel;
+            esl.SetSeed(20260909);
+            esl.SetLevel(StimulationOrAssistanceLevel.High, betweenTrials: true);
+
             foreach (var (name, go, pose) in targets)
             {
                 var chain = new List<GameObject>();
@@ -57,6 +66,8 @@ namespace NeuroAdaptiveVR.EditorTools
                 foreach (var (t, lp, lr, ls) in saved) { t.localPosition = lp; t.localRotation = lr; t.localScale = ls; }
                 rows.Add(Compare(name, with, without));
             }
+            esl.SetLevel(level, betweenTrials: true);
+            foreach (var (g, on) in actives) g.SetActive(on);
             return rows;
         }
 

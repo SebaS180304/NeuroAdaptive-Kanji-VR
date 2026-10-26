@@ -2203,9 +2203,10 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>
-        /// X17. Contrast against the rice field from the eye (D-F6-93, PeripheralContrast): both silhouettes at
-        /// >= 2.7:1, the contrast they had against the sky. The animals are listed, not gated: against the sky
-        /// they already sat at 1.2-2.7:1 (sill, frame, wall behind them); their rule waits for PM (draft of 26 Oct).
+        /// X17. Contrast against the rice field from the eye, at ESL HIGH (D-F6-93, D-F6-97, PeripheralContrast):
+        /// both silhouettes at >= 2.7:1; the window birds and the cat no worse than against the sky at the same
+        /// position (sky values measured the same way, 26 Oct). The shelf bird is indoors and does not change; the
+        /// butterfly is listed, not gated: its sky value (5.7:1) cannot be reached against the field (Sebas decides).
         /// </summary>
         private static void PeripheralContrastCases()
         {
@@ -2213,8 +2214,18 @@ namespace NeuroAdaptiveVR.EditorTools
             var p = rows.Where(r => r.Name.StartsWith("OutsideFigure") && (r.Pixels == 0 || r.Ratio < PeripheralContrast.Minimum))
                         .Select(r => $"{r.Name} {r.Ratio:F2}:1").ToList();
             if (rows.Count(r => r.Name.StartsWith("OutsideFigure")) != 2) p.Add("no hay dos siluetas");
+            var sky = new Dictionary<string, float>
+            {
+                { "PeripheralEvent_WindowLeft", 1.37f }, { "PeripheralEvent_WindowRight", 1.48f },
+                { "PeripheralEvent_CatWindowLeft", 1.20f }, { "PeripheralEvent_CatWindowRight", 1.18f },
+            };
+            foreach (var (name, min) in sky)
+            {
+                var r = rows.FirstOrDefault(x => x.Name == name);
+                if (r.Name == null || r.Ratio < min) p.Add($"{name} {r.Ratio:F2}:1, con el cielo {min:F2}");
+            }
             string all = string.Join(", ", rows.Select(r => $"{r.Name.Replace("PeripheralEvent_", "").Replace("OutsideFigure", "Silueta")} {r.Ratio:F2}"));
-            Check("X17", "Contraste desde el ojo contra el arrozal (D-F6-93): siluetas >= 2,7:1; animales listados",
+            Check("X17", "Contraste desde el ojo contra el arrozal, ESL HIGH (D-F6-93, D-F6-97): siluetas >= 2,7:1; pajaro de las ventanas y gato no peor que con el cielo",
                   p.Count == 0, p.Count == 0 ? all : Join(p));
         }
 
