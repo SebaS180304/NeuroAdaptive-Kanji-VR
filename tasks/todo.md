@@ -1,7 +1,7 @@
 # Todo: week of 26 – 30 Oct (VR complete, MIRAI presentation)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/fase6_m3_todo.md`.
-**Aligned up to: D-F6-88** · plan approved by Sebas, 26 Oct (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-92** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92 (`Estado_Actual.md`, the board; it wins over this list).
 Every commit gets a message file in Downloads, is shown to Sebas first, and holds one change.
 Every task ends with a **Stop**: Sebas sees the result before the next dependent task starts.
 
@@ -9,7 +9,7 @@ Every task ends with a **Stop**: Sebas sees the result before the next dependent
 
 ## A · Last week's leftovers (first)
 
-### [ ] A1: Phase-test findings §3 and criteria evidence (Mon 26)
+### [x] A1: Phase-test findings §3 and criteria evidence (Mon 26)
 - [ ] `Claude outputs/Hallazgos_Prueba_Fase_F5a.md` §3: replace "Pendiente" with MANU's five answers (`Nota_Entrega_M3_MIRAI.md` §3 item 5). Cross each answer with the data:
   - "noticed the props and the bird" → the block changes and the peripherals in §1;
   - "no hints appeared" → 0 `HINT_REQUESTED`, LAL never rose;
@@ -19,6 +19,7 @@ Every task ends with a **Stop**: Sebas sees the result before the next dependent
 - [ ] `Evidencia_Criterios_F5a.md` criterion 8 and `Evidencia_Criterios_F6.md` criterion 6: 🟡 → ✅, citing §3.
 - [ ] Headers "Alineado hasta: D-F6-86".
 **Verify:** the three docs agree with each other and with the M3 note §3. **Scope:** XS (docs only)
+→ Done 26 Oct (docs, gitignored, no commit). §3 has MANU's five answers crossed with the data. The repo PDF is the blank template, so it is declared that there are no per-trial notes. New finding P5 (look-alike kanji, linked to D-F6-71). F5a criterion 8 and F6 criterion 6 are ✅.
 **Stop:** Sebas sends the M3 note.
 
 ### [ ] A2: rules-v2 live (D-F6-59, D-F6-79 to D-F6-82)
@@ -26,11 +27,15 @@ Order matters: (a) → (b) → (c) and (d) → run.
 - [ ] (a) Two commits, with the messages already shown on 26 Oct: `feat(db)` migration 0009 with `schema.sql`, then `feat(adaptation)` behavior-v2/rules-v2 with tests and `EVENT_CONTRACT.md`. pytest 227/227 before each.
 - [ ] (b) Between runs, headset off: `alembic upgrade head` → check `\d adaptation_decisions` (VARCHAR(16), new CHECKs) and `SELECT count(*) FROM v_adaptations` (180) → **only then** restart the backend.
 - [ ] (c) O4 (D-F6-80): in `outcome.classify()`, still `UNDERCHALLENGED` after the change → always `NEUTRAL / PERSISTED` (no trend). `STABLE` → `RESOLVED` and the other states → `SWITCHED` already work. Add 3 tests (one per row). Update the docstring table and `Planteamiento_Tecnico_F5a.md` §5.3.
-- [ ] (d) Portal (D-F6-81): `profileText.ts` gets a neutral phrase for `UNDERCHALLENGED`, with a code comment marking it provisional until `Contenido_UI_F-PROFILE.md`. `EstimatedState.tsx` gets a neutral colour from an existing token (no new colour). Vitest gets a case for each.
+- [ ] (d) Portal (D-F6-81, D-F6-92):
+  - `profileText.ts` gets the **definitive** `UNDERCHALLENGED` phrase from `Contenido_UI_F-PROFILE.md` §3.8. Use the §3.1 template, the §3.2 clauses (FAST, NO_ENVIRONMENT, both), the §3.3 actions (LAL down, ESL up) and the §3.4 outcome labels ("Held after", "Still low challenge after"). §3.5 and §3.6 apply as they are.
+  - `EstimatedState.tsx` shows the short name "Low challenge (estimated)" where the state has visible text, with the enum in the tooltip. The colour comes from an existing neutral token and is marked provisional until web design defines it (D-F6-81).
+  - The §3.7 origin line gets "{x} of them could also raise difficulty (rules-v2)." only when the participant has both `rules-v1` and `rules-v2` sessions. The profile endpoint carries each session's rules version (from `adaptation_decisions.rules_version`, read only, no migration).
+  - Vitest: the phrase for each clause and action, the origin line with mixed, v1-only and v2-only participants, and the short name. pytest: the endpoint field.
 - [ ] `reason_code` `UNDERCHALLENGED_ENVIRONMENT` with the LAL at LOW (D-F6-82): already in the code. Only check that the test exists.
 **Verify:** pytest and Vitest green; `graphify update .`.
-**Stop:** a v2 run in the headset (S1 → S9, set A, `BEHAVIOR_ADAPTIVE`). Each decision has `estimator_version = behavior-v2`, `verify_adaptation` and `verify_projection` show 0 discrepancies, and the session looks right in the portal. Any `UNDERCHALLENGED` change shows the provisional phrase and colour.
-**Scope:** M (backend 2 files + tests, dashboard 2 files + tests)
+**Stop:** a v2 run in the headset (S1 → S9, set A, `BEHAVIOR_ADAPTIVE`). Each decision has `estimator_version = behavior-v2`, `verify_adaptation` and `verify_projection` show 0 discrepancies, and the session looks right in the portal. Any `UNDERCHALLENGED` change shows the §3.8 phrase. MANU's profile (v1 only) keeps its origin line unchanged.
+**Scope:** M (two commits: backend O4 + profile field; dashboard phrase, name and origin line)
 
 ### [ ] A3: Set B kanji objects (D-F6-43): when Modelado 3D delivers 山 門 女 手 雨
 - [ ] Only with all five FBX in `KanjiLessonAssets/NN_*/export/` (all five or none, as in D-F6-26).
@@ -45,13 +50,41 @@ Order matters: (a) → (b) → (c) and (d) → run.
 
 ### [ ] B4: Set A visual hints (D-F6-63) and C3 (D-F6-64)
 **Blocked by:** the UI/UX design (how each hint looks per trial type and level, the C3 sequence) and the intermediate shapes and images from Modelado 3D or Contenido, validated by Sebas (D-F6-30). Until they arrive, only the prep steps run. **Cut-off: Wed 28 at 12:00 (D-F6-87).** If they are missing by then, V5 is dropped, V6 uses a hint requested with *Hint*, and B4 continues after the video with a declared placeholder.
-- [ ] Prep (Tue 27, with placeholders): read the current hint slot and the C3 crossfade (`KanjiLearningItem`, `StudioTrialPresenter`). Prepare a per-kanji path for real assets, with `asset_source` real or placeholder in the telemetry. Add a switch that hides the "Hint · …" chip only in cells with a real visual hint; the telemetry still logs which hint was given.
-- [ ] Hints: picture, meaning link and shape for 月 車 火 竹 石. **None may reveal the answer** (§9.1).
-- [ ] C3: object → two intermediate shapes → kanji. Same duration in every condition, no flashes (rule 9).
-- [ ] Harness: a case for hint assets present, chip hidden only where real, `asset_source` per kanji, and the C3 duration.
-**Verify:** harness green; captures of one hint (V6) and one C3 (V5) from the eye.
+Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P, F1, F2 and M per kanji (§11.1), 20 for set A.
+
+**B4a · Hints (D-F6-63, D-F6-89, D-F6-91), one commit**
+- [ ] Prep (Tue 27, with placeholders): the per-kanji asset path (`A_月_P.png`, …) and the `BoardCanvas` zones:
+  - zone A image (−560, 60), 320 × 320 u;
+  - zone B strip (−150, −270): 4 boxes of 150 u with arrows, plus the "?" box;
+  - audio indicator (330, −370), 120 × 90 u.
+  Box style, ink and colours as §9.2–§9.3.
+- [ ] Cells per §9.1:
+  - T1 HIGH: partial strip, object → F1 → ? → ?;
+  - T2 HIGH: M in zone A;
+  - T3 MEDIUM: P in zone A;
+  - T3 HIGH: full strip in zone B, zone A empty.
+  LOW and OFF are unchanged. A request and the proactive cue (D9) show the same thing.
+- [ ] Timing (§9.4): 250 ms fade-in on the request frame or on `TRIAL_STARTED`; still until the answer; gone at `ANSWER_SELECTED` without a fade.
+- [ ] Audio indicator (D-F6-89): a speaker icon chip with no text or sound, visible from the audio start until 300 ms after it ends. It replaces the "reading audio" chip in audio-only cells and sits next to the image in HIGH.
+- [ ] Text chip (§9.6): hidden only in cells whose image is `AUTHORED`. A cell still on a placeholder keeps its current chip.
+- [ ] Telemetry (D-F6-91): `asset_source` (`AUTHORED` / `PLACEHOLDER`) of the visual hint next to `cue_type`, in every trial with a hint. Update `EVENT_CONTRACT.md` and the projection or `verify_*` if they read cue fields.
+- [ ] Harness: zones inside the canvas and clear of the Hint button; the chip/indicator rule per cell; `asset_source` per cell; no motion between fade-in and answer.
+
+**B4b · C3 with the summary strip (D-F6-64, D-F6-90, D-F6-91), one commit**
+- [ ] §10 timeline, starting when the object is back on the board:
+  - 0–0.5 s: the object shrinks while F1 fades in;
+  - F1 2.0 s → 0.5 s crossfade → F2 2.0 s → 0.5 s crossfade → kanji;
+  - the strip fades in at 5.8 s (300 ms), stays until 7.5 s, fades out (300 ms);
+  - S5 continues at 7.8 s.
+  The same in every condition and level.
+- [ ] Rule 9: no sound; ink of each form ≤ 1.5× the kanji's area; form colour and stroke as the glyph.
+- [ ] Telemetry: `asset_source` per stage, plus the strip's start and duration in `KANJI_EXPOSED`. A missing form keeps its placeholder with the same times and records `PLACEHOLDER`.
+- [ ] Harness: the stage times add up to 7.8 s; the strip is the same layout as the full shape hint; S5 is ≈ +12 s over the 23 Oct run.
+- [ ] If time runs short, the strip is the one part that can be dropped (back to 5.5 s, §10), and Sebas is told.
+
+**Verify:** harness green; captures from the eye of a T3 HIGH strip, a T2 HIGH scene, the audio indicator (V6) and one C3 with the strip (V5).
 **Stop:** Sebas sees them in the headset (Wed 28).
-**Scope:** M (if it grows past 5 files, split hints and C3 into two commits)
+**Scope:** M + M (two commits)
 
 ### [ ] B5: Demo scene with Unity cameras, outside the build (D-F6-84): Wed 28 afternoon, **after** B4
 - [ ] A new scene, not in Build Settings. It contains the room prefab and the cameras for shots V1–V8 (`Guion_Presentacion_MIRAI_30oct.md` §3.3).

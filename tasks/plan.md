@@ -1,6 +1,6 @@
 # Implementation Plan: week of 26 – 30 Oct 2026 (VR complete, MIRAI presentation)
 
-Written 26 Oct 2026. **Aligned up to: D-F6-88** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct.**
+Written 26 Oct 2026. **Aligned up to: D-F6-92** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening.
 The M3 week's plan is archived in `tasks/archive/fase6_m3_{plan,todo}.md`. Its open items
 are carried over here or dropped as listed in the last section.
 
@@ -56,14 +56,15 @@ C7 hints + C3 sets B, C ───────────┴─► C8 validation
   difference. If the state is still `UNDERCHALLENGED` after the change, the outcome is always
   `NEUTRAL / PERSISTED`. Today `classify()` would fall into `_distraction_trend` and could
   return `PARTIAL` or `PERSISTED_WORSE`. The fix is a branch of about one line plus its test.
-- **The portal states are provisional (D-F6-81).** `profileText.ts` gets a neutral phrase
-  marked provisional in code. `EstimatedState` gets a colour from an existing neutral token,
-  not a new one. Both are replaced when UI/UX and web design deliver.
-- **Hints and C3 are data per kanji, not new mechanics.** The cue slot and the C3 crossfade
-  already exist with placeholders (`KanjiLearningItem`, `StudioTrialPresenter`). The work is
-  loading the real assets, recording `asset_source` as real or placeholder, and hiding the
-  "Hint · …" chip where a real visual hint exists (the telemetry stays). The exact form waits
-  for UI/UX.
+- **Portal for `UNDERCHALLENGED` (D-F6-81, D-F6-92).**
+  - The phrase is the definitive one from `Contenido_UI_F-PROFILE.md` §3.8 (template §3.1, clauses §3.2, actions §3.3, outcome labels §3.4). It was delivered on 26 Oct, so the provisional step is skipped. The short state name is "Low challenge (estimated)".
+  - The colour is the only provisional part: an existing neutral token until web design defines one.
+  - The origin line (§3.7) adds "{x} of them could also raise difficulty (rules-v2)." only when a participant has sessions under both rule versions. That needs the rules version of each session in the profile JSON. The rules version is already stored with each decision, so this is read-only, without a migration.
+- **Hints and C3 follow `Diseno_UI_Kanji_Studio_v1.md` §9–§11** (delivered 26 Oct). The cue slot and the C3 crossfade already exist with placeholders (`KanjiLearningItem`, `StudioTrialPresenter`).
+  - **Hints (§9):** zone A image and zone B strip on the `BoardCanvas`, with 250 ms fade-in, still until the answer, and gone at `ANSWER_SELECTED`. The audio cue becomes a speaker chip (D-F6-89). The text chip goes only where the real image exists (§9.6).
+  - **C3 (§10, D-F6-90):** grows from 5.5 s to 7.8 s and ends with the summary strip. The strip is the same layout as the full shape hint. If time runs short, the strip is the one part that can be dropped (back to 5.5 s).
+  - **Telemetry (D-F6-91), no new events:** `asset_source` (`AUTHORED` / `PLACEHOLDER`) of the visual hint next to `cue_type`; `asset_source` of each C3 stage; start and duration of the strip in `KANJI_EXPOSED`. The event contract is updated in the same commit.
+  - **Assets:** 4 per kanji (P, F1, F2, M; §11.1), 20 for set A, from Modelado 3D and validated by Sebas.
 - **The demo scene is a separate scene that is not in the build list** (D-F6-84). Its states
   are set in the Inspector before Play. No experiment code reads it.
 - **The rice field is a static textured quad or panel** behind each window, sized to the
@@ -73,7 +74,7 @@ C7 hints + C3 sets B, C ───────────┴─► C8 validation
 ## Task list (detail in `tasks/todo.md`)
 
 ### A · Last week's leftovers (first)
-- [ ] A1: findings §3 with MANU's answers; close F5a criterion 8 and F6 criterion 6. **Stop:** Sebas sends the M3 note
+- [x] A1: findings §3 with MANU's answers; close F5a criterion 8 and F6 criterion 6. **Stop:** Sebas sends the M3 note
 - [ ] A2: rules-v2 live: (a) two commits, (b) 0009 then restart, (c) O4 fix, (d) portal phrase and colour; `reason_code` is already D-F6-82. **Stop:** a v2 run in the headset
 - [ ] A3: set B kanji objects (D-F6-43), when Modelado 3D delivers. **Stop:** Sebas sees them in S5 in the headset
 
