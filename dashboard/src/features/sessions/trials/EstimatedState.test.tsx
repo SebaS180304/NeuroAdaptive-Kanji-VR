@@ -7,5 +7,6 @@ describe('EstimatedState', () => {
     render(<EstimatedState state="UNDERCHALLENGED" reason="Not recorded" />)
     expect(screen.getByText('Low challenge (estimated)')).toHaveAttribute('title', 'UNDERCHALLENGED')
     expect(stateLabel('DISENGAGED')).toBe('Disengaged')
+    expect(document.querySelector('[aria-hidden="true"]')).toHaveClass('bg-(--color-state-underchallenged)')
   })
 })

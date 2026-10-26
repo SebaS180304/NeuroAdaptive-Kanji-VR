@@ -55,6 +55,7 @@
   --color-state-stable: #0b6a73;
   --color-state-disengaged: #9a6414;
   --color-state-overloaded: #b83a22;
+  --color-state-underchallenged: #565b62;
   --color-outcome-positive: #0b6a73;
   --color-outcome-neutral: #c9cdd2;
   --color-outcome-negative: #b83a22;
@@ -137,6 +138,7 @@
   --color-state-stable: #3fb7c2;
   --color-state-disengaged: #f2c46d;
   --color-state-overloaded: #e5694f;
+  --color-state-underchallenged: #9aa0a8;
   --color-outcome-positive: #3fb7c2;
   --color-outcome-neutral: #3a3f47;
   --color-outcome-negative: #e5694f;
@@ -195,6 +197,7 @@
     --color-state-stable: #3fb7c2;
     --color-state-disengaged: #f2c46d;
     --color-state-overloaded: #e5694f;
+    --color-state-underchallenged: #9aa0a8;
     --color-outcome-positive: #3fb7c2;
     --color-outcome-neutral: #3a3f47;
     --color-outcome-negative: #e5694f;

@@ -143,6 +143,12 @@ describe('timeline lanes', () => {
     expect(marks.find((m) => m.mark === 'badge')).toMatchObject({ fill: '--color-outcome-negative', shape: 'square' })
   })
 
+  it('names UNDERCHALLENGED by its short name in the decision tooltip', () => {
+    const data = { ...DATA, adaptations: DATA.adaptations!.map((a, i) => (i === 0 ? { ...a, learner_state: 'UNDERCHALLENGED' } : a)) }
+    const diamond = buildLanes(data)[7]!.marks!.find((m) => m.mark === 'diamond')!
+    expect(diamond.tip).toMatch(/^S7-006, estimated state Low challenge \(estimated\): /)
+  })
+
   it('trial bars and decision diamonds name their trial, so a click can select it', () => {
     const lanes = buildLanes(DATA)
     expect(lanes[3]!.marks!.map((m) => m.ref)).toEqual(['S7-001', 'S7-002', 'S7-003', 'S7-004'])

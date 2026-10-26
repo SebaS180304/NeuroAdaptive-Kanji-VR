@@ -1,5 +1,6 @@
 import type { Schemas } from '@/api/client'
 import { clockMs, stateCode as code } from '@/lib/format'
+import { stateLabel } from '@/features/sessions/trials/EstimatedState'
 
 // The timeline as data: one lane per row, in the fixed order of visualization-rules.md.
 // Fills are token names; the chart resolves them in the current theme. A new lane
@@ -128,7 +129,7 @@ function adaptationMarks(t: Timeline): Mark[] | null {
     const unity = a.unity_result === 'APPLIED' ? `Applied at ${clockMs(a.result_ms!)}`
       : a.unity_result === 'SKIPPED' ? `Skipped by Unity (${a.skip_reason}) at ${clockMs(a.result_ms!)}`
         : 'No answer from Unity recorded'
-    const tip = `${a.trial_id}, estimated state ${title(a.learner_state)}: ${change}. ${unity}. ` +
+    const tip = `${a.trial_id}, estimated state ${stateLabel(a.learner_state)}: ${change}. ${unity}. ` +
       `Outcome: ${a.outcome ? a.outcome.toLowerCase() : 'not recorded'}`
     if (a.cooldown_until_ms !== null)
       bands.push({ start: a.decided_ms, end: a.cooldown_until_ms, mark: 'band', y: 2, h: 12, fill: '--color-accent-tint',

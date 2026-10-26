@@ -1,9 +1,9 @@
 import { Missing } from '@/components/Missing'
 
 // design-system.md V1.5: a 10 px dot in the state's token, then the label.
-// UNDERCHALLENGED: shortcut: neutral muted dot (D-F6-81, provisional), until web design gives it a token.
 const STATE_DOT: Record<string, string> = {
   STABLE: 'bg-(--color-state-stable)', DISENGAGED: 'bg-(--color-state-disengaged)', OVERLOADED: 'bg-(--color-state-overloaded)',
+  UNDERCHALLENGED: 'bg-(--color-state-underchallenged)',
 }
 
 // Short names that differ from the enum (Contenido_UI_F-PROFILE.md §3.8); the enum goes in the tooltip.

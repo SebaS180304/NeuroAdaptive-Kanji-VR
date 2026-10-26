@@ -19,6 +19,9 @@ const measured: [string, Record<string, string>, string, string, number][] = [
   ['on alert tint, dark', dark, '--color-on-alert-tint', '--color-alert-tint', 8.5],
   ['multimodal chip, light', light, '--color-on-condition-multimodal-tint', '--color-condition-multimodal-tint', 6.4],
   ['multimodal chip, dark', dark, '--color-on-condition-multimodal-tint', '--color-condition-multimodal-tint', 8.1],
+  ['low challenge on white', light, '--color-state-underchallenged', '--color-surface', 6.9],
+  ['low challenge on Paper', light, '--color-state-underchallenged', '--color-bg', 6.4],
+  ['dark low challenge on surface', dark, '--color-state-underchallenged', '--color-surface', 6.5],
 ]
 
 // Control borders (corrected Oct 18): non-text contrast, 3:1 minimum.
