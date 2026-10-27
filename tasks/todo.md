@@ -1,7 +1,9 @@
 # Todo: week of 26 – 30 Oct (VR complete, MIRAI presentation)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/fase6_m3_todo.md`.
-**Aligned up to: D-F6-99** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92 (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-104** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92; **revised Tue 27** (E1 with §10.4, B4b with the D-F6-103 times, new B4c and S1; waiting for Sebas's OK) (`Estado_Actual.md`, the board; it wins over this list).
+
+**Tue 27 order:** E1 → headset stop (before 16:45 or after 18:00; Sebas on the cap 17:00–18:00) → B4a → B4b → S1. Cut at 19:00 with the day draft.
 Every commit gets a message file in Downloads, is shown to Sebas first, and holds one change.
 Every task ends with a **Stop**: Sebas sees the result before the next dependent task starts.
 
@@ -69,6 +71,8 @@ Source: `design-system.md`, written by web design.
 **Blocked by:** the UI/UX design (how each hint looks per trial type and level, the C3 sequence) and the intermediate shapes and images from Modelado 3D or Contenido, validated by Sebas (D-F6-30). Until they arrive, only the prep steps run. **Cut-off: Wed 28 at 12:00 (D-F6-87).** If they are missing by then, V5 is dropped, V6 uses a hint requested with *Hint*, and B4 continues after the video with a declared placeholder.
 Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P, F1, F2 and M per kanji (§11.1), 20 for set A.
 
+**Tue 27:** B4a and B4b run end to end on placeholders (labelled boxes in the exact zones and times), so on Wed only the 20 PNGs are dropped in and the cells flip to `AUTHORED`. Files: `StudioTrialPresenter.cs` (zones, chip, indicator), `S5LearningBlockController.cs` + `KanjiDiscoveryController.cs` (C3), `TelemetryContract.cs`, `database/EVENT_CONTRACT.md`, `Phase2TestHarness.cs`.
+
 **B4a · Hints (D-F6-63, D-F6-89, D-F6-91), one commit**
 - [ ] Prep (Tue 27, with placeholders): the per-kanji asset path (`A_月_P.png`, …) and the `BoardCanvas` zones:
   - zone A image (−560, 60), 320 × 320 u;
@@ -87,21 +91,35 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 - [ ] Telemetry (D-F6-91): `asset_source` (`AUTHORED` / `PLACEHOLDER`) of the visual hint next to `cue_type`, in every trial with a hint. Update `EVENT_CONTRACT.md` and the projection or `verify_*` if they read cue fields.
 - [ ] Harness: zones inside the canvas and clear of the Hint button; the chip/indicator rule per cell; `asset_source` per cell; no motion between fade-in and answer.
 
-**B4b · C3 with the summary strip (D-F6-64, D-F6-90, D-F6-91), one commit**
-- [ ] §10 timeline, starting when the object is back on the board:
-  - 0–0.5 s: the object shrinks while F1 fades in;
-  - F1 2.0 s → 0.5 s crossfade → F2 2.0 s → 0.5 s crossfade → kanji;
-  - the strip fades in at 5.8 s (300 ms), stays until 7.5 s, fades out (300 ms);
-  - S5 continues at 7.8 s.
-  The same in every condition and level.
-- [ ] Rule 9: no sound; ink of each form ≤ 1.5× the kanji's area; form colour and stroke as the glyph.
-- [ ] Telemetry: `asset_source` per stage, plus the strip's start and duration in `KANJI_EXPOSED`. A missing form keeps its placeholder with the same times and records `PLACEHOLDER`.
-- [ ] Harness: the stage times add up to 7.8 s; the strip is the same layout as the full shape hint; S5 is ≈ +12 s over the 23 Oct run.
-- [ ] If time runs short, the strip is the one part that can be dropped (back to 5.5 s, §10), and Sebas is told.
+**B4b · C3 crossfade with the summary strip (D-F6-64, D-F6-90, D-F6-91, D-F6-103, D-F6-104), one commit**
+- [ ] §10 timeline (27 Oct version, the same for crossfade and morph), from the moment the object is back on the board:
+  - 0.0–0.5 s: the object shrinks 1 → 0 (ease in-out) while F1 fades in;
+  - 0.5–2.3 s F1 still (1.8 s) → **2.3–3.1 s transition (800 ms)** → 3.1–4.9 s F2 still → **4.9–5.7 s transition** → kanji still from 5.7 s;
+  - the strip fades in at **6.0 s** (300 ms), stays until 7.5 s, fades out (300 ms);
+  - S5 continues at 7.8 s. The same in every condition and level.
+- [ ] Curve (§10.1): *smootherstep* w = 6u⁵ − 15u⁴ + 10u³, u = (t − t₀) / 0.8 s, clamped; B's opacity = w, A's = 1 − w. Outside the two 800 ms windows nothing animates.
+- [ ] Rule 9: no sound; ink of each form ≤ 1.5× the kanji's area; form colour `#F4F1EA` and the glyph's stroke.
+- [ ] Telemetry in `KANJI_EXPOSED`: `asset_source` per stage; the strip's start and duration; **`c3_transition` = `CROSSFADE`** (D-F6-104). A missing form keeps its placeholder with the same times and records `PLACEHOLDER`. `EVENT_CONTRACT.md` §5 in the same commit; check the projection only stores the payload (no migration expected; if one is needed, stop and tell Sebas).
+- [ ] Harness: stage times add to 7.8 s with the transitions at 2.3 and 4.9 s; w(0) = 0, w(0.5) = 0.5, w(1) = 1 and monotonic; the strip is the same layout as the full shape hint; `c3_transition` present; S5 ≈ +12 s over the 23 Oct run.
+- [ ] If time runs short, the strip is the one part that can be dropped, and Sebas is told.
+
+**B4 · Wed 28: real set A images (cut-off 12:00, D-F6-87)**
+- [ ] Drop the 20 validated PNGs (P, F1, F2, M per kanji) into the B4a/B4b paths; the matching cells flip to `AUTHORED` and lose their chip. Any image missing at 12:00 stays a declared `PLACEHOLDER`; if C3 forms are missing, V5 leaves the video and V6 is recorded with a hint requested with *Hint*.
+- [ ] Check §9.2's zone A width note (prompt text beyond x −380 → zone A at 280 u) with the real images.
 
 **Verify:** harness green; captures from the eye of a T3 HIGH strip, a T2 HIGH scene, the audio indicator (V6) and one C3 with the strip (V5).
 **Stop:** Sebas sees them in the headset (Wed 28).
-**Scope:** M + M (two commits)
+**Scope:** M + M (two commits on Tue) + S (assets on Wed)
+
+### [ ] B4c: SDF morph for C3 (D-F6-103, D-F6-104): Wed 28, after B4b, its own task
+**Blocked by:** 16-bit fields (512², one channel R16F, spread ≥ 25 % = 128 px, kanji from the board glyph in the same box). `tools/png_a_sdf.py` lives in Modelado 3D's folder and today writes 8-bit PNG with a 32 px range (question 14 for PM: who adjusts it).
+- [ ] One test kanji only (proposed: 月, the smoothest F2 → kanji per Modelado 3D's guides). Import its three fields (F1, F2, kanji) as R16F, no compression, no mipmaps.
+- [ ] Shader: d(t) = (1 − w)·d_A + w·d_B, ink where d < 0, edge AA with `fwidth(d)`, colour `#F4F1EA`, opacity 1, no outline/shadow/glow; the same *smootherstep* and windows as B4b; at w = 1 swap to the TMP glyph on the same frame.
+- [ ] The three §10.1 checks at w = 0, 0.25, 0.5, 0.75, 1: (1) ink area between 70 % of the smaller form and 1.5× the kanji; (2) last frame within 1 px of the board glyph, from an eye capture; (3) no isolated blob smaller than the stroke. Results in the day draft.
+- [ ] Switch **per set** (serialized, off by default): all five kanji of a set use the same transition; `c3_transition` = `SDF_MORPH` in every `KANJI_EXPOSED` of that session. Harness: one value per session; the times still add to 7.8 s.
+- [ ] Only if Sebas approves the test kanji: the other four set A fields, the same checks, then the set switch on.
+**Stop:** Sebas sees the test kanji in the headset. **Cut: Thu 29 18:00**; if not approved, the crossfade stays and the morph is a later improvement. The video uses the morph only if it is approved before the Thu morning recording.
+**Scope:** M (shader + material + switch + harness)
 
 ### [ ] B5: Demo scene with Unity cameras, outside the build (D-F6-84): Wed 28 afternoon, **after** B4
 - [ ] A new scene, not in Build Settings. It contains the room prefab and the cameras for shots V1–V8 (`Guion_Presentacion_MIRAI_30oct.md` §3.3).
@@ -148,26 +166,40 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 
 ## E · Environment adjustments (D-F6-85, D-F6-86): never at the expense of B4
 
-### [ ] E1: Silhouettes, curtains and wind (Tue 27)
-- [ ] Read the current values in Unity: the silhouette path (distance behind the sill), the curtain sheet extents, and `CurtainWind.Amplitude` = 0.06 m.
-- [ ] Proposals to try in the headset (two values each, so Sebas can choose):
-  - silhouette path moved toward the window until torso and head show above the sill;
-  - curtains gathered toward the walls by 25 % and 40 % of the sheet width;
-  - wind A = 0.09 m and 0.12 m, with the ripple and gust unchanged. Keep everything else from D-F6-61: alpha 0.90, ≤ 0.5 Hz, no opacity motion.
-- [ ] **One silhouette always in HIGH (D-F6-99):** waits for UI/UX's text in `Diseno_Sala_ESL.md` §8.3 / §10 (Tue 27).
-  - Read it first, especially whether the draw can still add the second silhouette or never does.
-  - Where: the Movers draw of `EnvironmentalStimulationController.ActivateGroup`. Today HIGH takes 2–3 movers by tier, curtains (T2) first, so a silhouette (T3) shows only when the draw gives 3 (≈ 22–27 % each). The HIGH set becomes curtains plus one silhouette, the side from the level's seeded generator.
-  - Same in every condition. LOW and MEDIUM have no silhouettes, so they do not change. `ENVIRONMENT_APPLIED` already lists `active_movers`, so no new telemetry.
-  - Harness: a new E case over 200 seeds. Every HIGH has one silhouette (or what the text says), both sides appear in roughly half each, and the same seed gives the same side. E7, E8b and E11 stay green.
-- [ ] After approval: E13 angles (D-F6-33), the `DWELL` boxes, the D7 probe for `HEAD_AWAY` (D-F6-99 asks for it again), X9/X13, X17 (silhouette contrast at the new distance) and the shader/harness limit (`at most 0.06` → the approved A). Note every difference > 1° with its cause. UI/UX then documents §10.
-- [ ] `Claude outputs/Cambios_Spec_v1_4.md` (mine): add the 26 Oct changes for PM's full spec (D-F6-88):
-  - the rice field (D-F6-86) and the peripheral colours (D-F6-93, D-F6-97);
-  - the butterfly seen less against the field (D-F6-98);
-  - one silhouette always in HIGH (D-F6-99, §8.3);
-  - the E1 values once approved.
-**Verify:** harness green; captures from the eye.
-**Stop:** Sebas approves the values in the headset.
-**Scope:** M (D-F6-99 is one more commit of its own)
+### [ ] E1: Silhouettes, curtains, wind and the §10.4 rule (Tue 27, first task of the day)
+Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (replaces D-F6-99) and §10.5. Files: `EnvironmentalStimulationController.cs`, `EnvironmentProp` tiers in the room scene, `EnvironmentMotion.cs` (silhouette path), `CurtainWind.cs` + shader, `Phase2TestHarness.cs`, `PeripheralContrast.cs`, `LayoutOfRecord`.
+
+**E1a · Values to try (two each, chosen live in Play mode, committed only after the stop)**
+- [ ] Read the current values first: silhouette path (distance behind the sill), curtain sheet extents, `CurtainWind` A = 0.06 m.
+- [ ] Silhouettes closer to the window until torso and head show above the sill (two distances).
+- [ ] Curtains drawn toward the walls by **25 %** and **40 %** of the sheet width.
+- [ ] Wind A = **0.09 m** and **0.12 m**; ripple, gust, alpha 0.90, ≤ 0.5 Hz and no opacity motion unchanged (D-F6-61). The harness limit "A ≤ 0.06" becomes the approved A.
+
+**E1b · §10.4 selection rule (D-F6-101), its own commit; it does not wait for the stop**
+- [ ] `WallClock_T3`, `OutsideFigureLeft_T3`, `OutsideFigureRight_T3`: `tier` 3 → 2. Keys unchanged; `max_tier` unchanged (MEDIUM 2, HIGH 3).
+- [ ] MEDIUM: clock always + 3 × T1 + 0–2 of the other four T2 (4–6 props); movers = one curtain (side from `selection:MEDIUM`) + the silhouette of the **opposite** window, one draw.
+- [ ] HIGH: clock always, then the rest of T2 and T3 in today's order (7–10 props); movers = both curtains + MEDIUM's silhouette (derived from the MEDIUM draw, so S7 going MEDIUM → HIGH never switches sides).
+- [ ] LOW, FOCUS, MINIMAL, BASELINE and the peripheral draw unchanged.
+- [ ] Silhouette in MEDIUM and HIGH: 8 s walk, 5 s hidden, for as long as the level lasts.
+- [ ] Harness: **E3** reads 11 props · T1×3, T2×5, T3×3 and 4 movers · T2×4; **new case** over 200 seeds: MEDIUM = clock + exactly one curtain + one silhouette on opposite sides, HIGH ⊇ MEDIUM with 3 movers, same seed → same side, both sides ≈ half each. E7, E8b, E11 stay green.
+
+**Stop (one, before 16:45 or after 18:00):** in the headset, Sebas picks the silhouette distance, the curtain draw and the wind, and watches the continuous silhouette in MEDIUM while looking at the board. If it distracts too much, only its 5 s pause changes (the value goes to the draft for UI/UX's §10.4).
+
+**E1c · After the stop: commit the approved values and re-measure**
+- [ ] The silhouette starts, pauses and ends **hidden by architecture** (the wall between board and window, or the paper half), never by its curtain (in MEDIUM its curtain is off). If it pops in or out anywhere in the cycle, fix its path, not the draw.
+- [ ] E13 angles (D-F6-33), `DWELL` boxes (silhouettes now in MEDIUM), `HEAD_AWAY` region with the D7 probe, X9/X13, `LayoutOfRecord`. Note every difference > 1° with its cause.
+- [ ] **X17** at the new silhouette distance: ≥ 2.7:1; if a silhouette drops, change its colour, not its position (§10.5).
+- [ ] **D7 probe in MEDIUM (D-F6-102):** the share of clock looks that land on the Fuji picture when the draw includes it (same 2°–6° sweep as row 17).
+- [ ] Results table in the day draft; UI/UX documents the approved values in §10 (tell Sebas).
+**Verify:** harness green; eye captures at MEDIUM and HIGH.
+**Scope:** M (E1b one commit; E1a/E1c one commit of values + harness)
+
+### [ ] S1: Spec v1.4 change rows (`Claude outputs/Cambios_Spec_v1_4.md`, mine)
+- [ ] Header "Alineado hasta: D-F6-104"; read the file just before writing and keep the rest.
+- [ ] New rows: **D-F6-85** (closer silhouettes, curtains drawn, wind A; values after the E1 stop; **declares MEDIUM motion and peripheral visibility change vs 23 Oct**), **D-F6-86** (static rice field, same in every condition, not part of the ESL), **D-F6-97** (contrast: silhouettes ≥ 2.7:1 with `#34363B`, animals no worse than with the sky, window birds darkened), **D-F6-98** (**the butterfly is seen less against the rice field**: 1.56 / 2.03 vs 5.7:1; sky and field sessions not compared per animal), **D-F6-100 + D-F6-101** (clock and silhouettes to tier 2, §10.4 selection; **MEDIUM changes**, so S6 and S7 change and earlier sessions are not comparable in the ESL; MIRAI asked on Fri 30, A-11), **D-F6-103 + D-F6-104** (C3 crossfade base, SDF morph only if approved by Thu 18:00, `c3_transition`, not a stroke-by-stroke morph).
+- [ ] Row 17 corrected by D-F6-102 (grouping in MEDIUM and HIGH; MEDIUM probe result). Row 21 gets the approved wind A. §2 table: rice field final; set B objects final (`ad19b05`); hints/C3 per `asset_source`.
+- [ ] Also C3 7.8 s with strip (D-F6-90) and hint telemetry (D-F6-91): the board says they are declared in v1.4 and no row has them yet.
+**Stop:** Sebas reads it; PM takes it for the full spec (D-F6-88). **Scope:** XS (doc)
 
 ### [x] E2: Rice-field background (D-F6-86): when Sebas sends the image, by Thu 29 afternoon at the latest
 - [x] A static unlit panel behind each window. It is sized and placed so that, seen from the eye at 1.60 m, the horizon sits at eye height and the image fills the window frame. Same in every condition and ESL level. The room lighting is unchanged.
