@@ -43,6 +43,9 @@ namespace NeuroAdaptiveVR.Controllers
         [Header("Tipografia")]
         [Tooltip("Tamano para ideogramas: un kanji suelto se lee por su forma, no por su texto.")]
         [SerializeField] private float promptIdeographicSize = 420f;
+        [Tooltip("Glyph size while the kanji is taught (S5 exposure, C3, assembly, the tutorial example): larger than a " +
+                 "trial prompt so it reads better (D-F6-108, Sebas in the headset, 27 Oct).")]
+        [SerializeField] private float exposureIdeographicSize = 500f;
         [SerializeField] private float promptKanaSize = 200f;
         [SerializeField] private float promptLatinSize = 150f;
         [SerializeField] private float optionIdeographicSize = 210f;
@@ -885,7 +888,7 @@ namespace NeuroAdaptiveVR.Controllers
             if (promptLabel != null)
             {
                 promptLabel.text = glyph ?? string.Empty;
-                promptLabel.fontSize = promptIdeographicSize;
+                promptLabel.fontSize = exposureIdeographicSize;
             }
             if (feedbackLabel != null)
             {
@@ -954,12 +957,12 @@ namespace NeuroAdaptiveVR.Controllers
             if (promptLabel == null) return false;
 
             promptLabel.text = item.Character;
-            promptLabel.fontSize = promptIdeographicSize;
+            promptLabel.fontSize = exposureIdeographicSize;
             promptLabel.alpha = 0f;
             promptLabel.ForceMeshUpdate();
             var board = (RectTransform)promptLabel.transform.parent;
             Vector2 centre = board.InverseTransformPoint(promptLabel.transform.TransformPoint(promptLabel.textBounds.center));
-            var box = Vector2.one * promptIdeographicSize;   // the glyph's em box
+            var box = Vector2.one * exposureIdeographicSize;   // the glyph's em box
 
             if (_c3Form1 == null)
             {
@@ -1015,7 +1018,7 @@ namespace NeuroAdaptiveVR.Controllers
 
         private (CanvasGroup layer, Image image, TMP_Text text) C3Layer(string name, RectTransform board)
         {
-            var rt = NewRect(name, board, Vector2.zero, Vector2.one * promptIdeographicSize);
+            var rt = NewRect(name, board, Vector2.zero, Vector2.one * exposureIdeographicSize);
             var group = rt.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
             group.interactable = false;
