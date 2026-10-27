@@ -99,7 +99,7 @@ C7 hints + C3 sets B, C ─► C8 validation run + freeze (Fri 30, after the tal
 - [x] B4a (Tue 27, real set A images): hints: §9 zones and cells, audio indicator (D-F6-89), `asset_source` next to `cue_type` (D-F6-91); the chip goes only where the image is `AUTHORED`
 - [x] B4b (Tue 27, real set A forms): C3 crossfade with the §10 times (800 ms, 1.8 s, strip 6.0–7.8 s, D-F6-90), *smootherstep* (§10.1), `c3_transition` in `KANJI_EXPOSED` (D-F6-104)
 - [ ] B4 (Wed 28): the 20 real set A images go in (cut-off 12:00, D-F6-87; if missing, V5 leaves the video and V6 uses a requested hint). **Stop:** Sebas sees them in the headset
-- [ ] B4d (Tue 27, D-F6-108): kanji 500 u in C3 and the S5 exposure; strip centred, no frames or arrows, 190 u images 40 u apart (x −440 to 440, y −270); zone A without frame; audio indicator at (620, −250). **Stop:** with E3's
+- [x] B4d (Tue 27, D-F6-108): kanji 500 u in C3 and the S5 exposure; strip centred, no frames or arrows, 190 u images 40 u apart (x −440 to 440, y −270); zone A without frame; audio indicator at (620, −250). **Stop:** with E3's
 - [ ] B4c (Wed 28, after B4b, own task; **waits for the 月 fields from Modelado 3D, Wed morning, D-F6-106**): SDF morph on one test kanji, three §10.1 checks, then per set. **Stop:** Sebas sees it in the headset by **Thu 29 18:00**, else the crossfade stays (D-F6-103)
 - [ ] B5: demo scene with Unity cameras, outside the build (D-F6-84), shots V1–V8. Plan B: eye view only. **Stop:** recording on Thu 29 morning
 - [ ] B6: captures of Unity and the portal for the deck (Wed 28 afternoon). **Stop:** Sebas has the files
@@ -112,10 +112,10 @@ C7 hints + C3 sets B, C ─► C8 validation run + freeze (Fri 30, after the tal
 - [ ] C7: hints and C3 for sets B and C (a declared placeholder is allowed). **Stop:** Sebas sees them in the headset
 - [ ] C8: Fri 30 after the presentation: full validation run, then the function freeze (D-F6-62, D-F6-66). **Stop:** Sebas confirms the freeze
 
-- [ ] E3 (Tue 27, D-F6-109): `WallShelf_T2` always on in MEDIUM and HIGH; the shelf bird enters and leaves from inside the room, out of view (yaw ≳ 55°). **Stop:** Sebas approves the path in the headset (with B4d's look)
+- [x] E3 (Tue 27, D-F6-109): `WallShelf_T2` always on in MEDIUM and HIGH; the shelf bird enters and leaves from inside the room, out of view (yaw ≳ 55°). **Stop:** Sebas approves the path in the headset (with B4d's look)
 
 ### S · Spec change list (mine, `Claude outputs/Cambios_Spec_v1_4.md`)
-- [ ] S1: rows for D-F6-85 (values in D-F6-110), D-F6-86, D-F6-97, D-F6-98, D-F6-100, D-F6-101, D-F6-103, D-F6-104, D-F6-108, D-F6-109, D-F6-90 and D-F6-91; row 17 with D-F6-102 and D-F6-107; with the two declarations (MEDIUM changes; the butterfly is seen less against the rice field). Row 17 is corrected by D-F6-102 (the clock is now in MEDIUM). The D-F6-85 row waits for the E1 values. **Stop:** Sebas reads it before PM takes it (D-F6-88)
+- [x] S1: rows for D-F6-85 (values in D-F6-110), D-F6-86, D-F6-97, D-F6-98, D-F6-100, D-F6-101, D-F6-103, D-F6-104, D-F6-108, D-F6-109, D-F6-90 and D-F6-91; row 17 with D-F6-102 and D-F6-107; with the two declarations (MEDIUM changes; the butterfly is seen less against the rice field). Row 17 is corrected by D-F6-102 (the clock is now in MEDIUM). The D-F6-85 row waits for the E1 values. **Stop:** Sebas reads it before PM takes it (D-F6-88)
 
 ### D · Noted only, not planned yet
 - F4 Unity pieces: the LSL marker output and the new S3 step (D-F6-74), from Mon 2 Nov, as an exception to the freeze.
