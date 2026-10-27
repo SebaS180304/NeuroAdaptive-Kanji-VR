@@ -113,12 +113,13 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 **Stop:** Sebas sees them in the headset (Wed 28).
 **Scope:** M + M (two commits on Tue) + S (assets on Wed)
 
-### [ ] B4d: Look of hints and C3 (D-F6-108, asked by Sebas in the headset), two commits
-- [ ] `exposureIdeographicSize = 500` for `BeginC3` (F1/F2 box = the glyph's em) and `ShowExposure`; trial prompts stay at 420. First check whether the assembly slots (`KanjiAssemblyController.cs:236`) depend on the glyph size: if so, the assembly keeps 420.
-- [ ] Strip: `StripX = {−345, −115, 115, 345}`, 190 u, 40 u apart, y −270; `HintBox` without fill or border; no arrows; zone A image over its 320 u without frame; glyph of the 4th place scaled to 190 u; `AudioCentre = (620, −250)` (chip and icon stay, D-F6-89). The C3 strip keeps sharing the layout (D-F6-90).
-- [ ] X20: strip ends before the Hint button; indicator clear of the strip and the Hint button; C3's 500 u em leaves ≥ 10 u above the strip.
+### [x] B4d: Look of hints and C3 (D-F6-108, asked by Sebas in the headset), two commits
+- [x] `exposureIdeographicSize = 500` for `BeginC3` (F1/F2 box = the glyph's em) and `ShowExposure`; trial prompts stay at 420. First check whether the assembly slots (`KanjiAssemblyController.cs:236`) depend on the glyph size: if so, the assembly keeps 420.
+- [x] Strip: `StripX = {−345, −115, 115, 345}`, 190 u, 40 u apart, y −270; `HintBox` without fill or border; no arrows; zone A image over its 320 u without frame; glyph of the 4th place scaled to 190 u; `AudioCentre = (620, −250)` (chip and icon stay, D-F6-89). The C3 strip keeps sharing the layout (D-F6-90).
+- [x] X20: strip ends before the Hint button; indicator clear of the strip and the Hint button; C3's 500 u em leaves ≥ 10 u above the strip.
 **Verify:** harness green; eye renders in edit mode (T2 HIGH with speaker, partial strip, C3 at 2.7 and 6.5 s), scene reloaded unsaved.
 **Stop:** with E3, in the headset. UI/UX documents §9–§10. **Scope:** S + S
+→ 27 Oct: `c269358` (500 u for `ShowExposure` and C3; the assembly slots have their own 240 u size and row, so S5's assembly and the tutorial example take 500 too) and the layout commit (strip centred, 190 u, 40 u apart, no frames or arrows, zone A without frame, indicator at (620, −250)). X20 checks centring and size, indicator clear of strip and Hint button, C3 glyph above the strip. 100/100. Eye renders checked. **Stop pending** (with E3).
 
 ### [ ] B4c: SDF morph for C3 (D-F6-103, D-F6-104): Wed 28, after B4b, its own task
 **Blocked by:** the 16-bit fields of 月 (512², one channel, EXR, spread ≥ 25 %, kanji from the board glyph in the same box): Modelado 3D adjusts `tools/png_a_sdf.py` and delivers them Wed 28 morning (D-F6-106).

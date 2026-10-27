@@ -496,15 +496,15 @@ namespace NeuroAdaptiveVR.Controllers
         // ------------------------------------------------------------------
         // Visual hints (Diseno_UI_Kanji_Studio_v1.md §9, D-F6-63, D-F6-89)
         // ------------------------------------------------------------------
-        // Board units, origin at the centre (§9.2). Zone A beside the question, zone B on the feedback line
-        // (empty before the answer), the audio indicator left of the Hint button (from x 470).
+        // Board units, origin at the centre (§9.2). Zone A beside the question; zone B on the feedback line (empty
+        // before the answer), centred under the kanji; the audio indicator above the Hint button. Since D-F6-108
+        // (Sebas in the headset) the drawings stand alone: no box, no border, no arrows; strip images of 190 u, 40 u apart.
         private static readonly Vector2 ZoneACentre = new(-560f, 60f), ZoneASize = new(320f, 320f);
-        private static readonly float[] StripX = { -465f, -255f, -45f, 165f };
-        private const float StripY = -270f, StripBox = 150f, BoxInset = 12f;
-        private static readonly Vector2 AudioCentre = new(330f, -370f), AudioSize = new(120f, 90f);
+        private static readonly float[] StripX = { -345f, -115f, 115f, 345f };
+        private const float StripY = -270f, StripBox = 190f, StripMarkSize = 70f;
+        private static readonly Vector2 AudioCentre = new(620f, -250f), AudioSize = new(120f, 90f);
 
         private static readonly Color HintBoxColor = new(0.1647f, 0.1922f, 0.2588f, 1f);    // #2A3142
-        private static readonly Color HintBorderColor = new(0.2275f, 0.2667f, 0.3765f, 1f); // #3A4460
         private static readonly Color HintMarkColor = new(0.6627f, 0.7059f, 0.7765f, 1f);   // #A9B4C6
         private static readonly Color HintInkColor = new(0.9569f, 0.9451f, 0.9176f, 1f);    // #F4F1EA
         private static readonly Color SpeakerColor = new(0.8902f, 0.7020f, 0.2549f, 1f);    // #E3B341
@@ -528,7 +528,7 @@ namespace NeuroAdaptiveVR.Controllers
         private CanvasGroup _hintGroup;
         private GameObject _zoneA, _audioChip;
         private Image _zoneAImage;
-        private GameObject[] _stripBoxes, _stripArrows;
+        private GameObject[] _stripBoxes;
         private Image[] _stripImages;
         private TMP_Text[] _stripMarks;
         private Coroutine _hintFade, _audioTimer;
@@ -553,9 +553,8 @@ namespace NeuroAdaptiveVR.Controllers
                 _stripMarks[i].text = marks[i];
                 _stripMarks[i].font = glyph && promptLabel != null ? promptLabel.font : cueLabel.font;
                 _stripMarks[i].color = glyph ? HintInkColor : HintMarkColor;
-                _stripMarks[i].fontSize = glyph ? StripBox - 2f * BoxInset - 10f : 56f;
+                _stripMarks[i].fontSize = glyph ? StripBox : StripMarkSize;   // the glyph's em is the place, like F1 and F2's box
             }
-            foreach (var arrow in _stripArrows) arrow.SetActive(strip);
 
             // §9.4: a 250 ms opacity fade in the request's frame, then still until the answer.
             _hintGroup.gameObject.SetActive(true);
@@ -612,9 +611,6 @@ namespace NeuroAdaptiveVR.Controllers
             _stripMarks = new TMP_Text[StripX.Length];
             for (int i = 0; i < StripX.Length; i++)
                 (_stripBoxes[i], _stripImages[i], _stripMarks[i]) = HintBox($"Strip{i + 1}", root, new Vector2(StripX[i], StripY), Vector2.one * StripBox);
-            _stripArrows = new GameObject[StripX.Length - 1];
-            for (int i = 0; i < _stripArrows.Length; i++)
-                _stripArrows[i] = NewText($"Arrow{i + 1}", root, new Vector2((StripX[i] + StripX[i + 1]) / 2f, StripY), new Vector2(60f, StripBox), "→", 56f, HintMarkColor).gameObject;
 
             // The indicator lives outside the faded group: it follows the audio, not the images.
             var chip = NewRect("AudioIndicator", board, AudioCentre, AudioSize);
@@ -632,25 +628,14 @@ namespace NeuroAdaptiveVR.Controllers
             root.gameObject.SetActive(false);
         }
 
-        // A box of §9.2: #2A3142 fill, radius 16 u, 2 u #3A4460 border; the image inside with a 12 u margin, and
-        // a text slot for "?" or the kanji.
+        // A place of §9.2: since D-F6-108 only the drawing over its whole size, and a text slot for "?" or the kanji.
         private (GameObject box, Image image, TMP_Text mark) HintBox(string name, RectTransform parent, Vector2 centre, Vector2 size)
         {
             var rt = NewRect(name, parent, centre, size);
-            var fill = rt.gameObject.AddComponent<Image>();
-            fill.sprite = PillSprite.Get(16f);
-            fill.type = Image.Type.Sliced;
-            fill.color = HintBoxColor;
-            fill.raycastTarget = false;
-            var border = NewRect("Border", rt, Vector2.zero, size).gameObject.AddComponent<Image>();
-            border.sprite = PillSprite.Get(16f, 2f);
-            border.type = Image.Type.Sliced;
-            border.color = HintBorderColor;
-            border.raycastTarget = false;
-            var image = NewRect("Image", rt, Vector2.zero, size - 2f * BoxInset * Vector2.one).gameObject.AddComponent<Image>();
+            var image = NewRect("Image", rt, Vector2.zero, size).gameObject.AddComponent<Image>();
             image.preserveAspect = true;
             image.raycastTarget = false;
-            var mark = NewText("Mark", rt, Vector2.zero, size, "", 56f, HintMarkColor);
+            var mark = NewText("Mark", rt, Vector2.zero, size, "", StripMarkSize, HintMarkColor);
             return (rt.gameObject, image, mark);
         }
 

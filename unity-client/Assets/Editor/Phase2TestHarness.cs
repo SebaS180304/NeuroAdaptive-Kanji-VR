@@ -220,8 +220,27 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (Mathf.Abs(centre.x) + size.x / 2f > 800f || Mathf.Abs(centre.y) + size.y / 2f > 450f) p.Add($"{name} sale del board");
             var stripRight = StudioTrialPresenter.HintZones.Where(z => z.name.StartsWith("strip")).Max(z => z.centre.x + z.size.x / 2f);
             if (stripRight > 470f - 24f) p.Add($"la tira termina en x {stripRight:F0}, pegada al boton Hint");
+            // D-F6-108: strip centred under the kanji, 190 u images; the audio indicator clear of the strip and the Hint button.
+            var strip = StudioTrialPresenter.HintZones.Where(z => z.name.StartsWith("strip")).ToList();
+            if (Mathf.Abs(strip.Average(z => z.centre.x)) > 1f || strip.Any(z => Mathf.Abs(z.size.x - 190f) > 0.5f)) p.Add("la tira no esta centrada con imagenes de 190 u");
+            var audio = StudioTrialPresenter.HintZones.First(z => z.name == "audio");
+            bool Overlap((string name, Vector2 centre, Vector2 size) a, Vector2 c, Vector2 sz)
+                => Mathf.Abs(a.centre.x - c.x) < (a.size.x + sz.x) / 2f && Mathf.Abs(a.centre.y - c.y) < (a.size.y + sz.y) / 2f;
+            if (strip.Any(z => Overlap(audio, z.centre, z.size))) p.Add("el indicador de audio pisa la tira");
+            if (Overlap(audio, new Vector2(620f, -370f), new Vector2(300f, 110f))) p.Add("el indicador de audio pisa el boton Hint");
+            // C3: the glyph's em (exposure size) centred on the prompt label leaves >= 10 u above the strip.
+            var presenter = UnityEngine.Object.FindFirstObjectByType<StudioTrialPresenter>(FindObjectsInactive.Include);
+            if (presenter != null)
+            {
+                var so = new SerializedObject(presenter);
+                float em = so.FindProperty("exposureIdeographicSize").floatValue;
+                var prompt = so.FindProperty("promptLabel").objectReferenceValue as TMPro.TMP_Text;
+                float glyphBottom = (prompt != null ? ((RectTransform)prompt.transform).anchoredPosition.y : 90f) - em / 2f;
+                float stripTop = strip.Max(z => z.centre.y + z.size.y / 2f);
+                if (glyphBottom - stripTop < 10f) p.Add($"el kanji de {em:F0} u baja hasta y {glyphBottom:F0}, a {glyphBottom - stripTop:F0} u de la tira");
+            }
 
-            Check("X20", "Pistas de §9.1: celdas, imagenes del set A AUTHORED, sin imagen PLACEHOLDER, zonas dentro del board (D-F6-63, D-F6-91)",
+            Check("X20", "Pistas de §9.1: celdas, imagenes del set A AUTHORED, sin imagen PLACEHOLDER, zonas del board de D-F6-108 (D-F6-63, D-F6-91)",
                   p.Count == 0, p.Count == 0 ? $"6 celdas · set A 5/5 AUTHORED · KANJI_HITO PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
         }
 
