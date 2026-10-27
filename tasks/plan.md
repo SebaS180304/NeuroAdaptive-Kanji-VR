@@ -1,6 +1,6 @@
 # Implementation Plan: week of 26 – 30 Oct 2026 (VR complete, MIRAI presentation)
 
-Written 26 Oct 2026. **Aligned up to: D-F6-110** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening. **Revised Tue 27 Oct** (not yet approved): E1 follows the §10.4 rule (D-F6-100, D-F6-101; D-F6-99 is gone), B4b gets the new C3 times (D-F6-103, D-F6-104), new B4c (SDF morph) and new S1 (spec change rows).
+Written 26 Oct 2026. **Aligned up to: D-F6-111** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening. **Revised Tue 27 Oct** (not yet approved): E1 follows the §10.4 rule (D-F6-100, D-F6-101; D-F6-99 is gone), B4b gets the new C3 times (D-F6-103, D-F6-104), new B4c (SDF morph) and new S1 (spec change rows).
 The M3 week's plan is archived in `tasks/archive/fase6_m3_{plan,todo}.md`. Its open items
 are carried over here or dropped as listed in the last section.
 

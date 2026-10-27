@@ -213,7 +213,9 @@ namespace NeuroAdaptiveVR.Controllers
             }
 
             var ordered = order(eligible, rng);
-            target = Mathf.Min(target, ordered.Count);
+            // An always-on prop is on even when the draw asks for fewer: MEDIUM keeps its 4-6 profile and the
+            // clock and shelf make the real range 5-6 (D-F6-111).
+            target = Mathf.Max(Mathf.Min(target, ordered.Count), ordered.FindLastIndex(p => p.AlwaysOn) + 1);
 
             var active = new List<string>(target);
             for (int i = 0; i < target; i++)

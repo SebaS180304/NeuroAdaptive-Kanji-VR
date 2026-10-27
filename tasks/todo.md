@@ -1,7 +1,7 @@
 # Todo: week of 26 – 30 Oct (VR complete, MIRAI presentation)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/fase6_m3_todo.md`.
-**Aligned up to: D-F6-110** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92; **revised Tue 27** (E1 with §10.4, B4b with the D-F6-103 times, new B4c and S1; waiting for Sebas's OK) (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-111** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92; **revised Tue 27** (E1 with §10.4, B4b with the D-F6-103 times, new B4c and S1; waiting for Sebas's OK) (`Estado_Actual.md`, the board; it wins over this list).
 
 **Tue 27 order:** E1 → headset stop (before 16:45 or after 18:00; Sebas on the cap 17:00–18:00) → B4a → B4b → S1. Cut at 19:00 with the day draft.
 Every commit gets a message file in Downloads, is shown to Sebas first, and holds one change.
@@ -216,6 +216,7 @@ Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (rep
 ### [x] E3: Shelf always on and the shelf bird from inside the room (D-F6-109), two commits
 - [x] `WallShelf_T2.alwaysOn = true` in the scene (like the clock); E14 adds "shelf in MEDIUM and HIGH over 200 seeds"; re-run X12b and X17.
   → 27 Oct: done. Before, the shelf was missing in 152/200 MEDIUM rooms. `alwaysOn` alone left 63/200 without it because MEDIUM drew 4–6 props and the 5 fixed ones need 5: MEDIUM is now **5–7** (3 T1 + clock + shelf + 0–2 of the other 3 T2, as D-F6-109 reads). X12b MEDIUM: picture active 69/200; short looks → clock 55 %, picture 23 %, lamp 11 %, left curtain 11 %; HIGH: picture 61 %, clock 36 %, curtain 3 %. X17 unchanged. 100/100.
+  → **28 Oct, D-F6-111:** MEDIUM back to **4–6** in the profile; `ActivateGroup` now always switches on every `alwaysOn` prop even when the draw asks for fewer, so the real range is 5–6 (3 T1 + clock + shelf + 0–1 of 3). E3 pins the 4–6 profile; E14 checks 5–6 props in MEDIUM. X12b MEDIUM: picture active 26/200; short looks → clock 62 %, lamp 15 %, left curtain 15 %, picture 9 %. 101/101.
 - [x] Shelf bird path: today `pathStart` (3.50, 2.55, 3.55) is at ≈ 44.6° yaw, in view, at the corner, and the bird leaves the way it came. Proposal: `pathStart` (3.30, 2.50, 2.00) (yaw ≈ 58.8°), `pathControl` (3.20, 2.65, 3.00), rest unchanged; durations unchanged (D-F6-48). Check the curve stays inside walls and under beams.
 - [x] New X22: path start at yaw ≥ 55° and inside the room; no sampled point outside. E13 row `PeripheralEvent_Shelf` measured, difference > 1° with its cause.
   → 27 Oct: room measured (right wall's inner face x 3.57, front wall z 3.87, ceiling 2.70); curve clear of every piece by 10 cm, max y 2.54. Scene values set; X22 green (start at 58.8°, 81 positions inside); E13 row 34.1–60.2° / 8.3–14.8°. 101/101. **Stop passed: path approved by Sebas in the headset (27 Oct).**

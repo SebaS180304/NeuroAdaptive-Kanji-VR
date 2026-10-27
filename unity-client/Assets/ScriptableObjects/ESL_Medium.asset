@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: ESL_Medium
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Data.EnvironmentProfile
   level: 2
-  propCountMin: 5
-  propCountMax: 7
+  propCountMin: 4
+  propCountMax: 6
   maxTier: 2
   moverCountMin: 2
   moverCountMax: 2
@@ -22,5 +22,5 @@ MonoBehaviour:
   peripheralIntervalMaxSeconds: 35
   sourceNote: 'Spec 8.1 fila MEDIUM: ~1 evento cada 25-35 s. ''to validate'' en 16.
     Desde el 27 oct: movers 2, una cortina y la silueta contraria (D-F6-101, Diseno_Sala_ESL.md
-    10.4); props 5-7, los 3 de tier 1, el reloj y la repisa siempre y 0-2 de los otros
-    3 de tier 2 (D-F6-109).'
+    10.4); props 4-6 (D-F6-111), con el reloj y la repisa siempre, asi que el rango
+    real es 5-6: los 3 de tier 1, el reloj, la repisa y 0-1 de los otros 3 de tier 2.'

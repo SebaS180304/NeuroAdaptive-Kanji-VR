@@ -751,6 +751,10 @@ namespace NeuroAdaptiveVR.EditorTools
                 string tiers = Join(todos.GroupBy(x => x.Tier).OrderBy(g => g.Key).Select(g => $"T{g.Key}x{g.Count()}"));
                 string tiersWanted = grupo == "Props" ? "T1x3, T2x5, T3x3" : "T2x4";
                 if (tiers != tiersWanted) cortos.Add($"tiers {tiers}, se esperaba {tiersWanted}");
+                // D-F6-111: MEDIUM keeps the 4-6 props of spec §8.1; the always-on props make the real range 5-6 (E14).
+                var medium = perfiles.FirstOrDefault(p => p != null && p.level == StimulationOrAssistanceLevel.Medium);
+                if (grupo == "Props" && medium != null && (medium.propCountMin != 4 || medium.propCountMax != 6))
+                    cortos.Add($"MEDIUM pide {medium.propCountMin}-{medium.propCountMax} props, se esperaba 4-6 (D-F6-111)");
 
                 Check($"E3-{grupo}", $"Ningun perfil pide mas {grupo} de los que hay en la escena",
                       cortos.Count == 0,
@@ -875,6 +879,9 @@ namespace NeuroAdaptiveVR.EditorTools
                     if (!high.Contains("WallClock_T3")) e14.Add($"seed {s}: HIGH sin reloj");
                     // D-F6-109: the shelf too, so the shelf bird never lands in the air.
                     if (!med.Contains("WallShelf_T2") || !high.Contains("WallShelf_T2")) e14.Add($"seed {s}: sin repisa");
+                    // D-F6-111: MEDIUM's profile stays 4-6; with the 5 always-on props the room has 5 or 6, the rest of tier 2 0-1 of 3.
+                    var medProps = med.Where(n => !n.StartsWith("Curtain") && !n.StartsWith("OutsideFigure")).ToList();
+                    if (medProps.Count < 5 || medProps.Count > 6) e14.Add($"seed {s}: MEDIUM con {medProps.Count} props");
                     if (curtains.Count != 1 || figures.Count != 1) { e14.Add($"seed {s}: MEDIUM con {Join(curtains.Concat(figures))}"); continue; }
                     bool cLeft = curtains[0].Contains("Left");
                     if (cLeft == figures[0].Contains("Left")) e14.Add($"seed {s}: cortina y silueta del mismo lado");
@@ -886,7 +893,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 }
                 bool balanced = curtainLeft >= seeds14 * 0.35 && curtainLeft <= seeds14 * 0.65;
                 if (!balanced) e14.Add($"cortina izquierda en {curtainLeft}/{seeds14}");
-                Check("E14", "MEDIUM: reloj y repisa + una cortina + la silueta contraria; HIGH: las dos cortinas + esa silueta (§10.4, D-F6-109)",
+                Check("E14", "MEDIUM: reloj y repisa + 0-1 de tier 2 + una cortina + la silueta contraria; HIGH: las dos cortinas + esa silueta (§10.4, D-F6-109, D-F6-111)",
                       e14.Count == 0,
                       e14.Count == 0 ? $"{seeds14} seeds · cortina izquierda {curtainLeft}, derecha {seeds14 - curtainLeft}" : Join(e14.Take(5)) + (e14.Count > 5 ? $" (+{e14.Count - 5})" : ""));
 
