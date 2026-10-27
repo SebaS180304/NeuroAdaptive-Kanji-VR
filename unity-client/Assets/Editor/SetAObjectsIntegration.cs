@@ -40,6 +40,58 @@ namespace NeuroAdaptiveVR.EditorTools
         [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set B", priority = 302)]
         public static void RunSetB() => Integrate("B", SetB);
 
+        /// <summary>
+        /// Hint and C3 images of set A (D-F6-63, D-F6-64; Diseno_UI_Kanji_Studio_v1.md §11.1): P, F1, F2 and M per
+        /// kanji from KanjiLessonAssets/NN_CODE/pistas/A_NN_CODE_{P,F1,F2,M}.png, validated by Sebas (D-F6-30,
+        /// COORDINACION_27oct.md §0). Only those exact names are copied: other files in pistas/ are drafts. A
+        /// missing image leaves its field empty, so its cells stay PLACEHOLDER with their chip (§9.6).
+        /// </summary>
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar pistas del set A", priority = 304)]
+        public static void RunHintsSetA() => IntegrateHints("A", SetA);
+
+        private static void IntegrateHints(string set, (string kanjiId, string code)[] kanji)
+        {
+            const string hintDir = ArtDir + "/Hints";
+            if (!AssetDatabase.IsValidFolder(hintDir)) AssetDatabase.CreateFolder(ArtDir, "Hints");
+            var codes = new[] { "P", "F1", "F2", "M" };
+            foreach (var (_, code) in kanji)
+                foreach (var c in codes)
+                {
+                    var src = Path.Combine(ExportRoot, code, "pistas", $"{set}_{code}_{c}.png");
+                    if (File.Exists(src)) File.Copy(src, Path.GetFullPath(Path.Combine(Application.dataPath, "..", hintDir, Path.GetFileName(src))), true);
+                }
+            AssetDatabase.Refresh();
+
+            var missing = new System.Collections.Generic.List<string>();
+            foreach (var (kanjiId, code) in kanji)
+            {
+                var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{kanjiId}.asset");
+                if (item == null) { Debug.LogError($"[Pistas {set}] No KanjiLearningItem {kanjiId}"); return; }
+                Sprite Load(string c)
+                {
+                    var path = $"{hintDir}/{set}_{code}_{c}.png";
+                    if (!(AssetImporter.GetAtPath(path) is TextureImporter imp)) { missing.Add($"{code}_{c}"); return null; }
+                    imp.textureType = TextureImporterType.Sprite;
+                    imp.spriteImportMode = SpriteImportMode.Single;
+                    imp.alphaIsTransparency = true;
+                    imp.mipmapEnabled = false;   // shown at a fixed size on the board
+                    imp.maxTextureSize = 1024;
+                    imp.textureCompression = TextureImporterCompression.CompressedHQ;
+                    imp.SaveAndReimport();
+                    return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                }
+                Undo.RecordObject(item, $"Set {set} hints");
+                item.visualAssociationSprite = Load("P");
+                item.transformationForm1Sprite = Load("F1");
+                item.transformationForm2Sprite = Load("F2");
+                item.meaningLinkSprite = Load("M");
+                EditorUtility.SetDirty(item);
+            }
+            AssetDatabase.SaveAssets();
+            if (missing.Count > 0) Debug.LogWarning($"[Pistas {set}] Missing, stay PLACEHOLDER: " + string.Join(", ", missing));
+            else Debug.Log($"[Pistas {set}] {kanji.Length * codes.Length} images assigned (AUTHORED).");
+        }
+
         private static void Integrate(string set, (string kanjiId, string code)[] kanji)
         {
             foreach (var (_, code) in kanji)

@@ -74,22 +74,23 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 **Tue 27:** B4a and B4b run end to end on placeholders (labelled boxes in the exact zones and times), so on Wed only the 20 PNGs are dropped in and the cells flip to `AUTHORED`. Files: `StudioTrialPresenter.cs` (zones, chip, indicator), `S5LearningBlockController.cs` + `KanjiDiscoveryController.cs` (C3), `TelemetryContract.cs`, `database/EVENT_CONTRACT.md`, `Phase2TestHarness.cs`.
 
 **B4a · Hints (D-F6-63, D-F6-89, D-F6-91), one commit**
-- [ ] Prep (Tue 27, with placeholders): the per-kanji asset path (`A_月_P.png`, …) and the `BoardCanvas` zones:
+- [x] Prep (Tue 27, with placeholders): the per-kanji asset path (`A_月_P.png`, …) and the `BoardCanvas` zones:
   - zone A image (−560, 60), 320 × 320 u;
   - zone B strip (−150, −270): 4 boxes of 150 u with arrows, plus the "?" box;
   - audio indicator (330, −370), 120 × 90 u.
   Box style, ink and colours as §9.2–§9.3.
-- [ ] Cells per §9.1:
+- [x] Cells per §9.1:
   - T1 HIGH: partial strip, object → F1 → ? → ?;
   - T2 HIGH: M in zone A;
   - T3 MEDIUM: P in zone A;
   - T3 HIGH: full strip in zone B, zone A empty.
   LOW and OFF are unchanged. A request and the proactive cue (D9) show the same thing.
-- [ ] Timing (§9.4): 250 ms fade-in on the request frame or on `TRIAL_STARTED`; still until the answer; gone at `ANSWER_SELECTED` without a fade.
-- [ ] Audio indicator (D-F6-89): a speaker icon chip with no text or sound, visible from the audio start until 300 ms after it ends. It replaces the "reading audio" chip in audio-only cells and sits next to the image in HIGH.
-- [ ] Text chip (§9.6): hidden only in cells whose image is `AUTHORED`. A cell still on a placeholder keeps its current chip.
-- [ ] Telemetry (D-F6-91): `asset_source` (`AUTHORED` / `PLACEHOLDER`) of the visual hint next to `cue_type`, in every trial with a hint. Update `EVENT_CONTRACT.md` and the projection or `verify_*` if they read cue fields.
-- [ ] Harness: zones inside the canvas and clear of the Hint button; the chip/indicator rule per cell; `asset_source` per cell; no motion between fade-in and answer.
+- [x] Timing (§9.4): 250 ms fade-in on the request frame or on `TRIAL_STARTED`; still until the answer; gone at `ANSWER_SELECTED` without a fade.
+- [x] Audio indicator (D-F6-89): a speaker icon chip with no text or sound, visible from the audio start until 300 ms after it ends. It replaces the "reading audio" chip in audio-only cells and sits next to the image in HIGH.
+- [x] Text chip (§9.6): hidden only in cells whose image is `AUTHORED`. A cell still on a placeholder keeps its current chip.
+- [x] Telemetry (D-F6-91): `asset_source` (`AUTHORED` / `PLACEHOLDER`) of the visual hint next to `cue_type`, in every trial with a hint. Update `EVENT_CONTRACT.md` and the projection or `verify_*` if they read cue fields.
+- [x] Harness: zones inside the canvas and clear of the Hint button; the chip/indicator rule per cell; `asset_source` per cell; no motion between fade-in and answer.
+→ 27 Oct: done **with the real set A images** (Sebas: Modelado 3D finished the 20; COORDINACION_27oct.md §0, all «Referencia aprobada»). Menu «Integrar pistas del set A» copies only `A_NN_CODE_{P,F1,F2,M}.png` (for 車 the `A_02_KURUMA_*`; the `A_01_` and `A_03_` drafts in `pistas/` are not taken) to `Art/KanjiLessonAssets/Hints/`, imports them as sprites (1024, no mipmaps, HQ compression) and assigns them to new `KanjiLearningItem` fields (P is the existing `visualAssociationSprite`). Cell logic in `HintCells` (pure); drawing in `StudioTrialPresenter` (zone A, strip with ? / glyph, speaker chip from `SpeakerSprite`, 250 ms fade, hidden at the answer and in `Clear`). `ITrialPresenter.ShowCue` takes the target. `TRIAL_COMPLETED.cue_asset_source` (AUTHORED / PLACEHOLDER / null), `EVENT_CONTRACT.md`. Harness X20 (cells, set A AUTHORED, KANJI_HITO PLACEHOLDER, zones in the board, strip ends at x 240): 99/99. Edit-mode render from the eye checked (meaning link, partial strip, speaker chip); full strip glyph and the fade not seen yet: headset.
 
 **B4b · C3 crossfade with the summary strip (D-F6-64, D-F6-90, D-F6-91, D-F6-103, D-F6-104), one commit**
 - [ ] §10 timeline (27 Oct version, the same for crossfade and morph), from the moment the object is back on the board:

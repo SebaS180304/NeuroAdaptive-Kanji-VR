@@ -302,7 +302,7 @@ namespace NeuroAdaptiveVR.Controllers
                 pronunciation?.TryPlayPreResponseCue(_request.TrialType, available, _request.Target);
             }
 
-            _presenter.ShowCue(available);
+            _presenter.ShowCue(available, _request.Target);
         }
 
         private void EmitHintRequested(LalCue granted)
@@ -349,6 +349,7 @@ namespace NeuroAdaptiveVR.Controllers
             }
 
             _idle.Finish();   // the response window closes here
+            _presenter.ShowCue(LalCue.None, _request.Target);   // §9.4: the hint goes in the answer's frame
 
             // F5a (§2.2): the idle measures travel with the answer too, because
             // the backend decides on ANSWER_SELECTED, 1.5 s before
@@ -427,6 +428,8 @@ namespace NeuroAdaptiveVR.Controllers
                 { "response_time_ms", responseTimeMs },
                 { "hint_count", _hintCount },
                 { "cues_presented", CueNames(_cuesPresented) },
+                // D-F6-91: whether the visual hint shown was the real image or a placeholder; null without one.
+                { "cue_asset_source", HintCells.AssetSource(_request.TrialType, _cuesPresented, _request.Target) },
                 { CueTelemetry.KeyCueTrigger, CueTelemetry.TriggerOf(_proactiveIndex, _hintGrantedCue) },
                 { CueTelemetry.KeyProactiveIndex, _proactiveIndex > 0 ? _proactiveIndex : (object)null },
             };

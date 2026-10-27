@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using NeuroAdaptiveVR.Data;
 using TMPro;
@@ -250,6 +251,8 @@ namespace NeuroAdaptiveVR.Controllers
         public void Present(RetrievalTrialType trialType, string promptText,
                             IReadOnlyList<TrialOption> options)
         {
+            _trialType = trialType;
+            HideHints();
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = string.Empty;
             RestoreLabelStyle();   // an S5 exposure may have enlarged the cue line
@@ -315,6 +318,7 @@ namespace NeuroAdaptiveVR.Controllers
         /// </summary>
         public void ShowFeedback(bool isCorrect, string correctText, string selectedOptionId, string correctOptionId)
         {
+            HideHints();   // §9.4: gone in the answer's frame, with the cards' and the feedback's change
             if (cards != null)
                 foreach (var c in cards)
                 {
@@ -343,8 +347,9 @@ namespace NeuroAdaptiveVR.Controllers
             hintButton.interactable = available;
         }
 
-        public void ShowCue(LalCue cue)
+        public void ShowCue(LalCue cue, KanjiItem target)
         {
+            HideHints();
             if (cueLabel == null) return;
 
             // Fase 2 nombra el cue en texto. Los cues visuales reales --asociacion,
@@ -357,6 +362,18 @@ namespace NeuroAdaptiveVR.Controllers
             // amber on the card colour, instead of the enum name in plain text.
             // Only the cue: the "Hint · " prefix went on 30 September (Sebas);
             // the chip already reads as the hint, it sits by the Hint button.
+            //
+            // D-F6-63 (§9): the visual hints are drawn on the board, and the chip only names what is not drawn
+            // yet: it goes in every cell whose image is AUTHORED (§9.6). The reading audio gets the speaker
+            // indicator instead of its words (D-F6-89).
+            if (cue != LalCue.None)
+            {
+                bool authored = HintCells.AssetSource(_trialType, cue, target) == HintCells.Authored;
+                if (authored) ShowHintImages(HintCells.ZoneAFor(_trialType, cue), HintCells.ZoneBFor(_trialType, cue), target);
+                if (HintCells.AudioIndicator(_trialType, cue)) ShowAudioIndicator(target != null ? target.TargetReadingAudio : null);
+                cue &= ~LalCue.TargetReadingAudio;
+                if (authored) cue = LalCue.None;
+            }
             if (cue == LalCue.None)
             {
                 cueLabel.text = string.Empty;
@@ -473,6 +490,191 @@ namespace NeuroAdaptiveVR.Controllers
             if (cueLabel != null && _cueHomeColorKnown) cueLabel.color = _cueHomeColor;
         }
 
+        // ------------------------------------------------------------------
+        // Visual hints (Diseno_UI_Kanji_Studio_v1.md §9, D-F6-63, D-F6-89)
+        // ------------------------------------------------------------------
+        // Board units, origin at the centre (§9.2). Zone A beside the question, zone B on the feedback line
+        // (empty before the answer), the audio indicator left of the Hint button (from x 470).
+        private static readonly Vector2 ZoneACentre = new(-560f, 60f), ZoneASize = new(320f, 320f);
+        private static readonly float[] StripX = { -465f, -255f, -45f, 165f };
+        private const float StripY = -270f, StripBox = 150f, BoxInset = 12f;
+        private static readonly Vector2 AudioCentre = new(330f, -370f), AudioSize = new(120f, 90f);
+
+        private static readonly Color HintBoxColor = new(0.1647f, 0.1922f, 0.2588f, 1f);    // #2A3142
+        private static readonly Color HintBorderColor = new(0.2275f, 0.2667f, 0.3765f, 1f); // #3A4460
+        private static readonly Color HintMarkColor = new(0.6627f, 0.7059f, 0.7765f, 1f);   // #A9B4C6
+        private static readonly Color HintInkColor = new(0.9569f, 0.9451f, 0.9176f, 1f);    // #F4F1EA
+        private static readonly Color SpeakerColor = new(0.8902f, 0.7020f, 0.2549f, 1f);    // #E3B341
+
+        [Header("Visual hints (§9)")]
+        [SerializeField] private float hintFadeSeconds = 0.25f;
+        [SerializeField] private float audioIndicatorTailSeconds = 0.3f;
+
+        /// <summary>The hint zones, for the harness (X20): name, centre and size in board units.</summary>
+        public static IEnumerable<(string name, Vector2 centre, Vector2 size)> HintZones
+        {
+            get
+            {
+                yield return ("zoneA", ZoneACentre, ZoneASize);
+                for (int i = 0; i < StripX.Length; i++) yield return ($"strip{i + 1}", new Vector2(StripX[i], StripY), new Vector2(StripBox, StripBox));
+                yield return ("audio", AudioCentre, AudioSize);
+            }
+        }
+
+        private RetrievalTrialType _trialType;
+        private CanvasGroup _hintGroup;
+        private GameObject _zoneA, _audioChip;
+        private Image _zoneAImage;
+        private GameObject[] _stripBoxes, _stripArrows;
+        private Image[] _stripImages;
+        private TMP_Text[] _stripMarks;
+        private Coroutine _hintFade, _audioTimer;
+
+        private void ShowHintImages(HintCells.ZoneA a, HintCells.ZoneB b, KanjiItem item)
+        {
+            if (a == HintCells.ZoneA.None && b == HintCells.ZoneB.None) return;
+            BuildHints();
+            _zoneA.SetActive(a != HintCells.ZoneA.None);
+            _zoneAImage.sprite = a == HintCells.ZoneA.MeaningLink ? item.MeaningLinkSprite : item.VisualAssociationSprite;
+
+            bool strip = b != HintCells.ZoneB.None, full = b == HintCells.ZoneB.FullStrip;
+            // Partial: object → form 1 → ? → ?  ·  full: object → form 1 → form 2 → kanji (§9.1)
+            var sprites = new[] { item.VisualAssociationSprite, item.TransformationForm1Sprite, full ? item.TransformationForm2Sprite : null, null };
+            var marks = new[] { "", "", full ? "" : "?", full ? item.Character : "?" };
+            for (int i = 0; i < StripX.Length; i++)
+            {
+                bool glyph = i == 3 && full;
+                _stripBoxes[i].SetActive(strip);
+                _stripImages[i].sprite = sprites[i];
+                _stripImages[i].enabled = sprites[i] != null;
+                _stripMarks[i].text = marks[i];
+                _stripMarks[i].font = glyph && promptLabel != null ? promptLabel.font : cueLabel.font;
+                _stripMarks[i].color = glyph ? HintInkColor : HintMarkColor;
+                _stripMarks[i].fontSize = glyph ? StripBox - 2f * BoxInset - 10f : 56f;
+            }
+            foreach (var arrow in _stripArrows) arrow.SetActive(strip);
+
+            // §9.4: a 250 ms opacity fade in the request's frame, then still until the answer.
+            _hintGroup.gameObject.SetActive(true);
+            _hintGroup.alpha = 0f;
+            _hintFade = StartCoroutine(FadeHintsIn());
+        }
+
+        private IEnumerator FadeHintsIn()
+        {
+            float start = Time.unscaledTime;
+            while (_hintGroup.alpha < 1f)
+            {
+                _hintGroup.alpha = hintFadeSeconds <= 0f ? 1f : Mathf.Clamp01((Time.unscaledTime - start) / hintFadeSeconds);
+                yield return null;
+            }
+            _hintFade = null;
+        }
+
+        /// <summary>D-F6-89: from the start of the reading audio until 300 ms after it ends; no fade, no text, no sound.</summary>
+        private void ShowAudioIndicator(AudioClip clip)
+        {
+            BuildHints();
+            _audioChip.SetActive(true);
+            _audioTimer = StartCoroutine(HideAudioIndicatorAfter((clip != null ? clip.length : 0f) + audioIndicatorTailSeconds));
+        }
+
+        private IEnumerator HideAudioIndicatorAfter(float seconds)
+        {
+            yield return new WaitForSecondsRealtime(seconds);
+            if (_audioChip != null) _audioChip.SetActive(false);
+            _audioTimer = null;
+        }
+
+        private void HideHints()
+        {
+            if (_hintFade != null) { StopCoroutine(_hintFade); _hintFade = null; }
+            if (_audioTimer != null) { StopCoroutine(_audioTimer); _audioTimer = null; }
+            if (_hintGroup != null) _hintGroup.gameObject.SetActive(false);
+            if (_audioChip != null) _audioChip.SetActive(false);
+        }
+
+        private void BuildHints()
+        {
+            if (_hintGroup != null || cueLabel == null) return;
+            var board = (RectTransform)cueLabel.transform.parent;
+            var root = NewRect("Hints", board, Vector2.zero, board.rect.size);
+            _hintGroup = root.gameObject.AddComponent<CanvasGroup>();
+            _hintGroup.blocksRaycasts = false;
+            _hintGroup.interactable = false;
+
+            (_zoneA, _zoneAImage, _) = HintBox("ZoneA", root, ZoneACentre, ZoneASize);
+            _stripBoxes = new GameObject[StripX.Length];
+            _stripImages = new Image[StripX.Length];
+            _stripMarks = new TMP_Text[StripX.Length];
+            for (int i = 0; i < StripX.Length; i++)
+                (_stripBoxes[i], _stripImages[i], _stripMarks[i]) = HintBox($"Strip{i + 1}", root, new Vector2(StripX[i], StripY), Vector2.one * StripBox);
+            _stripArrows = new GameObject[StripX.Length - 1];
+            for (int i = 0; i < _stripArrows.Length; i++)
+                _stripArrows[i] = NewText($"Arrow{i + 1}", root, new Vector2((StripX[i] + StripX[i + 1]) / 2f, StripY), new Vector2(60f, StripBox), "→", 56f, HintMarkColor).gameObject;
+
+            // The indicator lives outside the faded group: it follows the audio, not the images.
+            var chip = NewRect("AudioIndicator", board, AudioCentre, AudioSize);
+            var chipBg = chip.gameObject.AddComponent<Image>();
+            chipBg.sprite = PillSprite.Get(AudioSize.y * 0.5f);
+            chipBg.type = Image.Type.Sliced;
+            chipBg.color = HintBoxColor;
+            chipBg.raycastTarget = false;
+            var icon = NewRect("Speaker", chip, Vector2.zero, Vector2.one * 56f).gameObject.AddComponent<Image>();
+            icon.sprite = SpeakerSprite.Get();
+            icon.color = SpeakerColor;
+            icon.raycastTarget = false;
+            _audioChip = chip.gameObject;
+            _audioChip.SetActive(false);
+            root.gameObject.SetActive(false);
+        }
+
+        // A box of §9.2: #2A3142 fill, radius 16 u, 2 u #3A4460 border; the image inside with a 12 u margin, and
+        // a text slot for "?" or the kanji.
+        private (GameObject box, Image image, TMP_Text mark) HintBox(string name, RectTransform parent, Vector2 centre, Vector2 size)
+        {
+            var rt = NewRect(name, parent, centre, size);
+            var fill = rt.gameObject.AddComponent<Image>();
+            fill.sprite = PillSprite.Get(16f);
+            fill.type = Image.Type.Sliced;
+            fill.color = HintBoxColor;
+            fill.raycastTarget = false;
+            var border = NewRect("Border", rt, Vector2.zero, size).gameObject.AddComponent<Image>();
+            border.sprite = PillSprite.Get(16f, 2f);
+            border.type = Image.Type.Sliced;
+            border.color = HintBorderColor;
+            border.raycastTarget = false;
+            var image = NewRect("Image", rt, Vector2.zero, size - 2f * BoxInset * Vector2.one).gameObject.AddComponent<Image>();
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            var mark = NewText("Mark", rt, Vector2.zero, size, "", 56f, HintMarkColor);
+            return (rt.gameObject, image, mark);
+        }
+
+        private TMP_Text NewText(string name, RectTransform parent, Vector2 centre, Vector2 size, string text, float fontSize, Color color)
+        {
+            var t = NewRect(name, parent, centre, size).gameObject.AddComponent<TextMeshProUGUI>();
+            t.font = cueLabel.font;
+            t.text = text;
+            t.fontSize = fontSize;
+            t.color = color;
+            t.alignment = TextAlignmentOptions.Center;
+            t.raycastTarget = false;
+            return t;
+        }
+
+        private RectTransform NewRect(string name, Transform parent, Vector2 centre, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.layer = cueLabel.gameObject.layer;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = centre;
+            rt.sizeDelta = size;
+            return rt;
+        }
+
         // Any other use of the cue line (exposure reading, assembly instruction,
         // notes) overwrites its text: the chip follows the text it was built for.
         private void LateUpdate()
@@ -490,6 +692,7 @@ namespace NeuroAdaptiveVR.Controllers
 
         public void Clear()
         {
+            HideHints();
             SetQuestion(null);
             if (promptLabel != null) promptLabel.text = string.Empty;
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;

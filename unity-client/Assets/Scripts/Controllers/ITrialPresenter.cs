@@ -40,8 +40,11 @@ namespace NeuroAdaptiveVR.Controllers
         /// <summary>Indica que hay ayuda disponible (o que no la hay) para este trial.</summary>
         void SetHintAvailable(bool available);
 
-        /// <summary>Presenta el cue concedido por LAL.</summary>
-        void ShowCue(LalCue cue);
+        /// <summary>
+        /// Presenta el cue concedido por LAL; `target` trae las imagenes de la pista (D-F6-63).
+        /// LalCue.None la quita (al responder, §9.4).
+        /// </summary>
+        void ShowCue(LalCue cue, KanjiItem target);
 
         /// <summary>Limpia board y area de respuesta al cerrar el trial.</summary>
         void Clear();

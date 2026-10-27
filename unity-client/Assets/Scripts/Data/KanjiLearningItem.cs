@@ -110,8 +110,18 @@ namespace NeuroAdaptiveVR.Data
         [Tooltip("Animacion objeto -> forma simplificada -> kanji (spec 5.1).")]
         public AnimationClip transformationAnimation;
 
-        [Tooltip("Imagen de la asociacion visual, para el cue VISUAL_ASSOCIATION.")]
+        [Tooltip("Imagen de la asociacion visual, para el cue VISUAL_ASSOCIATION. Es la P de " +
+                 "Diseno_UI_Kanji_Studio_v1.md §11.1: el objeto dibujado (picture y primera casilla de las tiras).")]
         public Sprite visualAssociationSprite;
+
+        [Tooltip("F1 (§11.1): forma intermedia pictorica, en la caja del kanji. C3 y tiras.")]
+        public Sprite transformationForm1Sprite;
+
+        [Tooltip("F2 (§11.1): forma intermedia estilizada, con las partes del kanji en su sitio. C3 y tira completa.")]
+        public Sprite transformationForm2Sprite;
+
+        [Tooltip("M (§11.1): escena del meaning link, sin el objeto ni los otros significados del set. T2 HIGH.")]
+        public Sprite meaningLinkSprite;
 
         // ------------------------------------------------------------------
         // Lo que NO va aqui

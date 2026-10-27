@@ -89,6 +89,7 @@ namespace NeuroAdaptiveVR.EditorTools
 
             ContentCases(content);
             SetCases(content);
+            HintCases(content);
             SubstitutionCases(content);
             EffectiveSetCases(content);
             SequenceCases(content);
@@ -171,6 +172,57 @@ namespace NeuroAdaptiveVR.EditorTools
         // ==================================================================
         // Sets y distractores
         // ==================================================================
+
+        /// <summary>
+        /// X20 (D-F6-63, D-F6-89, D-F6-91; Diseno_UI_Kanji_Studio_v1.md §9): what each §9.1 cell draws, the set A
+        /// images in place (AUTHORED), a kanji without them still PLACEHOLDER, and the zones inside the board and
+        /// clear of the Hint button.
+        /// </summary>
+        private static void HintCases(KanjiContentController c)
+        {
+            var p = new List<string>();
+            var T1 = RetrievalTrialType.MeaningToKanji; var T2 = RetrievalTrialType.KanjiToMeaning; var T3 = RetrievalTrialType.KanjiToReading;
+            var cells = new (RetrievalTrialType t, StimulationOrAssistanceLevel l, HintCells.ZoneA a, HintCells.ZoneB b, bool audio)[]
+            {
+                (T1, StimulationOrAssistanceLevel.Medium, HintCells.ZoneA.None, HintCells.ZoneB.None, true),
+                (T2, StimulationOrAssistanceLevel.Medium, HintCells.ZoneA.None, HintCells.ZoneB.None, true),
+                (T3, StimulationOrAssistanceLevel.Medium, HintCells.ZoneA.Picture, HintCells.ZoneB.None, false),
+                (T1, StimulationOrAssistanceLevel.High, HintCells.ZoneA.None, HintCells.ZoneB.PartialStrip, true),
+                (T2, StimulationOrAssistanceLevel.High, HintCells.ZoneA.MeaningLink, HintCells.ZoneB.None, true),
+                (T3, StimulationOrAssistanceLevel.High, HintCells.ZoneA.None, HintCells.ZoneB.FullStrip, false),
+            };
+            foreach (var cell in cells)
+            {
+                var cue = LearningAssistanceController.AvailableCues(cell.t, cell.l);
+                var got = (HintCells.ZoneAFor(cell.t, cue), HintCells.ZoneBFor(cell.t, cue), HintCells.AudioIndicator(cell.t, cue));
+                if (got != (cell.a, cell.b, cell.audio)) p.Add($"{cell.t} {cell.l}: {got}, se esperaba ({cell.a}, {cell.b}, {cell.audio})");
+            }
+
+            var setA = new[] { "KANJI_TSUKI", "KANJI_KURUMA", "KANJI_HI", "KANJI_TAKE", "KANJI_ISHI" };
+            var items = c.All.ToDictionary(i => i.KanjiId);
+            foreach (var id in setA)
+            {
+                if (!items.TryGetValue(id, out var item)) { p.Add($"{id} no esta en el contenido"); continue; }
+                foreach (var cell in cells)
+                {
+                    var src = HintCells.AssetSource(cell.t, LearningAssistanceController.AvailableCues(cell.t, cell.l), item);
+                    bool visual = cell.a != HintCells.ZoneA.None || cell.b != HintCells.ZoneB.None;
+                    if (visual ? src != HintCells.Authored : src != null) p.Add($"{id} {cell.t} {cell.l}: asset_source {src ?? "null"}");
+                }
+            }
+            if (items.TryGetValue("KANJI_HITO", out var hito) &&
+                HintCells.AssetSource(T3, LearningAssistanceController.AvailableCues(T3, StimulationOrAssistanceLevel.Medium), hito) != HintCells.Placeholder)
+                p.Add("KANJI_HITO (set C, sin imagenes) no da PLACEHOLDER");
+
+            // §9.2: board 1600 x 900 u centred; Hint button from x 470.
+            foreach (var (name, centre, size) in StudioTrialPresenter.HintZones)
+                if (Mathf.Abs(centre.x) + size.x / 2f > 800f || Mathf.Abs(centre.y) + size.y / 2f > 450f) p.Add($"{name} sale del board");
+            var stripRight = StudioTrialPresenter.HintZones.Where(z => z.name.StartsWith("strip")).Max(z => z.centre.x + z.size.x / 2f);
+            if (stripRight > 470f - 24f) p.Add($"la tira termina en x {stripRight:F0}, pegada al boton Hint");
+
+            Check("X20", "Pistas de §9.1: celdas, imagenes del set A AUTHORED, sin imagen PLACEHOLDER, zonas dentro del board (D-F6-63, D-F6-91)",
+                  p.Count == 0, p.Count == 0 ? $"6 celdas · set A 5/5 AUTHORED · KANJI_HITO PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
+        }
 
         private static void SetCases(KanjiContentController c)
         {

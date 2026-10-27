@@ -78,6 +78,9 @@ namespace NeuroAdaptiveVR.Data
         public GameObject AnchorObjectPrefab => Assets != null ? Assets.anchorObjectPrefab : null;
         public AnimationClip TransformationAnimation => Assets != null ? Assets.transformationAnimation : null;
         public Sprite VisualAssociationSprite => Assets != null ? Assets.visualAssociationSprite : null;
+        public Sprite TransformationForm1Sprite => Assets != null ? Assets.transformationForm1Sprite : null;
+        public Sprite TransformationForm2Sprite => Assets != null ? Assets.transformationForm2Sprite : null;
+        public Sprite MeaningLinkSprite => Assets != null ? Assets.meaningLinkSprite : null;
         public string VisualAssociation => Assets != null ? Assets.visualAssociation : null;
 
         public System.Collections.Generic.IReadOnlyList<AssemblySegment> AssemblySegments =>

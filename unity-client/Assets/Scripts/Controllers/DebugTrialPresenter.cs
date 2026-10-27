@@ -72,7 +72,7 @@ namespace NeuroAdaptiveVR.Controllers
 
         public void SetHintAvailable(bool available) => _hintAvailable = available;
 
-        public void ShowCue(LalCue cue) => Debug.Log($"   ◆ cue presentado: {cue}");
+        public void ShowCue(LalCue cue, KanjiItem target) => Debug.Log($"   ◆ cue presentado: {cue}");
 
         public void Clear()
         {
