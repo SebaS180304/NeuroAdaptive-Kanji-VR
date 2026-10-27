@@ -2912,6 +2912,7 @@ MonoBehaviour:
   - {fileID: 1652157336}
   hintButton: {fileID: 1150496541}
   promptIdeographicSize: 420
+  exposureIdeographicSize: 500
   promptKanaSize: 200
   promptLatinSize: 150
   optionIdeographicSize: 210
@@ -2970,6 +2971,8 @@ MonoBehaviour:
   cueChipTextColor: {r: 0.8902, g: 0.702, b: 0.2549, a: 1}
   cueChipFontSize: 56
   cueChipPadding: {x: 32, y: 14}
+  hintFadeSeconds: 0.25
+  audioIndicatorTailSeconds: 0.3
   crossSize: 260
   crossThickness: 22
   crossColor: {r: 0.9, g: 0.93, b: 0.97, a: 1}
@@ -5319,7 +5322,6 @@ MonoBehaviour:
   responses: {fileID: 0}
   telemetry: {fileID: 0}
   derivationStageSeconds: 2
-  glyphSeconds: 1.5
   meaningSeconds: 2
   readingSeconds: 2
   betweenKanjiSeconds: 3
@@ -9175,7 +9177,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 2
-  alwaysOn: 0
+  alwaysOn: 1
 --- !u!1 &1750570358
 GameObject:
   m_ObjectHideFlags: 0

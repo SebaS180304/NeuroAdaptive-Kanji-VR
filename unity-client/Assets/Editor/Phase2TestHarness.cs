@@ -872,6 +872,8 @@ namespace NeuroAdaptiveVR.EditorTools
                     var figures = med.Where(n => n.StartsWith("OutsideFigure")).ToList();
                     if (!med.Contains("WallClock_T3")) e14.Add($"seed {s}: MEDIUM sin reloj");
                     if (!high.Contains("WallClock_T3")) e14.Add($"seed {s}: HIGH sin reloj");
+                    // D-F6-109: the shelf too, so the shelf bird never lands in the air.
+                    if (!med.Contains("WallShelf_T2") || !high.Contains("WallShelf_T2")) e14.Add($"seed {s}: sin repisa");
                     if (curtains.Count != 1 || figures.Count != 1) { e14.Add($"seed {s}: MEDIUM con {Join(curtains.Concat(figures))}"); continue; }
                     bool cLeft = curtains[0].Contains("Left");
                     if (cLeft == figures[0].Contains("Left")) e14.Add($"seed {s}: cortina y silueta del mismo lado");
@@ -883,7 +885,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 }
                 bool balanced = curtainLeft >= seeds14 * 0.35 && curtainLeft <= seeds14 * 0.65;
                 if (!balanced) e14.Add($"cortina izquierda en {curtainLeft}/{seeds14}");
-                Check("E14", "MEDIUM: reloj + una cortina + la silueta contraria; HIGH: las dos cortinas + esa silueta (§10.4)",
+                Check("E14", "MEDIUM: reloj y repisa + una cortina + la silueta contraria; HIGH: las dos cortinas + esa silueta (§10.4, D-F6-109)",
                       e14.Count == 0,
                       e14.Count == 0 ? $"{seeds14} seeds · cortina izquierda {curtainLeft}, derecha {seeds14 - curtainLeft}" : Join(e14.Take(5)) + (e14.Count > 5 ? $" (+{e14.Count - 5})" : ""));
 

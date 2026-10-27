@@ -26,7 +26,7 @@ namespace NeuroAdaptiveVR.Controllers
         [SerializeField] private int tier = 1;
 
         [Tooltip("Siempre activo en los niveles que alcanzan su tier: va primero dentro de su tier, " +
-                 "antes del sorteo. Solo el reloj (Diseno_Sala_ESL.md §10.4, D-F6-101).")]
+                 "antes del sorteo. El reloj (Diseno_Sala_ESL.md §10.4, D-F6-101) y la repisa (D-F6-109).")]
         [SerializeField] private bool alwaysOn;
 
         public int Tier => tier;
