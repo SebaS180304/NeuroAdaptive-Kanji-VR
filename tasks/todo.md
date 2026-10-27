@@ -174,6 +174,7 @@ Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (rep
 - [ ] Silhouettes closer to the window until torso and head show above the sill (two distances).
 - [ ] Curtains drawn toward the walls by **25 %** and **40 %** of the sheet width.
 - [ ] Wind A = **0.09 m** and **0.12 m**; ripple, gust, alpha 0.90, ≤ 0.5 Hz and no opacity motion unchanged (D-F6-61). The harness limit "A ≤ 0.06" becomes the approved A.
+→ 27 Oct: ready for the stop with `EnvironmentValuesPreview` (keys L level, S distance, D lowered ground, C curtains, W wind; nothing saved). Read: silhouette root z 7.5, walk from |x| 3.7 outward 2.18 m in 8 s, pause 5 s; sheet |x| 2.22–3.17 under a bar to 3.49; A 0.06. Geometry (eye (0, 1.60, 0), wall z 3.96, open half |x| 1.65–2.48, sill y 0.69): **today the walk starts in view** (|x| 3.7 is inside the open half at 7.5 m; only a curtain hid it). Options: z 5.5 → sill cuts the figure at 0.34 m, walk |x| 1.97 → 4.15, visible ≈ 5.5 s; z 4.8 → cuts at 0.50 m, |x| 1.68 → 3.86, ≈ 4.9 s. **Torso up (cut ≈ 0.65 m) is not reachable by distance alone** with the sill at 0.69 m and the eye at 1.60 m; D lowers the outside ground (−0.31 m at 5.5, −0.15 m at 4.8) as a proposal. Curtains 40 % hang 6 cm past the bar end.
 
 **E1b · §10.4 selection rule (D-F6-101), its own commit; it does not wait for the stop**
 - [x] `WallClock_T3`, `OutsideFigureLeft_T3`, `OutsideFigureRight_T3`: `tier` 3 → 2. Keys unchanged; `max_tier` unchanged (MEDIUM 2, HIGH 3).
