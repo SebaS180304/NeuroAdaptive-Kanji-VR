@@ -216,8 +216,9 @@ Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (rep
 ### [ ] E3: Shelf always on and the shelf bird from inside the room (D-F6-109), two commits
 - [x] `WallShelf_T2.alwaysOn = true` in the scene (like the clock); E14 adds "shelf in MEDIUM and HIGH over 200 seeds"; re-run X12b and X17.
   → 27 Oct: done. Before, the shelf was missing in 152/200 MEDIUM rooms. `alwaysOn` alone left 63/200 without it because MEDIUM drew 4–6 props and the 5 fixed ones need 5: MEDIUM is now **5–7** (3 T1 + clock + shelf + 0–2 of the other 3 T2, as D-F6-109 reads). X12b MEDIUM: picture active 69/200; short looks → clock 55 %, picture 23 %, lamp 11 %, left curtain 11 %; HIGH: picture 61 %, clock 36 %, curtain 3 %. X17 unchanged. 100/100.
-- [ ] Shelf bird path: today `pathStart` (3.50, 2.55, 3.55) is at ≈ 44.6° yaw, in view, at the corner, and the bird leaves the way it came. Proposal: `pathStart` (3.30, 2.50, 2.00) (yaw ≈ 58.8°), `pathControl` (3.20, 2.65, 3.00), rest unchanged; durations unchanged (D-F6-48). Check the curve stays inside walls and under beams.
-- [ ] New X22: path start at yaw ≥ 55° and inside the room; no sampled point outside. E13 row `PeripheralEvent_Shelf` measured, difference > 1° with its cause.
+- [x] Shelf bird path: today `pathStart` (3.50, 2.55, 3.55) is at ≈ 44.6° yaw, in view, at the corner, and the bird leaves the way it came. Proposal: `pathStart` (3.30, 2.50, 2.00) (yaw ≈ 58.8°), `pathControl` (3.20, 2.65, 3.00), rest unchanged; durations unchanged (D-F6-48). Check the curve stays inside walls and under beams.
+- [x] New X22: path start at yaw ≥ 55° and inside the room; no sampled point outside. E13 row `PeripheralEvent_Shelf` measured, difference > 1° with its cause.
+  → 27 Oct: room measured (right wall's inner face x 3.57, front wall z 3.87, ceiling 2.70); curve clear of every piece by 10 cm, max y 2.54. Scene values set; X22 green (start at 58.8°, 81 positions inside); E13 row 34.1–60.2° / 8.3–14.8°. 101/101. **Stop pending.**
 **Stop:** Sebas in the headset with `PeripheralPreview` (added before Play, unsaved): the shelf bird enters and leaves from inside the room and always lands on the shelf; plus B4d's look in a normal session. UI/UX documents §10.2. **Scope:** S + S
 
 ### [ ] S1: Spec v1.4 change rows (`Claude outputs/Cambios_Spec_v1_4.md`, mine)

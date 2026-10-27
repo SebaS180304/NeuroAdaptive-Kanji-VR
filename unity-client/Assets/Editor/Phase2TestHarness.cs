@@ -109,6 +109,7 @@ namespace NeuroAdaptiveVR.EditorTools
             JapaneseRoomCases();
             ClockProbeCases();
             SilhouetteWalkCases();
+            ShelfBirdPathCases();
             CurtainCases();
             ObjectApproachCases();
             FrameRateCases();
@@ -1178,7 +1179,7 @@ namespace NeuroAdaptiveVR.EditorTools
             // meshes; the cat over its baked clip. The birds keep the spheres' ids.
             { "PeripheralEvent_WindowLeft",           (-34.0f, -26.4f, -11.0f, -2.8f) },
             { "PeripheralEvent_WindowRight",          ( 26.4f,  34.0f, -11.0f, -2.8f) },
-            { "PeripheralEvent_Shelf",                ( 34.1f,  45.7f,   8.3f, 12.3f) },
+            { "PeripheralEvent_Shelf",                ( 34.1f,  60.2f,   8.3f, 14.8f) },   // D-F6-109: in and out from inside the room, out of view (X22)
             // Cat and butterfly entries of the pilot (D-F6-52): the cat's stop at x 2.41, the butterfly in and out at x 2.75.
             { "PeripheralEvent_CatWindowLeft",        (-36.6f, -28.1f, -11.3f, -6.3f) },
             { "PeripheralEvent_CatWindowRight",       ( 28.1f,  36.6f, -11.3f, -6.3f) },
@@ -2256,6 +2257,31 @@ namespace NeuroAdaptiveVR.EditorTools
                 foreach (var (g, on) in actives) g.SetActive(on);
             }
             Check("X12b", "Sonda de D7 en MEDIUM y HIGH con lo que activa cada nivel, 200 seeds (D-F6-102)", true, Join(detail));
+        }
+
+        /// <summary>
+        /// X22 (D-F6-109): the shelf bird enters and leaves from inside the room, out of view (yaw ≥ 55° from the eye),
+        /// never through a wall: every sampled pose stays inside the walls and under the ceiling.
+        /// Room measured in Unity on 27 Oct: right wall's inner face x 3.57, front wall's z 3.87, ceiling from y 2.70.
+        /// </summary>
+        private static void ShelfBirdPathCases()
+        {
+            const float RightWall = 3.57f, FrontWall = 3.87f, Ceiling = 2.70f, Margin = 0.05f, OutOfView = 55f;
+            var p = new List<string>();
+            var bird = UnityEngine.Object.FindObjectsByType<PeripheralAnimation>(FindObjectsInactive.Include).FirstOrDefault(a => a.name == "PeripheralEvent_Shelf");
+            if (bird == null) { Check("X22", "Pajaro de la repisa desde dentro de la sala", false, "no esta"); return; }
+            var start = new SerializedObject(bird).FindProperty("pathStart").vector3Value;
+            float yaw = Mathf.Atan2(start.x - Eye.x, start.z - Eye.z) * Mathf.Rad2Deg;
+            if (Mathf.Abs(yaw) < OutOfView) p.Add($"entra y sale a {yaw:F1} grados, a la vista");
+            int outside = 0;
+            for (int i = 0; i <= 80; i++)
+            {
+                var w = bird.PathAt(bird.DurationSeconds * i / 80f, out _);
+                if (w.x > RightWall - Margin || w.z > FrontWall - Margin || w.y > Ceiling - Margin) outside++;
+            }
+            if (outside > 0) p.Add($"{outside}/81 poses fuera de la sala");
+            Check("X22", "Pajaro de la repisa: entra y sale desde dentro de la sala, fuera de la vista (yaw >= 55), nunca por la pared (D-F6-109)",
+                  p.Count == 0, p.Count == 0 ? $"inicio {start:F2} a {yaw:F1} grados · 81 poses dentro de la sala" : Join(p));
         }
 
         /// <summary>

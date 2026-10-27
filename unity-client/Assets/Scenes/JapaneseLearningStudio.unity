@@ -7633,8 +7633,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.PeripheralAnimation
   kind: 0
-  pathStart: {x: 3.5, y: 2.55, z: 3.55}
-  pathControl: {x: 3.1, y: 2.6, z: 3.7}
+  pathStart: {x: 3.3, y: 2.5, z: 2}
+  pathControl: {x: 3.2, y: 2.65, z: 3}
   outControl: {x: 0, y: 0, z: 0}
   outEnd: {x: 0, y: 0, z: 0}
   inSeconds: 0.8
