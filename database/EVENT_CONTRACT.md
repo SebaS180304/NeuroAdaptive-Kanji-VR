@@ -116,7 +116,7 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
 | `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names), since 27 Oct `cue_asset_source` (D-F6-91, see the D9 fields table); since 30 Sep the stimulus fields `feedback_shown`, `feedback_audio_source`, `feedback_audio_ms`, `result_sound`, `result_sound_offset_ms`, `result_sound_ms`, `card_animation` — see §5.9; since 30 Sep (F3.3) also `idle_ms`, `idle_episodes`, `idle_longest_ms` and their thresholds — see §5.10 |
-| `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored` (how many of the four stages came from authored content, 1-4; a number, since 0008 projected as one), `object_source` (`BLENDER_FBX`, `PLACEHOLDER`; since 23 Oct), `object_audio_plays` (times the reading played during stage 1: 3 with the object approach of D-F6-49 on, 0 off; since 23 Oct), `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build) — S5, spec §7.6 |
+| `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored` (how many of the four stages came from authored content, 1-4; a number, since 0008 projected as one), `object_source` (`BLENDER_FBX`, `PLACEHOLDER`; since 23 Oct), `object_audio_plays` (times the reading played during stage 1: 3 with the object approach of D-F6-49 on, 0 off; since 23 Oct), `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build); since 27 Oct (C3, D-F6-64, D-F6-91, D-F6-104) `stage_asset_source` (array of four, `AUTHORED` / `PLACEHOLDER`: object, form 1, form 2, glyph), `summary_strip_onset_ms` (from the start of the exposure; null when the strip did not show), `summary_strip_ms` (0 without strip) and `c3_transition` (`CROSSFADE` / `SDF_MORPH`) — S5, spec §7.6 |
 | `ASSEMBLY_SEGMENT_PLACED` | `kanji_id`, `exposure_index`, `attempt` (1-based, counts right and wrong), `slot_index` (1-based), `segment_id`, `expected_segment_id`, `is_correct`, `selected_ms` and `placed_ms` (from the start of this kanji's assembly), `hint_shown`, `segments_authored` — one per placement attempt, spec §5.3, decision D4 |
 | `ASSEMBLY_COMPLETED` | `kanji_id`, `exposure_index`, `duration_ms`, `incorrect_attempts`, `segment_count`, `segments_placed`, `hints_shown`, `row_order` (segment ids left to right as presented), `segments_authored`, `forced_by_researcher` — spec §5.3 |
 | `ENVIRONMENT_APPLIED` | `profile_name`, `prop_count`, `mover_count`, `active_props` and `active_movers` (object names), `peripheral_interval_min_ms`, `peripheral_interval_max_ms`, `max_tier`, `seed` (the base seed of the environment), `seed_source` (`SESSION`, `FALLBACK` without a session, `OVERRIDE` in tests), `selection_seed` (derived for this level) — spec §8.1 |
@@ -632,6 +632,15 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**27 October 2026 — C3 in `KANJI_EXPOSED` and `TRIAL_COMPLETED.cue_asset_source`.** New payload
+keys, no version bump, no projection reads them. C3 (Diseno_UI_Kanji_Studio_v1.md §10) replaces stages 2-3
+and the 1.5 s glyph: object → form 1 → form 2 → kanji in 7.8 s. `stage_ms` keeps four entries: stage 1 is the
+object, stage 2 runs from the start of C3 to the form 1 → form 2 transition (2.3 s), stage 3 to the form 2 →
+kanji transition (2.6 s), stage 4 to the end of C3 (2.9 s). `stages_authored` counts the `AUTHORED` entries of
+`stage_asset_source` (up to 4 with set A's images). `c3_transition` is `CROSSFADE` until the SDF morph is
+approved (D-F6-103); one value per session. `cue_asset_source` says whether the visual hint was the real image
+(D-F6-91).
 
 **23 October 2026 — `KANJI_EXPOSED.object_audio_plays`.** One new payload key, no
 version bump: how many times the reading played during stage 1 of S5. 0 while the

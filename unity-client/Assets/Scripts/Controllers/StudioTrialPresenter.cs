@@ -530,7 +530,7 @@ namespace NeuroAdaptiveVR.Controllers
         private TMP_Text[] _stripMarks;
         private Coroutine _hintFade, _audioTimer;
 
-        private void ShowHintImages(HintCells.ZoneA a, HintCells.ZoneB b, KanjiItem item)
+        private void ShowHintImages(HintCells.ZoneA a, HintCells.ZoneB b, KanjiItem item, bool fade = true)
         {
             if (a == HintCells.ZoneA.None && b == HintCells.ZoneB.None) return;
             BuildHints();
@@ -557,7 +557,7 @@ namespace NeuroAdaptiveVR.Controllers
             // §9.4: a 250 ms opacity fade in the request's frame, then still until the answer.
             _hintGroup.gameObject.SetActive(true);
             _hintGroup.alpha = 0f;
-            _hintFade = StartCoroutine(FadeHintsIn());
+            if (fade) _hintFade = StartCoroutine(FadeHintsIn());
         }
 
         private IEnumerator FadeHintsIn()
@@ -693,6 +693,7 @@ namespace NeuroAdaptiveVR.Controllers
         public void Clear()
         {
             HideHints();
+            EndC3Layers();
             SetQuestion(null);
             if (promptLabel != null) promptLabel.text = string.Empty;
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
@@ -920,6 +921,110 @@ namespace NeuroAdaptiveVR.Controllers
             }
             if (feedbackLabel != null) feedbackLabel.text = string.Empty;
             if (cueLabel != null) cueLabel.text = note ?? string.Empty;
+        }
+
+        // ------------------------------------------------------------------
+        // C3, the pictographic story in S5 (D-F6-64, D-F6-90; Diseno_UI_Kanji_Studio_v1.md §10)
+        // ------------------------------------------------------------------
+        // Form 1 and form 2 are drawn in the glyph's own box (F1, F2 and the kanji share box and margin, §11.1), so
+        // each one becomes the next in place. The kanji is the prompt label itself, faded in by C3. Opacities come
+        // from C3Timeline; S5LearningBlockController drives t.
+
+        private CanvasGroup _c3Form1, _c3Form2;
+        private Image _c3Image1, _c3Image2;
+        private TMP_Text _c3Text1, _c3Text2;
+        private bool _c3Strip;
+
+        /// <summary>
+        /// Prepares C3 for this kanji: the glyph set but invisible, the two forms in its box (the real images, or the
+        /// labelled placeholder "drawing" when one is missing), and the summary strip when all its images exist.
+        /// </summary>
+        /// <returns>Whether the summary strip will show (it needs P, F1 and F2).</returns>
+        public bool BeginC3(KanjiItem item, string note)
+        {
+            SetQuestion(null);
+            HideHints();
+            HideAssemblySlots();
+            if (cards != null)
+                foreach (var c in cards) if (c != null) c.Hide();
+            if (hintButton != null) hintButton.gameObject.SetActive(false);
+            RestoreLabelStyle();
+            if (feedbackLabel != null) feedbackLabel.text = string.Empty;
+            if (cueLabel != null) cueLabel.text = note ?? string.Empty;
+            if (promptLabel == null) return false;
+
+            promptLabel.text = item.Character;
+            promptLabel.fontSize = promptIdeographicSize;
+            promptLabel.alpha = 0f;
+            promptLabel.ForceMeshUpdate();
+            var board = (RectTransform)promptLabel.transform.parent;
+            Vector2 centre = board.InverseTransformPoint(promptLabel.transform.TransformPoint(promptLabel.textBounds.center));
+            var box = Vector2.one * promptIdeographicSize;   // the glyph's em box
+
+            if (_c3Form1 == null)
+            {
+                (_c3Form1, _c3Image1, _c3Text1) = C3Layer("C3Form1", board);
+                (_c3Form2, _c3Image2, _c3Text2) = C3Layer("C3Form2", board);
+            }
+            foreach (var (layer, image, text, sprite) in new[] { (_c3Form1, _c3Image1, _c3Text1, item.TransformationForm1Sprite),
+                                                                 (_c3Form2, _c3Image2, _c3Text2, item.TransformationForm2Sprite) })
+            {
+                var rt = (RectTransform)layer.transform;
+                rt.anchoredPosition = centre;
+                rt.sizeDelta = box;
+                ((RectTransform)image.transform).sizeDelta = box;
+                ((RectTransform)text.transform).sizeDelta = box;
+                image.sprite = sprite;
+                image.enabled = sprite != null;
+                text.text = sprite != null ? string.Empty : "drawing";   // a placeholder never shows the glyph
+                text.fontSize = derivationSize;
+                layer.gameObject.SetActive(true);
+            }
+
+            _c3Strip = item.VisualAssociationSprite != null && item.TransformationForm1Sprite != null && item.TransformationForm2Sprite != null;
+            if (_c3Strip) ShowHintImages(HintCells.ZoneA.None, HintCells.ZoneB.FullStrip, item, fade: false);
+            SetC3(0f);
+            return _c3Strip;
+        }
+
+        /// <summary>C3 at t seconds: the opacity of form 1, form 2, the kanji and the strip (C3Timeline).</summary>
+        public void SetC3(float t)
+        {
+            if (_c3Form1 == null || promptLabel == null) return;
+            var o = C3Timeline.Opacities(t);
+            _c3Form1.alpha = o.form1;
+            _c3Form2.alpha = o.form2;
+            promptLabel.alpha = o.kanji;
+            if (_c3Strip && _hintGroup != null) _hintGroup.alpha = o.strip;
+        }
+
+        /// <summary>End of C3: the glyph fully on, forms and strip gone.</summary>
+        public void EndC3()
+        {
+            EndC3Layers();
+            HideHints();
+        }
+
+        private void EndC3Layers()
+        {
+            if (_c3Form1 != null) _c3Form1.gameObject.SetActive(false);
+            if (_c3Form2 != null) _c3Form2.gameObject.SetActive(false);
+            if (promptLabel != null) promptLabel.alpha = 1f;
+            _c3Strip = false;
+        }
+
+        private (CanvasGroup layer, Image image, TMP_Text text) C3Layer(string name, RectTransform board)
+        {
+            var rt = NewRect(name, board, Vector2.zero, Vector2.one * promptIdeographicSize);
+            var group = rt.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            group.interactable = false;
+            var image = NewRect("Image", rt, Vector2.zero, rt.sizeDelta).gameObject.AddComponent<Image>();
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            var text = NewText("Placeholder", rt, Vector2.zero, rt.sizeDelta, string.Empty, derivationSize, HintInkColor);
+            rt.gameObject.SetActive(false);
+            return (group, image, text);
         }
 
         // ------------------------------------------------------------------

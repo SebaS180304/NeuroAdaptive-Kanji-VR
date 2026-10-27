@@ -74,6 +74,17 @@ namespace NeuroAdaptiveVR.Controllers
 
         public void Hide() => ClearSpawned();
 
+        /// <summary>C3 starts by shrinking the object in place (C3Timeline.ObjectScale): 1 is its own scale, 0 hides it.</summary>
+        public void SetObjectScale(float s)
+        {
+            if (_spawned == null) return;
+            if (_spawnedScale == null) _spawnedScale = _spawned.transform.localScale;
+            _spawned.transform.localScale = _spawnedScale.Value * s;
+            _spawned.SetActive(s > 0f);
+        }
+
+        private Vector3? _spawnedScale;
+
         // ---- Stage 1 with the object coming closer (D-F6-49; behind S5's switch, off until A-9) ----
 
         /// <summary>Length of stage 1 when the object comes closer, levitates and goes back.</summary>
@@ -126,6 +137,7 @@ namespace NeuroAdaptiveVR.Controllers
         {
             if (_spawned != null) Destroy(_spawned);
             _spawned = null;
+            _spawnedScale = null;
         }
     }
 }

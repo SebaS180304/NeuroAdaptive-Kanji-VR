@@ -90,6 +90,7 @@ namespace NeuroAdaptiveVR.EditorTools
             ContentCases(content);
             SetCases(content);
             HintCases(content);
+            C3Cases();
             SubstitutionCases(content);
             EffectiveSetCases(content);
             SequenceCases(content);
@@ -222,6 +223,32 @@ namespace NeuroAdaptiveVR.EditorTools
 
             Check("X20", "Pistas de §9.1: celdas, imagenes del set A AUTHORED, sin imagen PLACEHOLDER, zonas dentro del board (D-F6-63, D-F6-91)",
                   p.Count == 0, p.Count == 0 ? $"6 celdas · set A 5/5 AUTHORED · KANJI_HITO PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
+        }
+
+        /// <summary>
+        /// X21 (D-F6-64, D-F6-90, D-F6-103; Diseno_UI_Kanji_Studio_v1.md §10–§10.1): the C3 table adds up to 7.8 s with the
+        /// transitions at 2.3 and 4.9 s, smootherstep is 0 / 0.5 / 1 at its ends and middle and never goes back, every
+        /// still moment shows exactly one form at full opacity, and the strip is in from 6.0 to 7.8 s.
+        /// </summary>
+        private static void C3Cases()
+        {
+            var p = new List<string>();
+            if (Mathf.Abs(C3Timeline.FormToKanjiStart + C3Timeline.TransitionSeconds + 2.1f - C3Timeline.TotalSeconds) > 1e-4f) p.Add("los tiempos no suman 7,8 s");
+            if (C3Timeline.Smootherstep(0f) != 0f || Mathf.Abs(C3Timeline.Smootherstep(0.5f) - 0.5f) > 1e-6f || C3Timeline.Smootherstep(1f) != 1f) p.Add("smootherstep no da 0 / 0,5 / 1");
+            float prev = 0f;
+            for (int i = 1; i <= 100; i++) { float w = C3Timeline.Smootherstep(i / 100f); if (w < prev) p.Add($"smootherstep baja en {i / 100f}"); prev = w; }
+            var stills = new (float t, float f1, float f2, float k)[] { (1.0f, 1, 0, 0), (2.3f, 1, 0, 0), (3.1f, 0, 1, 0), (4.0f, 0, 1, 0), (5.7f, 0, 0, 1), (7.0f, 0, 0, 1) };
+            foreach (var (t, f1, f2, k) in stills)
+            {
+                var o = C3Timeline.Opacities(t);
+                if (Mathf.Abs(o.form1 - f1) > 1e-4f || Mathf.Abs(o.form2 - f2) > 1e-4f || Mathf.Abs(o.kanji - k) > 1e-4f) p.Add($"t {t}: {o.form1:F2}/{o.form2:F2}/{o.kanji:F2}");
+            }
+            var mid = C3Timeline.Opacities(2.7f);
+            if (Mathf.Abs(mid.form1 - 0.5f) > 1e-4f || Mathf.Abs(mid.form2 - 0.5f) > 1e-4f) p.Add("a mitad de F1 → F2 no van 50/50");
+            if (C3Timeline.Opacities(5.99f).strip != 0f || C3Timeline.Opacities(6.3f).strip < 0.999f || C3Timeline.Opacities(7.5f).strip < 0.999f || C3Timeline.Opacities(7.8f).strip > 1e-4f) p.Add("la tira no entra en 6,0 y sale en 7,8");
+            if (C3Timeline.ObjectScale(0f) != 1f || C3Timeline.ObjectScale(0.5f) != 0f) p.Add("el objeto no se encoge de 1 a 0 en 0,5 s");
+            Check("X21", "C3: 7,8 s, transiciones de 800 ms en 2,3 y 4,9 s con smootherstep, tira de 6,0 a 7,8 s (D-F6-90, D-F6-103)",
+                  p.Count == 0, p.Count == 0 ? "tabla del 27 oct · smootherstep monotona · formas quietas al 100 %" : Join(p));
         }
 
         private static void SetCases(KanjiContentController c)

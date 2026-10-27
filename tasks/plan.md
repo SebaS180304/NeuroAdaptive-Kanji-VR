@@ -96,8 +96,8 @@ C7 hints + C3 sets B, C ─► C8 validation run + freeze (Fri 30, after the tal
 - [x] A3: set B kanji objects (D-F6-43), when Modelado 3D delivers. **Stop:** Sebas sees them in S5 in the headset → 27 Oct: integrated, seen and approved in S5
 
 ### B · Presentation (Wed 28)
-- [ ] B4a (Tue 27, placeholders): hints: §9 zones and cells, audio indicator (D-F6-89), `asset_source` next to `cue_type` (D-F6-91); the chip goes only where the image is `AUTHORED`
-- [ ] B4b (Tue 27, placeholders): C3 crossfade with the §10 times (800 ms, 1.8 s, strip 6.0–7.8 s, D-F6-90), *smootherstep* (§10.1), `c3_transition` in `KANJI_EXPOSED` (D-F6-104)
+- [x] B4a (Tue 27, real set A images): hints: §9 zones and cells, audio indicator (D-F6-89), `asset_source` next to `cue_type` (D-F6-91); the chip goes only where the image is `AUTHORED`
+- [x] B4b (Tue 27, real set A forms): C3 crossfade with the §10 times (800 ms, 1.8 s, strip 6.0–7.8 s, D-F6-90), *smootherstep* (§10.1), `c3_transition` in `KANJI_EXPOSED` (D-F6-104)
 - [ ] B4 (Wed 28): the 20 real set A images go in (cut-off 12:00, D-F6-87; if missing, V5 leaves the video and V6 uses a requested hint). **Stop:** Sebas sees them in the headset
 - [ ] B4c (Wed 28, after B4b, own task): SDF morph on one test kanji, three §10.1 checks, then per set. **Stop:** Sebas sees it in the headset by **Thu 29 18:00**, else the crossfade stays (D-F6-103)
 - [ ] B5: demo scene with Unity cameras, outside the build (D-F6-84), shots V1–V8. Plan B: eye view only. **Stop:** recording on Thu 29 morning

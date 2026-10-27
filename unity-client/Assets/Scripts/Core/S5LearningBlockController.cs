@@ -53,8 +53,8 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private BehaviorTelemetryController telemetry;
 
         [Header("Timing -- D5, TO VALIDATE with the pilot")]
+        [Tooltip("Stage 1 without the approach: how long the object (or its placeholder) stays before C3.")]
         [SerializeField] private float derivationStageSeconds = 2f;
-        [SerializeField] private float glyphSeconds = 1.5f;
         [SerializeField] private float meaningSeconds = 2f;
         [Tooltip("Reading stays on the board this long AFTER its audio ends.")]
         [SerializeField] private float readingSeconds = 2f;
@@ -128,25 +128,49 @@ namespace NeuroAdaptiveVR.Core
                 float t0 = Time.realtimeSinceStartup;
 
                 int objectAudioPlays = 0;
-                for (int stage = 1; stage < KanjiDiscoveryController.StageCount; stage++)
-                {
-                    float ts = Time.realtimeSinceStartup;
-                    bool shown = discovery != null && discovery.ShowStage(item, stage, progress);
-                    if (shown) authored++;
-                    if (objectApproach && stage == 1 && shown)
-                        yield return discovery.Approach(() => { pronunciation?.PlayInitialExposure(item); objectAudioPlays++; });
-                    else
-                        yield return new WaitForSecondsRealtime(derivationStageSeconds);
-                    stageMs.Add(Ms(ts));
-                }
-                discovery?.Hide();
+                float ts = Time.realtimeSinceStartup;
+                bool shown = discovery != null && discovery.ShowStage(item, 1, progress);
+                if (objectApproach && shown)
+                    yield return discovery.Approach(() => { pronunciation?.PlayInitialExposure(item); objectAudioPlays++; });
+                else
+                    yield return new WaitForSecondsRealtime(derivationStageSeconds);
+                stageMs.Add(Ms(ts));
 
-                // ---- Stage 4: the character, then meaning, then reading ----
-                float t4 = Time.realtimeSinceStartup;
-                board?.ShowExposure(item.Character);
-                yield return new WaitForSecondsRealtime(glyphSeconds);
-                stageMs.Add(Ms(t4));
-                authored++;   // stage 4 is the real glyph: always "authored"
+                // ---- Stages 2-4, C3 (D-F6-64, D-F6-90; Diseno_UI_Kanji_Studio_v1.md §10) ----
+                // Object → form 1 → form 2 → kanji in one 7.8 s sequence with the summary strip at the end,
+                // the same in every condition and level. stage_ms keeps four entries: stage 2 runs from
+                // the start of C3 to the form 1 → form 2 transition, stage 3 to the form 2 → kanji
+                // transition, stage 4 to the end of C3 (it replaces the 1.5 s glyph of before).
+                var stageSources = new List<string>
+                {
+                    shown ? HintCells.Authored : HintCells.Placeholder,
+                    item.TransformationForm1Sprite != null ? HintCells.Authored : HintCells.Placeholder,
+                    item.TransformationForm2Sprite != null ? HintCells.Authored : HintCells.Placeholder,
+                    HintCells.Authored,   // stage 4 is the real glyph
+                };
+                foreach (var source in stageSources) if (source == HintCells.Authored) authored++;
+                bool strip = board != null && board.BeginC3(item, progress);
+                float c0 = Time.realtimeSinceStartup;
+                var marks = new List<float> { c0 };
+                long stripOnsetMs = -1;
+                for (float t = 0f; t < C3Timeline.TotalSeconds; t = Time.realtimeSinceStartup - c0)
+                {
+                    board?.SetC3(t);
+                    discovery?.SetObjectScale(C3Timeline.ObjectScale(t));
+                    if (marks.Count == 1 && t >= C3Timeline.FormToFormStart) marks.Add(c0 + t);
+                    if (marks.Count == 2 && t >= C3Timeline.FormToKanjiStart) marks.Add(c0 + t);
+                    if (strip && stripOnsetMs < 0 && t >= C3Timeline.StripIn) stripOnsetMs = Ms(t0);
+                    yield return null;
+                }
+                board?.EndC3();
+                discovery?.Hide();
+                float c1 = Time.realtimeSinceStartup;
+                while (marks.Count < 3) marks.Add(c1);
+                stageMs.Add((long)((marks[1] - marks[0]) * 1000f));
+                stageMs.Add((long)((marks[2] - marks[1]) * 1000f));
+                stageMs.Add((long)((c1 - marks[2]) * 1000f));
+
+                // ---- Then meaning, then reading ----
 
                 board?.ShowExposure(item.Character, item.Meaning);
                 yield return new WaitForSecondsRealtime(meaningSeconds);
@@ -165,6 +189,11 @@ namespace NeuroAdaptiveVR.Core
                     { "exposure_ms", Ms(t0) },
                     { "stage_ms", stageMs },
                     { "stages_authored", authored },
+                    // D-F6-64, D-F6-91, D-F6-104: where each stage came from, the summary strip and the transition.
+                    { "stage_asset_source", stageSources },
+                    { "summary_strip_onset_ms", stripOnsetMs >= 0 ? stripOnsetMs : (object)null },
+                    { "summary_strip_ms", stripOnsetMs >= 0 ? (long)((c1 - t0) * 1000f) - stripOnsetMs : 0L },
+                    { "c3_transition", C3Timeline.Crossfade },
                     { "object_source", KanjiDiscoveryController.ObjectSourceOf(discovery != null ? item.AnchorObjectPrefab : null) },
                     { "object_audio_plays", objectAudioPlays },   // D-F6-49: 3 with the approach on, 0 off
                     { "audio_played", clip != null && pronunciation != null },
