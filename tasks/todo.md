@@ -1,7 +1,7 @@
 # Todo: week of 26 – 30 Oct (VR complete, MIRAI presentation)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/fase6_m3_todo.md`.
-**Aligned up to: D-F6-104** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92; **revised Tue 27** (E1 with §10.4, B4b with the D-F6-103 times, new B4c and S1; waiting for Sebas's OK) (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-110** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92; **revised Tue 27** (E1 with §10.4, B4b with the D-F6-103 times, new B4c and S1; waiting for Sebas's OK) (`Estado_Actual.md`, the board; it wins over this list).
 
 **Tue 27 order:** E1 → headset stop (before 16:45 or after 18:00; Sebas on the cap 17:00–18:00) → B4a → B4b → S1. Cut at 19:00 with the day draft.
 Every commit gets a message file in Downloads, is shown to Sebas first, and holds one change.
@@ -113,8 +113,15 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 **Stop:** Sebas sees them in the headset (Wed 28).
 **Scope:** M + M (two commits on Tue) + S (assets on Wed)
 
+### [ ] B4d: Look of hints and C3 (D-F6-108, asked by Sebas in the headset), two commits
+- [ ] `exposureIdeographicSize = 500` for `BeginC3` (F1/F2 box = the glyph's em) and `ShowExposure`; trial prompts stay at 420. First check whether the assembly slots (`KanjiAssemblyController.cs:236`) depend on the glyph size: if so, the assembly keeps 420.
+- [ ] Strip: `StripX = {−345, −115, 115, 345}`, 190 u, 40 u apart, y −270; `HintBox` without fill or border; no arrows; zone A image over its 320 u without frame; glyph of the 4th place scaled to 190 u; `AudioCentre = (620, −250)` (chip and icon stay, D-F6-89). The C3 strip keeps sharing the layout (D-F6-90).
+- [ ] X20: strip ends before the Hint button; indicator clear of the strip and the Hint button; C3's 500 u em leaves ≥ 10 u above the strip.
+**Verify:** harness green; eye renders in edit mode (T2 HIGH with speaker, partial strip, C3 at 2.7 and 6.5 s), scene reloaded unsaved.
+**Stop:** with E3, in the headset. UI/UX documents §9–§10. **Scope:** S + S
+
 ### [ ] B4c: SDF morph for C3 (D-F6-103, D-F6-104): Wed 28, after B4b, its own task
-**Blocked by:** 16-bit fields (512², one channel R16F, spread ≥ 25 % = 128 px, kanji from the board glyph in the same box). `tools/png_a_sdf.py` lives in Modelado 3D's folder and today writes 8-bit PNG with a 32 px range (question 14 for PM: who adjusts it).
+**Blocked by:** the 16-bit fields of 月 (512², one channel, EXR, spread ≥ 25 %, kanji from the board glyph in the same box): Modelado 3D adjusts `tools/png_a_sdf.py` and delivers them Wed 28 morning (D-F6-106).
 - [ ] One test kanji only (proposed: 月, the smoothest F2 → kanji per Modelado 3D's guides). Import its three fields (F1, F2, kanji) as R16F, no compression, no mipmaps.
 - [ ] Shader: d(t) = (1 − w)·d_A + w·d_B, ink where d < 0, edge AA with `fwidth(d)`, colour `#F4F1EA`, opacity 1, no outline/shadow/glow; the same *smootherstep* and windows as B4b; at w = 1 swap to the TMP glyph on the same frame.
 - [ ] The three §10.1 checks at w = 0, 0.25, 0.5, 0.75, 1: (1) ink area between 70 % of the smaller form and 1.5× the kanji; (2) last frame within 1 px of the board glyph, from an eye capture; (3) no isolated blob smaller than the stroke. Results in the day draft.
@@ -205,8 +212,15 @@ Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (rep
 **Verify:** harness green; eye captures at MEDIUM and HIGH.
 **Scope:** M (E1b one commit; E1a/E1c one commit of values + harness)
 
+### [ ] E3: Shelf always on and the shelf bird from inside the room (D-F6-109), two commits
+- [ ] `WallShelf_T2.alwaysOn = true` in the scene (like the clock); E14 adds "shelf in MEDIUM and HIGH over 200 seeds"; re-run X12b and X17.
+- [ ] Shelf bird path: today `pathStart` (3.50, 2.55, 3.55) is at ≈ 44.6° yaw, in view, at the corner, and the bird leaves the way it came. Proposal: `pathStart` (3.30, 2.50, 2.00) (yaw ≈ 58.8°), `pathControl` (3.20, 2.65, 3.00), rest unchanged; durations unchanged (D-F6-48). Check the curve stays inside walls and under beams.
+- [ ] New X22: path start at yaw ≥ 55° and inside the room; no sampled point outside. E13 row `PeripheralEvent_Shelf` measured, difference > 1° with its cause.
+**Stop:** Sebas in the headset with `PeripheralPreview` (added before Play, unsaved): the shelf bird enters and leaves from inside the room and always lands on the shelf; plus B4d's look in a normal session. UI/UX documents §10.2. **Scope:** S + S
+
 ### [ ] S1: Spec v1.4 change rows (`Claude outputs/Cambios_Spec_v1_4.md`, mine)
 - [ ] Header "Alineado hasta: D-F6-104"; read the file just before writing and keep the rest.
+- [ ] Also (27 Oct, PM): **D-F6-108** (look of hints and C3), **D-F6-109** (shelf always on, bird path; MEDIUM changes again), **D-F6-110** (E1 values); row 17 also says the left curtain is analysed apart and declared (**D-F6-107**).
 - [ ] New rows: **D-F6-85** (closer silhouettes, curtains drawn, wind A; values after the E1 stop; **declares MEDIUM motion and peripheral visibility change vs 23 Oct**), **D-F6-86** (static rice field, same in every condition, not part of the ESL), **D-F6-97** (contrast: silhouettes ≥ 2.7:1 with `#34363B`, animals no worse than with the sky, window birds darkened), **D-F6-98** (**the butterfly is seen less against the rice field**: 1.56 / 2.03 vs 5.7:1; sky and field sessions not compared per animal), **D-F6-100 + D-F6-101** (clock and silhouettes to tier 2, §10.4 selection; **MEDIUM changes**, so S6 and S7 change and earlier sessions are not comparable in the ESL; MIRAI asked on Fri 30, A-11), **D-F6-103 + D-F6-104** (C3 crossfade base, SDF morph only if approved by Thu 18:00, `c3_transition`, not a stroke-by-stroke morph).
 - [ ] Row 17 corrected by D-F6-102 (grouping in MEDIUM and HIGH; MEDIUM probe result). Row 21 gets the approved wind A. §2 table: rice field final; set B objects final (`ad19b05`); hints/C3 per `asset_source`.
 - [ ] Also C3 7.8 s with strip (D-F6-90) and hint telemetry (D-F6-91): the board says they are declared in v1.4 and no row has them yet.
