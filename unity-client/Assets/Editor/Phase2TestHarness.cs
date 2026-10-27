@@ -106,6 +106,7 @@ namespace NeuroAdaptiveVR.EditorTools
             KanjiObjectCases();
             JapaneseRoomCases();
             ClockProbeCases();
+            SilhouetteWalkCases();
             CurtainCases();
             ObjectApproachCases();
             FrameRateCases();
@@ -1012,7 +1013,7 @@ namespace NeuroAdaptiveVR.EditorTools
         private static bool IsWindSheet(MeshFilter mf)
             => mf.sharedMesh != null && mf.GetComponent<Renderer>() is Renderer r && r.sharedMaterial != null && r.sharedMaterial.HasProperty("_WindTime");
 
-        // The sheet at rest pushed the full 6 cm towards the room, the far side of its E13 box.
+        // The sheet at rest pushed the full wind amplitude (12 cm since D-F6-85) towards the room, the far side of its E13 box.
         private static IEnumerable<Vector3> WindReachCorners(MeshFilter mf)
         {
             var push = mf.transform.TransformDirection(mf.sharedMesh.normals[0]).normalized * CurtainWind.Amplitude;
@@ -1067,10 +1068,12 @@ namespace NeuroAdaptiveVR.EditorTools
             { "StackedBoxes_T3",            (-44.2f, -26.1f, -23.3f, -8.7f) },   // now on the left (v148)
             { "WallClock_T3",               (-40.0f, -36.4f,   5.0f,  9.4f) },   // pilot: over the left window, out of the task region (D-F6-54)
             { "DeskItems_T2",               ( 30.8f,  41.8f, -16.6f, -14.0f) },
-            { "CurtainLeft_T2",             (-40.5f, -30.4f, -13.9f,  4.2f) },   // pilot: no turn, wind up to 6 cm towards the room (D-F6-60)
-            { "OutsideFigureLeft_T3",       (-39.5f, -24.7f, -11.1f, -1.4f) },
-            { "CurtainRight_T2",            ( 30.4f,  40.5f, -13.9f,  4.2f) },
-            { "OutsideFigureRight_T3",      ( 24.7f,  39.5f, -11.1f, -1.4f) },
+            // D-F6-85 (27 Oct): curtains drawn 25 % towards the walls with wind up to 12 cm; silhouettes at 5.5 m,
+            // walking from behind the wall on the board side (whole path, hidden parts included).
+            { "CurtainLeft_T2",             (-43.0f, -33.0f, -13.7f,  4.1f) },   // pilot: no turn, wind towards the room only (D-F6-60)
+            { "OutsideFigureLeft_T3",       (-39.0f, -17.6f, -15.9f, -1.9f) },
+            { "CurtainRight_T2",            ( 33.0f,  43.0f, -13.7f,  4.1f) },
+            { "OutsideFigureRight_T3",      ( 17.6f,  39.0f, -15.9f, -1.9f) },
             // Peripheral animals (Diseno_Sala_ESL.md §10.2) over their whole path, with their Blender
             // meshes; the cat over its baked clip. The birds keep the spheres' ids.
             { "PeripheralEvent_WindowLeft",           (-34.0f, -26.4f, -11.0f, -2.8f) },
@@ -2006,6 +2009,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 var t = JapaneseRoomIntegration.Placed(h.hueco);
                 if (t == null) { p.Add($"{h.hueco} no esta en la escena"); continue; }
                 var want = JapaneseRoomIntegration.Position(h);
+                if (h.hueco.StartsWith("16B_Cortina_Hoja")) want.x += Mathf.Sign(want.x) * CurtainWind.DrawMeters;   // drawn 25 % (D-F6-85)
                 if (Vector3.Distance(t.position, want) > 0.001f) p.Add($"{h.hueco} en {t.position:F3}, manifest {want:F3}");
                 if (Mathf.Abs(Mathf.DeltaAngle(t.eulerAngles.y, h.unity_rot_y_deg)) > 0.1f) p.Add($"{h.hueco} gira {t.eulerAngles.y:F1}, manifest {h.unity_rot_y_deg:F1}");
                 if (t.GetComponent<EnvironmentProp>() != null && t.localScale != Vector3.one) p.Add($"{t.name} con escala {t.localScale:F2}");
@@ -2110,13 +2114,115 @@ namespace NeuroAdaptiveVR.EditorTools
                   p.Count == 0, p.Count == 0
                       ? $"centro del reloj ({cy:F1}, {cp:F1}): {centre.limit}, {centre.dwell} · 4 grados corta: {four.dwell} · cabeza 2-6 grados corta: {onPicture}/{looks} al cuadro · cambio en {switchYaw:F2}"
                       : Join(p));
+
+            // X12b (D-F6-102): the same sweep at MEDIUM and HIGH with every object the level really activates, over
+            // 200 seeds: where a look at the clock lands when the DWELL goes to the nearest active box. Measured, not
+            // gated (the clock-picture DWELL is accepted and grouped, D-F6-56, D-F6-102). Movers at their rest pose.
+            var esl = UnityEngine.Object.FindFirstObjectByType<EnvironmentalStimulationController>(FindObjectsInactive.Include);
+            var layer = GameObject.Find("Studio/EnvironmentalLayer");
+            if (esl == null || layer == null) { Check("X12b", "Sonda de D7 en MEDIUM y HIGH", false, "falta el ESL"); return; }
+            var actives = layer.GetComponentsInChildren<Transform>(true).Select(t => (t.gameObject, t.gameObject.activeSelf)).ToList();
+            var level = esl.CurrentLevel;
+            var detail = new List<string>();
+            try
+            {
+                foreach (var lvl in new[] { StimulationOrAssistanceLevel.Medium, StimulationOrAssistanceLevel.High })
+                {
+                    var landed = new Dictionary<string, int>();
+                    int seedsWithPicture = 0, total = 0;
+                    for (int s = 1; s <= 200; s++)
+                    {
+                        esl.SetSeed(s);
+                        esl.SetLevel(lvl, betweenTrials: true);
+                        boxes.Clear();
+                        foreach (var prop in layer.GetComponentsInChildren<EnvironmentProp>(false))
+                            if (BoxOf($"Studio/EnvironmentalLayer/{prop.transform.parent.name}/{prop.name}") is Data.AngularBox b) boxes.Add(b);
+                        if (boxes.Any(b => b.Name == "WallPicture_T2")) seedsWithPicture++;
+                        for (float shortBy = 2f; shortBy <= 6.001f; shortBy += 0.5f)
+                        {
+                            string name = Look(cy + shortBy, cp).dwell ?? "nada";
+                            landed[name] = landed.TryGetValue(name, out int n) ? n + 1 : 1;
+                            total++;
+                        }
+                    }
+                    detail.Add($"{lvl}: cuadro activo en {seedsWithPicture}/200 seeds; miradas 2-6 grados cortas → " +
+                               Join(landed.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {100f * kv.Value / total:F0} %")));
+                }
+            }
+            finally
+            {
+                esl.ClearSeedOverride();
+                if (level != StimulationOrAssistanceLevel.Off) esl.SetLevel(level, betweenTrials: true);
+                foreach (var (g, on) in actives) g.SetActive(on);
+            }
+            Check("X12b", "Sonda de D7 en MEDIUM y HIGH con lo que activa cada nivel, 200 seeds (D-F6-102)", true, Join(detail));
+        }
+
+        /// <summary>
+        /// X19 (D-F6-85, D-F6-101, Diseno_Sala_ESL.md §10.4): each silhouette starts, pauses and ends hidden by the
+        /// architecture -- the wall on the board side or the paper half of its window -- never by its curtain (off in
+        /// MEDIUM on its side), and shows in between. The open half is taken from the frame's edge on the board side
+        /// to the paper, between the paper's bottom and top: conservative, the frame members count as open. Looking
+        /// at it mid-walk leaves the HEAD_AWAY task region by yaw.
+        /// </summary>
+        private static void SilhouetteWalkCases()
+        {
+            var p = new List<string>();
+            var shown = new List<string>();
+            var task = HeadAwayThresholds.Default;
+            foreach (var (side, windowName) in new[] { ("Left", "15B_Ventana_Izq"), ("Right", "15B_Ventana_Der") })
+            {
+                var fig = GameObject.Find($"Studio/EnvironmentalLayer/Movers/OutsideFigure{side}_T3");
+                var window = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include).FirstOrDefault(t => t.name == windowName);
+                var frameR = window == null ? null : window.GetComponentsInChildren<Renderer>(true).FirstOrDefault(r => r.name.Contains("Marco"));
+                var paperR = window == null ? null : window.GetComponentsInChildren<Renderer>(true).FirstOrDefault(r => r.name.Contains("Hoja_Delantera"));
+                if (fig == null || frameR == null || paperR == null) { p.Add($"{side}: falta la silueta, el marco o la hoja de papel"); continue; }
+                Bounds frame = frameR.bounds, paper = paperR.bounds;
+                float inner = Mathf.Min(Mathf.Abs(frame.min.x), Mathf.Abs(frame.max.x));
+                float outer = Mathf.Min(Mathf.Abs(paper.min.x), Mathf.Abs(paper.max.x));
+                float wallZ = frame.center.z, sill = paper.min.y, top = paper.max.y;
+
+                var motion = fig.GetComponent<EnvironmentMotion>();
+                var rest = fig.transform.localPosition;
+                var rot = fig.transform.localRotation;
+                // The silhouette's box projected from the eye onto the window wall overlaps the open half.
+                bool Visible(float u)
+                {
+                    motion.PoseAt(rest, rot, u, out var pos, out _);
+                    fig.transform.localPosition = pos;
+                    try
+                    {
+                        var hits = fig.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).SelectMany(MeshCorners)
+                            .Select(c => { var d = c - Eye; return Eye + d * ((wallZ - Eye.z) / d.z); }).ToList();
+                        float x0 = hits.Min(h => Mathf.Abs(h.x)), x1 = hits.Max(h => Mathf.Abs(h.x));
+                        float y0 = hits.Min(h => h.y), y1 = hits.Max(h => h.y);
+                        return x1 > inner && x0 < outer && y1 > sill && y0 < top;
+                    }
+                    finally { fig.transform.localPosition = rest; }
+                }
+
+                if (Visible(0f)) p.Add($"{side}: empieza a la vista");
+                if (Visible(1f)) p.Add($"{side}: termina y hace la pausa a la vista");
+                int seen = Enumerable.Range(1, 39).Count(i => Visible(i / 40f));
+                if (seen == 0) p.Add($"{side}: nunca se ve");
+
+                motion.PoseAt(rest, rot, 0.5f, out var mid, out _);
+                fig.transform.localPosition = mid;
+                var a = AngularOf(fig.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).SelectMany(MeshCorners));
+                fig.transform.localPosition = rest;
+                float yaw = (a.H0 + a.H1) / 2f;
+                if (Mathf.Abs(yaw) <= task.YawLimitDeg) p.Add($"{side}: mirarla a mitad del paso ({yaw:F1}) no sale de la region de tarea");
+                shown.Add($"{side} visible en {seen}/39 puntos del paso, centro a mitad {yaw:F1} grados");
+            }
+            Check("X19", "Silueta: empieza, hace la pausa y termina oculta por la arquitectura, no por la cortina; mirarla da HEAD_AWAY (§10.4)",
+                  p.Count == 0, p.Count == 0 ? Join(shown) : Join(p));
         }
 
         /// <summary>
         /// X13. Curtains of the pilot (D-F6-50, D-F6-53, D-F6-61): each sheet is a subdivided mesh with the wind shader,
         /// transparent with alpha 0.90 fixed in its material (no level, session or seed changes it), and its wind
         /// time comes from EnvironmentMotion, i.e. from the seed and the time since activation. Since D-F6-61 the
-        /// sheet no longer turns as a whole and the wind pushes towards the room only, 0 at the bar, at most 6 cm.
+        /// sheet no longer turns as a whole and the wind pushes towards the room only, 0 at the bar, at most A (12 cm since D-F6-85).
         /// </summary>
         private static void CurtainCases()
         {
@@ -2133,7 +2239,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 {
                     if (Mathf.Abs(m.GetColor("_BaseColor").a - 0.90f) > 0.001f) p.Add($"{name}: alfa {m.GetColor("_BaseColor").a:F3}");
                     if (m.renderQueue < 3000) p.Add($"{name}: no es transparente (cola {m.renderQueue})");
-                    // D-F6-61: the material carries the formula's values, within the limits (A ≤ 6 cm, every component ≤ 0.5 Hz)
+                    // D-F6-61: the material carries the formula's values, within the limits (A = 12 cm since D-F6-85, every component ≤ 0.5 Hz)
                     foreach (var (prop, want) in new[] { ("_WindAmplitude", CurtainWind.Amplitude), ("_GustPeriod", CurtainWind.GustSeconds),
                                                          ("_GustDepth", CurtainWind.GustDepth), ("_RippleDepth", CurtainWind.RippleDepth),
                                                          ("_RippleWaveLength", CurtainWind.RippleWaveLength), ("_RipplePeriod", CurtainWind.RippleSeconds) })
@@ -2160,7 +2266,7 @@ namespace NeuroAdaptiveVR.EditorTools
                             if (h == 0f) atBar = Mathf.Max(atBar, Mathf.Abs(d));
                         }
             if (dMin < 0f) p.Add($"el viento empuja hacia la pared ({dMin * 100f:F2} cm)");
-            if (dMax > CurtainWind.Amplitude + 1e-5f) p.Add($"el viento pasa de 6 cm ({dMax * 100f:F2} cm)");
+            if (dMax > CurtainWind.Amplitude + 1e-5f) p.Add($"el viento pasa de {CurtainWind.Amplitude * 100f:F0} cm ({dMax * 100f:F2} cm)");
             if (atBar > 1e-6f) p.Add("la hoja se despega de la barra");
             if (CurtainWind.GustSeconds < 2f || CurtainWind.RippleSeconds < 2f) p.Add("alguna componente pasa de 0,5 Hz");
             Check("X13", "Cortinas del piloto: hoja subdividida, viento solo hacia la sala sin pendulo, alfa 0,90 fijo, tiempo del viento desde la seed (D-F6-50, D-F6-53, D-F6-61)",

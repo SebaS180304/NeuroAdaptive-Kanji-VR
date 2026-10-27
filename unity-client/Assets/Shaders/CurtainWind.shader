@@ -14,7 +14,7 @@ Shader "NeuroAdaptive/CurtainWind"
     {
         _BaseMap ("Base map", 2D) = "white" {}
         _BaseColor ("Base colour (alpha fixed at 0.90)", Color) = (1, 1, 1, 0.9)
-        _WindAmplitude ("Peak displacement at the hem (m), at most 0.06", Float) = 0.06
+        _WindAmplitude ("Peak displacement at the hem (m), 0.12 since D-F6-85", Float) = 0.12
         _GustPeriod ("Gust period (s)", Float) = 6
         _GustDepth ("Gust depth (±fraction)", Float) = 0.25
         _RippleDepth ("Ripple depth (±fraction)", Float) = 0.25

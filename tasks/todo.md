@@ -166,14 +166,14 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 
 ## E · Environment adjustments (D-F6-85, D-F6-86): never at the expense of B4
 
-### [ ] E1: Silhouettes, curtains, wind and the §10.4 rule (Tue 27, first task of the day)
+### [x] E1: Silhouettes, curtains, wind and the §10.4 rule (Tue 27, first task of the day)
 Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (replaces D-F6-99) and §10.5. Files: `EnvironmentalStimulationController.cs`, `EnvironmentProp` tiers in the room scene, `EnvironmentMotion.cs` (silhouette path), `CurtainWind.cs` + shader, `Phase2TestHarness.cs`, `PeripheralContrast.cs`, `LayoutOfRecord`.
 
 **E1a · Values to try (two each, chosen live in Play mode, committed only after the stop)**
-- [ ] Read the current values first: silhouette path (distance behind the sill), curtain sheet extents, `CurtainWind` A = 0.06 m.
-- [ ] Silhouettes closer to the window until torso and head show above the sill (two distances).
-- [ ] Curtains drawn toward the walls by **25 %** and **40 %** of the sheet width.
-- [ ] Wind A = **0.09 m** and **0.12 m**; ripple, gust, alpha 0.90, ≤ 0.5 Hz and no opacity motion unchanged (D-F6-61). The harness limit "A ≤ 0.06" becomes the approved A.
+- [x] Read the current values first: silhouette path (distance behind the sill), curtain sheet extents, `CurtainWind` A = 0.06 m.
+- [x] Silhouettes closer to the window until torso and head show above the sill (two distances).
+- [x] Curtains drawn toward the walls by **25 %** and **40 %** of the sheet width.
+- [x] Wind A = **0.09 m** and **0.12 m**; ripple, gust, alpha 0.90, ≤ 0.5 Hz and no opacity motion unchanged (D-F6-61). The harness limit "A ≤ 0.06" becomes the approved A.
 → 27 Oct: ready for the stop with `EnvironmentValuesPreview` (keys L level, S distance, D lowered ground, C curtains, W wind; nothing saved). Read: silhouette root z 7.5, walk from |x| 3.7 outward 2.18 m in 8 s, pause 5 s; sheet |x| 2.22–3.17 under a bar to 3.49; A 0.06. Geometry (eye (0, 1.60, 0), wall z 3.96, open half |x| 1.65–2.48, sill y 0.69): **today the walk starts in view** (|x| 3.7 is inside the open half at 7.5 m; only a curtain hid it). Options: z 5.5 → sill cuts the figure at 0.34 m, walk |x| 1.97 → 4.15, visible ≈ 5.5 s; z 4.8 → cuts at 0.50 m, |x| 1.68 → 3.86, ≈ 4.9 s. **Torso up (cut ≈ 0.65 m) is not reachable by distance alone** with the sill at 0.69 m and the eye at 1.60 m; D lowers the outside ground (−0.31 m at 5.5, −0.15 m at 4.8) as a proposal. Curtains 40 % hang 6 cm past the bar end.
 
 **E1b · §10.4 selection rule (D-F6-101), its own commit; it does not wait for the stop**
@@ -188,11 +188,18 @@ Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (rep
 **Stop (one, before 16:45 or after 18:00):** in the headset, Sebas picks the silhouette distance, the curtain draw and the wind, and watches the continuous silhouette in MEDIUM while looking at the board. If it distracts too much, only its 5 s pause changes (the value goes to the draft for UI/UX's §10.4).
 
 **E1c · After the stop: commit the approved values and re-measure**
-- [ ] The silhouette starts, pauses and ends **hidden by architecture** (the wall between board and window, or the paper half), never by its curtain (in MEDIUM its curtain is off). If it pops in or out anywhere in the cycle, fix its path, not the draw.
-- [ ] E13 angles (D-F6-33), `DWELL` boxes (silhouettes now in MEDIUM), `HEAD_AWAY` region with the D7 probe, X9/X13, `LayoutOfRecord`. Note every difference > 1° with its cause.
-- [ ] **X17** at the new silhouette distance: ≥ 2.7:1; if a silhouette drops, change its colour, not its position (§10.5).
-- [ ] **D7 probe in MEDIUM (D-F6-102):** the share of clock looks that land on the Fuji picture when the draw includes it (same 2°–6° sweep as row 17).
-- [ ] Results table in the day draft; UI/UX documents the approved values in §10 (tell Sebas).
+- [x] The silhouette starts, pauses and ends **hidden by architecture** (the wall between board and window, or the paper half), never by its curtain (in MEDIUM its curtain is off). If it pops in or out anywhere in the cycle, fix its path, not the draw.
+- [x] E13 angles (D-F6-33), `DWELL` boxes (silhouettes now in MEDIUM), `HEAD_AWAY` region with the D7 probe, X9/X13, `LayoutOfRecord`. Note every difference > 1° with its cause.
+- [x] **X17** at the new silhouette distance: ≥ 2.7:1; if a silhouette drops, change its colour, not its position (§10.5).
+- [x] **D7 probe in MEDIUM (D-F6-102):** the share of clock looks that land on the Fuji picture when the draw includes it (same 2°–6° sweep as row 17).
+- [x] Results table in the day draft; UI/UX documents the approved values in §10 (tell Sebas).
+→ 27 Oct: **stop passed** (Sebas): silhouettes at 5.5 m on flat ground, curtains 25 %, wind 12 cm, pause 5 s, continuous silhouette in MEDIUM approved. In the scene: silhouette roots (∓1.972, 0, 5.5), walk start behind the wall on the board side; curtain roots |x| 2.9301 (manifest + `CurtainWind.DrawMeters`, also applied by `JapaneseRoomIntegration`); `CurtainWind.Amplitude` 0.12 on `M_Curtain_Wind`. `EnvironmentValuesPreview` deleted. Harness 98/98:
+  - **X19 (new):** both silhouettes start, pause and end hidden by architecture (red before: today's path started in view); visible at 31/39 points of the walk; centre mid-walk ±29.1°, outside the HEAD_AWAY yaw limit.
+  - **E13:** curtains h [−43.0, −33.0] (was [−40.5, −30.4]), v [−13.7, 4.1]; silhouettes h [−39.0, −17.6] (was [−39.5, −24.7]), v [−15.9, −1.9] (was [−11.1, −1.4]); mirrored on the right. All other rows unchanged. X11 knows the curtain draw.
+  - **X17:** measured mid-walk (the start is now hidden). `#34363B` gave 3.46 / 2.67:1 → `#303237` (smallest step that passes) 3.59 / 2.78:1. Animals at HIGH: window birds 2.38 / 1.53, cat 1.67 / 1.29 (was 1.38 / 1.24), shelf 1.19, butterfly 1.56 / 2.03.
+  - **X12b (new, D-F6-102):** looks 2–6° short of the clock over 200 seeds. MEDIUM (picture active in 50/200): clock 58 %, picture 17 %, **left curtain 13 %**, floor lamp 12 %. HIGH (picture in 194/200): picture 65 %, clock 34 %, curtain 1 %.
+  - X13: wind 0–12 cm, 0 at the bar.
+
 **Verify:** harness green; eye captures at MEDIUM and HIGH.
 **Scope:** M (E1b one commit; E1a/E1c one commit of values + harness)
 

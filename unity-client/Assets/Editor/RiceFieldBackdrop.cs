@@ -28,9 +28,10 @@ namespace NeuroAdaptiveVR.EditorTools
         public const float Width = 20f, Distance = 10f, Depth = 0.2f;   // the sky panel's width and distance, kept
 
         // D-F6-93: against the field the 24B grey (#868C9A) falls from 2.8 / 2.6:1 (sky) to 1.2 / 1.0:1. This slate keeps
-        // both silhouettes at >= 2.7:1 from the eye (PeripheralContrast: 3.26 / 2.87). Its own material: the FBX's is read-only.
+        // both silhouettes at >= 2.7:1 from the eye. Its own material: the FBX's is read-only. 27 Oct (D-F6-85): at 5.5 m and
+        // measured mid-walk, #34363B gave 3.46 / 2.67:1; #303237, the smallest step that passes, gives 3.59 / 2.78:1.
         public const string SilhouetteMaterialPath = "Assets/Art/Peripheral/M_Silueta_Arrozal.mat";
-        public static readonly Color Silhouette = new Color32(0x34, 0x36, 0x3B, 0xFF);
+        public static readonly Color Silhouette = new Color32(0x30, 0x32, 0x37, 0xFF);
 
         // D-F6-97: the window birds no worse than against the sky (1.37 / 1.48:1 at ESL HIGH). Lighter never passes the
         // left window, so every bird material is scaled down in linear colour: 0.40 is the edge (1.49 right), 0.38 keeps

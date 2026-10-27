@@ -19,8 +19,12 @@ namespace NeuroAdaptiveVR.EditorTools
 
         // D-F6-61 (camino a, Diseno_Sala_ESL.md §10.2): d = A · hang² · G(t) · R(x, t), towards the room only, with
         // G = 0.75 + 0.25 sin(2π t / 6 s) and R = 0.75 + 0.25 sin(2π (x / 0.45 m − t / 4 s)). Written as
-        // (1 − depth) + depth · sin, both peak at 1, so d peaks at A (the 6 cm limit) also at the ±40 % fallback.
-        public const float Amplitude = 0.06f, GustSeconds = 6f, GustDepth = 0.25f;
+        // (1 − depth) + depth · sin, both peak at 1, so d peaks at A also at the ±40 % fallback.
+        // A = 12 cm since 27 Oct (D-F6-85, approved by Sebas in the headset; was 6 cm).
+        public const float Amplitude = 0.12f, GustSeconds = 6f, GustDepth = 0.25f;
+
+        // D-F6-85: each sheet drawn towards its wall by 25 % of its 0.95 m width (approved in the headset, 27 Oct).
+        public const float DrawMeters = 0.25f * 0.95f;
         public const float RippleDepth = 0.25f, RippleWaveLength = 0.45f, RippleSeconds = 4f;
 
         /// <summary>Displacement towards the room (m) at x across the sheet, hang 0 at the bar to 1 at the hem,

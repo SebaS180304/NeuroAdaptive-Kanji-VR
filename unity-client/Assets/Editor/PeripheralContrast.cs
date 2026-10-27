@@ -35,8 +35,16 @@ namespace NeuroAdaptiveVR.EditorTools
             var rows = new List<Row>();
             var layer = GameObject.Find("EnvironmentalLayer");
             var targets = new List<(string name, GameObject go, System.Action pose)>();
+            // The silhouette mid-walk: since D-F6-85 its rest pose (the start) is hidden behind the wall.
             foreach (var t in layer.GetComponentsInChildren<Transform>(true).Where(t => t.name == "24B_Silueta"))
-                targets.Add((t.parent.name, t.gameObject, null));
+            {
+                var motion = t.parent.GetComponent<EnvironmentMotion>();
+                targets.Add((t.parent.name, t.gameObject, () =>
+                {
+                    motion.PoseAt(t.localPosition, t.localRotation, 0.5f, out var p, out _);
+                    t.localPosition = p;
+                }));
+            }
             foreach (var a in layer.GetComponentsInChildren<PeripheralAnimation>(true))
                 targets.Add((a.name, a.gameObject, () => a.Pose(RestTime(a))));
 

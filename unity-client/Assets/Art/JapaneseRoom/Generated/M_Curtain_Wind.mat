@@ -36,7 +36,7 @@ Material:
     - _RipplePeriod: 4
     - _RippleWaveLength: 0.45
     - _TopY: 0
-    - _WindAmplitude: 0.06
+    - _WindAmplitude: 0.12
     - _WindTime: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 0.9}

@@ -132,6 +132,8 @@ namespace NeuroAdaptiveVR.EditorTools
                 var posed = parent.GetComponent<EnvironmentProp>() != null && !Group.Contains(h.hueco) ? parent : model.transform;
                 if (posed != model.transform) model.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
                 posed.SetPositionAndRotation(Position(h), Quaternion.Euler(0f, h.unity_rot_y_deg, 0f));
+                if (h.hueco.StartsWith("16B_Cortina_Hoja"))
+                    posed.position += new Vector3(Mathf.Sign(posed.position.x) * CurtainWind.DrawMeters, 0f, 0f);   // drawn towards the wall (D-F6-85)
                 report.Add($"{h.hueco} -> {AnimationPath(posed)} at {Position(h):F3} rotY {h.unity_rot_y_deg}");
 
                 if (h.hueco == Podium)
