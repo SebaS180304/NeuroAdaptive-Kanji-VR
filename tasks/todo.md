@@ -176,12 +176,13 @@ Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (rep
 - [ ] Wind A = **0.09 m** and **0.12 m**; ripple, gust, alpha 0.90, ≤ 0.5 Hz and no opacity motion unchanged (D-F6-61). The harness limit "A ≤ 0.06" becomes the approved A.
 
 **E1b · §10.4 selection rule (D-F6-101), its own commit; it does not wait for the stop**
-- [ ] `WallClock_T3`, `OutsideFigureLeft_T3`, `OutsideFigureRight_T3`: `tier` 3 → 2. Keys unchanged; `max_tier` unchanged (MEDIUM 2, HIGH 3).
-- [ ] MEDIUM: clock always + 3 × T1 + 0–2 of the other four T2 (4–6 props); movers = one curtain (side from `selection:MEDIUM`) + the silhouette of the **opposite** window, one draw.
-- [ ] HIGH: clock always, then the rest of T2 and T3 in today's order (7–10 props); movers = both curtains + MEDIUM's silhouette (derived from the MEDIUM draw, so S7 going MEDIUM → HIGH never switches sides).
-- [ ] LOW, FOCUS, MINIMAL, BASELINE and the peripheral draw unchanged.
-- [ ] Silhouette in MEDIUM and HIGH: 8 s walk, 5 s hidden, for as long as the level lasts.
-- [ ] Harness: **E3** reads 11 props · T1×3, T2×5, T3×3 and 4 movers · T2×4; **new case** over 200 seeds: MEDIUM = clock + exactly one curtain + one silhouette on opposite sides, HIGH ⊇ MEDIUM with 3 movers, same seed → same side, both sides ≈ half each. E7, E8b, E11 stay green.
+- [x] `WallClock_T3`, `OutsideFigureLeft_T3`, `OutsideFigureRight_T3`: `tier` 3 → 2. Keys unchanged; `max_tier` unchanged (MEDIUM 2, HIGH 3).
+- [x] MEDIUM: clock always + 3 × T1 + 0–2 of the other four T2 (4–6 props); movers = one curtain (side from `selection:MEDIUM`) + the silhouette of the **opposite** window, one draw.
+- [x] HIGH: clock always, then the rest of T2 and T3 in today's order (7–10 props); movers = both curtains + MEDIUM's silhouette (derived from the MEDIUM draw, so S7 going MEDIUM → HIGH never switches sides).
+- [x] LOW, FOCUS, MINIMAL, BASELINE and the peripheral draw unchanged.
+- [x] Silhouette in MEDIUM and HIGH: 8 s walk, 5 s hidden, for as long as the level lasts.
+- [x] Harness: **E3** reads 11 props · T1×3, T2×5, T3×3 and 4 movers · T2×4; **new case** over 200 seeds: MEDIUM = clock + exactly one curtain + one silhouette on opposite sides, HIGH ⊇ MEDIUM with 3 movers, same seed → same side, both sides ≈ half each. E7, E8b, E11 stay green.
+→ 27 Oct: done. Tiers set in the scene; the clock has `EnvironmentProp.alwaysOn`; movers follow a fixed order (`MoverOrder`) from one seeded draw per session (`EnvironmentSeed` "movers"), profiles MEDIUM 2 / HIGH 3. E3 pins the tiers; E14: 200 seeds, curtain left 98 / right 102. Harness 96/96. X17 at HIGH moves because HIGH's actives changed: window bird left 2.38 → 2.35 (still ≥ sky), butterfly left 1.56 → 1.14 (listed, not gated, D-F6-98); re-measured in E1c.
 
 **Stop (one, before 16:45 or after 18:00):** in the headset, Sebas picks the silhouette distance, the curtain draw and the wind, and watches the continuous silhouette in MEDIUM while looking at the board. If it distracts too much, only its 5 s pause changes (the value goes to the draft for UI/UX's §10.4).
 

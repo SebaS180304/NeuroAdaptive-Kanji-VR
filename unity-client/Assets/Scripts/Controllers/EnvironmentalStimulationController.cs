@@ -166,8 +166,8 @@ namespace NeuroAdaptiveVR.Controllers
             int selectionSeed = EnvironmentSeed.For(BaseSeed, "selection:" + LevelKey(profile.level));
             var rng = new System.Random(selectionSeed);
 
-            var props = ActivateGroup("Props", profile.propCountMin, profile.propCountMax, profile.maxTier, rng);
-            var movers = ActivateGroup("Movers", profile.moverCountMin, profile.moverCountMax, profile.maxTier, rng);
+            var props = ActivateGroup("Props", profile.propCountMin, profile.propCountMax, profile.maxTier, rng, TierOrder);
+            var movers = ActivateGroup("Movers", profile.moverCountMin, profile.moverCountMax, profile.maxTier, rng, MoverOrder);
 
             Debug.Log($"[EnvironmentalStimulationController] {profile.level}: " +
                       $"{props.Count} props · {movers.Count} movers " +
@@ -184,7 +184,8 @@ namespace NeuroAdaptiveVR.Controllers
         /// respetando el tope de tier. Los que sobran se desactivan: el estado
         /// anterior no puede quedar colgando.
         /// </summary>
-        private List<string> ActivateGroup(string groupName, int min, int max, int maxTier, System.Random rng)
+        private List<string> ActivateGroup(string groupName, int min, int max, int maxTier, System.Random rng,
+                                           Func<List<EnvironmentProp>, System.Random, List<EnvironmentProp>> order)
         {
             var group = environmentalLayerRoot.Find(groupName);
             if (group == null)
@@ -211,15 +212,8 @@ namespace NeuroAdaptiveVR.Controllers
                                  $"escena, no es un fallo de configuracion del perfil.");
             }
 
-            // Orden: por tier ascendente --para que el nivel alto conserve lo del
-            // bajo y anada encima-- y barajado dentro de cada tier con la seed,
-            // para que no sea siempre el mismo subconjunto pero si sea el mismo
-            // para la misma seed.
-            var ordered = eligible
-                .GroupBy(p => p.Tier)
-                .OrderBy(g => g.Key)
-                .SelectMany(g => Shuffle(g.OrderBy(p => p.name, StringComparer.Ordinal).ToList(), rng))
-                .ToList();
+            var ordered = order(eligible, rng);
+            target = Mathf.Min(target, ordered.Count);
 
             var active = new List<string>(target);
             for (int i = 0; i < target; i++)
@@ -228,6 +222,38 @@ namespace NeuroAdaptiveVR.Controllers
                 active.Add(ordered[i].name);
             }
             return active;
+        }
+
+        /// <summary>
+        /// Orden de los props: por tier ascendente --para que el nivel alto conserve lo del
+        /// bajo y anada encima-- y barajado dentro de cada tier con la seed, para que no sea
+        /// siempre el mismo subconjunto pero si sea el mismo para la misma seed. Un prop
+        /// `AlwaysOn` (el reloj, §10.4) va primero en su tier, fuera del sorteo.
+        /// </summary>
+        private static List<EnvironmentProp> TierOrder(List<EnvironmentProp> eligible, System.Random rng) =>
+            eligible
+                .GroupBy(p => p.Tier)
+                .OrderBy(g => g.Key)
+                .SelectMany(g => g.Where(p => p.AlwaysOn).OrderBy(p => p.name, StringComparer.Ordinal)
+                    .Concat(Shuffle(g.Where(p => !p.AlwaysOn).OrderBy(p => p.name, StringComparer.Ordinal).ToList(), rng)))
+                .ToList();
+
+        /// <summary>
+        /// Orden de los movers (Diseno_Sala_ESL.md §10.4, D-F6-101): no es un sorteo por tier
+        /// sino una secuencia fija. Un solo sorteo por sesion elige el lado de la cortina de
+        /// MEDIUM; la silueta va en la ventana contraria y HIGH anade la otra cortina. MEDIUM
+        /// pide 2 y HIGH 3, asi que HIGH siempre contiene lo de MEDIUM y la silueta no cambia
+        /// de lado cuando rules-v2 sube de MEDIUM a HIGH en S7.
+        /// </summary>
+        private List<EnvironmentProp> MoverOrder(List<EnvironmentProp> eligible, System.Random rng)
+        {
+            // Its own generator, not the level's: the side has to be the same in MEDIUM and HIGH.
+            bool curtainLeft = new System.Random(EnvironmentSeed.For(BaseSeed, "movers")).Next(2) == 0;
+            string near = curtainLeft ? "Left" : "Right", far = curtainLeft ? "Right" : "Left";
+            return new[] { "Curtain" + near, "OutsideFigure" + far, "Curtain" + far, "OutsideFigure" + near }
+                .Select(prefix => eligible.FirstOrDefault(p => p.name.StartsWith(prefix, StringComparison.Ordinal)))
+                .Where(p => p != null)
+                .ToList();
         }
 
         private static List<T> Shuffle<T>(List<T> items, System.Random rng)

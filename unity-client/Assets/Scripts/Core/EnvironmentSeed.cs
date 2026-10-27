@@ -15,6 +15,8 @@ namespace NeuroAdaptiveVR.Core
     ///   selection:{LEVEL}   which props and movers a level activates
     ///   motion:{object}     the starting phase of each moving object
     ///   peripheral:{LEVEL}  which peripheral object fires and when
+    ///   movers              the curtain side of MEDIUM; the silhouette takes the other
+    ///                       window, the same in MEDIUM and HIGH (D-F6-101, 27 Oct)
     ///
     /// The selection is per LEVEL, not per state: LOW is the same set of props
     /// in S1, S2, S5 and S9 of one session. The room the participant learns in

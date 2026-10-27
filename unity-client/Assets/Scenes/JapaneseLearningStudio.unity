@@ -417,7 +417,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03e90851d7408284985242b5ee3dd7f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
-  tier: 3
+  tier: 2
+  alwaysOn: 0
 --- !u!1 &104396381
 GameObject:
   m_ObjectHideFlags: 0
@@ -1777,6 +1778,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 1
+  alwaysOn: 0
 --- !u!1001 &373929151
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2151,7 +2153,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03e90851d7408284985242b5ee3dd7f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
-  tier: 3
+  tier: 2
+  alwaysOn: 0
 --- !u!1 &488149179
 GameObject:
   m_ObjectHideFlags: 0
@@ -2656,6 +2659,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 2
+  alwaysOn: 0
 --- !u!1 &585737481
 GameObject:
   m_ObjectHideFlags: 0
@@ -5643,6 +5647,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 1
+  alwaysOn: 0
 --- !u!1 &1105747490
 GameObject:
   m_ObjectHideFlags: 0
@@ -6707,6 +6712,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 3
+  alwaysOn: 0
 --- !u!1001 &1292716650
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7268,6 +7274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 2
+  alwaysOn: 0
 --- !u!1001 &1410280775
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8528,6 +8535,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 2
+  alwaysOn: 0
 --- !u!1001 &1617175652
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9120,6 +9128,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 2
+  alwaysOn: 0
 --- !u!1 &1749525136
 GameObject:
   m_ObjectHideFlags: 0
@@ -9166,6 +9175,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 2
+  alwaysOn: 0
 --- !u!1 &1750570358
 GameObject:
   m_ObjectHideFlags: 0
@@ -9392,6 +9402,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 3
+  alwaysOn: 0
 --- !u!1 &1784216644
 GameObject:
   m_ObjectHideFlags: 0
@@ -9847,6 +9858,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 2
+  alwaysOn: 0
 --- !u!1 &1876820984
 GameObject:
   m_ObjectHideFlags: 0
@@ -9958,6 +9970,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 3
+  alwaysOn: 0
 --- !u!1001 &1934957777
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10066,6 +10079,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
   tier: 1
+  alwaysOn: 0
 --- !u!1001 &1953655369
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10558,7 +10572,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03e90851d7408284985242b5ee3dd7f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentProp
-  tier: 3
+  tier: 2
+  alwaysOn: 1
 --- !u!1 &2023288595
 GameObject:
   m_ObjectHideFlags: 0
@@ -12162,7 +12177,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2509595780864791892}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.9406863, y: -0.0017196446, z: 0.00032240205, w: -0.33927315}
+  m_LocalRotation: {x: 0.9406863, y: -0.0017196445, z: 0.00032240205, w: -0.33927312}
   m_LocalPosition: {x: 0.036, y: 0.065781556, z: -0.022842467}
   m_LocalScale: {x: 1.0000001, y: 1, z: 1.000003}
   m_ConstrainProportionsScale: 0
@@ -13501,7 +13516,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 555086923623302240}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.9406863, y: -0.0017196443, z: 0.00032240164, w: -0.33927315}
+  m_LocalRotation: {x: 0.9406863, y: -0.0017196442, z: 0.00032240164, w: -0.33927312}
   m_LocalPosition: {x: 0.036, y: 0.065781556, z: -0.022842467}
   m_LocalScale: {x: 1.0000001, y: 1, z: 1.000003}
   m_ConstrainProportionsScale: 0

@@ -647,6 +647,11 @@ namespace NeuroAdaptiveVR.EditorTools
                         cortos.Add($"{p.level} pide {pedido} y hay {elegibles} con tier<={p.maxTier}");
                 }
 
+                // §10.4 (D-F6-100): clock and silhouettes are tier 2 since 27 Oct.
+                string tiers = Join(todos.GroupBy(x => x.Tier).OrderBy(g => g.Key).Select(g => $"T{g.Key}x{g.Count()}"));
+                string tiersWanted = grupo == "Props" ? "T1x3, T2x5, T3x3" : "T2x4";
+                if (tiers != tiersWanted) cortos.Add($"tiers {tiers}, se esperaba {tiersWanted}");
+
                 Check($"E3-{grupo}", $"Ningun perfil pide mas {grupo} de los que hay en la escena",
                       cortos.Count == 0,
                       cortos.Count == 0
@@ -753,6 +758,35 @@ namespace NeuroAdaptiveVR.EditorTools
                 Check("E11", "Un nivel da la misma sala sin importar que niveles se aplicaron antes",
                       lowPrimero.SequenceEqual(lowDespues),
                       $"LOW {Join(lowPrimero)} · tras HIGH y MEDIUM {Join(lowDespues)}");
+
+                // E14 (D-F6-100, D-F6-101, Diseno_Sala_ESL.md §10.4): MEDIUM = clock + one curtain + the
+                // silhouette of the opposite window; HIGH keeps MEDIUM and adds the other curtain.
+                var e14 = new List<string>();
+                int curtainLeft = 0;
+                const int seeds14 = 200;
+                for (int s = 1; s <= seeds14; s++)
+                {
+                    var med = AplicarYLeer(esl, props, StimulationOrAssistanceLevel.Medium, s);
+                    var medAgain = AplicarYLeer(esl, props, StimulationOrAssistanceLevel.Medium, s);
+                    var high = AplicarYLeer(esl, props, StimulationOrAssistanceLevel.High, s);
+                    var curtains = med.Where(n => n.StartsWith("Curtain")).ToList();
+                    var figures = med.Where(n => n.StartsWith("OutsideFigure")).ToList();
+                    if (!med.Contains("WallClock_T3")) e14.Add($"seed {s}: MEDIUM sin reloj");
+                    if (!high.Contains("WallClock_T3")) e14.Add($"seed {s}: HIGH sin reloj");
+                    if (curtains.Count != 1 || figures.Count != 1) { e14.Add($"seed {s}: MEDIUM con {Join(curtains.Concat(figures))}"); continue; }
+                    bool cLeft = curtains[0].Contains("Left");
+                    if (cLeft == figures[0].Contains("Left")) e14.Add($"seed {s}: cortina y silueta del mismo lado");
+                    if (cLeft) curtainLeft++;
+                    if (!med.SequenceEqual(medAgain)) e14.Add($"seed {s}: MEDIUM cambia con la misma seed");
+                    var highMovers = high.Where(n => n.StartsWith("Curtain") || n.StartsWith("OutsideFigure")).ToList();
+                    if (highMovers.Count != 3 || !highMovers.Contains("CurtainLeft_T2") || !highMovers.Contains("CurtainRight_T2") || !highMovers.Contains(figures[0]))
+                        e14.Add($"seed {s}: HIGH con {Join(highMovers)}");
+                }
+                bool balanced = curtainLeft >= seeds14 * 0.35 && curtainLeft <= seeds14 * 0.65;
+                if (!balanced) e14.Add($"cortina izquierda en {curtainLeft}/{seeds14}");
+                Check("E14", "MEDIUM: reloj + una cortina + la silueta contraria; HIGH: las dos cortinas + esa silueta (§10.4)",
+                      e14.Count == 0,
+                      e14.Count == 0 ? $"{seeds14} seeds · cortina izquierda {curtainLeft}, derecha {seeds14 - curtainLeft}" : Join(e14.Take(5)) + (e14.Count > 5 ? $" (+{e14.Count - 5})" : ""));
 
                 // The motion phase is part of the reconstruction: same seed, same
                 // phase; another seed, another phase.

@@ -16,9 +16,10 @@ MonoBehaviour:
   propCountMin: 7
   propCountMax: 10
   maxTier: 3
-  moverCountMin: 2
+  moverCountMin: 3
   moverCountMax: 3
   peripheralIntervalMinSeconds: 10
   peripheralIntervalMaxSeconds: 15
-  sourceNote: 'Spec 8.1 fila HIGH: 7-10 props, 2-3 en movimiento, ~1 evento cada
-    10-15 s. ''to validate'' en 16.'
+  sourceNote: 'Spec 8.1 fila HIGH: 7-10 props, ~1 evento cada 10-15 s. ''to validate''
+    en 16. Movers 3 desde el 27 oct (D-F6-101, Diseno_Sala_ESL.md 10.4): las dos cortinas
+    y la silueta de MEDIUM.'
