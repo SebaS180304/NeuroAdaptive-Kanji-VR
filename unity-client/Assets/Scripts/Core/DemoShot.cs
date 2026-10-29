@@ -1,3 +1,4 @@
+using NeuroAdaptiveVR.Data;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace NeuroAdaptiveVR.Core
     [RequireComponent(typeof(CinemachineCamera), typeof(CinemachineSplineDolly))]
     public class DemoShot : MonoBehaviour
     {
-        public enum Action { None, ObjectApproach, C3 }
+        public enum Action { None, ObjectApproach, C3, Animal, Hint }
 
         public const float Margin = 2f;
 
@@ -40,6 +41,11 @@ namespace NeuroAdaptiveVR.Core
         [Tooltip("Above 0: the pull waits for the target to walk out past this |x| (T4: the silhouette appearing in the window), lasts pullEnd - pullStart and the clip ends holdAfterPull later.")]
         public float pullAtAbsX;
         public float holdAfterPull = 5f;
+        [Tooltip("Action Animal: the PeripheralAnimation to play (T5); look and focus follow it, and the clip lasts its animation plus the margins.")]
+        public string animal;
+        [Tooltip("Action Hint: a real trial of this type at this LAL level, with the hint the game gives there (T8).")]
+        public RetrievalTrialType hintType = RetrievalTrialType.KanjiToReading;
+        public StimulationOrAssistanceLevel hintLevel = StimulationOrAssistanceLevel.High;
         [Tooltip("The camera's LookAt target follows the focus point (the board, then the object as it comes and floats), eased.")]
         public bool lookAtFocus;
 
@@ -55,6 +61,9 @@ namespace NeuroAdaptiveVR.Core
             float x = Mathf.Clamp01((t - start) / Mathf.Max(end - start, 1e-4f));
             return x * x * (3f - 2f * x);
         }
+
+        /// <summary>Several cameras on one key: each press records the next one, in order, round and round (T5, T8).</summary>
+        public static int NextIndex(int last, int count) => count <= 0 ? -1 : (last + 1) % count;
 
         /// <summary>The target has just walked out past |x| (moving away from the centre of the room).</summary>
         public static bool Crossed(float previousAbsX, float absX, float threshold) => previousAbsX < threshold && absX >= threshold;

@@ -58,6 +58,10 @@ namespace NeuroAdaptiveVR.Core
         private PronunciationAudioController _voice;
         private KanjiItem _item;
         private DemoShot[] _shots;
+        private readonly System.Collections.Generic.Dictionary<(int, bool), int> _lastOnKey = new();
+        private readonly System.Collections.Generic.Dictionary<DemoShot, Vector3> _lookHome = new();
+        private LearningAssistanceController _assistance;
+        private KanjiContentController _content;
         private Coroutine _running;
 
         private IEnumerator Start()
@@ -87,7 +91,10 @@ namespace NeuroAdaptiveVR.Core
 
             _discovery = FindAnyObjectByType<KanjiDiscoveryController>();
             _voice = FindAnyObjectByType<PronunciationAudioController>();
-            _shots = FindObjectsByType<DemoShot>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            _shots = FindObjectsByType<DemoShot>(FindObjectsInactive.Include, FindObjectsSortMode.None).OrderBy(s => s.cameraName).ToArray();
+            foreach (var s in _shots) { var l = s.GetComponent<CinemachineCamera>().LookAt; if (l != null) _lookHome[s] = l.position; }
+            _assistance = FindAnyObjectByType<LearningAssistanceController>();
+            _content = content;
             var board = _board = FindAnyObjectByType<StudioTrialPresenter>();
             board.ShowMessage(card);
             yield return new WaitForSecondsRealtime(cardSeconds);
@@ -107,9 +114,12 @@ namespace NeuroAdaptiveVR.Core
             {
                 if (!k[Key.Digit1 + (n - 1)].wasPressedThisFrame) continue;
                 bool shift = k.shiftKey.isPressed;
-                var shot = _shots.FirstOrDefault(s => s.number == n && s.shift == shift);
-                if (shot == null) { Debug.LogWarning($"[Demo] No shot T{n}{(shift ? " (Shift)" : "")} in the scene."); continue; }
+                var onKey = _shots.Where(s => s.number == n && s.shift == shift).ToArray();
+                if (onKey.Length == 0) { Debug.LogWarning($"[Demo] No shot T{n}{(shift ? " (Shift)" : "")} in the scene."); continue; }
                 if (_running != null) { Debug.LogWarning("[Demo] A shot is running; wait for it to end."); continue; }
+                int next = DemoShot.NextIndex(_lastOnKey.TryGetValue((n, shift), out int last) ? last : -1, onKey.Length);
+                _lastOnKey[(n, shift)] = next;
+                var shot = onKey[next];
                 _running = StartCoroutine(RunShot(shot));
             }
         }
@@ -120,6 +130,7 @@ namespace NeuroAdaptiveVR.Core
             var dolly = shot.GetComponent<CinemachineSplineDolly>();
             dolly.CameraPosition = 0f;
             var look = shot.GetComponent<CinemachineCamera>().LookAt;
+            if (look != null && _lookHome.TryGetValue(shot, out var home)) look.position = home;
             if (shot.lookAtFocus && look != null) look.position = FocusPoint(shot, 0f);
             yield return null;   // let the brain cut to the shot before the first recorded frame
             string stem = DemoShot.Stem(shot.number, shot.cameraName, shot.levelInName ? _room.CurrentLevel.ToString().ToUpperInvariant() : null);
@@ -130,10 +141,12 @@ namespace NeuroAdaptiveVR.Core
             _pullAt = waitsForTarget ? float.NaN : shot.pullStart;
             float pullSeconds = shot.pullEnd - shot.pullStart;
             float lastAbsX = float.MaxValue;
+            float total = shot.total;
+            if (shot.action == DemoShot.Action.Animal && Animal(shot) is { } anim) total = shot.actionAt + anim.DurationSeconds + DemoShot.Margin;
             float t0 = Time.realtimeSinceStartup;
             for (float t = 0f; ; t = Time.realtimeSinceStartup - t0)
             {
-                if (!waitsForTarget && t >= shot.total) break;
+                if (!waitsForTarget && t >= total) break;
                 if (waitsForTarget)
                 {
                     if (!float.IsNaN(_pullAt) && t >= _pullAt + pullSeconds + shot.holdAfterPull) break;
@@ -154,12 +167,15 @@ namespace NeuroAdaptiveVR.Core
                     look.position = Vector3.Lerp(look.position, FocusPoint(shot, t), 1f - Mathf.Exp(-LookFollowRate * Time.deltaTime));
                 if (cineLook != null && cineLook.profile.TryGet(out DepthOfField dof))
                     dof.focusDistance.value = Vector3.Distance(shot.transform.position, FocusPoint(shot, t));
-                if (!acted && t >= shot.actionAt) { acted = true; Act(shot.action); }
+                if (!acted && t >= shot.actionAt) { acted = true; Act(shot); }
                 yield return null;
             }
 
             ShotEnded?.Invoke();
             _discovery?.Hide();
+            _board.Clear();
+            if (shot.action == DemoShot.Action.Animal) Animal(shot)?.gameObject.SetActive(false);
+            if (shot.action == DemoShot.Action.Hint) _assistance.SetLevel(lal, betweenTrials: true);
             if (_item != null) _board.ShowExposure(_item.Character, _item.Meaning, _item.TargetReading);
             _running = null;
         }
@@ -168,6 +184,13 @@ namespace NeuroAdaptiveVR.Core
         private Vector3 FocusPoint(DemoShot shot, float t)
         {
             if (shot.focus != null) return shot.focus.position;
+            if (!string.IsNullOrEmpty(shot.animal))
+            {
+                var a = Animal(shot);
+                var ars = a != null && a.gameObject.activeInHierarchy ? a.GetComponentsInChildren<Renderer>() : Array.Empty<Renderer>();
+                if (ars.Length > 0) return ars.Aggregate(ars[0].bounds, (b, r) => { b.Encapsulate(r.bounds); return b; }).center;
+                return _lookHome.TryGetValue(shot, out var home) ? home : shot.transform.position + shot.transform.forward;
+            }
             if (!string.IsNullOrEmpty(shot.pullTo))
             {
                 var target = PullTarget(shot);
@@ -207,9 +230,39 @@ namespace NeuroAdaptiveVR.Core
             _board.ShowExposure(_item.Character, _item.Meaning, _item.TargetReading);
         }
 
-        private void Act(DemoShot.Action action)
+        private static PeripheralAnimation Animal(DemoShot shot) =>
+            GameObject.Find("EnvironmentalLayer")?.transform.Find("PeripheralEvents")?
+                .GetComponentsInChildren<PeripheralAnimation>(true).FirstOrDefault(a => a.name == shot.animal);
+
+        // A real trial on the board with the hint the game gives for that type and LAL (Diseno_UI_Kanji_Studio_v1.md §9.1).
+        private void ShowHint(DemoShot shot)
         {
+            var others = _content.Set("A").Where(k => k.KanjiId != _item.KanjiId).Take(3).ToList();
+            var all = others.Prepend(_item).ToList();
+            string Text(KanjiItem k) => shot.hintType switch
+            {
+                RetrievalTrialType.MeaningToKanji => k.Character,
+                RetrievalTrialType.KanjiToMeaning => k.Meaning,
+                _ => k.TargetReading,
+            };
+            string prompt = shot.hintType == RetrievalTrialType.MeaningToKanji ? _item.Meaning : _item.Character;
+            var options = all.OrderBy(k => k.KanjiId).Select(k => new TrialOption(k.KanjiId, Text(k), k == _item)).ToList();
+            _assistance.SetLevel(shot.hintLevel, betweenTrials: true);
+            _board.Present(shot.hintType, prompt, options);
+            _board.ShowCue(_assistance.AvailableCuesNow(shot.hintType), _item);
+        }
+
+        private void Act(DemoShot shot)
+        {
+            var action = shot.action;
             if (action == DemoShot.Action.C3 && _item != null && _discovery != null) { StartCoroutine(RunC3()); return; }
+            if (action == DemoShot.Action.Hint && _item != null && _content != null) { ShowHint(shot); return; }
+            if (action == DemoShot.Action.Animal && Animal(shot) is { } anim)
+            {
+                anim.gameObject.SetActive(false);
+                anim.gameObject.SetActive(true);   // OnEnable restarts its pose at t = 0
+                return;
+            }
             if (action != DemoShot.Action.ObjectApproach || _item == null || _discovery == null) return;
             // As S5 stage 1 (D-F6-49): the object comes close, levitates while the reading plays, and goes back.
             if (!_discovery.ShowStage(_item, 1)) return;
