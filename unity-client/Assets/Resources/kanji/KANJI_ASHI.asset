@@ -21,7 +21,7 @@ MonoBehaviour:
   visualAssociation: 
   assemblySegments:
   - segmentId: KANJI_ASHI_SEG1
-    description: 口 upper
+    description: "\u53E3 upper"
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   - segmentId: KANJI_ASHI_SEG2
@@ -33,6 +33,9 @@ MonoBehaviour:
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   targetReadingAudio: {fileID: 8300000, guid: 97749d538ad9a334490aa2d890b8116c, type: 3}
-  anchorObjectPrefab: {fileID: 0}
+  anchorObjectPrefab: {fileID: 862564274964558449, guid: 89b4debf8cbaf0d4fbc04cc5458c3038, type: 3}
   transformationAnimation: {fileID: 0}
   visualAssociationSprite: {fileID: 0}
+  transformationForm1Sprite: {fileID: 0}
+  transformationForm2Sprite: {fileID: 0}
+  meaningLinkSprite: {fileID: 0}

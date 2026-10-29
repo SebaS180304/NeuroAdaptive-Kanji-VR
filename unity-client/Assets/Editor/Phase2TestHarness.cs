@@ -2111,7 +2111,7 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>
-        /// X10 / X18. Stage-1 objects of S5 for set A (D-F6-20, D-F6-26) and set B (D-F6-43): per set, five
+        /// X10 / X18 / X18c. Stage-1 objects of S5 for sets A (D-F6-20, D-F6-26), B (D-F6-43) and C (D-F6-113): per set, five
         /// prefabs with the reference envelope (±1 cm), pivot at the centre, no collider. All five kanji of a
         /// set carry an object or none does (never real and placeholder mixed in a session), and a reference
         /// box is never assigned: boxes are scaffolding, not test content.
@@ -2132,10 +2132,17 @@ namespace NeuroAdaptiveVR.EditorTools
                 ("KANJI_ONNA", "08_ONNA", new Vector3(0.20f, 0.30f, 0.22f)), ("KANJI_TE", "09_TE", new Vector3(0.22f, 0.28f, 0.06f)),
                 ("KANJI_AME", "10_AME", new Vector3(0.30f, 0.30f, 0.16f)),
             });
-            // Set C has no objects yet: its kanji record PLACEHOLDER.
-            var noObject = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>("Assets/Resources/kanji/KANJI_HITO.asset");
-            Check("X18b", "Un kanji sin objeto (set C, KANJI_HITO) registra PLACEHOLDER",
-                  noObject != null && KanjiDiscoveryController.ObjectSourceOf(noObject.anchorObjectPrefab) == "PLACEHOLDER", "KANJI_HITO");
+            // D-F6-113 (set C, 29 oct 19:49). 11 and 12 are seen in profile, 14 from above (+90° X in the lesson, like 02).
+            ObjectSetCase("X18c", "C", "D-F6-113, 29 oct 19:49", new (string, string, Vector3)[]
+            {
+                ("KANJI_HITO", "11_HITO", new Vector3(0.14f, 0.35f, 0.18f)), ("KANJI_ASHI", "12_ASHI", new Vector3(0.22f, 0.30f, 0.10f)),
+                ("KANJI_USHI", "13_USHI", new Vector3(0.24f, 0.2435f, 0.16f)), ("KANJI_NIKU", "14_NIKU", new Vector3(0.24f, 0.18f, 0.05f)),
+                ("KANJI_HANA", "15_HANA", new Vector3(0.20f, 0.30f, 0.10f)),
+            });
+            // The reserve has no objects yet (D-F6-43): its kanji record PLACEHOLDER.
+            var noObject = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>("Assets/Resources/kanji/KANJI_NICHI.asset");
+            Check("X18b", "Un kanji sin objeto (reserva, KANJI_NICHI) registra PLACEHOLDER",
+                  noObject != null && KanjiDiscoveryController.ObjectSourceOf(noObject.anchorObjectPrefab) == "PLACEHOLDER", "KANJI_NICHI");
         }
 
         private static void ObjectSetCase(string id, string set, string source, (string kanji, string code, Vector3 size)[] rows)

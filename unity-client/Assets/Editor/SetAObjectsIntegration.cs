@@ -8,7 +8,7 @@ namespace NeuroAdaptiveVR.EditorTools
 {
     /// <summary>
     /// Stage-1 objects of S5 for set A (D-F6-20, D-F6-26): 月 車 火 竹 石, and set B
-    /// (D-F6-43): 山 門 女 手 雨, from the modelling chat's KanjiLessonAssets export.
+    /// (D-F6-43): 山 門 女 手 雨, and set C (D-F6-113): 人 足 牛 肉 花, from the modelling chat's KanjiLessonAssets export.
     /// All five of a set or none: if one is missing, nothing of that set is assigned and
     /// its sessions keep the labelled placeholders for all five (never real and
     /// placeholder mixed in one session). A pre-test substitute
@@ -34,11 +34,20 @@ namespace NeuroAdaptiveVR.EditorTools
             ("KANJI_TE", "09_TE"), ("KANJI_AME", "10_AME"),
         };
 
+        private static readonly (string kanjiId, string code)[] SetC =
+        {
+            ("KANJI_HITO", "11_HITO"), ("KANJI_ASHI", "12_ASHI"), ("KANJI_USHI", "13_USHI"),
+            ("KANJI_NIKU", "14_NIKU"), ("KANJI_HANA", "15_HANA"),
+        };
+
         [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set A", priority = 301)]
         public static void Run() => Integrate("A", SetA);
 
         [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set B", priority = 302)]
         public static void RunSetB() => Integrate("B", SetB);
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set C", priority = 303)]
+        public static void RunSetC() => Integrate("C", SetC);
 
         /// <summary>
         /// Hint and C3 images of set A (D-F6-63, D-F6-64; Diseno_UI_Kanji_Studio_v1.md §11.1): P, F1, F2 and M per
@@ -121,7 +130,8 @@ namespace NeuroAdaptiveVR.EditorTools
                 var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));
                 foreach (var c in instance.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
                 // The cart is read from above: its top to the player, the axle vertical (+90° X in Blender, ESTADO.md 02).
-                if (code == "02_KURUMA") instance.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+                // 14 肉 the same: its top face to the player, or edge-on it is only a red strip (COORDINACION_27oct.md §3).
+                if (code == "02_KURUMA" || code == "14_NIKU") instance.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
                 var prefab = PrefabUtility.SaveAsPrefabAsset(instance, $"{prefabDir}/{code}.prefab");
                 Object.DestroyImmediate(instance);
 
