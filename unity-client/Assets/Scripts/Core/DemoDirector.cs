@@ -48,6 +48,8 @@ namespace NeuroAdaptiveVR.Core
         public static event Action<string> ShotStarted;
         public static event Action ShotEnded;
 
+        private const float MaxPullWait = 32f;    // two and a half silhouette cycles (8 s walk + 5 s pause)
+        private float _pullAt;                   // clip time the focus pull starts; NaN while it waits for the target
         private const float LookFollowRate = 6f;   // 1/s: about 0.4 s to settle on a new focus point
 
         private EnvironmentalStimulationController _room;
@@ -104,8 +106,9 @@ namespace NeuroAdaptiveVR.Core
             for (int n = 1; n <= 9; n++)
             {
                 if (!k[Key.Digit1 + (n - 1)].wasPressedThisFrame) continue;
-                var shot = _shots.FirstOrDefault(s => s.number == n);
-                if (shot == null) { Debug.LogWarning($"[Demo] No shot T{n} in the scene."); continue; }
+                bool shift = k.shiftKey.isPressed;
+                var shot = _shots.FirstOrDefault(s => s.number == n && s.shift == shift);
+                if (shot == null) { Debug.LogWarning($"[Demo] No shot T{n}{(shift ? " (Shift)" : "")} in the scene."); continue; }
                 if (_running != null) { Debug.LogWarning("[Demo] A shot is running; wait for it to end."); continue; }
                 _running = StartCoroutine(RunShot(shot));
             }
@@ -117,21 +120,40 @@ namespace NeuroAdaptiveVR.Core
             var dolly = shot.GetComponent<CinemachineSplineDolly>();
             dolly.CameraPosition = 0f;
             var look = shot.GetComponent<CinemachineCamera>().LookAt;
-            if (shot.lookAtFocus && look != null) look.position = FocusPoint(shot);
+            if (shot.lookAtFocus && look != null) look.position = FocusPoint(shot, 0f);
             yield return null;   // let the brain cut to the shot before the first recorded frame
-            ShotStarted?.Invoke(shot.FileStem);
-            Debug.Log($"[Demo] {shot.FileStem} · {shot.total:F0} s");
+            string stem = DemoShot.Stem(shot.number, shot.cameraName, shot.levelInName ? _room.CurrentLevel.ToString().ToUpperInvariant() : null);
+            ShotStarted?.Invoke(stem);
+            Debug.Log($"[Demo] {stem} · {shot.total:F0} s");
 
-            bool acted = false;
+            bool acted = false, waitsForTarget = shot.pullAtAbsX > 0f;
+            _pullAt = waitsForTarget ? float.NaN : shot.pullStart;
+            float pullSeconds = shot.pullEnd - shot.pullStart;
+            float lastAbsX = float.MaxValue;
             float t0 = Time.realtimeSinceStartup;
-            for (float t = 0f; t < shot.total; t = Time.realtimeSinceStartup - t0)
+            for (float t = 0f; ; t = Time.realtimeSinceStartup - t0)
             {
+                if (!waitsForTarget && t >= shot.total) break;
+                if (waitsForTarget)
+                {
+                    if (!float.IsNaN(_pullAt) && t >= _pullAt + pullSeconds + shot.holdAfterPull) break;
+                    if (t >= MaxPullWait) { Debug.LogWarning($"[Demo] {shot.pullTo} never crossed |x| {shot.pullAtAbsX} in {MaxPullWait:F0} s."); break; }
+                    var target = PullTarget(shot);
+                    float absX = target != null ? Mathf.Abs(target.transform.position.x) : 0f;
+                    // Not in the first margin: the clip needs its 2 s before the pull, so a crossing that early waits a cycle.
+                    if (float.IsNaN(_pullAt) && t >= DemoShot.Margin && DemoShot.Crossed(lastAbsX, absX, shot.pullAtAbsX))
+                    {
+                        _pullAt = t;
+                        Debug.Log($"[Demo] {target.name} out past |x| {shot.pullAtAbsX} at {t:F1} s: focus pull");
+                    }
+                    lastAbsX = absX;
+                }
                 dolly.CameraPosition = DemoShot.Position(t, shot.moveStart, shot.moveEnd, shot.returnHome);
                 // Eased, so the cut from the board to the object (they are 0.1 m apart when it appears) is a glide.
                 if (shot.lookAtFocus && look != null)
-                    look.position = Vector3.Lerp(look.position, FocusPoint(shot), 1f - Mathf.Exp(-LookFollowRate * Time.deltaTime));
+                    look.position = Vector3.Lerp(look.position, FocusPoint(shot, t), 1f - Mathf.Exp(-LookFollowRate * Time.deltaTime));
                 if (cineLook != null && cineLook.profile.TryGet(out DepthOfField dof))
-                    dof.focusDistance.value = Vector3.Distance(shot.transform.position, FocusPoint(shot));
+                    dof.focusDistance.value = Vector3.Distance(shot.transform.position, FocusPoint(shot, t));
                 if (!acted && t >= shot.actionAt) { acted = true; Act(shot.action); }
                 yield return null;
             }
@@ -142,18 +164,52 @@ namespace NeuroAdaptiveVR.Core
             _running = null;
         }
 
-        // A set focus wins; otherwise the board until the object appears on it, then the object (Sebas, 29 Oct).
-        private Vector3 FocusPoint(DemoShot shot)
+        // A set focus wins; then a focus pull (T4); otherwise the board until the object appears on it, then the object (Sebas, 29 Oct).
+        private Vector3 FocusPoint(DemoShot shot, float t)
         {
             if (shot.focus != null) return shot.focus.position;
+            if (!string.IsNullOrEmpty(shot.pullTo))
+            {
+                var target = PullTarget(shot);
+                var rs = target != null ? target.GetComponentsInChildren<Renderer>() : Array.Empty<Renderer>();
+                float pull = float.IsNaN(_pullAt) ? 0f : DemoShot.Travel(t, _pullAt, _pullAt + shot.pullEnd - shot.pullStart);
+                if (rs.Length > 0) return Vector3.Lerp(BoardOrObject(), rs[0].bounds.center, pull);
+            }
+            return BoardOrObject();
+        }
+
+        // The seed decides which silhouette is on, so take the active one.
+        private static EnvironmentProp PullTarget(DemoShot shot) =>
+            FindObjectsByType<EnvironmentProp>(FindObjectsSortMode.None).FirstOrDefault(p => p.name.StartsWith(shot.pullTo));
+
+        private Vector3 BoardOrObject()
+        {
             var obj = _discovery != null ? _discovery.Spawned : null;
             if (obj == null) return _discovery != null ? _discovery.transform.position : _board.transform.position;   // the discovery controller sits on LearningBoard
             var rs = obj.GetComponentsInChildren<Renderer>();
             return rs.Length > 0 ? rs.Aggregate(rs[0].bounds, (b, r) => { b.Encapsulate(r.bounds); return b; }).center : obj.position;
         }
 
+        // C3 as in S5 (D-F6-64, D-F6-90): the object on the board shrinks into form 1 → form 2 → kanji, 7.8 s with the strip.
+        private IEnumerator RunC3()
+        {
+            _discovery.ShowStage(_item, 1);
+            _board.BeginC3(_item, string.Empty);
+            float c0 = Time.realtimeSinceStartup;
+            for (float t = 0f; t < C3Timeline.TotalSeconds; t = Time.realtimeSinceStartup - c0)
+            {
+                _board.SetC3(t);
+                _discovery.SetObjectScale(C3Timeline.ObjectScale(t));
+                yield return null;
+            }
+            _board.EndC3();
+            _discovery.Hide();
+            _board.ShowExposure(_item.Character, _item.Meaning, _item.TargetReading);
+        }
+
         private void Act(DemoShot.Action action)
         {
+            if (action == DemoShot.Action.C3 && _item != null && _discovery != null) { StartCoroutine(RunC3()); return; }
             if (action != DemoShot.Action.ObjectApproach || _item == null || _discovery == null) return;
             // As S5 stage 1 (D-F6-49): the object comes close, levitates while the reading plays, and goes back.
             if (!_discovery.ShowStage(_item, 1)) return;

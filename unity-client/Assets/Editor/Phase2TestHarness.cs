@@ -309,6 +309,9 @@ namespace NeuroAdaptiveVR.EditorTools
                 System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "T6_orbit_2.mp4"), "");
                 if (DemoRecording.NextFile(dir, "T6_orbit") != "T6_orbit_3") p.Add("con 1 y 2 en disco no da el 3");
                 if (DemoRecording.NextFile(dir, "T7_front") != "T7_front_1") p.Add("otra toma no empieza en 1");
+                if (DemoShot.Stem(2, "wide", "HIGH") != "T2_wide_HIGH" || DemoShot.Stem(6, "orbit", null) != "T6_orbit") p.Add("nombre con nivel mal formado");
+                // T4: the pull fires once, when the silhouette walks out past the edge of the window, not on its way back or while it waits.
+                if (!DemoShot.Crossed(2.05f, 2.12f, 2.10f) || DemoShot.Crossed(2.12f, 2.20f, 2.10f) || DemoShot.Crossed(4.15f, 1.97f, 2.10f) || DemoShot.Crossed(4.15f, 4.15f, 2.10f)) p.Add("el cruce de la silueta no dispara una sola vez");
             }
             finally { System.IO.Directory.Delete(dir, true); }
 
