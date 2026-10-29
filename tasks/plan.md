@@ -1,6 +1,13 @@
 # Implementation Plan: week of 26 – 30 Oct 2026 (VR complete, MIRAI presentation)
 
 Written 26 Oct 2026. **Aligned up to: D-F6-111** (`Estado_Actual.md`). **Approved by Sebas, 26 Oct**; B4 and A2 extended with D-F6-89 to D-F6-92 the same evening. **Revised Tue 27 Oct** (not yet approved): E1 follows the §10.4 rule (D-F6-100, D-F6-101; D-F6-99 is gone), B4b gets the new C3 times (D-F6-103, D-F6-104), new B4c (SDF morph) and new S1 (spec change rows).
+**Thu 29 closed 23:35, aligned up to D-F6-115** (J1–J8 and J10 done; J9 moves to Fri as step 1 of `Checklist_Congelamiento_VR_30oct.md` §1).
+**Thu 29 replan (D-F6-112 to D-F6-114):** see "Thu 29" below.
+**18:45 update (after the Unity crash at 18:24):** the demo is a cinematic teaser (D-F6-114,
+`Plan_Grabacion_Demo_29oct.md`); its shots are T1–T9 and the development tasks are now **J1–J10**
+(`tasks/todo.md` §T, which also has the crash cause and the prevention rules). The "Thu 29"
+section below is the 11:30 version; where it disagrees with §T of the todo, §T wins. B4c (SDF morph) is out of the week (D-F6-112).
+
 The M3 week's plan is archived in `tasks/archive/fase6_m3_{plan,todo}.md`. Its open items
 are carried over here or dropped as listed in the last section.
 
@@ -87,6 +94,47 @@ C7 hints + C3 sets B, C ─► C8 validation run + freeze (Fri 30, after the tal
   peripheral falls short, only its material colour changes (darker or lighter). The colour is
   the same in every condition and level, and timing, path and shape stay as they are.
 
+## Thu 29 (11:15–23:30, D-F6-112): the day's order
+
+State found at 11:30 (read-only):
+- **D-F6-111 is already in `e49f3ff`** (27 Oct, pushed): `ESL_Medium` back to 4–6, always-on props
+  forced on, so rooms have 5–6; harness E3 + E14 (200 seeds), 101/101. T1 is a check, not a build.
+- **Set C:** FBX for 11 人 and 12 足 only; 13 牛, 14 肉, 15 花 have empty `export/` (modelled in
+  series, D-F6-113). T5 waits.
+- **Hint/C3 images for sets B and C: none** (`pistas/` exists only in 01–05). Today T6 is
+  placeholder-only unless images arrive.
+- `PeripheralPreview.cs` (untracked, 26 Oct) already plays every animal in turn with the ESL held:
+  it is the base for V3 and moves into the demo scene (its own `shortcut:` note says so).
+- The session flow needs the backend (`SessionBootstrap` creates a `DEV_UNITY` session).
+
+```
+T1 D-F6-111 check ─► STOP 3 MEDIUM runs
+T2 B5 demo scene ─► T3 per-shot presets ─► STOP headset ~16:45 (+ set C stages that exist)
+                                       └─► STOP one test take ─► recording V1–V8 (V5–V7 first)
+T4 B6 captures (after T2, reuses its cameras) ─► STOP Sebas: complete
+T5 set C, five or none ─► STOP headset before commit
+T6 hints + C3 sets B/C (real where present, else PLACEHOLDER) ─► STOP list real/placeholder
+T7 close: tasks/, //review, push, day draft with questions or "Sin dudas · 29 oct"
+```
+
+Decisions for this day:
+- **Demo scene without the backend.** A `DemoDirector` in a new scene `Demo_Video.unity` (not in
+  Build Settings) calls the presenters directly, as `PeripheralPreview` does: ESL controller,
+  `StudioTrialPresenter.ShowCue` / `BeginC3`, `KanjiDiscoveryController`. No session, no telemetry,
+  so no fake `DEV_UNITY` rows in the portal. Only the shot's components are driven; the
+  experiment scene and its flow are not touched (D-F6-62, D-F6-84).
+- **One preset per shot:** an enum `Shot` (V1…V7) in the Inspector before Play, plus keys 1–7 in
+  Play (Game view input, not editor commands, so finding P2 does not apply) that restart that
+  shot from its first frame. V7 is two takes (before / after) split in the edit. V8 is the
+  browser: a bookmark to MANU `678b7806` in the portal, no code. V2 is a slow camera path in the
+  same scene.
+- Proposed fixed states (Sebas confirms at the T2 stop): `BEHAVIOR_ADAPTIVE`, kanji **火** (Sebas, 29 oct; was 月)
+  (03_HI, set A, all four images real), MEDIUM for V4–V6, the T3 HIGH full strip for V6, and for
+  V7 one rules-v2 `UNDERCHALLENGED` change (the action and `reason_code` copied from a real v2
+  decision, not invented) with its reason on screen.
+- Opening card "Demonstration scene. States set for the recording." (§3.4), a world-space card
+  shown for 3 s at Play.
+
 ## Task list (detail in `tasks/todo.md`)
 
 ### A · Last week's leftovers (first)
@@ -143,9 +191,20 @@ C7 hints + C3 sets B, C ─► C8 validation run + freeze (Fri 30, after the tal
 | A morph pair fails a §10.1 check | Low | Fix that field's spread, or the whole set stays on crossfade (never mixed in a set) |
 | Sebas has to validate a lot (hints, shapes, E1, set B) during F4 S1 | High | The B and C sets and the reserve are "if there is time" (D-F6-66). They never block set A |
 | A commit on Thu morning breaks the video build | High | Freeze on Thu morning until the recording is done |
+| Thu 29: the demo scene is not ready for the ~16:45 stop | High (V4–V7 need it) | Plan B of D-F6-84: eye view from the experiment scene; T2 is S-sized and starts first after T1 |
+| Thu 29: 牛, 肉 or 花 is not exported by the night | Med | Five or none (D-F6-26, D-F6-113): set C stays on placeholders and enters after Fri as content (D-F6-62) |
+| Thu 29: no set B/C hint images | Low (D-F6-66 allows it) | Placeholders with `asset_source = PLACEHOLDER`, listed at the T6 stop |
+| Thu 29: a commit during the 16:00–18:00 recording | High | No commits to Unity code between the test take and the end of recording |
+| Thu 29: Unity crashes again from lack of RAM (16 GB; Unity ≈ 10 GB, Blender for set C) | High | Save before every Play, one camera per pass, Scene View closed while recording, no MCP command during compile or recording; a second crash at the same point → plan B, OBS on the Game window (plan §5) |
+| Thu 29: Recorder or Cinemachine do not install on 6000.5 | Med | Plan §5: OBS on the Game window; script-animated cameras on the same paths |
 
 ## What happens to the open items of the M3 plan
 - Task 11b, Checkpoint D and the definitive `UNDERCHALLENGED` colour: only if time is left, within 16–20 Nov at the earliest (D-F6-83).
 - Tasks 13, 14, 16 and 32: done (MANU `678b7806`, run `2dd53450`, tags D-F6-78). Task 15 becomes A1.
 - Task 17 / R-6: the change list is done. The full spec v1.4 document is written by PM on 2–6 Nov, and development reviews it (D-F6-88).
 - A-2 (a hint requested inside the O4 window): still open with Sebas.
+
+## Open questions for Thu 29 (Sebas, before the //build)
+1. ~~Deck folder~~ → `Claude outputs/capturas_deck_30oct/` (Sebas, 29 oct).
+2. **Time of the headset stop:** the board's §1 says 15:00 (recording 16:00–18:00); the plan request says ~16:45. This plan follows ~16:45; if that is the time, recording starts after it.
+3. ~~Fixed states~~ → 火 instead of 月 (Sebas, 29 oct); the rest as proposed.

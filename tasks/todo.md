@@ -1,7 +1,7 @@
 # Todo: week of 26 – 30 Oct (VR complete, MIRAI presentation)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/fase6_m3_todo.md`.
-**Aligned up to: D-F6-111** · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92; **revised Tue 27** (E1 with §10.4, B4b with the D-F6-103 times, new B4c and S1; waiting for Sebas's OK) (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-115** (Thu 29 section T waiting for Sebas's OK) · plan approved by Sebas, 26 Oct; B4 and A2 extended with D-F6-89 to D-F6-92; **revised Tue 27** (E1 with §10.4, B4b with the D-F6-103 times, new B4c and S1; waiting for Sebas's OK) (`Estado_Actual.md`, the board; it wins over this list).
 
 **Tue 27 order:** E1 → headset stop (before 16:45 or after 18:00; Sebas on the cap 17:00–18:00) → B4a → B4b → S1. Cut at 19:00 with the day draft.
 Every commit gets a message file in Downloads, is shown to Sebas first, and holds one change.
@@ -121,7 +121,7 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 **Stop:** with E3, in the headset. UI/UX documents §9–§10. **Scope:** S + S
 → 27 Oct: `c269358` (500 u for `ShowExposure` and C3; the assembly slots have their own 240 u size and row, so S5's assembly and the tutorial example take 500 too) and the layout commit (strip centred, 190 u, 40 u apart, no frames or arrows, zone A without frame, indicator at (620, −250)). X20 checks centring and size, indicator clear of strip and Hint button, C3 glyph above the strip. 100/100. Eye renders checked. **Stop passed: approved by Sebas in the headset (27 Oct).**
 
-### [ ] B4c: SDF morph for C3 (D-F6-103, D-F6-104): Wed 28, after B4b, its own task
+### [-] B4c: SDF morph for C3 (D-F6-103, D-F6-104): **dropped from the week by D-F6-112**; may enter after the freeze as an exception before 13 Nov (D-F6-115)
 **Blocked by:** the 16-bit fields of 月 (512², one channel, EXR, spread ≥ 25 %, kanji from the board glyph in the same box): Modelado 3D adjusts `tools/png_a_sdf.py` and delivers them Wed 28 morning (D-F6-106).
 - [ ] One test kanji only (proposed: 月, the smoothest F2 → kanji per Modelado 3D's guides). Import its three fields (F1, F2, kanji) as R16F, no compression, no mipmaps.
 - [ ] Shader: d(t) = (1 − w)·d_A + w·d_B, ink where d < 0, edge AA with `fwidth(d)`, colour `#F4F1EA`, opacity 1, no outline/shadow/glow; the same *smootherstep* and windows as B4b; at w = 1 swap to the TMP glyph on the same frame.
@@ -147,13 +147,96 @@ Design: `Diseno_UI_Kanji_Studio_v1.md` §9–§11 (delivered 26 Oct). Assets: P,
 
 ---
 
+## T · Thu 29 (D-F6-112 to D-F6-114): each Stop waits for Sebas's OK
+Shots follow `Plan_Grabacion_Demo_29oct.md` (PM, D-F6-114): **T1–T9 are the shot numbers of that document.** Development tasks are **J1–J10** so the two never clash. B4c is dropped (D-F6-112). B5 → J2, B6 → J7, C7 → J9.
+
+**Unity crash, 18:24 (recovered 18:32).** Native crash in the Scene View repaint (`SceneView.DoDrawCamera` → `Handles.Internal_DrawCameraWithGrid`), right after a domain reload that took 35.7 s (14.2 s earlier in the day); Windows reported "no hay suficientes recursos de memoria" while writing the stack. Probable cause: **RAM exhausted** (16 GB machine: Unity ≈ 10.5 GB committed, Blender 2.7 GB for set C, 2 import workers 1.5 GB each, 1.7 GB free after reopening). Saved: `DemoDirector.cs` (compiled 18:23), the X22 harness case, `tasks/`. Lost: nothing on disk; the scene `Demo_Video.unity` had not been created yet. Never started: Cinemachine/Recorder packages, cameras, Volume, `Recordings/29oct/`.
+
+**Prevention (from now on):**
+- Save the scene before every Play.
+- One camera per recording pass, never several Recorder outputs at once.
+- No MCP command while scripts compile, while a domain reload runs, or while recording. After a code change: wait for the compile to end (Console quiet, `EditorApplication.isCompiling` false) before the next command.
+- Scene View closed (or not visible) during Play and recording: the crash was in its repaint.
+- If it crashes again at the same point: plan B (§5), OBS on the Game window with the same cameras.
+
+### [x] J1: D-F6-111 check (MEDIUM 4–6 profile, rooms 5–6)
+Already built and tested in `e49f3ff` (pushed). Nothing rebuilt.
+- [x] Harness green, E3 (MEDIUM profile 4–6) and E14 (5–6 props in every MEDIUM room, 200 seeds) included.
+- [x] Three MEDIUM runs in the editor with different seeds.
+→ 29 Oct: harness 101/101. Seeds 670635 → 5 props, 976544 → 6 (+ Wastebasket_T2), 318689 → 5; always FloorLamp, Plant, SideTable (T1), WallClock, WallShelf; one curtain + the opposite silhouette. Scene restored, not saved. **Stop passed** (Sebas moved on to T2).
+
+### [x] J2: B5 demo scene, outside the build (D-F6-84, D-F6-114), **in progress**
+- [x] `DemoDirector` (`Scripts/Core/`): loads `JapaneseLearningStudio` additively (the room is always the current one) and switches the session chain off in `sceneLoaded`, before any Start (no backend, no session, no telemetry). Fixed in the Inspector: condition (label), ESL, LAL, kanji **火** (Sebas, 29 oct), room seed; opening card 3 s. Compiled 18:23.
+- [x] Harness X23 written: scene outside Build Settings, experiment scene in it, the session components silenced. Not run yet (red until the scene exists).
+- [x] Create and save `Assets/Scenes/Demo_Video.unity` (only a `DemoDirector`), not in Build Settings. X23 green, whole harness green.
+- [x] Keyboard: L / M / H switch the ESL (between trials), with the fixed seed so every attempt is the same room (§2 "Repetible").
+- [x] `PeripheralPreview` moves to the demo scene (for T5), off by default.
+- [x] One Play from the eye: card, then 火 on the board; no session row in the backend.
+→ 29 Oct, 19:25: two Plays (flat, no headset). 火 / fire / ひ on the board, MEDIUM room (clock, picture, shelf, left curtain, right silhouette, rice field); H (queued through the Input System) → HIGH; the 7 session components off; backend still 70 sessions; no console errors after the `SessionClock` zero. Harness case renamed X22 → **X23** (X22 was the shelf bird). Commit message: `Downloads/commit_demo_scene_b5.txt`.
+**Scope:** S (scene + keys). No package yet.
+**Stop:** Sebas sees the demo scene (Play, or the headset) and approves before J3 adds packages.
+
+### [x] J3: recording rig (D-F6-114, plan §2)
+- [x] Add `com.unity.recorder` and `com.unity.cinemachine` to `Packages/manifest.json` (wait for the import to end before any other command). If Recorder does not install on 6000.5: plan B, OBS on the Game window. If Cinemachine fails: script-animated cameras on the same paths.
+- [x] Cinemachine cameras and dolly tracks **only in `Demo_Video.unity`**; the experiment scene and the build untouched (harness: build list unchanged, no Cinemachine component in `JapaneseLearningStudio`).
+- [x] Local Volume on its own layer, seen only by the recording cameras: depth of field, soft bloom, vignette, light grain. The headset look does not change.
+- [x] Recorder: MP4 1920×1080, 30 fps, one file per shot and camera, `T#_<camera>_<attempt>.mp4` in `unity-client/Recordings/29oct/` (already gitignored). 2 s of margin at both ends, 4–8 s moves.
+- [x] Keys to launch each shot (one key → one shot from its first frame).
+→ 29 Oct, 19:50: Recorder 5.1.7 and Cinemachine 3.1.7 (+ Splines) installed one at a time, no compile errors. `DemoShot` (one per CinemachineCamera + spline dolly: number, camera name, action, margins, move window, focus) and `DemoDirector` digit keys 1–9 (one shot at a time; stills in the 2 s margins, eased travel between). `Editor/DemoRecording.cs` starts the Recorder on `ShotStarted` and stops on `ShotEnded` or leaving Play: Game view 1920×1080, H.264 MP4 high, 30 fps capped, variable playback (the shots run on real time), no audio (narration apart), `Recordings/29oct/T#_<camera>_<n>.mp4`, never overwrites. Volume `CineLook` (layer 8, new): Bokeh DOF following the shot's focus, bloom 0.35, vignette 0.3, grain Thin1 0.2; only `CineCam` (depth 10, Cinemachine brain, cut blends) sees layer 8; the experiment scene has no Volume of it. T6 rig: `T6_orbit` on `T6_track` (from behind the eye, ≈ 0.7 m around the right side of 火, clear of its way back), action = the S5 object approach at 2 s, travel 3–9 s, 12 s clip. The controllers are hidden in the demo (untracked in a flat run they sat in front of the first frame). Harness X23 + no Cinemachine/DemoShot in the experiment scene; **X24** travel and file numbering; **103/103**. Test takes: `T6_orbit_1.mp4` (first path, too close, controllers in view: discard) and **`T6_orbit_2.mp4`** (wide orbit). Commit message: `Downloads/commit_recording_rig_j3.txt`.
+→ 29 Oct, 20:10, Sebas's corrections to T6: board first (火 / fire / ひ in focus; the board keeps the exposure while the object comes out), focus follows the object while it is out; the camera goes out and comes back home before the object returns (out and back 2.5–8.75 s, object back at 9 s); during the turn it comes down to the object's centre (1.45 m) and back up to eye height (1.60 m); the look moves from the board centre (1.69 m) to the object with the dolly. `KanjiDiscoveryController.Spawned` (read-only getter). X24 checks the out-and-back. 103/103. New take **`T6_orbit_1.mp4` (20:07)**; its end frame checked (board sharp, room blurred).
+→ 20:20, second round: the look follows the object itself while it comes (eased, ≈ 0.4 s), not a fixed point; the camera starts with the approach (2.0 s) and comes down to 1.35 m (10 cm more). Look start/end fields replaced by `lookAtFocus`. 103/103. New take **`T6_orbit_3.mp4` (20:19)**.
+**Stop 1 (plan §4.1):** one test take of **T6** with Recorder and the look; Sebas approves the style. **Not done yet** (no record of a T6 test).
+
+### [x] J4: priority A shots, in this order: T6, T7, T2, T4 (T9 is J5)
+- [x] T6: 火 with its 3D object, from near the first person (~1.6 m): slow approach, then half an orbit.
+- [x] T7: C3, the full 7.8 s plus the summary strip, fixed or almost imperceptible push-in.
+- [x] T2: same wide shot at LOW, MEDIUM, HIGH (fixed seed) + a slow orbit at HIGH; the fade is done in the edit.
+- [x] T4: curtain with wind, low-angle close; focus pull from the kanji board to the silhouette in the opposite window.
+→ 29 Oct, 20:35: T6 = J3 (approved). T7 key 7 (C3 action, 20 cm push-in); T2 key 2 at L/M/H (level in the file name) + Shift+2 orbit at HIGH; T4 key 4 (left curtain, low angle) + Shift+4 (focus pull board → the active silhouette). Framing checked on stills (T4 pull reframed: the board hid the window). Takes: T7_front_1, T2_wide_LOW/MEDIUM/HIGH_1, T2_orbit_HIGH_1, T4_curtain_1, T4_pull_1 (T4_curtain_2 is a duplicate: Shift lost by the simulated key). 103/103. Commit message: `Downloads/commit_demo_shots_j4.txt`.
+→ 20:55, Sebas's corrections: T4 curtain camera at 15 cm off the floor, ≈ 2 m away, left of the bonsai (it hid the hem) → `T4_curtain_2`. T4 pull waits for the silhouette: fires when the active OutsideFigure walks out past |x| 2.10 (its edge at the window's left frame from this camera, checked on stills at x 1.97–3.4), 1.5 s pull, 5 s hold, 32 s cap → `T4_pull_2` (silhouette at 8.2 s). The rest approved as recorded. 103/103.
+**Stop 2 (plan §4.2):** Sebas reviews the A clips before the B shots.
+
+### [x] J5: T9, the adaptation in the real headset (A)
+- [ ] OBS ready on the PC (Game window or Oculus Mirror) + a browser capture of the portal showing the state change, for the split screen.
+- [ ] The condition set so an adaptation comes early (a `DEV_UNITY` `BEHAVIOR_ADAPTIVE` session; how to make it come early is checked against rules-v2 first, nothing invented).
+→ 29 Oct, 21:00, how (checked against rules-v2, nothing new in code): the earliest change is S7 trial 4 (initial window: 3rd S7 trial and 20 s; hysteresis: the same state in 2 windows). The most controllable and visible one is `DISENGAGED_AWAY`: look away ≥ 1.5 s in S7 trials 3 and 4 → ESL one step down (MEDIUM → LOW) before trial 5, the room calms down on camera. Session: experiment scene, `SessionBootstrap.condition` = `BEHAVIOR_ADAPTIVE`, set A, participant `DEV_UNITY`, `baselineTimeScale` 0.1 (debug, recorded in `BASELINE_COMPLETED`, so S4 never passes for real; saves ≈ 95 s). These Inspector values are saved for the run and reverted afterwards with `git checkout` of the scene (never committed). S6 stays at 9 trials (the profile needs ≥ 6 for full reliability). OBS: window capture of the Unity Game view, NVENC, 1920×1080, 30 fps, MP4 to `Recordings/29oct/T9_headset_<n>.mp4`; then the portal (session → Adaptations) captured for the split screen.
+**Stop 3 (plan §4.3):** recorded with Sebas in the headset.
+→ 21:25, recorded (OBS `T9_headset_20261029_211750.mp4`): session **`478c175e`** `BEHAVIOR_ADAPTIVE` COMPLETED; S7-004 `CHANGE_ENVIRONMENT` ESL MEDIUM → LOW `DISENGAGED_ENVIRONMENT` (18.4 s away, 12.3 s on room objects) applied; then S7-009 LAL MEDIUM → LOW `UNDERCHALLENGED_FAST` (0.64× practice pace) applied. S7 at 71.6 fps. A first Play left session `7b1de509` `IN_PROGRESS` at S1 (not touched). Scene values reverted with `git checkout`; no commit.
+
+### [x] J6: priority B shots: T1, T3, T5, T8
+→ 21:45: T1 key 1 (door → centre), T3 key 3 at HIGH (front wall, focus 85 cm), T5 key 5 ×3 (bird, butterfly, cat; tele, follow the animal, clip = animation + margins), T8 key 8 ×4 (M, P, partial, strip; real trial + game hint). Takes T1_door_1, T3_props_1, T5_bird/butterfly/cat_1, T8_M/P/partial/strip_1. Keys need the Game view focused (lost focus = keys dropped). 103/103. Commit message `Downloads/commit_demo_shots_j6.txt`. **Stop:** Sebas reviews the B clips.
+- [x] T1 slow dolly from the door to the centre at eye height; T3 lateral tracking along shelf, clock, picture, shallow focus; T5 one tele close-up per animal (shelf bird on its D-F6-109 path, via `PeripheralPreview`); T8 one clip per hint P, F1, F2, M of 火.
+
+### [x] J7: B6 captures for the deck
+→ 22:00: 16 files in `Claude outputs/capturas_deck_30oct/` with `LEEME.md` (slide → file). Unity 1920×1080 with the cine look: s00 cover, s02 room LOW/MEDIUM/HIGH, S5 object, hints P and full strip, C3 at 2.7 s and 6.6 s, bird, cat, butterfly. Portal (dashboard Playwright; the MCP one has no Chrome): s01 decisions of T9 session `478c175e` (declare: DEV_UNITY, S4 ×0.1), s02b MANU Learner Profile, s03/s03b MANU `678b7806`. Not in git (`Claude outputs/` is ignored). Finding: MANU's sessions table says "Adaptations 20" while the profile says "No adaptations" (the column seems to count decisions); noted for the draft, not fixed. J6 committed `d524c1d`.
+- [ ] From the demo cameras: the 3 ESL levels, the animals, S5 approach, a set A hint, C3. Portal: session decisions and Learner Profile (MANU `678b7806`), provisional phrase visible.
+- [ ] Named by slide (`s02_sala.png`, `s01_decision_portal.png`, …, deck skeleton §4) in `Claude outputs/capturas_deck_30oct/` (Sebas, 29 oct).
+**Stop:** Sebas confirms they are complete. **Scope:** XS
+
+### [x] J8: set C objects (D-F6-113, D-F6-26): five or none
+→ 22:10 committed `d3a65ce` on Sebas's "Ok, haz el commit de J8". **The headset stop was not done**: Sebas sees set C in S5 on Fri 30 before R1 (question 1 in the day draft).
+→ 22:10: all five FBX exported and approved (ESTADO.md, set complete 19:49). TDD: X18c red (no prefabs) → "Integrar objetos del set C" (14 肉 with the -90° X root turn like 02) → 104/104; X18b moved to KANJI_NICHI (reserve). Eye renders of the five at the S5 near point read as the notes ask (人 足 profile, 牛 花 front, 肉 from above). Commit message `Downloads/commit_set_c_objects.txt`. **Stop:** Sebas sees set C in S5 in the headset before the commit.
+**Blocked by:** FBX of 13 牛, 14 肉, 15 花 (only 11 人 and 12 足 at 11:30).
+- [ ] Only when all five `KanjiLessonAssets/11–15/export/*.fbx` exist: same path as A3, harness case, S5 seen in the editor. If one is missing: nothing enters (D-F6-62).
+**Stop:** headset before the commit. **Scope:** S
+
+### [ ] J9: hints and C3 for sets B and C → **Fri 30, after the talk, step 1 of `Checklist_Congelamiento_VR_30oct.md` §1** (D-F6-115)
+→ 23:30 state: images complete for 06–13 (set B, 11 人, 12 足, 13 牛); **14 肉 and 15 花 stay PLACEHOLDER, declared** (content after the freeze). Already in the working tree, **not committed** (red until the images go in): X20 extended to the 15 experimental kanji (placeholder check on reserve KANJI_NICHI) and the menus "Integrar pistas del set B / C" (`IntegrateHints`, same path as set A). Fri: run both menus → X20 will still list 14/15 as PLACEHOLDER, so X20 must allow the declared ones (14, 15) before it goes green; then 15-row content table for spec v1.4.
+- [ ] Real `B_NN_*` / `C_NN_*` images where they exist (none at 11:30); the rest `PLACEHOLDER` with `asset_source`. X20/X21 extended to B and C.
+**Stop:** list of real vs placeholder per kanji and image. **Scope:** S
+
+### [x] J10: close the day
+→ 23:35: `tasks/` updated and committed (no push: the checklist pushes on Fri after J9); day draft `Claude outputs/Borrador_Plan_Fase6_9_29oct.md` with "Dudas para PM". `//review` before the push moves to Fri with the push.
+- [ ] Update `tasks/`; `//review` before the push; one commit per change, messages in Downloads. `graphify update .` after code changes.
+- [ ] `Claude outputs/Borrador_Plan_Fase6_9_29oct.md`: done, findings (the crash and its cause), "Dudas para PM" or "Sin dudas · 29 oct". Freeze and validation run: Fri, after the presentation (C8).
+
 ## C · Thu 29 and Fri 30
 
 ### [ ] C7: Hints and C3 for sets B and C
 - [ ] Same path as B4. A missing asset stays a declared placeholder (`asset_source`).
 **Stop:** Sebas sees them in the headset. **Deps:** B4, assets. **Scope:** S
 
-### [ ] C8: Validation run and function freeze: Fri 30, **after** the presentation (D-F6-62, D-F6-66)
+### [ ] C8: Validation run and function freeze: Fri 30, **after** the presentation (D-F6-62, D-F6-66), per `Checklist_Congelamiento_VR_30oct.md` (D-F6-115): R1 `BEHAVIOR_ADAPTIVE` set A S1→S9, R2 `STATIC` newest complete set, tag `vr-freeze-2026-10-30`
 - [ ] Whole harness green.
 - [ ] Run S1 → S9 in the headset at 72 Hz with `verify_*` 0 discrepancies, rules-v2, the hints and C3 of set A, and the E1/E2 changes.
 - [ ] Declare the freeze. From here on, Unity gets fixes only.
