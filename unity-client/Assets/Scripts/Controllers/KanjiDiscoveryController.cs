@@ -74,6 +74,9 @@ namespace NeuroAdaptiveVR.Controllers
 
         public void Hide() => ClearSpawned();
 
+        /// <summary>The stage-1 object while it is on show (the demo scene focuses on it), else null.</summary>
+        public Transform Spawned => _spawned != null ? _spawned.transform : null;
+
         /// <summary>C3 starts by shrinking the object in place (C3Timeline.ObjectScale): 1 is its own scale, 0 hides it.</summary>
         public void SetObjectScale(float s)
         {

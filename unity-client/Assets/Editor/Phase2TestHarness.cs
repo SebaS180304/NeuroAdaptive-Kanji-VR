@@ -92,6 +92,7 @@ namespace NeuroAdaptiveVR.EditorTools
             HintCases(content);
             C3Cases();
             DemoSceneCases();
+            DemoShotCases();
             SubstitutionCases(content);
             EffectiveSetCases(content);
             SequenceCases(content);
@@ -260,8 +261,59 @@ namespace NeuroAdaptiveVR.EditorTools
             foreach (var t in new[] { typeof(SessionBootstrap), typeof(SessionFlowRunner), typeof(SessionCommunicationClient),
                                       typeof(AdaptationClient), typeof(PeripheralEventScheduler) })
                 if (!DemoDirector.Silenced.Contains(t)) p.Add($"{t.Name} no se apaga");
+            // D-F6-114: the recording cameras live only in the demo scene; the experiment scene (open here) has none.
+            int cine = UnityEngine.Object.FindObjectsByType<Unity.Cinemachine.CinemachineCamera>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length
+                     + UnityEngine.Object.FindObjectsByType<Unity.Cinemachine.CinemachineBrain>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length
+                     + UnityEngine.Object.FindObjectsByType<DemoShot>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+            if (cine > 0) p.Add($"{cine} componentes de Cinemachine o DemoShot en la escena del experimento");
             Check("X23", "Escena de demo fuera del build y sin sesion (D-F6-84)", p.Count == 0,
                   p.Count == 0 ? $"{DemoDirector.ScenePath} · {DemoDirector.Silenced.Length} componentes apagados" : Join(p));
+        }
+
+        /// <summary>
+        /// X24 (D-F6-114, Plan_Grabacion_Demo_29oct.md §2): a shot's camera stays still in its margins and travels the
+        /// dolly once, eased and never backwards; a retake gets the next attempt number and never overwrites a clip.
+        /// </summary>
+        private static void DemoShotCases()
+        {
+            var p = new List<string>();
+            float prev = -1f;
+            for (float t = 0f; t <= 12f; t += 0.05f)
+            {
+                float x = DemoShot.Travel(t, 3f, 9f);
+                if (x < prev - 1e-6f) p.Add($"retrocede en t {t:F2}");
+                if (t <= 3f && x != 0f) p.Add($"se mueve antes de empezar (t {t:F2})");
+                if (t >= 9f && Mathf.Abs(x - 1f) > 1e-6f) p.Add($"no llega al final (t {t:F2})");
+                prev = x;
+            }
+            if (Mathf.Abs(DemoShot.Travel(6f, 3f, 9f) - 0.5f) > 1e-6f) p.Add("la mitad del tiempo no da la mitad del recorrido");
+
+            // Out and back (Sebas, 29 Oct): home before the object goes back, out at mid-window, up then down only.
+            float last = 0f; bool turned = false;
+            for (float t = 0f; t <= 12f; t += 0.05f)
+            {
+                float x = DemoShot.Position(t, 2.5f, 8.75f, returnHome: true);
+                if (!turned && x < last - 1e-6f) turned = true;
+                else if (turned && x > last + 1e-6f) p.Add($"ida y vuelta: sube otra vez en t {t:F2}");
+                if ((t <= 2.5f || t >= 8.75f) && Mathf.Abs(x) > 1e-6f) p.Add($"ida y vuelta: fuera de casa en t {t:F2}");
+                last = x;
+            }
+            if (Mathf.Abs(DemoShot.Position(5.625f, 2.5f, 8.75f, true) - 1f) > 1e-4f) p.Add("ida y vuelta: no llega al final a mitad de ventana");
+
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "nvr_x24_" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(dir);
+            try
+            {
+                if (DemoRecording.NextFile(dir, "T6_orbit") != "T6_orbit_1") p.Add("carpeta vacia no da el intento 1");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "T6_orbit_1.mp4"), "");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "T6_orbit_2.mp4"), "");
+                if (DemoRecording.NextFile(dir, "T6_orbit") != "T6_orbit_3") p.Add("con 1 y 2 en disco no da el 3");
+                if (DemoRecording.NextFile(dir, "T7_front") != "T7_front_1") p.Add("otra toma no empieza en 1");
+            }
+            finally { System.IO.Directory.Delete(dir, true); }
+
+            Check("X24", "Toma de demo: quieta en los margenes, un recorrido suave, y cada intento con su archivo (D-F6-114)",
+                  p.Count == 0, p.Count == 0 ? "recorrido 3-9 s monotono · ida y vuelta 2,5-8,75 s · T6_orbit_1 → _3 sin sobrescribir" : Join(p.Take(5)));
         }
 
         /// <summary>
