@@ -91,6 +91,7 @@ namespace NeuroAdaptiveVR.EditorTools
             SetCases(content);
             HintCases(content);
             C3Cases();
+            DemoSceneCases();
             SubstitutionCases(content);
             EffectiveSetCases(content);
             SequenceCases(content);
@@ -243,6 +244,24 @@ namespace NeuroAdaptiveVR.EditorTools
 
             Check("X20", "Pistas de §9.1: celdas, imagenes del set A AUTHORED, sin imagen PLACEHOLDER, zonas del board de D-F6-108 (D-F6-63, D-F6-91)",
                   p.Count == 0, p.Count == 0 ? $"6 celdas · set A 5/5 AUTHORED · KANJI_HITO PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
+        }
+
+        /// <summary>
+        /// X23 (D-F6-84): the demo scene is outside the build, holds a DemoDirector, and the director silences the
+        /// whole session chain (no backend, no telemetry), so recording it never writes a row in the database.
+        /// </summary>
+        private static void DemoSceneCases()
+        {
+            var p = new List<string>();
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(DemoDirector.ScenePath) == null) p.Add($"no existe {DemoDirector.ScenePath}");
+            if (EditorBuildSettings.scenes.Any(s => s.path == DemoDirector.ScenePath)) p.Add("la escena de demo esta en Build Settings");
+            if (!EditorBuildSettings.scenes.Any(s => s.enabled && s.path == $"Assets/Scenes/{DemoDirector.ExperimentScene}.unity"))
+                p.Add($"{DemoDirector.ExperimentScene} no esta en Build Settings (la demo la carga por nombre)");
+            foreach (var t in new[] { typeof(SessionBootstrap), typeof(SessionFlowRunner), typeof(SessionCommunicationClient),
+                                      typeof(AdaptationClient), typeof(PeripheralEventScheduler) })
+                if (!DemoDirector.Silenced.Contains(t)) p.Add($"{t.Name} no se apaga");
+            Check("X23", "Escena de demo fuera del build y sin sesion (D-F6-84)", p.Count == 0,
+                  p.Count == 0 ? $"{DemoDirector.ScenePath} · {DemoDirector.Silenced.Length} componentes apagados" : Join(p));
         }
 
         /// <summary>
