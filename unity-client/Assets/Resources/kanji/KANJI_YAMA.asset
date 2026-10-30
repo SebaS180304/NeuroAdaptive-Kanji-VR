@@ -31,4 +31,7 @@ MonoBehaviour:
   targetReadingAudio: {fileID: 8300000, guid: 15188d353ec51144dbc6fc068ae60a49, type: 3}
   anchorObjectPrefab: {fileID: 4300685995465978363, guid: 6d06fd87b86dba247b68bccc7cf7db4b, type: 3}
   transformationAnimation: {fileID: 0}
-  visualAssociationSprite: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: 43903250b732672438ed731db7e9dc99, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: 3fc0479196a1ac24eb00ade3030f0e18, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: 501f21192790ee546879d5b70576e3d3, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: e9c41e886985ca5449f497c508421790, type: 3}

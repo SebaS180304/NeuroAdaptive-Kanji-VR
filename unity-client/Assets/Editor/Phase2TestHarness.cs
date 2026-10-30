@@ -178,8 +178,8 @@ namespace NeuroAdaptiveVR.EditorTools
         // ==================================================================
 
         /// <summary>
-        /// X20 (D-F6-63, D-F6-89, D-F6-91; Diseno_UI_Kanji_Studio_v1.md §9): what each §9.1 cell draws, the set A
-        /// images in place (AUTHORED), a kanji without them still PLACEHOLDER, and the zones inside the board and
+        /// X20 (D-F6-63, D-F6-89, D-F6-91; Diseno_UI_Kanji_Studio_v1.md §9): what each §9.1 cell draws, the images of
+        /// sets A, B and C in place (AUTHORED), a reserve kanji without them still PLACEHOLDER, and the zones inside the board and
         /// clear of the Hint button.
         /// </summary>
         private static void HintCases(KanjiContentController c)
@@ -202,9 +202,10 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (got != (cell.a, cell.b, cell.audio)) p.Add($"{cell.t} {cell.l}: {got}, se esperaba ({cell.a}, {cell.b}, {cell.audio})");
             }
 
-            var setA = new[] { "KANJI_TSUKI", "KANJI_KURUMA", "KANJI_HI", "KANJI_TAKE", "KANJI_ISHI" };
+            // The 15 experimental kanji, sets A, B and C (D-F6-66: B and C on 29 Oct).
+            var experimental = new[] { "A", "B", "C" }.SelectMany(s => c.Set(s)).Select(i => i.KanjiId).ToArray();
             var items = c.All.ToDictionary(i => i.KanjiId);
-            foreach (var id in setA)
+            foreach (var id in experimental)
             {
                 if (!items.TryGetValue(id, out var item)) { p.Add($"{id} no esta en el contenido"); continue; }
                 foreach (var cell in cells)
@@ -214,9 +215,9 @@ namespace NeuroAdaptiveVR.EditorTools
                     if (visual ? src != HintCells.Authored : src != null) p.Add($"{id} {cell.t} {cell.l}: asset_source {src ?? "null"}");
                 }
             }
-            if (items.TryGetValue("KANJI_HITO", out var hito) &&
-                HintCells.AssetSource(T3, LearningAssistanceController.AvailableCues(T3, StimulationOrAssistanceLevel.Medium), hito) != HintCells.Placeholder)
-                p.Add("KANJI_HITO (set C, sin imagenes) no da PLACEHOLDER");
+            if (items.TryGetValue("KANJI_NICHI", out var nichi) &&
+                HintCells.AssetSource(T3, LearningAssistanceController.AvailableCues(T3, StimulationOrAssistanceLevel.Medium), nichi) != HintCells.Placeholder)
+                p.Add("KANJI_NICHI (reserva, sin imagenes) no da PLACEHOLDER");
 
             // §9.2: board 1600 x 900 u centred; Hint button from x 470.
             foreach (var (name, centre, size) in StudioTrialPresenter.HintZones)
@@ -243,8 +244,8 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (glyphBottom - stripTop < 10f) p.Add($"el kanji de {em:F0} u baja hasta y {glyphBottom:F0}, a {glyphBottom - stripTop:F0} u de la tira");
             }
 
-            Check("X20", "Pistas de §9.1: celdas, imagenes del set A AUTHORED, sin imagen PLACEHOLDER, zonas del board de D-F6-108 (D-F6-63, D-F6-91)",
-                  p.Count == 0, p.Count == 0 ? $"6 celdas · set A 5/5 AUTHORED · KANJI_HITO PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
+            Check("X20", "Pistas de §9.1: celdas, imagenes de los sets A, B y C AUTHORED, sin imagen PLACEHOLDER, zonas del board de D-F6-108 (D-F6-63, D-F6-91)",
+                  p.Count == 0, p.Count == 0 ? $"6 celdas · sets A, B, C {experimental.Length}/15 AUTHORED · KANJI_NICHI PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
         }
 
         /// <summary>

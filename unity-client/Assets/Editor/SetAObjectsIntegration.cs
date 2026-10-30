@@ -58,6 +58,12 @@ namespace NeuroAdaptiveVR.EditorTools
         [MenuItem("Tools/NeuroAdaptive VR/Integrar pistas del set A", priority = 304)]
         public static void RunHintsSetA() => IntegrateHints("A", SetA);
 
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar pistas del set B", priority = 305)]
+        public static void RunHintsSetB() => IntegrateHints("B", SetB);
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar pistas del set C", priority = 306)]
+        public static void RunHintsSetC() => IntegrateHints("C", SetC);
+
         private static void IntegrateHints(string set, (string kanjiId, string code)[] kanji)
         {
             const string hintDir = ArtDir + "/Hints";
