@@ -364,15 +364,22 @@ Plan: `tasks/plan.md` § "Fri 30". Aligned up to D-F6-120. MIRAI approved everyt
 
 ### Stop 1 (Sebas): commit messages (Downloads), content table, the two questions in the plan → commit and push `phase/6-learner-profile`
 
-### [ ] V3: R1 and R2 in the headset (checklist §2–§3)
-- [ ] R1 `BEHAVIOR_ADAPTIVE`, set A, visit 1, S1 → S9. R2 `STATIC`, set C, S5 → S7.
-- [ ] Each: `verify_adaptation` and `verify_projection` clean; cat, bird, butterfly in `distractor_interactions`; 72 Hz (C3 fades, hint entry); `c3_transition`, `asset_source` per stage and hint, `object_audio_plays` present.
-- [ ] R1: S7 decisions with state and reason in the portal; `UNDERCHALLENGED` raised difficulty, or "no change" noted. R2: zero ESL changes.
-- [ ] Sebas: no sickness or glare, readable at 1.60 m, no *Basic Kanji Book* on screen.
+### [x] V3: R1 and R2 in the headset (checklist §2–§3)
+- [x] R1 `BEHAVIOR_ADAPTIVE`, set A, visit 1, S1 → S9: **`c0f49212`**. R2 `STATIC`, set C (run S1 → S9): **`8efe29d2`**. Both clean; details in `Claude outputs/Borrador_Plan_Fase6_9_30oct.md`.
+- [x] Each: `verify_adaptation` and `verify_projection` clean; cat, bird, butterfly in `distractor_interactions`; 72 Hz (C3 fades, hint entry); `c3_transition`, `asset_source` per stage and hint, `object_audio_plays` present.
+- [x] R1: S7 decisions with state and reason in the portal; `UNDERCHALLENGED` raised difficulty, or "no change" noted. R2: zero ESL changes.
+- [x] Sebas: no sickness or glare, readable at 1.60 m, no *Basic Kanji Book* on screen.
 
 ### Stop 2 (Sebas): OK on R1 and R2, or fix (not function) and rerun that session only
 
-### [ ] V4: Freeze
-- [ ] Tag `vr-freeze-2026-10-30` on the validated commit, pushed to origin.
-- [ ] `Claude outputs/Borrador_Plan_Fase6_9_30oct.md`: R1/R2 ids, content table, findings, "Dudas para PM" or "Sin dudas · 30 oct".
-- [ ] From here every Unity commit says fix, content (with decision) or F4.
+### [x] V4: Freeze
+- [x] Tag `vr-freeze-2026-10-30` on `725152a` (the commit R1 and R2 ran on), pushed to origin with Sebas's OK (headset fine), 30 Oct.
+- [x] `Claude outputs/Borrador_Plan_Fase6_9_30oct.md`: R1/R2 ids, content table, findings, "Dudas para PM" or "Sin dudas · 30 oct".
+- [x] From here every Unity commit says fix, content (with decision) or F4.
+
+### After the tag (not functions; each commit says fix, content or F4, D-F6-74)
+- [ ] Colour of set A's M images (01–05): **content**, when Modelado 3D redoes them.
+- [ ] Traps: **exception** to the freeze, before the 13 Nov dry run (D-F6-118, D-F6-71); their questions are decided Mon 2 (D-F6-95).
+- [ ] SDF morph for C3: **improvement** (D-F6-115), before the 13 Nov dry run, without changing flow or telemetry (B4c above).
+- [ ] F4 Unity pieces: LSL markers and the S3 step (D-F6-74), from Mon 2.
+- [ ] Optional fix (review 30 Oct): X20 skips its PLACEHOLDER check silently if `KANJI_NICHI` is missing from the content; make the missing reserve item a failure.
