@@ -341,3 +341,38 @@ Sources: D-F6-85, D-F6-100, D-F6-101, D-F6-102; `Diseno_Sala_ESL.md` §10.4 (rep
 - [ ] After approval, UI/UX documents the colours in `Diseno_Sala_ESL.md` §10 (D-F6-93, D-F6-97). Tell Sebas.
 **Verify:** harness green; captures from the eye of each peripheral against the field.
 **Stop:** Sebas approves the background, the silhouettes and the animals in the headset (D-F6-97). → 26 Oct: **seen and approved** with `PeripheralPreview` (ESL held at HIGH, every animal and both silhouettes in turn). Butterfly left as it is and declared (D-F6-98, closes question 12). Pending only: UI/UX documents §10. **Scope:** S → M (with the contrast step)
+
+---
+
+## V · Fri 30: validation run and VR freeze (replaces J9, C7, C8)
+
+Plan: `tasks/plan.md` § "Fri 30". Aligned up to D-F6-120. MIRAI approved everything (D-F6-118): nothing is reverted.
+
+### [x] V1: Hints and C3 of 06–15 (content, D-F6-115 checklist §1; all 15 real since 30 Oct 16:45)
+- [x] Run the menus *Integrar pistas del set B* and *del set C* (already written): 40 PNGs into `Assets/Art/KanjiLessonAssets/Hints/`, sprites on the ten `KanjiLearningItem`s, no "Missing" warning.
+- [x] Harness X20: "sets A, B, C 15/15 AUTHORED · KANJI_NICHI PLACEHOLDER". X21 green.
+- [ ] ~~Editor look~~ skipped: set C is seen in R2; set B only by X20. Editor look at one set B and one set C kanji on the board (strip and C3), screenshot for Sebas.
+- Files: `SetAObjectsIntegration.cs`, `Phase2TestHarness.cs`, 40 PNG + meta, 10 `Resources/kanji/*.asset`. Commit: `feat(unity): hints and C3 for sets B and C` (content).
+
+### [ ] V2: Rest of checklist §1
+- [ ] Noise files (`NotoSansCJKjp-Regular SDF.asset`, `Telport Anchor.mat`): revert, with Sebas's OK.
+- [x] Demo outside the build: build list has no demo scene; `JapaneseLearningStudio` references no Recorder/Cinemachine type; packages in `manifest.json` declared for Sebas.
+- [x] Whole harness green, incl. MEDIUM 4–6 props with clock and shelf, 2 movers in MEDIUM, 3 in HIGH.
+- [x] 15-row content table (S5 object, P/F1/F2/M, C3: real or placeholder, from `asset_source`) in the day draft, for `Cambios_Spec_v1_4.md`.
+- [x] Backend up, nothing pending, migrations to 0009 applied.
+- [ ] `tasks/` updated (J9, C7, C8 closed into V).
+
+### Stop 1 (Sebas): commit messages (Downloads), content table, the two questions in the plan → commit and push `phase/6-learner-profile`
+
+### [ ] V3: R1 and R2 in the headset (checklist §2–§3)
+- [ ] R1 `BEHAVIOR_ADAPTIVE`, set A, visit 1, S1 → S9. R2 `STATIC`, set C, S5 → S7.
+- [ ] Each: `verify_adaptation` and `verify_projection` clean; cat, bird, butterfly in `distractor_interactions`; 72 Hz (C3 fades, hint entry); `c3_transition`, `asset_source` per stage and hint, `object_audio_plays` present.
+- [ ] R1: S7 decisions with state and reason in the portal; `UNDERCHALLENGED` raised difficulty, or "no change" noted. R2: zero ESL changes.
+- [ ] Sebas: no sickness or glare, readable at 1.60 m, no *Basic Kanji Book* on screen.
+
+### Stop 2 (Sebas): OK on R1 and R2, or fix (not function) and rerun that session only
+
+### [ ] V4: Freeze
+- [ ] Tag `vr-freeze-2026-10-30` on the validated commit, pushed to origin.
+- [ ] `Claude outputs/Borrador_Plan_Fase6_9_30oct.md`: R1/R2 ids, content table, findings, "Dudas para PM" or "Sin dudas · 30 oct".
+- [ ] From here every Unity commit says fix, content (with decision) or F4.

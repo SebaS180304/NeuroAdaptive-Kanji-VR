@@ -208,3 +208,47 @@ Decisions for this day:
 1. ~~Deck folder~~ → `Claude outputs/capturas_deck_30oct/` (Sebas, 29 oct).
 2. **Time of the headset stop:** the board's §1 says 15:00 (recording 16:00–18:00); the plan request says ~16:45. This plan follows ~16:45; if that is the time, recording starts after it.
 3. ~~Fixed states~~ → 火 instead of 月 (Sebas, 29 oct); the rest as proposed.
+
+---
+
+## Fri 30, after the presentation: validation run and VR freeze
+
+Written Fri 30 Oct, 16:50. **Aligned up to: D-F6-120** (board §1 Fri 30, D-F6-115, D-F6-118,
+Registro to 30 Oct 16:45) and `Checklist_Congelamiento_VR_30oct.md`. This replaces J9, C7 and C8.
+
+### What changed since Thu 29
+- **D-F6-118:** MIRAI approved A-11, A-3 and A-5. Nothing is reverted, before or after the tag.
+  The traps enter later as an exception (before the 13 Nov dry run); not today.
+- **Registro 30 Oct 16:45:** the hints and C3 of **all 15 kanji are real**; 14 肉 and 15 花 are no
+  longer placeholders. So 06–15 all enter before the tag, and the content table has no hint placeholder.
+- Set C objects are in (`d3a65ce`). R2 therefore uses **set C**.
+
+### State found in the repo
+- The B and C hint menus and the X20 extension (15/15 AUTHORED, `KANJI_NICHI` as the placeholder
+  case) are already written, uncommitted. The 40 PNGs `B_06…B_10`, `C_11…C_15` are in
+  `JapaneseVR/KanjiLessonAssets/NN_*/pistas/`. None is copied into Unity yet.
+- Two uncommitted files look like editor noise: `NotoSansCJKjp-Regular SDF.asset` (dynamic atlas
+  cleared, −63 lines) and the XRI sample `Telport Anchor.mat`. Proposal: revert both (Stop 1).
+- Build list: `M1_RoundTrip` and `JapaneseLearningStudio`; the demo scene is not in it.
+  `com.unity.recorder` and `com.unity.cinemachine` are in `manifest.json` → declare, Sebas approves.
+
+### Order (each Stop waits for Sebas)
+1. **V1** hints and C3 of 06–15 (content, D-F6-115 §1, D-F6-66) → harness X20 15/15, X21 green.
+2. **V2** checklist §1 rest: noise reverted, demo outside the build, whole harness green with the
+   ESL cases, 15-row content table, backend up with migrations to 0009, `tasks/` updated.
+3. **Stop 1:** Sebas reads the commit messages and the content table; OK to commit and push.
+4. **V3** R1 and R2 in the headset with Sebas (checklist §2–§3). No editor command during Play.
+5. **Stop 2:** Sebas's OK on R1 and R2 (or a fix and a rerun of that session only).
+6. **V4** tag `vr-freeze-2026-10-30` on the validated commit, pushed; session ids and the day
+   draft `Claude outputs/Borrador_Plan_Fase6_9_30oct.md`.
+
+### Risks
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| Unity crash from RAM during Play (29 Oct) | High | Save before Play; Blender closed; no MCP command during Play |
+| An image of 06–15 looks wrong on the board | Med | Seen in R2 (set C) and in the editor for set B; a bad image is fixed as content after the tag |
+| R1 has no `UNDERCHALLENGED` | Low | Not a failure (checklist §3); noted |
+| The font atlas revert breaks CJK glyphs | Low | Dynamic atlas refills at runtime; checked in R1 |
+
+### Open questions
+- None for PM. For Sebas at Stop 1: revert the two noise files? Keep Recorder and Cinemachine in `manifest.json`?
