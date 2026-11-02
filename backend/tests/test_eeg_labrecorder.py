@@ -20,9 +20,10 @@ def test_the_name_is_bids_and_unique_per_session() -> None:
                     "sub-TESTP01_ses-8efe29d2_task-BEHAVIORADAPTIVE_run-1_eeg.xdf")
 
 
-def test_start_never_selects_all_streams() -> None:
-    cmds = labrecorder.start_commands("C:/EEG", "a.xdf")
-    assert cmds == ["filename {root:C:/EEG} {template:a.xdf}", "start"]
+def test_the_backend_only_names_the_file_never_starts() -> None:
+    # A remote `start` makes LabRecorder tick every stream on the network (other projects' too).
+    cmds = labrecorder.filename_commands("C:/EEG", "a.xdf")
+    assert cmds == ["filename {root:C:/EEG} {template:a.xdf}"]
 
 
 def test_a_missing_labrecorder_is_only_logged() -> None:
@@ -61,7 +62,7 @@ def fake_labrecorder(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_a_session_starts_and_stops_its_recording(client, pretested, fake_labrecorder) -> None:
+async def test_a_session_names_its_recording_and_stops_it(client, pretested, fake_labrecorder) -> None:
     import asyncio
 
     pid = await pretested("TEST_EEG")
@@ -74,7 +75,7 @@ async def test_a_session_starts_and_stops_its_recording(client, pretested, fake_
         await asyncio.sleep(0.02)
 
     rel = f"sub-TESTEEG/ses-{sid[:8]}/eeg/sub-TESTEEG_ses-{sid[:8]}_task-STATIC_run-1_eeg.xdf"
-    assert fake_labrecorder == [f"filename {{root:C:/EEG}} {{template:{rel}}}", "start", "stop"]
+    assert fake_labrecorder == [f"filename {{root:C:/EEG}} {{template:{rel}}}", "stop"]
     async with AsyncSessionLocal() as db:
         path = (await db.execute(text("SELECT xdf_path FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
     assert path == f"C:/EEG/{rel}"

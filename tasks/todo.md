@@ -27,7 +27,7 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 - [ ] Spike (30 min): can the container see LSL streams (`KnownPeers`)? If not, host process (question 1).
 - [ ] Test: the 29 Oct XDF 1 → 8 ch, 250.0 Hz, 70 254 samples, no gaps.
 
-### [x] L5: unique XDF name (P9) (`771e101`; never `select all`, the operator ticks the two streams)
+### [x] L5: unique XDF name (P9) (`771e101` + fix: the backend sends `filename` and `stop` only; LabRecorder's remote `start` ticks every stream on the network, so the operator ticks the two and presses Start)
 - [ ] Check LabRecorder's remote-control commands in its docs/source first.
 - [ ] Backend sets `sub-<p>_ses-<session>_task-<condition>_run-<n>` and starts/stops recording; run counts up from existing files.
 - [ ] Test: fake TCP server receives the expected commands.
@@ -65,6 +65,7 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 - [ ] Harness: half of T1 per block, never two correct, same trials across conditions, T2/T3 unchanged.
 
 ### [ ] W3 (F4): S3 step: channels blue (operator confirms) + sync test (5 taps at start, 5 in S9, each a marker).
+- [ ] S3 checklist box: LabRecorder is **recording** only `AURA (LaptopSebas1803)` and `UnityMarkers (LaptopSebas1803)` (the operator presses Start by hand; the backend only names the file, 2 Nov).
 
 ### [ ] W4 (F4): S4 eye markers + `EEG_BASELINE_RESULT` (alpha ratio P3, Pz, P4; passes ≥ 1.2).
 

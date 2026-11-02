@@ -2,11 +2,13 @@
 LabRecorder by its remote control socket (P9 of D-F6-127): every session gets one
 XDF with a unique name, sub-<participant>_ses-<session>_task-<condition>_run-<n>.
 
-Only `filename`, `start` and `stop` are sent, never `select all`: on the lab network
-other machines publish LSL streams too, so the operator ticks AURA and UnityMarkers
-(P9 start order: AURA with LSL Stream Out, then LabRecorder with both streams, then
-the session). `{run:}` is not used: LabRecorder's README marks it "not working?", so
-the run goes into the template itself.
+Only `filename` and `stop` are sent, never `start` nor `select all`: LabRecorder's remote
+`start` checks every stream on the network before recording (rcsStartRecording in its
+mainwindow.cpp, v1.18.0), and on the lab network other projects publish LSL streams (their
+EMG, another AURA). So the operator ticks AURA and UnityMarkers of this PC and presses Start
+by hand once Unity has created the session, before S3; a manual Start records only what is
+ticked. `{run:}` is not used: LabRecorder's README marks it "not working?", so the run goes
+into the template itself.
 
 A failure here never stops the session: it is logged, and the operator falls back to
 typing the name (the box in the S3 checklist).
@@ -34,8 +36,9 @@ def xdf_relpath(participant_code: str, session_id: uuid.UUID | str, condition: s
     return f"sub-{p}/ses-{s}/eeg/sub-{p}_ses-{s}_task-{t}_run-{run}_eeg.xdf"
 
 
-def start_commands(root: str, relpath: str) -> list[str]:
-    return [f"filename {{root:{root}}} {{template:{relpath}}}", "start"]
+def filename_commands(root: str, relpath: str) -> list[str]:
+    """Sets the XDF name only; Start stays with the operator (see the module docstring)."""
+    return [f"filename {{root:{root}}} {{template:{relpath}}}"]
 
 
 def send(host: str, port: int, commands: list[str], timeout: float = 2.0) -> bool:

@@ -78,14 +78,15 @@ async def create_session(
     snapshot = SessionConfigSnapshot(session_id=session.id, config=payload.config)
     db.add(snapshot)
 
-    # One XDF per session, in the three conditions (F4 §1, principle 1; P9).
+    # One XDF per session, in the three conditions (F4 §1, principle 1; P9). The backend names
+    # it; the operator presses Start in LabRecorder (app/eeg/labrecorder.py).
     settings = get_settings()
     if settings.labrecorder_host:
         relpath = labrecorder.xdf_relpath(participant.external_code, session.id, payload.condition.value)
         await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, :p)"),
                          {"s": session.id, "p": f"{settings.labrecorder_root}/{relpath}"})
         background.add_task(labrecorder.send, settings.labrecorder_host, settings.labrecorder_port,
-                            labrecorder.start_commands(settings.labrecorder_root, relpath))
+                            labrecorder.filename_commands(settings.labrecorder_root, relpath))
 
     await db.flush()
     await db.refresh(session)
