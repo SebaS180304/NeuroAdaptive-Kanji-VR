@@ -222,6 +222,7 @@ namespace NeuroAdaptiveVR.Networking
 
         public void SendSessionEvent(string eventType, Dictionary<string, object> payload = null)
         {
+            LslMarkers.Push(eventType, payload);   // the same event on the EEG's clock (F4, D-F6-74)
             SendOrQueue(new OutgoingMessage
             {
                 Type = "SESSION_EVENT",

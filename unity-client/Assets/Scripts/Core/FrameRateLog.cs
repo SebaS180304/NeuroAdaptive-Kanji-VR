@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.IO;
+using System.Collections.Generic;
 using NeuroAdaptiveVR.Data;
+using NeuroAdaptiveVR.Networking;
 using UnityEngine;
 
 namespace NeuroAdaptiveVR.Core
@@ -14,6 +16,21 @@ namespace NeuroAdaptiveVR.Core
     /// </summary>
     public class FrameRateLog : MonoBehaviour
     {
+        /// <summary>A frame over this goes out as a FRAME_HITCH marker, with its duration (D-F6-129).</summary>
+        public const float HitchMs = 50f;
+
+        public static bool IsHitch(float deltaSeconds) => deltaSeconds * 1000f > HitchMs;
+
+        /// <summary>
+        /// The marker is pushed when the slow frame ends: the hitch spans [stamp - duration_ms, stamp].
+        /// epochs.py drops the 1 s chunk it falls in when it passes 100 ms.
+        /// </summary>
+        public static Dictionary<string, object> HitchPayload(float deltaSeconds, GameFlowState state) => new()
+        {
+            { "duration_ms", System.Math.Round(deltaSeconds * 1000f, 1) },
+            { "state", state.ToString() },
+        };
+
         /// <summary>The numbers of one block, from frame times only (harness case X15).</summary>
         public class Stats
         {
@@ -49,6 +66,7 @@ namespace NeuroAdaptiveVR.Core
             var state = _flow != null ? _flow.CurrentState : default;
             if (state != _state) { Write(); _state = state; _stats = new Stats(); }
             _stats.Add(Time.unscaledDeltaTime);
+            if (IsHitch(Time.unscaledDeltaTime)) LslMarkers.Push("FRAME_HITCH", HitchPayload(Time.unscaledDeltaTime, state));
         }
 
         private void OnDisable() => Write();

@@ -115,6 +115,7 @@ namespace NeuroAdaptiveVR.EditorTools
             CurtainCases();
             ObjectApproachCases();
             FrameRateCases();
+            LslMarkerCases();
             RiceFieldCases();
             PeripheralContrastCases();
             ProactiveCueCases();
@@ -2539,6 +2540,44 @@ namespace NeuroAdaptiveVR.EditorTools
             if (Mathf.Abs(stats.MeanFps - 721f / 10.05f) > 0.01f) p.Add($"{stats.MeanFps:F2} fps");
             Check("X15", "Registro de framerate por bloque: frames, segundos, fps medio, frames > 20 ms y el peor",
                   p.Count == 0, p.Count == 0 ? $"10 s a 72 Hz + un tiron: {stats.MeanFps:F1} fps, {stats.Over20Ms} > 20 ms, peor {stats.WorstMs:F0} ms" : Join(p));
+        }
+
+        /// <summary>
+        /// X25. The LSL marker stream (F4, D-F6-74): an inlet in this process resolves UnityMarkers and gets
+        /// a session event exactly as SessionCommunicationClient sends it, as JSON with "event" and the
+        /// payload; a frame over 50 ms is a FRAME_HITCH with its duration and one of 40 ms is not (D-F6-129).
+        /// </summary>
+        private static void LslMarkerCases()
+        {
+            var p = new List<string>();
+            if (!FrameRateLog.IsHitch(0.060f)) p.Add("60 ms no es tiron");
+            if (FrameRateLog.IsHitch(0.040f)) p.Add("40 ms es tiron");
+            if (!Equals(FrameRateLog.HitchPayload(0.0604f, GameFlowState.S4_EEGBaseline)["duration_ms"], 60.4))
+                p.Add("FRAME_HITCH sin duration_ms = 60.4");
+
+            LslMarkers.Push("HARNESS_WARMUP");   // the outlet exists before the inlet opens
+            string got = null;
+            var found = LSL.LSL.resolve_stream($"name='{LslMarkers.StreamName}' and source_id='{LslMarkers.SourceId}'", 1, 3.0);
+            if (found.Length == 0) p.Add("no se resuelve UnityMarkers en esta PC");
+            else
+            {
+                var inlet = new LSL.StreamInlet(found[0]);
+                inlet.open_stream(3.0);
+                var go = new GameObject("X25_client");
+                try
+                {
+                    go.AddComponent<SessionCommunicationClient>().SendSessionEvent("TRIAL_STARTED",
+                        new Dictionary<string, object> { { "trial_id", "X25-001" } });
+                    var buf = new string[1];
+                    if (inlet.pull_sample(buf, 3.0) > 0) got = buf[0];
+                }
+                finally { UnityEngine.Object.DestroyImmediate(go); inlet.close_stream(); }
+                if (got == null) p.Add("el inlet no recibio el evento");
+                else if (!got.Contains("\"event\":\"TRIAL_STARTED\"") || !got.Contains("\"trial_id\":\"X25-001\""))
+                    p.Add("marcador sin event/trial_id: " + got);
+            }
+            Check("X25", "Marcadores LSL: SendSessionEvent sale en UnityMarkers y FRAME_HITCH > 50 ms",
+                  p.Count == 0, p.Count == 0 ? "inlet local: " + got : Join(p));
         }
 
         /// <summary>
