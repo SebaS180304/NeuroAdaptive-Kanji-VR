@@ -33,9 +33,9 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 - [ ] Test: fake TCP server receives the expected commands.
 - [-] Fallback: manual name field + box in the S3 checklist. Not needed: the remote control works from the container.
 
-### [ ] L4 Stop: Editor session → one XDF with `AURA` (synthetic if no cap, question 3) and `UnityMarkers`, plus its `eeg_sessions` row.
+### [x] L4 Stop: Editor session → one XDF with `AURA` (synthetic if no cap, question 3) and `UnityMarkers`, plus its `eeg_sessions` row. **Passed, Sebas, 2 Nov 16:48:** `41524441` (`DEV_UNITY`, STATIC, S1–S2): AURA 17 877 samples at 249.9998 Hz, 33 markers, all inside the EEG span; both streams from `LaptopSebas1803`. First try `2b91ff7d` recorded every stream on the network (LabRecorder's remote `start`); fixed in `31e0efb`, XDF deleted by Sebas.
 
-### [ ] Close Mon: `tasks/`, `Borrador_Plan_Fase6_9_2nov.md` with "Dudas para PM" (lure trials in the estimator, question 2).
+### [x] Close Mon: `tasks/`, `Borrador_Plan_Fase6_9_2nov.md` with "Dudas para PM" (lure trials in the estimator, question 2).
 
 ## Tue 3 · epochs and performance
 
