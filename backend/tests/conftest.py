@@ -34,6 +34,14 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture(autouse=True)
+def _no_labrecorder(monkeypatch):
+    """Tests never reach the PC's real LabRecorder (it would start recording)."""
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "labrecorder_host", "")
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def _clean_test_participants():
     async def _delete() -> None:

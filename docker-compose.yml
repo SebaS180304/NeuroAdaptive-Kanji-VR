@@ -28,6 +28,10 @@ services:
       - ./backend/.env
     environment:
       POSTGRES_HOST: db
+      # LabRecorder runs on the PC and names each session's XDF by its remote control
+      # (P9 of D-F6-127). Empty LABRECORDER_HOST turns it off.
+      LABRECORDER_HOST: host.docker.internal
+      LABRECORDER_ROOT: C:/Users/drdom/Documents/Pruebas_EEG
     depends_on:
       db:
         condition: service_healthy

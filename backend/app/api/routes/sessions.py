@@ -11,11 +11,13 @@ reproducibility and traceability.").
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adaptation import learner_profile
+from app.config import get_settings
 from app.db.session import get_db
+from app.eeg import labrecorder
 from app.models.participant import Participant
 from app.models.pretest import KanjiSubstitution
 from app.models.session import (
@@ -49,7 +51,7 @@ async def _read(db: AsyncSession, session: ExperimentSession) -> SessionRead:
 
 @router.post("", response_model=SessionRead, status_code=201)
 async def create_session(
-    payload: SessionCreate, db: AsyncSession = Depends(get_db)
+    payload: SessionCreate, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
 ) -> SessionRead:
     participant = await db.get(Participant, payload.participant_id)
     if participant is None:
@@ -75,6 +77,15 @@ async def create_session(
 
     snapshot = SessionConfigSnapshot(session_id=session.id, config=payload.config)
     db.add(snapshot)
+
+    # One XDF per session, in the three conditions (F4 §1, principle 1; P9).
+    settings = get_settings()
+    if settings.labrecorder_host:
+        relpath = labrecorder.xdf_relpath(participant.external_code, session.id, payload.condition.value)
+        await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, :p)"),
+                         {"s": session.id, "p": f"{settings.labrecorder_root}/{relpath}"})
+        background.add_task(labrecorder.send, settings.labrecorder_host, settings.labrecorder_port,
+                            labrecorder.start_commands(settings.labrecorder_root, relpath))
 
     await db.flush()
     await db.refresh(session)
@@ -128,6 +139,13 @@ async def update_session_state(
     session = await db.get(ExperimentSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
+
+    # The recording stops on entering S10, after S9's five sync taps (F4 §2.4).
+    # shortcut: a session that never reaches S10 is stopped by the operator in LabRecorder.
+    settings = get_settings()
+    if (settings.labrecorder_host and payload.new_state == GameFlowState.S10_HCI_SELF_REPORT
+            and session.current_state != GameFlowState.S10_HCI_SELF_REPORT):
+        background.add_task(labrecorder.send, settings.labrecorder_host, settings.labrecorder_port, ["stop"])
 
     session.current_state = payload.new_state
 

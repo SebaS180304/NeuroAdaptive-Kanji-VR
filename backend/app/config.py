@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     # --- CORS / Dashboard (se usara desde Fase 7, pero se deja configurable) ---
     cors_allow_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
+    # --- LabRecorder remote control (F4, P9 of D-F6-127) ---
+    # Off when empty. In Docker: host.docker.internal, since LabRecorder runs on the PC.
+    labrecorder_host: str = ""
+    labrecorder_port: int = 22345
+    # Where LabRecorder writes, as a path on the PC (it is LabRecorder that writes).
+    labrecorder_root: str = ""
+
     # WebSocket timeout: uvicorn's --ws-ping-timeout in docker-compose.yml and the Dockerfile.
 
     @property
