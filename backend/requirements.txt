@@ -12,3 +12,7 @@ greenlet==3.1.1
 pytest==8.3.3
 pytest-asyncio==0.24.0
 httpx==0.27.2
+# F4 EEG (app/eeg): XDF reading and the live LSL inlet (the inlet runs on the PC, D-F6-132)
+numpy==2.5.4
+pylsl==1.18.6
+pyxdf==1.18.0
