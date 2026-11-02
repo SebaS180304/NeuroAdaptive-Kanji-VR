@@ -24,7 +24,7 @@ from app.models.participant import Participant
 _TEST_EXTERNAL_CODES = ["TEST_P01", "TEST_P02", "TEST_PRETEST", "TEST_PRETEST_NC", "TEST_STALE",
                         "TEST_RESEARCH_1", "TEST_RESEARCH_2", "TEST_RESEARCH_3", "TEST_GATE",
                         "TEST_COMPLETED_AT", "TEST_COMPLETED_AT_ABORTED", "TEST_PROFILE",
-                        "TEST_PROFILE_NONE"]
+                        "TEST_PROFILE_NONE", "TEST_EEG"]
 
 
 @pytest.fixture(scope="session")

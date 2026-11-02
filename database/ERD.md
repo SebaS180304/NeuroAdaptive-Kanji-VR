@@ -299,3 +299,13 @@ schema, so the table only keeps the last computed result for the portal.
 | Table | What it stores | Key |
 |---|---|---|
 | `learner_profiles` | The last computed profile of a participant: `computed_at`, `session_ids` (the `COMPLETED` sessions it covers, oldest first) and `profile` (JSONB: calibrations, adaptations, trend). `ABORTED` sessions are in no part (Sebas, 21 Oct). Deleted with its participant | `(participant_id, profile_version)`; `profile_version` is `'v1'` |
+
+## EEG sessions — migration 0010
+
+Added on 2 November 2026 (F4 S2, `Planteamiento_Tecnico_F4.md` §2.3, D-F6-127). The raw
+signal stays in the session's XDF (both streams, `AURA` and `UnityMarkers`); this row
+points at it and keeps what the XDF cannot carry.
+
+| Table | What it stores | Key |
+|---|---|---|
+| `eeg_sessions` | `xdf_path`; `stream_info` (per stream: name, type, channels, rate, units); `filter_params`; `montage` (AURA sends no channel labels; default CH1 Fp1 … CH8 P4, D-F6-72) and `montage_change` with its reason; S3 sync `sync_offset_ms` / `sync_drift_ms`; S4 `alpha_ratio` per parietal channel and `alpha_passed`; `not_counted_reason`. Deleted with its session | `session_id` |
