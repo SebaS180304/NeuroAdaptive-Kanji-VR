@@ -79,6 +79,9 @@ namespace NeuroAdaptiveVR.Networking
         private void Awake()
         {
             _queue = new OutgoingQueue(maxQueuedMessages);
+            // Before the session exists: LabRecorder starts recording at POST /sessions, so the
+            // operator must already see UnityMarkers to tick it (P9 start order, D-F6-127).
+            LslMarkers.Open();
         }
 
         public void Configure(string newSessionId)

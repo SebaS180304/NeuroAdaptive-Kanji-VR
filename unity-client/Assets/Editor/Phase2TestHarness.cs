@@ -2555,7 +2555,14 @@ namespace NeuroAdaptiveVR.EditorTools
             if (!Equals(FrameRateLog.HitchPayload(0.0604f, GameFlowState.S4_EEGBaseline)["duration_ms"], 60.4))
                 p.Add("FRAME_HITCH sin duration_ms = 60.4");
 
-            LslMarkers.Push("HARNESS_WARMUP");   // the outlet exists before the inlet opens
+            // The client opens the stream in Awake, before any event: LabRecorder must see it before S0.
+            var probe = new GameObject("X25_awake");
+            probe.SetActive(false);
+            var client = probe.AddComponent<SessionCommunicationClient>();
+            typeof(SessionCommunicationClient).GetMethod("Awake", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(client, null);
+            UnityEngine.Object.DestroyImmediate(probe);
+            if (LSL.LSL.resolve_stream($"name='{LslMarkers.StreamName}' and source_id='{LslMarkers.SourceId}'", 1, 3.0).Length == 0)
+                p.Add("UnityMarkers no existe tras Awake, antes del primer evento");
             string got = null;
             var found = LSL.LSL.resolve_stream($"name='{LslMarkers.StreamName}' and source_id='{LslMarkers.SourceId}'", 1, 3.0);
             if (found.Length == 0) p.Add("no se resuelve UnityMarkers en esta PC");

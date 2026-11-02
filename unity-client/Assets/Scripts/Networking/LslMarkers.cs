@@ -26,6 +26,9 @@ namespace NeuroAdaptiveVR.Networking
         private static LSL.StreamOutlet _outlet;
         private static bool _failed;
 
+        /// <summary>Publishes the stream now, before the first marker (see SessionCommunicationClient.Awake).</summary>
+        public static bool Open() => Outlet() != null;
+
         public static void Push(string eventType, IDictionary<string, object> payload = null)
         {
             var outlet = Outlet();
