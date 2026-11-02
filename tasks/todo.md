@@ -10,28 +10,28 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 
 ## Mon 2 · markers and recording
 
-### [ ] L1 (F4): Unity LSL marker outlet
+### [x] L1 (F4): Unity LSL marker outlet (`97a6259`, `975f4da`; LSL4Unity embedded with one patch, harness X25, 105/105)
 - [ ] LSL4Unity + liblsl x64 in the project; Editor and Link build load it.
 - [ ] Outlet `UnityMarkers` / `Markers`, 1 string channel (JSON: `event`, `trial_id`, `event_id`, session clock), irregular rate.
 - [ ] Mirror every `SessionCommunicationClient.SendSessionEvent` (one call site). Check which of F4 §2.1's list are not session events today (sound onsets, S4 segments) and push only those.
 - [ ] `FRAME_HITCH` with `duration_ms` from `FrameRateLog` when a frame > 50 ms (D-F6-129).
 - [ ] Test: EditMode/harness case, an in-process inlet resolves the stream and receives a mirrored event and a synthetic 60 ms `FRAME_HITCH`; a 40 ms frame sends nothing. Harness green.
 
-### [ ] L2: migration `0010` · `eeg_sessions`
+### [x] L2: migration `0010` · `eeg_sessions` (`336c1ee`)
 - [ ] Session FK, XDF path, stream info (jsonb), filter params, montage (default CH1 Fp1 … CH8 P4, changes + reason), sync offset/drift, alpha ratio + passed, reason if the EEG does not count.
 - [ ] Test: upgrade/downgrade; default montage written.
 
-### [ ] L3: `app/eeg/lsl_reader.py`
+### [x] L3: `app/eeg/lsl_reader.py` (`b0bb83b`, `d455e33`; Docker spike negative: the live reader runs on the PC)
 - [ ] XDF read with corrected clock (`pyxdf`, dejitter); live inlet with `clocksync | dejitter` (P9).
 - [ ] Stream info into `eeg_sessions`; deps `pylsl`, `pyxdf`, `numpy`, `scipy` in `requirements.txt`.
 - [ ] Spike (30 min): can the container see LSL streams (`KnownPeers`)? If not, host process (question 1).
 - [ ] Test: the 29 Oct XDF 1 → 8 ch, 250.0 Hz, 70 254 samples, no gaps.
 
-### [ ] L5: unique XDF name (P9)
+### [x] L5: unique XDF name (P9) (`771e101`; never `select all`, the operator ticks the two streams)
 - [ ] Check LabRecorder's remote-control commands in its docs/source first.
 - [ ] Backend sets `sub-<p>_ses-<session>_task-<condition>_run-<n>` and starts/stops recording; run counts up from existing files.
 - [ ] Test: fake TCP server receives the expected commands.
-- [ ] Fallback: manual name field + box in the S3 checklist.
+- [-] Fallback: manual name field + box in the S3 checklist. Not needed: the remote control works from the container.
 
 ### [ ] L4 Stop: Editor session → one XDF with `AURA` (synthetic if no cap, question 3) and `UnityMarkers`, plus its `eeg_sessions` row.
 
