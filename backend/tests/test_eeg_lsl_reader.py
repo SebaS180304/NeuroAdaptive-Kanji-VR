@@ -80,3 +80,20 @@ _XDF_1 = os.environ.get("EEG_XDF_29OCT_1")
 def test_the_29_oct_recording_1_has_every_sample() -> None:
     aura = lsl_reader.stream_info(lsl_reader.load_xdf(_XDF_1)["AURA"])
     assert (aura["channel_count"], aura["nominal_srate"], aura["samples"]) == (8, 250.0, 70254)
+
+
+@pytest.mark.asyncio
+async def test_fill_from_xdf_reads_the_path_of_the_row(client, pretested, monkeypatch) -> None:
+    pid = await pretested("TEST_EEG")
+    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, 'C:/EEG/a.xdf')"), {"s": sid})
+        await db.commit()
+    read = []
+    monkeypatch.setattr(lsl_reader, "load_xdf", lambda p: read.append(p) or {"AURA": _stream("AURA", 4)})
+
+    assert await lsl_reader.fill_from_xdf(sid) == ["UnityMarkers"]
+    assert read == ["C:/EEG/a.xdf"]
+    async with AsyncSessionLocal() as db:
+        reason = (await db.execute(text("SELECT not_counted_reason FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
+    assert reason == "missing stream: UnityMarkers"

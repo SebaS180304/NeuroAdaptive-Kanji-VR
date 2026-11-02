@@ -80,3 +80,28 @@ def open_local_inlet(name: str, timeout: float = 5.0, host: str | None = None):
     if len(found) != 1:
         raise LookupError(f"{len(found)} LSL streams named {name!r} on {host}; expected 1")
     return pylsl.StreamInlet(found[0], processing_flags=pylsl.proc_clocksync | pylsl.proc_dejitter)
+
+
+async def fill_from_xdf(session_id: str) -> list[str]:
+    """After the session: reads the XDF its eeg_sessions row points at and stores the stream info.
+    Returns the missing streams (empty when the session has both)."""
+    from app.db.base import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as db:
+        path = (await db.execute(text("SELECT xdf_path FROM eeg_sessions WHERE session_id = :s"),
+                                 {"s": session_id})).scalar_one()
+        streams = load_xdf(path)
+        await save(db, session_id, path, streams)
+        await db.commit()
+    return missing_streams(streams)
+
+
+if __name__ == "__main__":
+    # On the PC, after the session (the XDF is on its disk):
+    #   POSTGRES_HOST=127.0.0.1 python -m app.eeg.lsl_reader <session_id>
+    import asyncio
+    import sys
+
+    missing = asyncio.run(fill_from_xdf(sys.argv[1]))
+    print("both streams recorded" if not missing else f"NOT multimodal, missing: {', '.join(missing)}")
+    sys.exit(1 if missing else 0)
