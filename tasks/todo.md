@@ -39,13 +39,13 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 
 ## Tue 3 · epochs and performance
 
-### [ ] T1: `preprocess.py`, `epochs.py`, migration `0011` · `eeg_epochs`
+### [x] T1: `preprocess.py`, `epochs.py`, migration `0011` · `eeg_epochs` (`e25bf8b`, done Wed 4; 29 Oct artifact blocks POOR; XDF 3 70 % clean chunks vs 81 % in the summary, the 200 ms blink pad: finding in `Borrador_Plan_Fase6_9_4nov.md`)
 - [ ] 1–40 Hz band-pass, 60 Hz notch; params stored per session. P16 relative-power helper (1–40 Hz denominator).
 - [ ] Epochs 5 s every 2.5 s; 1 s chunks with clean flags; drops: blink (Fp1 > 75 µV), amplitude > 100 µV, flat, `HEAD_AWAY` open, 1 s after a sound onset, `FRAME_HITCH` > 100 ms (D-F6-129). GOOD/ACCEPTABLE/POOR per reevaluation §5.3.
 - [ ] `eeg_epochs`: session, start/end, game state, `trial_id`, ESL level, chunk flags, clean fraction, quality (index columns empty until S3 week).
 - [ ] Tests: synthetic blink/flat/hitch chunks dropped; 29 Oct XDF 2 artifact blocks → POOR; XDF 3 S6/S7 counts near the S1 summary (14/14, 17/22) as a sanity check.
 
-### [ ] T2 (correction, diagnosis only): Profiler
+### [x] T2 (correction, diagnosis only): Profiler (4 Nov; S2 = dynamic CJK font writes/reimports its asset + glyph rasterizing, 1.7 s; S4 = `PaintEye` on the CPU every frame, 14–89 ms; proposals 1 and 2 in `Borrador_Plan_Fase6_9_4nov.md`)
 - [ ] S2 entry hourglass: what stalls the main thread (load, instantiate, shader compile, GC).
 - [ ] S4 eye-closing hitches: where they fall (open/closed/switch) and the cause.
 - [ ] Proposal per hitch, not applied.
@@ -54,30 +54,33 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 
 ## Wed 4 · lures, S3 and S4
 
-### [ ] W1: lure fields from `kanji_metrics.py` (D-F6-130, D-F6-131)
+### [x] W1: lure fields from `kanji_metrics.py` (D-F6-130, D-F6-131) (`39c1f3c`; §2.4 checks in the default verdict, not a `--verify` flag: the script had none)
 - [ ] Per kanji, per type (T1/T2/T3): `lure_strong`, `unrelated`, `provisional`. T1 strong = §15.2; T1 unrelated = outside the pool, minimum similarity, one per kanji. T2/T3 empty.
 - [ ] `--verify` rules (§2.4): never two correct (not a reading/meaning of the target nor of any pool kanji), one distinct lure per kanji and type, outside the pool.
 
-### [ ] W2: lure trials in Unity + contract
+### [x] W2: lure trials in Unity + contract (`4ba0d4d`; harness 107/107, X27; no projection column yet: the keys are in `session_events.payload`)
 - [ ] `TrialOption` gets its kind; `BuildOptions` builds [CORRECT, LURE_STRONG, IN_SET, UNRELATED] in half of each active type's trials per block (S6, S7, S8), seeded, same in the three conditions. Per-type switch; only T1 on.
 - [ ] `option_kind` of the selected option and `lure_selected` in the contract (`EVENT_CONTRACT.md`, backend schema, LSL marker says the trial has a lure).
 - [ ] Estimator untouched: a lure trial counts in the window like any other (D-F6-132).
 - [ ] Harness: half of T1 per block, never two correct, same trials across conditions, T2/T3 unchanged.
 
-### [ ] W3 (F4): S3 step: channels blue (operator confirms) + sync test (5 taps at start, 5 in S9, each a marker).
+### [x] W3 (F4): S3 step: channels blue (operator confirms) + sync test (5 taps at start, 5 in S9, each a marker). (`e57e395`; checklist in S3 with "EEG ready (researcher)", `SYNC_TAP` markers, `SYNC_TEST_COMPLETED`; harness 106/106)
 - [ ] S3 checklist box: LabRecorder is **recording** only `AURA (LaptopSebas1803)` and `UnityMarkers (LaptopSebas1803)` (the operator presses Start by hand; the backend only names the file, 2 Nov).
 
-### [ ] W4 (F4): S4 eye markers + `EEG_BASELINE_RESULT` (alpha ratio P3, Pz, P4; passes ≥ 1.2).
+### [x] W4 (F4): S4 eye markers + `EEG_BASELINE_RESULT` (alpha ratio P3, Pz, P4; passes ≥ 1.2). (`e57e395` markers, `c9d5670` `app/eeg/baseline.py`, live on the PC; 29 Oct XDF 1: 5.18 / 3.46 / 4.29)
 
-### [ ] W5 (correction): the approved perf fix; harness green.
+### [x] W5 (correction): the approved perf fix; harness green. (`4b2f1ea`, D-F6-139: S0 prewarm of the font, the S2 lectern and the S4 eye frames; S2 first frame 1707 → 390 ms in the Editor; X28, 108/108)
+### [x] AUDIO_ONSET (F4, D-F6-138): marker on each S5 reading, dropped by `epochs.py` (`6c9e02c`).
+### [x] D-F6-145 (replaces D-F6-142): odd T1 counts round the half by the block seed (`ee79474`; X27, 108/108).
+### [x] Content (D-F6-122): set A M images with the new edge colour (`ac26857`).
 
-### [ ] Stop Wed: lures S6–S8, S3/S4 markers in the Editor; no hourglass in S2, no hitches in S4.
+### [x] Stop Wed: lures S6–S8, S3/S4 markers in the Editor; no hourglass in S2, no hitches in S4. **Passed, Sebas, 4 Nov ~18:30:** `8a9e8deb` (`DEV_UNITY`, STATIC, S1–S9, synthetic AURA): no hourglass in S2, smooth S4 eye, lures fine (S6 2/3, S7 5/9, S8 2/5); sync 5/5 in S3 and S9; alpha 1.0 → not passed (expected, synthetic); 252 epochs. LabRecorder started before Play, so the XDF took the previous session's name (my step order; correct order D-F6-135); copied to the session's path, misnamed file deleted by Sebas. Finding: sounds leave S6–S8 mostly POOR (draft, finding 6).
 
 ## Thu 5 · cap
 
 ### [ ] H1: S3 and S4 in the headset with EEG: offset and drift (±100 ms, drift < 50 ms); alpha ratio.
 ### [ ] H2: block 3, 2 min black screen, with markers.
-### [ ] H3: sample count around each `FRAME_HITCH`: no lost samples.
+### [ ] H3: sample count around each `FRAME_HITCH`: no lost samples. Profiler connected during S4 in the headset (the ≈ 300 S4 slow frames of R2 not explained by T2).
 ### [ ] Stop Thu: results for the EEG chat in `Claude outputs/`.
 
 ## Fri 6 · cap
