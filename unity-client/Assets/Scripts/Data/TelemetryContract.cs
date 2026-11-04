@@ -181,6 +181,8 @@ namespace NeuroAdaptiveVR.Data
         public const string TutorialStarted = "TUTORIAL_STARTED";
         public const string TutorialCompleted = "TUTORIAL_COMPLETED";
         public const string SystemCheckCompleted = "SYSTEM_CHECK_COMPLETED";
+        // SYNC_TEST_COMPLETED: the Cz taps of S3 and of S9 (F4 §2.4); each tap is a SYNC_TAP LSL marker.
+        public const string SyncTestCompleted = "SYNC_TEST_COMPLETED";
         public const string BaselineStarted = "BASELINE_STARTED";
         public const string BaselineCompleted = "BASELINE_COMPLETED";
 

@@ -116,6 +116,7 @@ namespace NeuroAdaptiveVR.EditorTools
             ObjectApproachCases();
             FrameRateCases();
             LslMarkerCases();
+            EegStepCases();
             RiceFieldCases();
             PeripheralContrastCases();
             ProactiveCueCases();
@@ -2585,6 +2586,44 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X25", "Marcadores LSL: SendSessionEvent sale en UnityMarkers y FRAME_HITCH > 50 ms",
                   p.Count == 0, p.Count == 0 ? "inlet local: " + got : Join(p));
+        }
+
+        /// <summary>
+        /// X26. S3 and S4 pieces of F4 (D-F6-74): the S4 segment markers carry the names that
+        /// backend/app/eeg/baseline.py waits for, and a SYNC_TAP reaches an inlet with its phase and index.
+        /// </summary>
+        private static void EegStepCases()
+        {
+            var p = new List<string>();
+            string py = System.IO.Path.Combine(Application.dataPath, "../../backend/app/eeg/baseline.py");
+            string src = System.IO.File.Exists(py) ? System.IO.File.ReadAllText(py) : "";
+            foreach (var m in new[] { LslMarkers.EyesOpenStart, LslMarkers.EyesOpenEnd, LslMarkers.EyesClosedStart, LslMarkers.EyesClosedEnd })
+                if (!src.Contains($"\"{m}\"")) p.Add($"baseline.py no espera {m}");
+            if (SessionFlowRunner.SyncTapCount != 5) p.Add($"{SessionFlowRunner.SyncTapCount} toques, no 5 (F4 §2.4)");
+
+            var found = LSL.LSL.resolve_stream($"name='{LslMarkers.StreamName}' and source_id='{LslMarkers.SourceId}'", 1, 3.0);
+            string got = null;
+            if (found.Length == 0) p.Add("no se resuelve UnityMarkers en esta PC");
+            else
+            {
+                var inlet = new LSL.StreamInlet(found[0]);
+                try
+                {
+                    inlet.open_stream(3.0);
+                    // A sample pushed before the inlet's connection is up is lost: push again, at most 3 times.
+                    var buf = new string[1];
+                    for (int i = 0; i < 3 && got == null; i++)
+                    {
+                        LslMarkers.Push(LslMarkers.SyncTap, new Dictionary<string, object> { { "phase", "S3" }, { "index", 1 } });
+                        if (inlet.pull_sample(buf, 1.0) > 0) got = buf[0];
+                    }
+                }
+                finally { inlet.close_stream(); }
+                if (got == null || !got.Contains("\"event\":\"SYNC_TAP\"") || !got.Contains("\"phase\":\"S3\"") || !got.Contains("\"index\":1"))
+                    p.Add("SYNC_TAP sin event/phase/index: " + got);
+            }
+            Check("X26", "S3/S4 de F4: marcadores de ojos con los nombres de baseline.py y SYNC_TAP con fase e indice",
+                  p.Count == 0, p.Count == 0 ? got : Join(p));
         }
 
         /// <summary>

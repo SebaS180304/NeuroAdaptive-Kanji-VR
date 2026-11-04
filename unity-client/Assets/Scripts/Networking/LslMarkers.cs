@@ -23,6 +23,14 @@ namespace NeuroAdaptiveVR.Networking
         /// <summary>Survives a restart of Unity, so LabRecorder picks the stream up again.</summary>
         public static readonly string SourceId = $"neuroadaptive-unity-{Environment.MachineName}";
 
+        // Markers that are not session events (F4 §2.1, §2.4). app/eeg/baseline.py reads these names.
+        /// <summary>S3 and S9 sync test: the operator pulls a trigger while tapping Cz with that controller.</summary>
+        public const string SyncTap = "SYNC_TAP";
+        public const string EyesOpenStart = "EYES_OPEN_START";
+        public const string EyesOpenEnd = "EYES_OPEN_END";
+        public const string EyesClosedStart = "EYES_CLOSED_START";
+        public const string EyesClosedEnd = "EYES_CLOSED_END";
+
         private static LSL.StreamOutlet _outlet;
         private static bool _failed;
 

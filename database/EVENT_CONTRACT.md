@@ -124,7 +124,9 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 | `START_SELECTED` | `reaction_ms`, `forced_by_researcher` — S1, spec §7.2 |
 | `TUTORIAL_STARTED` | `activities` (array, in order: `CONTROLS_INTRO`, `LOOK_AND_SELECT`, `ASSEMBLY_EXAMPLE` since 30 Sep; only `LOOK_AND_SELECT` in M2), `pool` (kanji ids) — S2, spec §7.3 |
 | `TUTORIAL_COMPLETED` | `trials`, `correct`; since 30 Sep also `controls_intro_ms` (-1 if no intro), `targets_hit`, `recentered` (bool: the Menu press was done, not skipped), `controller_callouts` (bool: the trigger and Menu were lit on the participant's controllers), `assembly_example` (kanji id or null) — S2 |
-| `SYSTEM_CHECK_COMPLETED` | `headset_active`, `websocket_connected`, `passed`, `forced_by_researcher`, `eeg_checked` — S3, spec §7.4 |
+| `SYSTEM_CHECK_COMPLETED` | `headset_active`, `websocket_connected`, `passed`, `forced_by_researcher`, `eeg_checked` (true when the S3 EEG step ran; since 4 Nov), `eeg_ready_confirmed` (the operator confirmed the EEG checklist; false when forced; since 4 Nov) — S3, spec §7.4 |
+| `SYNC_TEST_COMPLETED` | `phase` (`S3` or `S9`), `taps`, `required` (5), `forced_by_researcher` — F4 §2.4, since 4 Nov; each tap is also a `SYNC_TAP` LSL marker (§11, 4 Nov) |
+| `EEG_BASELINE_RESULT` | `alpha_ratio` (label → closed/open alpha), `passed`, `threshold` (1.2), `band_hz` — **written by `app/eeg/baseline.py` on the PC**, not by Unity, after S4 (F4 §2.3), since 4 Nov |
 | `BASELINE_STARTED` | `eyes_open_s`, `eyes_closed_s`, `time_scale` — S4, spec §7.5 |
 | `BASELINE_COMPLETED` | `eyes_open_ms`, `eyes_closed_ms`, `time_scale`, `valid_duration` — S4 |
 | `HEAD_AWAY` | `episode`, `onset_offset_ms`, `yaw_deg`, `pitch_deg`, `limit`, thresholds — since 30 Sep, §5.10 |
@@ -632,6 +634,14 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**4 November 2026 — S3 EEG step, sync test and S4 segments (F4, D-F6-74).** New payload keys on
+`SYSTEM_CHECK_COMPLETED` (`eeg_checked` is now true when the step ran, `eeg_ready_confirmed`) and two new
+events, `SYNC_TEST_COMPLETED` (Unity, S3 and S9) and `EEG_BASELINE_RESULT` (written by the PC's
+`app/eeg/baseline.py`). No version bump, no projection reads them. Five LSL markers that are **not** session
+events go only to `UnityMarkers` (like `FRAME_HITCH`): `SYNC_TAP` (`phase`, `index`) and `EYES_OPEN_START`,
+`EYES_OPEN_END`, `EYES_CLOSED_START`, `EYES_CLOSED_END` (no payload; their LSL stamp is the edge of the S4
+segment).
 
 **27 October 2026 — C3 in `KANJI_EXPOSED` and `TRIAL_COMPLETED.cue_asset_source`.** New payload
 keys, no version bump, no projection reads them. C3 (Diseno_UI_Kanji_Studio_v1.md §10) replaces stages 2-3

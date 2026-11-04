@@ -112,6 +112,12 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private float baselineTimeScale = 1f;
         [SerializeField] private float s5PlaceholderSeconds = 3f;
 
+        [Header("EEG (F4, D-F6-74)")]
+        [Tooltip("S3 waits for the operator's EEG checklist and runs the sync test; S9 repeats the taps. " +
+                 "Off only for sessions without the cap.")]
+        [SerializeField] private bool eegStep = true;
+        public const int SyncTapCount = 5;
+
         [Header("Debug fallbacks (the session wins when it has them)")]
         [SerializeField] private string fallbackSet = "A";
         [SerializeField] private int fallbackSeed = 20260909;
@@ -122,6 +128,8 @@ namespace NeuroAdaptiveVR.Core
 
         private bool _running;
         private bool _forceAdvance;
+        private bool _eegReady;
+        private bool _syncTapRequested;
         private string _lastChoice;
         private TrialResult _lastResult;
         private bool _trialClosed;
@@ -296,6 +304,19 @@ namespace NeuroAdaptiveVR.Core
             _forceAdvance = true;
         }
 
+        /// <summary>S3 EEG checklist done: every channel blue in AURA's software, and LabRecorder
+        /// RECORDING only AURA and UnityMarkers of this PC (D-F6-127, D-F6-135).</summary>
+        [ContextMenu("EEG ready (researcher)")]
+        public void ConfirmEegReady()
+        {
+            Debug.Log($"{Log} Researcher confirmed the EEG checklist.");
+            _eegReady = true;
+        }
+
+        /// <summary>One sync tap without a controller (Editor without the headset).</summary>
+        [ContextMenu("Sync tap (researcher, no controller)")]
+        public void RequestSyncTap() => _syncTapRequested = true;
+
         // ------------------------------------------------------------------
         // The chain
         // ------------------------------------------------------------------
@@ -366,7 +387,7 @@ namespace NeuroAdaptiveVR.Core
                 // S8 defers feedback: it is the primary learning measure, and
                 // showing the answer would contaminate the trials after it.
                 case GameFlowState.S8_ImmediateAssessment:       yield return RunBlock(state, _set, s8Trials, false, done); yield break;
-                case GameFlowState.S9_SessionSummary:            RunSummary(); break;
+                case GameFlowState.S9_SessionSummary:            yield return RunSummary(); break;
                 default:
                     Debug.LogError($"{Log} No content for {state}.");
                     done(false);
@@ -502,6 +523,7 @@ namespace NeuroAdaptiveVR.Core
 
             bool passed = headset && websocket;
             bool forced = false;
+            bool eegReady = false;
 
             if (!passed)
             {
@@ -516,6 +538,20 @@ namespace NeuroAdaptiveVR.Core
                 forced = true;
             }
 
+            // F4 (D-F6-74): the operator's EEG checklist, before the sync test.
+            if (eegStep)
+            {
+                Show("Please wait.\nThe researcher is checking the equipment.");
+                Debug.Log($"{Log} S3 · EEG checklist: (1) every channel BLUE in AURA's software; " +
+                          $"(2) LabRecorder RECORDING only AURA and UnityMarkers of {System.Environment.MachineName}. " +
+                          "Then 'EEG ready (researcher)' on SessionFlowRunner ('Force advance' if it cannot be met; recorded).");
+                _eegReady = false;
+                _forceAdvance = false;
+                yield return new WaitUntil(() => _eegReady || _forceAdvance);
+                eegReady = _eegReady;
+                _forceAdvance = false;
+            }
+
             telemetry.Emit(TelemetryEvents.SystemCheckCompleted, new Dictionary<string, object>
             {
                 { "headset_active", headset },
@@ -524,10 +560,57 @@ namespace NeuroAdaptiveVR.Core
                 { "forced_by_researcher", forced },
                 // WAVEX is Phase 4. Saying so explicitly beats omitting it: an
                 // absent field reads as "not checked for an unknown reason".
-                { "eeg_checked", false },
+                { "eeg_checked", eegStep },
+                { "eeg_ready_confirmed", eegReady },
             });
             Debug.Log($"{Log} S3 · headset {headset} · websocket {websocket} · " +
                       (passed ? "PASSED" : "FORCED by researcher"));
+            if (eegStep) yield return RunSyncTest("S3");
+        }
+
+        /// <summary>
+        /// F4 §2.4: the operator pulls a controller's trigger while tapping Cz with that controller,
+        /// SyncTapCount times; each pull is a SYNC_TAP marker and each tap a spike on Cz, so the EEG
+        /// and the markers line up at the start (S3) and the drift shows at the end (S9).
+        /// </summary>
+        private IEnumerator RunSyncTest(string phase)
+        {
+            Show("Please keep still.\nThe researcher will touch the top of the cap a few times.");
+            Debug.Log($"{Log} {phase} · sync test: pull a trigger while tapping Cz with that controller, " +
+                      $"{SyncTapCount} times, about 2 s apart ('Force advance' skips; recorded).");
+            _forceAdvance = false;
+            _syncTapRequested = false;
+            int taps = 0;
+            bool held = TriggerHeld();
+            while (taps < SyncTapCount && !_forceAdvance)
+            {
+                yield return null;
+                bool now = TriggerHeld();
+                if ((now && !held) || _syncTapRequested)
+                {
+                    taps++;
+                    _syncTapRequested = false;
+                    LslMarkers.Push(LslMarkers.SyncTap, new Dictionary<string, object> { { "phase", phase }, { "index", taps } });
+                }
+                held = now;
+            }
+            bool forced = _forceAdvance;
+            _forceAdvance = false;
+            telemetry.Emit(TelemetryEvents.SyncTestCompleted, new Dictionary<string, object>
+            {
+                { "phase", phase }, { "taps", taps }, { "required", SyncTapCount }, { "forced_by_researcher", forced },
+            });
+            Debug.Log($"{Log} {phase} · sync test {taps}/{SyncTapCount}{(forced ? " (FORCED)" : "")}");
+        }
+
+        private static readonly List<UnityEngine.XR.InputDevice> Controllers = new();
+
+        private static bool TriggerHeld()
+        {
+            UnityEngine.XR.InputDevices.GetDevicesWithCharacteristics(UnityEngine.XR.InputDeviceCharacteristics.Controller, Controllers);
+            foreach (var d in Controllers)
+                if (d.TryGetFeatureValue(UnityEngine.XR.CommonUsages.triggerButton, out bool on) && on) return true;
+            return false;
         }
 
         // ------------------------------------------------------------------
@@ -551,10 +634,13 @@ namespace NeuroAdaptiveVR.Core
             });
 
             float t0 = Time.realtimeSinceStartup;
+            LslMarkers.Push(LslMarkers.EyesOpenStart);
             if (board != null) board.ShowBaseline("Look at the cross and relax.");
             else Show("Look at the cross and relax.");
             yield return new WaitForSecondsRealtime(open);
             float t1 = Time.realtimeSinceStartup;
+            LslMarkers.Push(LslMarkers.EyesOpenEnd);
+            LslMarkers.Push(LslMarkers.EyesClosedStart);
 
             // The participant cannot read the board with the eyes closed, so
             // the END of the closed segment has to be a sound. The chime marks
@@ -563,6 +649,7 @@ namespace NeuroAdaptiveVR.Core
             else Show("Close your eyes. Open them at the chime.");
             PlayChime();
             yield return new WaitForSecondsRealtime(closed);
+            LslMarkers.Push(LslMarkers.EyesClosedEnd);
             PlayChime();
             float t2 = Time.realtimeSinceStartup;
 
@@ -730,8 +817,10 @@ namespace NeuroAdaptiveVR.Core
         // S9 -- Session Summary (spec 7.x): a NEUTRAL message
         // ------------------------------------------------------------------
 
-        private void RunSummary()
+        private IEnumerator RunSummary()
         {
+            // F4 §2.4: the second sync test, with the headset still on, measures the drift.
+            if (eegStep) yield return RunSyncTest("S9");
             // No score on the board. Spec asks for a neutral completion
             // message; showing performance would colour the S10 self-report
             // the participant fills in right after taking the headset off.
