@@ -97,3 +97,4 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 - [ ] B4c SDF morph (D-F6-115), before 13 Nov if at all.
 - [ ] Two Playwright tests failing on today's data (26 Oct).
 - [ ] T2/T3 lures on when Content's lists and MIRAI's answer (A-17) arrive.
+- [ ] Look at the set A M images (`ac26857`) in the headset: not seen at Stop 3 because STATIC keeps LAL at MEDIUM; needs a session that reaches the LAL level that shows them.
