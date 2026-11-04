@@ -652,6 +652,8 @@ events, `SYNC_TEST_COMPLETED` (Unity, S3 and S9) and `EEG_BASELINE_RESULT` (writ
 events go only to `UnityMarkers` (like `FRAME_HITCH`): `SYNC_TAP` (`phase`, `index`) and `EYES_OPEN_START`,
 `EYES_OPEN_END`, `EYES_CLOSED_START`, `EYES_CLOSED_END` (no payload; their LSL stamp is the edge of the S4
 segment).
+Since 4 Nov too, `AUDIO_ONSET` (`kanji_id`, `moment` = `S5_EXPOSURE`, `clip_ms`) when each S5 reading starts
+sounding (D-F6-138); the S7 cue and the feedback reading carry none.
 
 **27 October 2026 — C3 in `KANJI_EXPOSED` and `TRIAL_COMPLETED.cue_asset_source`.** New payload
 keys, no version bump, no projection reads them. C3 (Diseno_UI_Kanji_Studio_v1.md §10) replaces stages 2-3

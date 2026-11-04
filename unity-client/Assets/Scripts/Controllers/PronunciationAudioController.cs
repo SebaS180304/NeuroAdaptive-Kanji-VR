@@ -41,7 +41,15 @@ namespace NeuroAdaptiveVR.Controllers
         /// </returns>
         public AudioClip PlayInitialExposure(KanjiItem item)
         {
-            Play(item, "exposicion inicial");
+            // F4 (D-F6-138): only the S5 readings carry a marker; the S7 cue and the feedback do not
+            // change the EEG rules of S6 and S7 (the feedback reading starts at ANSWER_SELECTED).
+            if (Play(item, "exposicion inicial"))
+                NeuroAdaptiveVR.Networking.LslMarkers.Push(NeuroAdaptiveVR.Networking.LslMarkers.AudioOnset,
+                    new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "kanji_id", item.KanjiId }, { "moment", "S5_EXPOSURE" },
+                        { "clip_ms", Mathf.RoundToInt(item.TargetReadingAudio.length * 1000f) },
+                    });
             return item?.TargetReadingAudio;
         }
 

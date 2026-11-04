@@ -117,6 +117,13 @@ def test_the_second_after_each_sound_onset_is_dropped() -> None:
     assert chunks[121.0] is False and chunks[122.0] is True
 
 
+def test_the_second_after_each_s5_reading_is_dropped() -> None:
+    x, ts = _eeg()
+    markers = [(104.0, {"event": "AUDIO_ONSET", "kanji_id": "KANJI_TSUKI", "moment": "S5_EXPOSURE"})]  # D-F6-138
+    chunks = _chunks(epochs.make_epochs(x, ts, SR, MONTAGE, markers))
+    assert chunks[104.0] is False and chunks[105.0] is True
+
+
 def test_an_open_head_away_drops_its_chunks() -> None:
     x, ts = _eeg()
     markers = [(111.0, {"schema_version": 1, "event": "HEAD_AWAY", "episode": 1, "onset_offset_ms": -500}),

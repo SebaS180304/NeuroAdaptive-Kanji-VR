@@ -10,7 +10,7 @@ two overlapping epochs share it (P7 of D-F6-127). A chunk is dropped for:
   - a flat index channel, or missing samples;
   - an open HEAD_AWAY;
   - the second after a sound onset (select and reading at ANSWER_SELECTED, the result sound,
-    the stage sound before STATE_ENTERED);
+    the stage sound before STATE_ENTERED, each S5 reading at AUDIO_ONSET);
   - a FRAME_HITCH over 100 ms (D-F6-129).
 Quality: GOOD 4–5 clean chunks, ACCEPTABLE 3, POOR ≤ 2.
 
@@ -56,6 +56,8 @@ def excluded_intervals(markers: list[tuple[float, dict]]) -> list[tuple[float, f
         e = m.get("event")
         if e == "FRAME_HITCH" and m.get("duration_ms", 0) > HITCH_MS:
             out.append((t - m["duration_ms"] / 1000, t))  # pushed when the slow frame ends
+        elif e == "AUDIO_ONSET":  # each S5 reading (D-F6-138)
+            out.append((t, t + SOUND_S))
         elif e == "ANSWER_SELECTED":
             answered[m.get("trial_id")] = t
             out.append((t, t + SOUND_S))

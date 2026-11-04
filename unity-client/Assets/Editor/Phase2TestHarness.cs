@@ -2705,6 +2705,10 @@ namespace NeuroAdaptiveVR.EditorTools
             string src = System.IO.File.Exists(py) ? System.IO.File.ReadAllText(py) : "";
             foreach (var m in new[] { LslMarkers.EyesOpenStart, LslMarkers.EyesOpenEnd, LslMarkers.EyesClosedStart, LslMarkers.EyesClosedEnd })
                 if (!src.Contains($"\"{m}\"")) p.Add($"baseline.py no espera {m}");
+            // D-F6-138: epochs.py drops the second after each S5 reading by this name.
+            string epochsPy = System.IO.Path.Combine(Application.dataPath, "../../backend/app/eeg/epochs.py");
+            if (!System.IO.File.Exists(epochsPy) || !System.IO.File.ReadAllText(epochsPy).Contains($"\"{LslMarkers.AudioOnset}\""))
+                p.Add($"epochs.py no lee {LslMarkers.AudioOnset}");
             if (SessionFlowRunner.SyncTapCount != 5) p.Add($"{SessionFlowRunner.SyncTapCount} toques, no 5 (F4 §2.4)");
 
             var found = LSL.LSL.resolve_stream($"name='{LslMarkers.StreamName}' and source_id='{LslMarkers.SourceId}'", 1, 3.0);
@@ -2728,7 +2732,7 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (got == null || !got.Contains("\"event\":\"SYNC_TAP\"") || !got.Contains("\"phase\":\"S3\"") || !got.Contains("\"index\":1"))
                     p.Add("SYNC_TAP sin event/phase/index: " + got);
             }
-            Check("X26", "S3/S4 de F4: marcadores de ojos con los nombres de baseline.py y SYNC_TAP con fase e indice",
+            Check("X26", "F4: marcadores de ojos con los nombres de baseline.py, AUDIO_ONSET con el de epochs.py y SYNC_TAP con fase e indice",
                   p.Count == 0, p.Count == 0 ? got : Join(p));
         }
 
