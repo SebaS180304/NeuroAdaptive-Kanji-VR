@@ -114,6 +114,7 @@ namespace NeuroAdaptiveVR.Data
                 { "trial_type", t.TrialType.ToWireValue() },
                 { "options", t.Options.Select(o => o.OptionId).ToList() },
                 { "correct_option", t.Options.First(o => o.IsCorrect).OptionId },
+                { "option_kinds", t.Options.Select(o => TrialOption.KindName(o.Kind)).ToList() },   // D-F6-131
             }).ToList();
 
         public string Summary()

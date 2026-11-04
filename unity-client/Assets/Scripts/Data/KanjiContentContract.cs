@@ -44,6 +44,18 @@ namespace NeuroAdaptiveVR.Data
         [JsonProperty("kanji")] public List<KanjiContentRecord> Kanji = new();
     }
 
+    /// <summary>The lure options of one kanji for one trial type (Propuesta_Trampas_T2_T3.md §2.1).</summary>
+    [Serializable]
+    public class KanjiLures
+    {
+        /// <summary>Very similar, never correct: a look-alike kanji (T1).</summary>
+        [JsonProperty("lureStrong")] public string LureStrong;
+        /// <summary>Unrelated, from outside the pool.</summary>
+        [JsonProperty("unrelated")] public string Unrelated;
+        /// <summary>True while the list waits for MIRAI (A-17, D-F6-130).</summary>
+        [JsonProperty("provisional")] public bool Provisional;
+    }
+
     /// <summary>
     /// Una fila del contrato. Es la fuente de verdad de todo lo que se ve aqui:
     /// ningun KanjiLearningItem repite estos valores.
@@ -87,6 +99,12 @@ namespace NeuroAdaptiveVR.Data
 
         /// <summary>"A" / "B" / "C" / "Tutorial", o null para la reserva.</summary>
         [JsonProperty("experimentalSet")] public string ExperimentalSetRaw;
+
+        /// <summary>
+        /// Lures per trial type, "T1" / "T2" / "T3" (D-F6-131); a type is null until its list
+        /// exists. null for the tutorial. Written by tools/kanji_metrics.py.
+        /// </summary>
+        [JsonProperty("lures")] public Dictionary<string, KanjiLures> Lures;
 
         public DiscoveryType DiscoveryType =>
             Enum.TryParse(DiscoveryTypeRaw, out DiscoveryType d) ? d : DiscoveryType.None;

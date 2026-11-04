@@ -525,9 +525,11 @@ namespace NeuroAdaptiveVR.EditorTools
 
             var plan = TrialSequenceGenerator.Build(GameFlowState.S7_ExperimentalRetrieval, items, 20, 2, 777);
             var ids = new HashSet<string>(items.Select(i => i.KanjiId));
-            var fuera = plan.Trials.SelectMany(t => t.Options.Select(o => o.OptionId).Prepend(t.Target.KanjiId))
+            // The external lures (LURE_STRONG, UNRELATED; D-F6-131) come from the content, not the set.
+            var fuera = plan.Trials.SelectMany(t => t.Options.Where(o => o.Kind == OptionKind.Correct || o.Kind == OptionKind.InSet)
+                                                             .Select(o => o.OptionId).Prepend(t.Target.KanjiId))
                             .Where(id => !ids.Contains(id)).Distinct().ToList();
-            Check("K4", "Objetivos y distractores salen solo del set efectivo",
+            Check("K4", "Objetivos y distractores del set salen solo del set efectivo",
                   fuera.Count == 0 && plan.Trials.Any(t => t.Target.KanjiId == sub.KanjiId),
                   fuera.Count == 0 ? $"{plan.Count} trials, el sustituto {sub.Character} aparece" : $"fuera del set: {Join(fuera)}");
 
@@ -577,12 +579,16 @@ namespace NeuroAdaptiveVR.EditorTools
                   malFormados.Count == 0 ? $"{p1.Count} trials revisados"
                                          : $"{malFormados.Count} mal formados");
 
+            // Since 4 Nov (D-F6-131) a lure trial has one external lure and one unrelated option;
+            // every other option, and every option of a trial without a lure, is from the set.
             var idsDelSet = set.Select(i => i.KanjiId).ToHashSet();
-            var fuera = p1.Trials.SelectMany(t => t.Options.Select(o => o.OptionId))
+            var fuera = p1.Trials.SelectMany(t => t.Options.Where(o => o.Kind == OptionKind.Correct || o.Kind == OptionKind.InSet)
+                                                         .Select(o => o.OptionId))
                                  .Where(id => !idsDelSet.Contains(id)).Distinct().ToList();
 
-            Check("Q6", "Todos los distractores salen del mismo set que el objetivo",
+            Check("Q6", "Los distractores del set salen del mismo set que el objetivo (las trampas son externas)",
                   fuera.Count == 0, fuera.Count == 0 ? "ok" : Join(fuera));
+            LureCases(set, seedA, minLag);
 
             // S8: spec 7.9 da el numero exacto -- 5 kanji x 3 tipos, sin extras.
             var s8 = TrialSequenceGenerator.Build(GameFlowState.S8_ImmediateAssessment, set, 15, minLag, seedA);
@@ -2574,10 +2580,14 @@ namespace NeuroAdaptiveVR.EditorTools
                 var go = new GameObject("X25_client");
                 try
                 {
-                    go.AddComponent<SessionCommunicationClient>().SendSessionEvent("TRIAL_STARTED",
-                        new Dictionary<string, object> { { "trial_id", "X25-001" } });
+                    // A sample pushed before the inlet's connection is up is lost (seen 4 Nov): send again, at most 3 times.
+                    var client2 = go.AddComponent<SessionCommunicationClient>();
                     var buf = new string[1];
-                    if (inlet.pull_sample(buf, 3.0) > 0) got = buf[0];
+                    for (int i = 0; i < 3 && got == null; i++)
+                    {
+                        client2.SendSessionEvent("TRIAL_STARTED", new Dictionary<string, object> { { "trial_id", "X25-001" } });
+                        if (inlet.pull_sample(buf, 1.0) > 0) got = buf[0];
+                    }
                 }
                 finally { UnityEngine.Object.DestroyImmediate(go); inlet.close_stream(); }
                 if (got == null) p.Add("el inlet no recibio el evento");
@@ -2586,6 +2596,57 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X25", "Marcadores LSL: SendSessionEvent sale en UnityMarkers y FRAME_HITCH > 50 ms",
                   p.Count == 0, p.Count == 0 ? "inlet local: " + got : Join(p));
+        }
+
+        /// <summary>
+        /// X27. Lures (D-F6-129, D-F6-131, D-F6-132): in S6, S7 and S8 half of the T1 trials, rounded
+        /// down, carry [CORRECT, LURE_STRONG, IN_SET, UNRELATED] with four distinct texts and one correct;
+        /// T2, T3, S2 and S5 have none; the same seed gives the same lure trials; a trial without a lure
+        /// has exactly the options it had before lures.
+        /// </summary>
+        private static void LureCases(IReadOnlyList<KanjiItem> set, int seed, int minLag)
+        {
+            var p = new List<string>();
+            var resumen = new List<string>();
+            foreach (var (state, n) in new[] { (GameFlowState.S6_GuidedPracticeCalibration, 9),
+                                               (GameFlowState.S7_ExperimentalRetrieval, 20),
+                                               (GameFlowState.S8_ImmediateAssessment, 15) })
+            {
+                int bs = TrialSequenceGenerator.BlockSeed(seed, state);
+                var plan = TrialSequenceGenerator.Build(state, set, n, minLag, bs);
+                var again = TrialSequenceGenerator.Build(state, set, n, minLag, bs);
+                bool Lure(PlannedTrial t) => t.Options.Any(o => o.Kind == OptionKind.LureStrong);
+                int t1 = plan.Trials.Count(t => t.TrialType == RetrievalTrialType.MeaningToKanji);
+                int conTrampa = plan.Trials.Count(Lure);
+                resumen.Add($"{state.ShortCode()} {conTrampa}/{t1} T1");
+                if (conTrampa != t1 / 2) p.Add($"{state.ShortCode()}: {conTrampa} trampas en {t1} T1");
+                if (plan.Trials.Any(t => Lure(t) && t.TrialType != RetrievalTrialType.MeaningToKanji))
+                    p.Add($"{state.ShortCode()}: trampa fuera de T1");
+                if (!plan.Trials.Select(Lure).SequenceEqual(again.Trials.Select(Lure)))
+                    p.Add($"{state.ShortCode()}: la misma seed no da los mismos trials con trampa");
+                foreach (var t in plan.Trials.Where(Lure))
+                {
+                    var kinds = t.Options.Select(o => o.Kind).OrderBy(k => k).ToList();
+                    if (!kinds.SequenceEqual(new[] { OptionKind.Correct, OptionKind.LureStrong, OptionKind.InSet, OptionKind.Unrelated }))
+                        p.Add($"{state.ShortCode()}-{t.Sequence:D3}: tipos {Join(kinds.Select(k => k.ToString()))}");
+                    if (t.Options.Count(o => o.IsCorrect) != 1 || t.Options.Select(o => o.DisplayText).Distinct().Count() != 4)
+                        p.Add($"{state.ShortCode()}-{t.Sequence:D3}: no hay exactamente una correcta con 4 textos distintos");
+                    if (t.Options.Any(o => o.OptionId.Length > 32)) p.Add("option_id de mas de 32 (trials.options es VARCHAR(32))");
+                }
+                for (int i = 0; i < plan.Count; i++)
+                {
+                    var t = plan.Trials[i];
+                    if (Lure(t)) continue;
+                    var before = TrialSequenceGenerator.BuildOptions(set, t.Target, t.TrialType,
+                        StableHash.Of($"{bs}:1:{i}"));
+                    if (!t.Options.Select(o => o.OptionId).SequenceEqual(before.Select(o => o.OptionId)))
+                    { p.Add($"{state.ShortCode()}-{t.Sequence:D3}: sin trampa pero con otras opciones"); break; }
+                }
+            }
+            foreach (var state in new[] { GameFlowState.S2_VRTutorial, GameFlowState.S5_StandardizedLearning })
+                if (TrialSequenceGenerator.HasLures(state)) p.Add($"{state.ShortCode()} lleva trampas");
+            Check("X27", "Trampas: la mitad de los T1 de S6-S8 con CORRECT, LURE_STRONG, IN_SET y UNRELATED; nada en T2/T3 ni S2/S5",
+                  p.Count == 0, p.Count == 0 ? Join(resumen) : Join(p));
         }
 
         /// <summary>

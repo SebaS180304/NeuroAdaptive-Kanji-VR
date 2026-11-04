@@ -22,6 +22,12 @@ namespace NeuroAdaptiveVR.Data
     /// resuelto: el sistema de respuesta no sabe si es un kanji, un
     /// significado o una lectura, solo lo muestra.
     /// </summary>
+    /// <summary>
+    /// What an option is to the participant's error (D-F6-131): the answer, the strong external
+    /// lure, a kanji of the studied set, or an unrelated external one. Travels as option_kind.
+    /// </summary>
+    public enum OptionKind { Correct, LureStrong, InSet, Unrelated }
+
     public readonly struct TrialOption
     {
         /// <summary>Id estable de la opcion. Es lo que viaja en la telemetria.</summary>
@@ -32,12 +38,25 @@ namespace NeuroAdaptiveVR.Data
 
         public readonly bool IsCorrect;
 
-        public TrialOption(string optionId, string displayText, bool isCorrect)
+        public readonly OptionKind Kind;
+
+        /// <summary>Without a kind, an option is the answer or one of the set (as before lures).</summary>
+        public TrialOption(string optionId, string displayText, bool isCorrect, OptionKind? kind = null)
         {
             OptionId = optionId;
             DisplayText = displayText;
             IsCorrect = isCorrect;
+            Kind = kind ?? (isCorrect ? OptionKind.Correct : OptionKind.InSet);
         }
+
+        /// <summary>CORRECT, LURE_STRONG, IN_SET, UNRELATED: the contract's spelling.</summary>
+        public static string KindName(OptionKind k) => k switch
+        {
+            OptionKind.Correct => "CORRECT",
+            OptionKind.LureStrong => "LURE_STRONG",
+            OptionKind.Unrelated => "UNRELATED",
+            _ => "IN_SET",
+        };
     }
 
     /// <summary>

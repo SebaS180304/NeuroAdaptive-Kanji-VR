@@ -44,6 +44,20 @@ namespace NeuroAdaptiveVR.Core
         private const int TagTypeMix  = 3;
         private const int TagKanjiMix = 4;
         private const int TagOrder    = 5;
+        private const int TagLures    = 6;
+
+        /// <summary>
+        /// Trial types whose lure trials are on (D-F6-131): only T1 until Content's T2/T3 lists
+        /// and MIRAI's answer (A-17). Adding a type here is the whole switch.
+        /// </summary>
+        public static readonly IReadOnlyCollection<RetrievalTrialType> ActiveLureTypes =
+            new[] { RetrievalTrialType.MeaningToKanji };
+
+        /// <summary>Lures go in S6, S7 and S8, the same rule in the three (D-F6-129, D-F6-132).</summary>
+        public static bool HasLures(GameFlowState state) =>
+            state == GameFlowState.S6_GuidedPracticeCalibration ||
+            state == GameFlowState.S7_ExperimentalRetrieval ||
+            state == GameFlowState.S8_ImmediateAssessment;
 
         /// <summary>
         /// Construye el plan de un bloque.
@@ -75,6 +89,8 @@ namespace NeuroAdaptiveVR.Core
             var pares = ComposePairs(set, totalTrials, seed);
             var ordenados = Order(pares, minLag, seed, out int intentos);
 
+            var conTrampa = HasLures(state) ? LureTrials(ordenados.Select(p => p.type).ToList(), seed)
+                                            : new HashSet<int>();
             var trials = new List<PlannedTrial>(ordenados.Count);
             for (int i = 0; i < ordenados.Count; i++)
             {
@@ -82,7 +98,9 @@ namespace NeuroAdaptiveVR.Core
                 // La seed de las opciones se deriva de la posicion, no del
                 // generador compartido: asi el orden de las opciones del trial 7
                 // es el mismo aunque cambie el numero total de trials.
-                var opciones = BuildOptions(set, item, tipo, Derive(seed, TagOptions, i));
+                var opciones = conTrampa.Contains(i)
+                    ? BuildLureOptions(set, item, tipo, Derive(seed, TagOptions, i)) ?? BuildOptions(set, item, tipo, Derive(seed, TagOptions, i))
+                    : BuildOptions(set, item, tipo, Derive(seed, TagOptions, i));
                 trials.Add(new PlannedTrial(i + 1, item, tipo, opciones));
             }
 
@@ -272,6 +290,59 @@ namespace NeuroAdaptiveVR.Core
                 .Select(i => new TrialOption(i.KanjiId, OptionText(i, trialType),
                                              i.KanjiId == target.KanjiId))
                 .ToList();
+        }
+
+        /// <summary>
+        /// Which positions of the block carry a lure: half of the trials of each active type,
+        /// rounded down (P17 of D-F6-129: "la mitad"), drawn from the block seed. The draw only
+        /// depends on the seed and the order of types, never on the condition (D-F6-131).
+        /// </summary>
+        public static HashSet<int> LureTrials(IReadOnlyList<RetrievalTrialType> types, int seed)
+        {
+            var out_ = new HashSet<int>();
+            foreach (var tipo in ActiveLureTypes)
+            {
+                var idx = Enumerable.Range(0, types.Count).Where(i => types[i] == tipo).ToList();
+                foreach (int i in Shuffle(idx, new System.Random(Derive(seed, TagLures, (int)tipo))).Take(idx.Count / 2))
+                    out_.Add(i);
+            }
+            return out_;
+        }
+
+        /// <summary>"T1" / "T2" / "T3": the key of the type in the content contract's lures.</summary>
+        public static string TypeKey(RetrievalTrialType t) => t switch
+        {
+            RetrievalTrialType.MeaningToKanji => "T1",
+            RetrievalTrialType.KanjiToMeaning => "T2",
+            _ => "T3",
+        };
+
+        /// <summary>
+        /// A lure trial (Propuesta_Trampas_T2_T3.md §2.1): the answer, the strong external lure, one
+        /// kanji of the set and one unrelated external option, shuffled. null when the content has
+        /// no lures for this kanji and type: the caller then builds the usual options.
+        /// Never two correct: the lures are checked by tools/kanji_metrics.py (§2.4).
+        /// </summary>
+        public static List<TrialOption> BuildLureOptions(IReadOnlyList<KanjiItem> set, KanjiItem target,
+                                                         RetrievalTrialType trialType, int seed)
+        {
+            KanjiLures l = null;
+            if (target.Content.Lures == null || !target.Content.Lures.TryGetValue(TypeKey(trialType), out l) ||
+                l == null || string.IsNullOrEmpty(l.LureStrong) || string.IsNullOrEmpty(l.Unrelated))
+            {
+                Debug.LogWarning($"{Log} {target.KanjiId} has no {TypeKey(trialType)} lures in the content; usual options.");
+                return null;
+            }
+            var rng = new System.Random(seed);
+            var delSet = Shuffle(set.Where(i => i.KanjiId != target.KanjiId).ToList(), rng)[0];
+            var opciones = new List<TrialOption>
+            {
+                new(target.KanjiId, OptionText(target, trialType), true, OptionKind.Correct),
+                new($"LURE_STRONG_{target.KanjiId}", l.LureStrong, false, OptionKind.LureStrong),
+                new(delSet.KanjiId, OptionText(delSet, trialType), false, OptionKind.InSet),
+                new($"UNRELATED_{target.KanjiId}", l.Unrelated, false, OptionKind.Unrelated),
+            };
+            return Shuffle(opciones, rng);
         }
 
         /// <summary>

@@ -153,10 +153,12 @@ namespace NeuroAdaptiveVR.Controllers
             _proactiveIndex = slot > 0 && available != LalCue.None ? slot : 0;
 
             var optionIds = new List<string>(request.Options.Count);
+            var optionKinds = new List<string>(request.Options.Count);
             string correctOptionId = null;
             foreach (var o in request.Options)
             {
                 optionIds.Add(o.OptionId);
+                optionKinds.Add(TrialOption.KindName(o.Kind));
                 if (o.IsCorrect) correctOptionId = o.OptionId;
             }
 
@@ -165,6 +167,10 @@ namespace NeuroAdaptiveVR.Controllers
                 { "kanji_char", request.Target.Character },
                 { "options", optionIds },          // en el orden presentado
                 { "correct_option", correctOptionId },
+                // D-F6-131: the kind of each option, same order, and whether this is a lure trial
+                // (the LSL mirror of TRIAL_STARTED says so on the EEG's clock).
+                { "option_kinds", optionKinds },
+                { "has_lure", optionKinds.Contains(TrialOption.KindName(OptionKind.LureStrong)) },
                 { "hint_available", available != LalCue.None },
                 { CueTelemetry.KeyCueTrigger, CueTelemetry.TriggerOf(_proactiveIndex, false) },
                 { CueTelemetry.KeyProactiveIndex, _proactiveIndex > 0 ? _proactiveIndex : (object)null },
@@ -333,10 +339,11 @@ namespace NeuroAdaptiveVR.Controllers
             bool isCorrect = false;
             string correctText = null;
             bool found = false;
+            var kind = OptionKind.InSet;
 
             foreach (var o in _request.Options)
             {
-                if (o.OptionId == optionId) { isCorrect = o.IsCorrect; found = true; }
+                if (o.OptionId == optionId) { isCorrect = o.IsCorrect; kind = o.Kind; found = true; }
                 if (o.IsCorrect) correctText = o.DisplayText;
             }
 
@@ -359,6 +366,9 @@ namespace NeuroAdaptiveVR.Controllers
                 { "kanji_char", _request.Target.Character },
                 { "selected_option", optionId },
                 { "is_correct", isCorrect },
+                // Outside the engine's decisions (D-F6-132): the estimator reads is_correct and RT only.
+                { "option_kind", TrialOption.KindName(kind) },
+                { "lure_selected", kind == OptionKind.LureStrong },
                 { "response_time_ms", responseTimeMs },
                 { "timed_out", false },   // sin timeout en Fase 2; el campo existe para no cambiar la forma
                 { "idle_ms", behavior != null ? _idle.IdleMs : (object)null },

@@ -112,8 +112,8 @@ log needs it: `TRIAL_STARTED` and `ANSWER_SELECTED`.
 |---|---|
 | `STATE_ENTERED` | since 30 Sep: `transition_sound_lead_ms` (int or null) — see §5.9 |
 | `TRIAL_SEQUENCE_GENERATED` | `block_state`, `kanji_set`, `seed`, `block_seed`, `seed_raw`, `trial_count`, `min_lag_requested`, `min_lag_achieved`, `distinct_pairs`, `ordering_attempts`, `sequence` — spec §6.1. See §5.8 |
-| `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option`, `hint_available` |
-| `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out` |
+| `TRIAL_STARTED` | `kanji_char`, `options` (ordered list of option ids as presented), `correct_option`, `hint_available`; since 4 Nov `option_kinds` (same order as `options`) and `has_lure` — see the lures note in §11, 4 Nov |
+| `ANSWER_SELECTED` | `kanji_char`, `selected_option`, `is_correct`, `response_time_ms`, `timed_out`; since 4 Nov `option_kind` (of the selected option) and `lure_selected` |
 | `HINT_REQUESTED` | `hint_type` (array of cue names), `hint_available`, `time_since_trial_start_ms` |
 | `TRIAL_COMPLETED` | `is_correct`, `response_time_ms`, `hint_count`, `cues_presented` (array of cue names), since 27 Oct `cue_asset_source` (D-F6-91, see the D9 fields table); since 30 Sep the stimulus fields `feedback_shown`, `feedback_audio_source`, `feedback_audio_ms`, `result_sound`, `result_sound_offset_ms`, `result_sound_ms`, `card_animation` — see §5.9; since 30 Sep (F3.3) also `idle_ms`, `idle_episodes`, `idle_longest_ms` and their thresholds — see §5.10 |
 | `KANJI_EXPOSED` | `kanji_id`, `kanji_char`, `exposure_index`, `discovery_type`, `exposure_ms`, `stage_ms` (array, one per derivation stage), `stages_authored` (how many of the four stages came from authored content, 1-4; a number, since 0008 projected as one), `object_source` (`BLENDER_FBX`, `PLACEHOLDER`; since 23 Oct), `object_audio_plays` (times the reading played during stage 1: 3 with the object approach of D-F6-49 on, 0 off; since 23 Oct), `audio_played`, `audio_source` (`AUTHORED`, `TTS_PLACEHOLDER`, `NONE`), `assembly` (`RAY` when the assembly events follow; `NOT_IMPLEMENTED` when the scene has no assembly controller, as in the 25 Sep cut-off build); since 27 Oct (C3, D-F6-64, D-F6-91, D-F6-104) `stage_asset_source` (array of four, `AUTHORED` / `PLACEHOLDER`: object, form 1, form 2, glyph), `summary_strip_onset_ms` (from the start of the exposure; null when the strip did not show), `summary_strip_ms` (0 without strip) and `c3_transition` (`CROSSFADE` / `SDF_MORPH`) — S5, spec §7.6 |
@@ -634,6 +634,16 @@ guarantee than remembering to synchronize two, and it is why neither field
 belongs in `TrialRequest`.
 
 ## 11 · Change log
+
+**4 November 2026 — lures (D-F6-129, D-F6-131, D-F6-132).** In S6, S7 and S8, half of the trials of
+each active type (rounded down; only T1 active) are lure trials: the four options are `CORRECT`,
+`LURE_STRONG`, `IN_SET`, `UNRELATED`. The two external options have ids `LURE_STRONG_<kanji_id>` and
+`UNRELATED_<kanji_id>` of the target (their glyph is in `kanji_content.json`, `lures`). New keys:
+`option_kinds` on `TRIAL_STARTED` and on each row of `TRIAL_SEQUENCE_GENERATED`, `has_lure` on
+`TRIAL_STARTED`, `option_kind` and `lure_selected` on `ANSWER_SELECTED`. `is_correct` and
+`response_time_ms` are unchanged and a lure trial counts in the estimator like any other; `option_kind`
+and `lure_selected` stay out of the decisions (D-F6-132). No version bump; no projection column yet
+(the keys are in `session_events.payload`).
 
 **4 November 2026 — S3 EEG step, sync test and S4 segments (F4, D-F6-74).** New payload keys on
 `SYSTEM_CHECK_COMPLETED` (`eeg_checked` is now true when the step ran, `eeg_ready_confirmed`) and two new
