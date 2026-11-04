@@ -16,3 +16,4 @@ httpx==0.27.2
 numpy==2.5.4
 pylsl==1.18.6
 pyxdf==1.18.0
+scipy==1.18.1
