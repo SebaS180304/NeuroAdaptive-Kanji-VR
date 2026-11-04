@@ -162,6 +162,21 @@ namespace NeuroAdaptiveVR.Core
         }
 
         /// <summary>
+        /// D-F6-139 (correction): the first-time work moves to S0, while the scene loads and before the
+        /// participant sees anything: every glyph the board can show, the S2 controls lectern and the
+        /// frames of the S4 closing eye (T2 diagnosis, 4 Nov).
+        /// </summary>
+        private void Start()
+        {
+            var json = Resources.Load<TextAsset>("kanji_content");
+            int added = FontPrewarm.Run(TMPro.TMP_Settings.defaultFontAsset, FontPrewarm.Characters(json != null ? json.text : null));
+            if (controlsIntro == null) controlsIntro = FindAnyObjectByType<ControlsIntro>();
+            if (controlsIntro != null) controlsIntro.Prebuild();
+            if (board != null) board.PrepareBaselineEye();
+            Debug.Log($"{Log} S0 prewarm: {added} glyphs added, controls lectern and S4 eye ready");
+        }
+
+        /// <summary>
         /// What the PARTICIPANT reads at the top of the board. Deliberately not
         /// the spec names (decided 24 September):
         /// - "Experimental Retrieval" would reveal the manipulation, so S6 and

@@ -1509,9 +1509,41 @@ namespace NeuroAdaptiveVR.Controllers
 
         private RectTransform _cross;
         private RawImage _eye;
-        private Texture2D _eyeTex;
-        private Color32[] _eyePx;
         private Coroutine _eyeClose;
+
+        /// <summary>
+        /// The closing eye, painted once in S0 (D-F6-139): PaintEye costs 14-89 ms per frame on the CPU
+        /// (T2, 4 Nov), so S4 only swaps among these. Frame k has openness 1 - k / (EyeFrames - 1).
+        /// </summary>
+        public const int EyeFrames = 25;
+        // NonSerialized: a domain reload would otherwise leave an empty array that reads as "prepared".
+        [System.NonSerialized] private Texture2D[] _eyeFrames;
+
+        /// <summary>How many times PaintEye ran: the harness checks S4 adds none (X28).</summary>
+        public static int PaintEyeCalls { get; private set; }
+
+        /// <summary>Paints the EyeFrames frames of the S4 eye; idempotent. Called in S0.</summary>
+        public void PrepareBaselineEye()
+        {
+            if (_eyeFrames != null && _eyeFrames.Length == EyeFrames && _eyeFrames[0] != null) return;
+            _eyeFrames = new Texture2D[EyeFrames];
+            var px = new Color32[EyeTexW * EyeTexH];
+            for (int k = 0; k < EyeFrames; k++)
+            {
+                PaintEye(px, EyeTexW, EyeTexH, 1f - k / (float)(EyeFrames - 1));
+                var t = new Texture2D(EyeTexW, EyeTexH, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+                t.SetPixels32(px);
+                t.Apply(false, true);   // GPU copy only: the CPU pixels are freed
+                _eyeFrames[k] = t;
+            }
+        }
+
+        /// <summary>The prepared frame closest to `openness` (prepares them if S0 did not).</summary>
+        public Texture2D EyeFrame(float openness)
+        {
+            PrepareBaselineEye();
+            return _eyeFrames[Mathf.RoundToInt((1f - Mathf.Clamp01(openness)) * (EyeFrames - 1))];
+        }
 
         /// <summary>
         /// S4: `instruction` above the centre and, in the centre, a static
@@ -1540,9 +1572,7 @@ namespace NeuroAdaptiveVR.Controllers
                 _eye = NewIcon("BaselineEye", board, new Vector2(eyeWidth, eyeWidth / 2f)).gameObject.AddComponent<RawImage>();
                 _eye.raycastTarget = false;
                 _eye.color = crossColor;
-                _eyeTex = new Texture2D(EyeTexW, EyeTexH, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-                _eyePx = new Color32[EyeTexW * EyeTexH];
-                _eye.texture = _eyeTex;
+                _eye.texture = EyeFrame(1f);
             }
             _eye.gameObject.SetActive(true);
             _eyeClose = StartCoroutine(CloseEye());
@@ -1564,9 +1594,7 @@ namespace NeuroAdaptiveVR.Controllers
                 float o = EyeOpenness(t, eyeOpenHoldSeconds, eyeCloseSeconds);
                 if (o != last)
                 {
-                    PaintEye(_eyePx, EyeTexW, EyeTexH, o);
-                    _eyeTex.SetPixels32(_eyePx);
-                    _eyeTex.Apply(false);
+                    _eye.texture = EyeFrame(o);
                     last = o;
                 }
                 if (o == 0f) { _eyeClose = null; yield break; }
@@ -1588,6 +1616,7 @@ namespace NeuroAdaptiveVR.Controllers
         /// </summary>
         public static void PaintEye(Color32[] px, int w, int h, float openness)
         {
+            PaintEyeCalls++;
             float r = w / 2f / 1.06f;   // pixels per half-width, with a margin so the stroke ends are not cut
             float H = EyeLidHeight, upH = EyeLidHeight * (2f * Mathf.Clamp01(openness) - 1f);
             float lashAlpha = Mathf.Clamp01(1f - 2f * openness);

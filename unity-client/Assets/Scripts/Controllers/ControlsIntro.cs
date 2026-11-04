@@ -177,6 +177,12 @@ namespace NeuroAdaptiveVR.Controllers
         // Runtime construction
         // ------------------------------------------------------------------
 
+        /// <summary>
+        /// Builds the lectern now, hidden (D-F6-139): called in S0 so S2 does not create its canvas,
+        /// texts and buttons in front of the participant. Run() reuses it.
+        /// </summary>
+        public void Prebuild() => Build();
+
         private void Build()
         {
             if (_root != null) return;

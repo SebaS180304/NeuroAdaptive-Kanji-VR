@@ -124,6 +124,7 @@ namespace NeuroAdaptiveVR.EditorTools
             ReconnectionCases();
             SoundSetCases();
             BaselineEyeCases();
+            PrewarmCases();
 
             Report();
         }
@@ -2596,6 +2597,50 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X25", "Marcadores LSL: SendSessionEvent sale en UnityMarkers y FRAME_HITCH > 50 ms",
                   p.Count == 0, p.Count == 0 ? "inlet local: " + got : Join(p));
+        }
+
+        /// <summary>
+        /// X28. D-F6-139: after the S0 prewarm the board's font gains no character from the texts the
+        /// board shows (content, stage titles, the controls lectern), and the S4 close shows prepared
+        /// frames without painting. The font check runs on a throwaway copy of the font: the asset on
+        /// disk is never written.
+        /// </summary>
+        private static void PrewarmCases()
+        {
+            var p = new List<string>();
+            var source = TMPro.TMP_Settings.defaultFontAsset;
+            string detalle = "";
+            if (source == null || source.sourceFontFile == null) p.Add("sin fuente por defecto con su .otf");
+            else
+            {
+                var tmp = TMPro.TMP_FontAsset.CreateFontAsset(source.sourceFontFile);
+                try
+                {
+                    var json = Resources.Load<TextAsset>("kanji_content");
+                    int first = FontPrewarm.Run(tmp, FontPrewarm.Characters(json.text));
+                    int later = FontPrewarm.Run(tmp, "Step 3 of 9 · Calibration ≡ MENU · re-center 月用矢 つき moon — →");
+                    detalle = $"{first} glifos en S0, {later} despues";
+                    if (first == 0 || later != 0) p.Add(detalle);
+                }
+                finally { UnityEngine.Object.DestroyImmediate(tmp); }
+            }
+
+            var board = UnityEngine.Object.FindAnyObjectByType<StudioTrialPresenter>();
+            if (board == null) p.Add("sin StudioTrialPresenter");
+            else
+            {
+                board.PrepareBaselineEye();
+                int before = StudioTrialPresenter.PaintEyeCalls;
+                var seen = new HashSet<Texture2D>();
+                for (float t = 0f; t <= 2f; t += 1f / 72f)
+                    seen.Add(board.EyeFrame(StudioTrialPresenter.EyeOpenness(t, 0.5f, 1f)));
+                if (StudioTrialPresenter.PaintEyeCalls != before) p.Add($"el cierre pinto {StudioTrialPresenter.PaintEyeCalls - before} veces");
+                if (seen.Count < StudioTrialPresenter.EyeFrames / 2) p.Add($"solo {seen.Count} fotogramas en el cierre");
+                if (board.EyeFrame(1f) == board.EyeFrame(0f)) p.Add("abierto y cerrado son el mismo fotograma");
+                detalle += $" · ojo: {seen.Count}/{StudioTrialPresenter.EyeFrames} fotogramas en el cierre, 0 pintados";
+            }
+            Check("X28", "S0 precalienta la fuente del board y el ojo de S4; despues no se agregan glifos ni se pinta (D-F6-139)",
+                  p.Count == 0, p.Count == 0 ? detalle : Join(p));
         }
 
         /// <summary>
