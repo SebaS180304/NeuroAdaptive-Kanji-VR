@@ -30,7 +30,8 @@
       "deltaMorae": 1,
       "applyReadingsBand": false
     },
-    "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)"
+    "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)",
+    "lures": "in half of each active type's trials of S6-S8, seeded and the same in the three conditions: [CORRECT, LURE_STRONG, IN_SET, UNRELATED]; only T1 active, provisional (D-F6-129, D-F6-130, D-F6-131)"
   },
   "sets": {
     "A": [
@@ -829,7 +830,18 @@
       "experimentalSet": "A",
       "perimetricComplexity": 151.1714,
       "imageabilityGlyph": 3,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "用",
+          "unrelated": "矢",
+          "provisional": true,
+          "similarityStrong": 0.7064,
+          "similarityUnrelated": -0.3201
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KURUMA",
@@ -846,7 +858,18 @@
       "experimentalSet": "A",
       "perimetricComplexity": 245.8083,
       "imageabilityGlyph": 2,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "卓",
+          "unrelated": "白",
+          "provisional": true,
+          "similarityStrong": 0.799,
+          "similarityUnrelated": -0.347
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_HI",
@@ -863,7 +886,18 @@
       "experimentalSet": "A",
       "perimetricComplexity": 196.9015,
       "imageabilityGlyph": 5,
-      "imageabilityObject": 2
+      "imageabilityObject": 2,
+      "lures": {
+        "T1": {
+          "lureStrong": "欠",
+          "unrelated": "刀",
+          "provisional": true,
+          "similarityStrong": 0.6789,
+          "similarityUnrelated": -0.1071
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_TAKE",
@@ -880,7 +914,18 @@
       "experimentalSet": "A",
       "perimetricComplexity": 184.091,
       "imageabilityGlyph": 5,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "枚",
+          "unrelated": "正",
+          "provisional": true,
+          "similarityStrong": 0.5335,
+          "similarityUnrelated": -0.1289
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_ISHI",
@@ -897,7 +942,18 @@
       "experimentalSet": "A",
       "perimetricComplexity": 178.9443,
       "imageabilityGlyph": 5,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "万",
+          "unrelated": "中",
+          "provisional": true,
+          "similarityStrong": 0.5271,
+          "similarityUnrelated": -0.3037
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_YAMA",
@@ -914,7 +970,18 @@
       "experimentalSet": "B",
       "perimetricComplexity": 109.1298,
       "imageabilityGlyph": 5,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "由",
+          "unrelated": "夏",
+          "provisional": true,
+          "similarityStrong": 0.7428,
+          "similarityUnrelated": -0.401
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_MON",
@@ -931,7 +998,18 @@
       "experimentalSet": "B",
       "perimetricComplexity": 190.2933,
       "imageabilityGlyph": 5,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "閉",
+          "unrelated": "書",
+          "provisional": true,
+          "similarityStrong": 0.7334,
+          "similarityUnrelated": -0.5015
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_ONNA",
@@ -948,7 +1026,18 @@
       "experimentalSet": "B",
       "perimetricComplexity": 179.3421,
       "imageabilityGlyph": 4,
-      "imageabilityObject": 3
+      "imageabilityObject": 3,
+      "lures": {
+        "T1": {
+          "lureStrong": "食",
+          "unrelated": "頭",
+          "provisional": true,
+          "similarityStrong": 0.5467,
+          "similarityUnrelated": -0.1698
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_TE",
@@ -965,7 +1054,18 @@
       "experimentalSet": "B",
       "perimetricComplexity": 175.0426,
       "imageabilityGlyph": 2,
-      "imageabilityObject": 3
+      "imageabilityObject": 3,
+      "lures": {
+        "T1": {
+          "lureStrong": "芋",
+          "unrelated": "左",
+          "provisional": true,
+          "similarityStrong": 0.7112,
+          "similarityUnrelated": -0.1579
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_AME",
@@ -982,7 +1082,18 @@
       "experimentalSet": "B",
       "perimetricComplexity": 310.9067,
       "imageabilityGlyph": 5,
-      "imageabilityObject": 2
+      "imageabilityObject": 2,
+      "lures": {
+        "T1": {
+          "lureStrong": "両",
+          "unrelated": "音",
+          "provisional": true,
+          "similarityStrong": 0.838,
+          "similarityUnrelated": -0.3382
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_HITO",
@@ -999,7 +1110,18 @@
       "experimentalSet": "C",
       "perimetricComplexity": 117.7705,
       "imageabilityGlyph": 5,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "入",
+          "unrelated": "空",
+          "provisional": true,
+          "similarityStrong": 0.8963,
+          "similarityUnrelated": -0.1197
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_ASHI",
@@ -1016,7 +1138,18 @@
       "experimentalSet": "C",
       "perimetricComplexity": 180.3663,
       "imageabilityGlyph": 3,
-      "imageabilityObject": 3
+      "imageabilityObject": 3,
+      "lures": {
+        "T1": {
+          "lureStrong": "示",
+          "unrelated": "先",
+          "provisional": true,
+          "similarityStrong": 0.6431,
+          "similarityUnrelated": -0.2597
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_USHI",
@@ -1033,7 +1166,18 @@
       "experimentalSet": "C",
       "perimetricComplexity": 159.0557,
       "imageabilityGlyph": 4,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "午",
+          "unrelated": "町",
+          "provisional": true,
+          "similarityStrong": 0.7399,
+          "similarityUnrelated": -0.1222
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_NIKU",
@@ -1050,7 +1194,18 @@
       "experimentalSet": "C",
       "perimetricComplexity": 271.8133,
       "imageabilityGlyph": 3,
-      "imageabilityObject": 4
+      "imageabilityObject": 4,
+      "lures": {
+        "T1": {
+          "lureStrong": "向",
+          "unrelated": "弓",
+          "provisional": true,
+          "similarityStrong": 0.6086,
+          "similarityUnrelated": -0.2575
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_HANA",
@@ -1067,7 +1222,18 @@
       "experimentalSet": "C",
       "perimetricComplexity": 226.3829,
       "imageabilityGlyph": 2,
-      "imageabilityObject": 5
+      "imageabilityObject": 5,
+      "lures": {
+        "T1": {
+          "lureStrong": "苑",
+          "unrelated": "力",
+          "provisional": true,
+          "similarityStrong": 0.5206,
+          "similarityUnrelated": -0.2645
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_NICHI",
@@ -1084,7 +1250,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 131.5747,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "旧",
+          "unrelated": "青",
+          "provisional": true,
+          "similarityStrong": 0.6959,
+          "similarityUnrelated": -0.5946
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KI",
@@ -1101,7 +1278,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 195.7528,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "本",
+          "unrelated": "校",
+          "provisional": true,
+          "similarityStrong": 0.7411,
+          "similarityUnrelated": -0.0143
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KAWA",
@@ -1118,7 +1306,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 133.8346,
       "imageabilityGlyph": 4,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "刷",
+          "unrelated": "春",
+          "provisional": true,
+          "similarityStrong": 0.5282,
+          "similarityUnrelated": -0.2673
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_TA",
@@ -1135,7 +1334,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 173.2935,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "円",
+          "unrelated": "黄",
+          "provisional": true,
+          "similarityStrong": 0.7947,
+          "similarityUnrelated": -0.3852
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KUCHI",
@@ -1152,7 +1362,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 100.6031,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "囚",
+          "unrelated": "年",
+          "provisional": true,
+          "similarityStrong": 0.6531,
+          "similarityUnrelated": -0.4762
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_TSUCHI",
@@ -1169,7 +1390,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 130.1651,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "上",
+          "unrelated": "村",
+          "provisional": true,
+          "similarityStrong": 0.8191,
+          "similarityUnrelated": -0.2331
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KO",
@@ -1186,7 +1418,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 143.5329,
       "imageabilityGlyph": 3,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "干",
+          "unrelated": "立",
+          "provisional": true,
+          "similarityStrong": 0.7056,
+          "similarityUnrelated": -0.1754
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_MIZU",
@@ -1203,7 +1446,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 214.3518,
       "imageabilityGlyph": 4,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "氷",
+          "unrelated": "朝",
+          "provisional": true,
+          "similarityStrong": 0.7719,
+          "similarityUnrelated": -0.0831
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_ME",
@@ -1220,7 +1474,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 162.9075,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "回",
+          "unrelated": "赤",
+          "provisional": true,
+          "similarityStrong": 0.7733,
+          "similarityUnrelated": -0.3908
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KOME",
@@ -1237,7 +1502,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 247.2319,
       "imageabilityGlyph": 3,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "未",
+          "unrelated": "冬",
+          "provisional": true,
+          "similarityStrong": 0.7832,
+          "similarityUnrelated": -0.045
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_ITO",
@@ -1254,7 +1530,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 277.584,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "系",
+          "unrelated": "早",
+          "provisional": true,
+          "similarityStrong": 0.5917,
+          "similarityUnrelated": -0.0885
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_MIMI",
@@ -1271,7 +1558,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 176.1098,
       "imageabilityGlyph": 4,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "且",
+          "unrelated": "声",
+          "provisional": true,
+          "similarityStrong": 0.5624,
+          "similarityUnrelated": -0.18
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KAI",
@@ -1288,7 +1586,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 210.88,
       "imageabilityGlyph": 5,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "居",
+          "unrelated": "名",
+          "provisional": true,
+          "similarityStrong": 0.6231,
+          "similarityUnrelated": -0.3049
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_GAKU",
@@ -1305,7 +1614,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 261.4257,
       "imageabilityGlyph": 3,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "半",
+          "unrelated": "色",
+          "provisional": true,
+          "similarityStrong": 0.6722,
+          "similarityUnrelated": -0.0998
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_MONO",
@@ -1322,7 +1642,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 343.317,
       "imageabilityGlyph": 1,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "牧",
+          "unrelated": "玉",
+          "provisional": true,
+          "similarityStrong": 0.5971,
+          "similarityUnrelated": -0.2244
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_KIN",
@@ -1339,7 +1670,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 285.5684,
       "imageabilityGlyph": 3,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "余",
+          "unrelated": "王",
+          "provisional": true,
+          "similarityStrong": 0.8464,
+          "similarityUnrelated": -0.0073
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_CHA",
@@ -1356,7 +1698,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 311.6753,
       "imageabilityGlyph": 1,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "革",
+          "unrelated": "文",
+          "provisional": true,
+          "similarityStrong": 0.6364,
+          "similarityUnrelated": -0.0064
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_UMA",
@@ -1373,7 +1726,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 273.3706,
       "imageabilityGlyph": 1,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "果",
+          "unrelated": "家",
+          "provisional": true,
+          "similarityStrong": 0.6545,
+          "similarityUnrelated": -0.1238
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_SAKANA",
@@ -1390,7 +1754,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 260.2697,
       "imageabilityGlyph": 1,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "危",
+          "unrelated": "星",
+          "provisional": true,
+          "similarityStrong": 0.6484,
+          "similarityUnrelated": -0.0286
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_TORI",
@@ -1407,7 +1782,18 @@
       "experimentalSet": null,
       "perimetricComplexity": 327.6185,
       "imageabilityGlyph": 1,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": {
+        "T1": {
+          "lureStrong": "島",
+          "unrelated": "夕",
+          "provisional": true,
+          "similarityStrong": 0.7998,
+          "similarityUnrelated": 0.0836
+        },
+        "T2": null,
+        "T3": null
+      }
     },
     {
       "id": "KANJI_ICHI",
@@ -1424,7 +1810,8 @@
       "experimentalSet": "Tutorial",
       "perimetricComplexity": 52.9304,
       "imageabilityGlyph": null,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": null
     },
     {
       "id": "KANJI_NI",
@@ -1441,7 +1828,8 @@
       "experimentalSet": "Tutorial",
       "perimetricComplexity": 58.1578,
       "imageabilityGlyph": null,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": null
     },
     {
       "id": "KANJI_SAN",
@@ -1458,7 +1846,8 @@
       "experimentalSet": "Tutorial",
       "perimetricComplexity": 119.7232,
       "imageabilityGlyph": null,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": null
     },
     {
       "id": "KANJI_YON",
@@ -1475,7 +1864,8 @@
       "experimentalSet": "Tutorial",
       "perimetricComplexity": 200.0783,
       "imageabilityGlyph": null,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": null
     },
     {
       "id": "KANJI_GO",
@@ -1492,7 +1882,8 @@
       "experimentalSet": "Tutorial",
       "perimetricComplexity": 162.6227,
       "imageabilityGlyph": null,
-      "imageabilityObject": null
+      "imageabilityObject": null,
+      "lures": null
     }
   ]
 }

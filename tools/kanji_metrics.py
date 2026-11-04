@@ -194,6 +194,45 @@ RESERVE = ["日", "木", "川", "田", "口", "土", "子", "水", "目", "米",
 # participante ya conoce no es un problema que haya que resolver, es el punto.
 TUTORIAL = ["一", "二", "三", "四", "五"]
 
+# ── TRAMPAS (D-F6-71, D-F6-129, D-F6-130, D-F6-131) ─────────────────────────
+# En la mitad de los trials de cada tipo, las 3 incorrectas son una trampa fuerte
+# externa, una del set y una sin relación externa (Propuesta_Trampas_T2_T3.md §2.1).
+# Solo T1 está activo (D-F6-131); T2 y T3 quedan vacíos hasta las listas de
+# Contenido (semana del 9 nov).
+#
+# T1, trampa fuerte: kanji de forma muy parecida. Es la lista de §15.2 de
+# Metricas_Dificultad_Kanji_Fase2.md, PROVISIONAL hasta que MIRAI responda (A-17).
+# Si cambia un par, se cambia aquí y se regenera el contrato (D-F6-130).
+LURE_T1: dict[str, str] = {
+    "月": "用", "車": "卓", "火": "欠", "竹": "枚", "石": "万",
+    "山": "由", "門": "閉", "女": "食", "手": "芋", "雨": "両",
+    "人": "入", "足": "示", "牛": "午", "肉": "向", "花": "苑",
+    "日": "旧", "木": "本", "川": "刷", "田": "円", "口": "囚",
+    "土": "上", "子": "干", "水": "氷", "目": "回", "米": "未",
+    "糸": "系", "耳": "且", "貝": "居", "学": "半", "物": "牧",
+    "金": "余", "茶": "革", "馬": "果", "魚": "危", "鳥": "島",
+}
+
+# T1, sin relación: el candidato de forma MENOS parecida al objetivo, uno distinto
+# por kanji, elegido por lure_table(). PROVISIONAL (desarrollo, 4 nov), hasta la
+# lista de Contenido. Candidatos: kanji de 1.º-2.º de primaria fuera del pool y de
+# las trampas, sin números (el tutorial son números) ni significados cercanos a
+# los del pool (森, 林, 男, 見, 草 quedan fuera). El significado está para
+# comprobar que ninguno es una segunda respuesta correcta.
+UNRELATED_T1_CANDIDATES: dict[str, str] = {
+    "王": "king", "音": "sound", "気": "spirit", "休": "rest", "玉": "ball",
+    "空": "sky", "犬": "dog", "校": "school", "左": "left", "正": "correct",
+    "青": "blue", "夕": "evening", "赤": "red", "先": "ahead", "早": "early",
+    "村": "village", "中": "middle", "虫": "insect", "町": "town", "年": "year",
+    "白": "white", "文": "writing", "名": "name", "立": "stand", "力": "power",
+    "船": "ship", "星": "star", "風": "wind", "家": "house", "春": "spring",
+    "夏": "summer", "秋": "autumn", "冬": "winter", "朝": "morning", "夜": "night",
+    "歌": "song", "絵": "picture", "書": "write", "線": "line", "紙": "paper",
+    "道": "road", "電": "electricity", "黄": "yellow", "黒": "black", "色": "colour",
+    "声": "voice", "頭": "head", "弓": "bow", "矢": "arrow", "刀": "sword",
+}
+LURE_TYPES = ("T1", "T2", "T3")
+
 # ── IDENTIDAD ESTABLE ───────────────────────────────────────────────────────
 # El `kanji_id` que viaja en cada evento de telemetria y que en Fase 3 pasa a
 # ser llave foranea en Postgres.
@@ -410,6 +449,57 @@ def substitution_table(g: "Glyphs") -> dict[str, dict[str, list[str]]]:
     return table
 
 
+def lure_table(g: "Glyphs") -> dict[str, dict]:
+    """Trampas por kanji (sets y reserva) y por tipo. T1: la fuerte de LURE_T1 y la
+    sin relación de menor similitud, distinta para cada kanji; T2 y T3: None."""
+    used: set[str] = set()
+    out: dict[str, dict] = {}
+    for ch in [c for v in SETS.values() for c in v] + RESERVE:
+        free = [c for c in UNRELATED_T1_CANDIDATES if c not in used]
+        sim, unrelated = min((g.similarity(ch, c), c) for c in free)
+        used.add(unrelated)
+        out[ch] = {"T1": {"lureStrong": LURE_T1[ch], "unrelated": unrelated, "provisional": True,
+                          "similarityStrong": round(g.similarity(ch, LURE_T1[ch]), 4),
+                          "similarityUnrelated": round(sim, 4)},
+                   "T2": None, "T3": None}
+    return out
+
+
+def check_lures(g: "Glyphs", table: dict[str, dict]) -> list[str]:
+    """Reglas de §2.4 de Propuesta_Trampas_T2_T3.md para T1. Cada línea es un fallo."""
+    pool = {c for v in SETS.values() for c in v} | set(RESERVE) | set(TUTORIAL)
+    meanings = {KANJI[c].meaning.lower() for c in pool if c in KANJI}
+    out = []
+    t1 = {ch: row["T1"] for ch, row in table.items()}
+    missing = [c for c in [c for v in SETS.values() for c in v] + RESERVE if not t1.get(c)]
+    if missing:
+        out.append(f"sin trampa T1: {''.join(missing)}")
+    t1 = {ch: r for ch, r in t1.items() if r}
+    strong = [r["lureStrong"] for r in t1.values()]
+    unrel = [r["unrelated"] for r in t1.values()]
+    for name, xs in (("fuerte", strong), ("sin relación", unrel)):
+        if len(set(xs)) != len(xs):
+            out.append(f"trampas {name} repetidas entre kanji")
+        if pool & set(xs):
+            out.append(f"trampa {name} dentro del pool: {''.join(sorted(pool & set(xs)))}")
+    if set(strong) & set(unrel):
+        out.append(f"un kanji es trampa fuerte y sin relación: {''.join(sorted(set(strong) & set(unrel)))}")
+    # Nunca dos correctas: en T1 la opción es un glifo; solo el objetivo significa el prompt.
+    for c in unrel:
+        if UNRELATED_T1_CANDIDATES[c].lower() in meanings:
+            out.append(f"{c} ({UNRELATED_T1_CANDIDATES[c]}) significa lo mismo que un kanji del pool")
+    for ch, r in t1.items():
+        if r["similarityUnrelated"] >= r["similarityStrong"]:
+            out.append(f"{ch}: la sin relación {r['unrelated']} se parece más que la fuerte {r['lureStrong']}")
+    # La trampa compite solo con su objetivo: no se parece a los otros cuatro del set.
+    for name, members in SETS.items():
+        for ch in (c for c in members if c in t1):
+            for other in members:
+                if other != ch and g.similarity(t1[ch]["lureStrong"], other) > SIM_MAX:
+                    out.append(f"set {name}: la trampa de {ch} ({t1[ch]['lureStrong']}) se parece a {other}")
+    return out
+
+
 def export_content(g: "Glyphs", path: str, stream=None) -> dict:
     """Escribe el contrato de contenido que consumen los ScriptableObjects.
 
@@ -420,6 +510,7 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
     """
     import json
     table = substitution_table(g)
+    lures = lure_table(g)
 
     def record(ch: str, role: str, set_name: str | None,
                discovery: str = "Pictographic") -> dict:
@@ -444,6 +535,8 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
             "perimetricComplexity": round(g.perimetric_complexity(ch), 4),
             "imageabilityGlyph": IMAGEABILITY_R1.get(ch),
             "imageabilityObject": IMAGEABILITY_R2.get(ch),
+            # Por tipo de trial (D-F6-131); null para el tutorial y para T2/T3 por ahora.
+            "lures": lures.get(ch),
         }
 
     blob = {
@@ -468,6 +561,9 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
                 "applyReadingsBand": SUBST_APPLY_READINGS_BAND,
             },
             "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)",
+            "lures": ("in half of each active type's trials of S6-S8, seeded and the same in the "
+                      "three conditions: [CORRECT, LURE_STRONG, IN_SET, UNRELATED]; only T1 active, "
+                      "provisional (D-F6-129, D-F6-130, D-F6-131)"),
         },
         "sets": {n: list(v) for n, v in SETS.items()},
         "reserve": list(RESERVE),
@@ -806,6 +902,14 @@ def main() -> int:
 
     orphans = [e for rows in table.values() for e, v in rows.items() if not v]
 
+    lures = lure_table(g)
+    print("Trampas T1 (provisionales, D-F6-130): kanji  fuerte (sim)  sin relación (sim)")
+    for ch, row in lures.items():
+        r = row["T1"]
+        print(f"  {ch}  {r['lureStrong']} ({r['similarityStrong']:+.2f})  {r['unrelated']} ({r['similarityUnrelated']:+.2f})")
+    print()
+    lure_problems = check_lures(g, lures)
+
     print("Imageabilidad - se reporta, no se exige (ver §12, D10):")
     for tag, tbl in (("R1 glifo ", IMAGEABILITY_R1),
                      ("R2 objeto", IMAGEABILITY_R2)):
@@ -829,8 +933,10 @@ def main() -> int:
 
     failures = check_bands(results)
     unrestricted = [c for c in collisions if "SIN RESTRICCIÓN" in c]
-    if failures or unrestricted or orphans:
+    if failures or unrestricted or orphans or lure_problems:
         print("FUERA DE BANDA:")
+        for p_ in lure_problems:
+            print(f"  trampas: {p_}")
         for o in orphans:
             print(f"  {o} no tiene ningún sustituto válido en la reserva")
         for f in failures:
@@ -840,7 +946,7 @@ def main() -> int:
         return 1
 
     print("Todos los sets dentro de banda; todas las colisiones restringidas; "
-          "todos los kanji con sustituto.")
+          "todos los kanji con sustituto; trampas T1 según §2.4.")
     return 0
 
 
