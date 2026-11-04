@@ -293,8 +293,9 @@ namespace NeuroAdaptiveVR.Core
         }
 
         /// <summary>
-        /// Which positions of the block carry a lure: half of the trials of each active type,
-        /// rounded down (P17 of D-F6-129: "la mitad"), drawn from the block seed. The draw only
+        /// Which positions of the block carry a lure: half of the trials of each active type (P17 of
+        /// D-F6-129); with an odd count the block seed rounds up or down (D-F6-145), so every block
+        /// averages 50 % and S6 is not always below S7. Drawn from the block seed. The draw only
         /// depends on the seed and the order of types, never on the condition (D-F6-131).
         /// </summary>
         public static HashSet<int> LureTrials(IReadOnlyList<RetrievalTrialType> types, int seed)
@@ -303,7 +304,9 @@ namespace NeuroAdaptiveVR.Core
             foreach (var tipo in ActiveLureTypes)
             {
                 var idx = Enumerable.Range(0, types.Count).Where(i => types[i] == tipo).ToList();
-                foreach (int i in Shuffle(idx, new System.Random(Derive(seed, TagLures, (int)tipo))).Take(idx.Count / 2))
+                // D-F6-145: with an odd count, the block's own seed rounds the half up or down.
+                bool up = idx.Count % 2 == 1 && (Derive(seed, TagLures, 100 + (int)tipo) & 1) == 1;
+                foreach (int i in Shuffle(idx, new System.Random(Derive(seed, TagLures, (int)tipo))).Take(idx.Count / 2 + (up ? 1 : 0)))
                     out_.Add(i);
             }
             return out_;

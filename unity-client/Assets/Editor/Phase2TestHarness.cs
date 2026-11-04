@@ -2664,7 +2664,8 @@ namespace NeuroAdaptiveVR.EditorTools
                 int t1 = plan.Trials.Count(t => t.TrialType == RetrievalTrialType.MeaningToKanji);
                 int conTrampa = plan.Trials.Count(Lure);
                 resumen.Add($"{state.ShortCode()} {conTrampa}/{t1} T1");
-                if (conTrampa != t1 / 2) p.Add($"{state.ShortCode()}: {conTrampa} trampas en {t1} T1");
+                if (conTrampa != t1 / 2 && !(t1 % 2 == 1 && conTrampa == t1 / 2 + 1))
+                    p.Add($"{state.ShortCode()}: {conTrampa} trampas en {t1} T1");
                 if (plan.Trials.Any(t => Lure(t) && t.TrialType != RetrievalTrialType.MeaningToKanji))
                     p.Add($"{state.ShortCode()}: trampa fuera de T1");
                 if (!plan.Trials.Select(Lure).SequenceEqual(again.Trials.Select(Lure)))
@@ -2690,7 +2691,24 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             foreach (var state in new[] { GameFlowState.S2_VRTutorial, GameFlowState.S5_StandardizedLearning })
                 if (TrialSequenceGenerator.HasLures(state)) p.Add($"{state.ShortCode()} lleva trampas");
-            Check("X27", "Trampas: la mitad de los T1 de S6-S8 con CORRECT, LURE_STRONG, IN_SET y UNRELATED; nada en T2/T3 ni S2/S5",
+
+            // D-F6-145: a block with an odd number of T1 rounds up or down by its own seed; an even one
+            // takes the exact half. Over 40 sessions S6 (3 T1) shows both roundings, and S7 always has
+            // floor or ceil of its own T1 count.
+            var s6Counts = new HashSet<int>();
+            for (int sesion = 1; sesion <= 40; sesion++)
+                foreach (var (state, n) in new[] { (GameFlowState.S6_GuidedPracticeCalibration, 9), (GameFlowState.S7_ExperimentalRetrieval, 20) })
+                {
+                    var plan = TrialSequenceGenerator.Build(state, set, n, minLag, TrialSequenceGenerator.BlockSeed(sesion, state));
+                    int t1 = plan.Trials.Count(t => t.TrialType == RetrievalTrialType.MeaningToKanji);
+                    int lures = plan.Trials.Count(t => t.Options.Any(o => o.Kind == OptionKind.LureStrong));
+                    bool ok = t1 % 2 == 0 ? lures == t1 / 2 : (lures == t1 / 2 || lures == t1 / 2 + 1);
+                    if (!ok) { p.Add($"sesion {sesion} {state.ShortCode()}: {lures} de {t1} T1"); break; }
+                    if (state == GameFlowState.S6_GuidedPracticeCalibration) s6Counts.Add(lures);
+                }
+            if (!s6Counts.SetEquals(new[] { 1, 2 })) p.Add($"S6 en 40 sesiones: {Join(s6Counts.Select(c => c.ToString()))} trampas (se esperan 1 y 2)");
+            resumen.Add($"S6 en 40 sesiones: {Join(s6Counts.OrderBy(c => c).Select(c => c.ToString()))}");
+            Check("X27", "Trampas: la mitad de los T1 de S6-S8 (impar: la semilla redondea, D-F6-145) con CORRECT, LURE_STRONG, IN_SET y UNRELATED; nada en T2/T3 ni S2/S5",
                   p.Count == 0, p.Count == 0 ? Join(resumen) : Join(p));
         }
 
