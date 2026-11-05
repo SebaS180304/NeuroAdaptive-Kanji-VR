@@ -558,7 +558,8 @@ namespace NeuroAdaptiveVR.Core
             {
                 Show("Please wait.\nThe researcher is checking the equipment.");
                 Debug.Log($"{Log} S3 · EEG checklist: (1) every channel BLUE in AURA's software; " +
-                          $"(2) LabRecorder RECORDING only AURA and UnityMarkers of {System.Environment.MachineName}. " +
+                          $"(2) LabRecorder RECORDING only AURA and UnityMarkers of {System.Environment.MachineName}, " +
+                          $"Start pressed AFTER the session was created: the file name in LabRecorder has this session's id ({SessionContext.SessionId}) (D-F6-146). " +
                           "Then 'EEG ready (researcher)' on SessionFlowRunner ('Force advance' if it cannot be met; recorded).");
                 _eegReady = false;
                 _forceAdvance = false;
