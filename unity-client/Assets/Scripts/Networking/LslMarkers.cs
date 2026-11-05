@@ -24,7 +24,7 @@ namespace NeuroAdaptiveVR.Networking
         public static readonly string SourceId = $"neuroadaptive-unity-{Environment.MachineName}";
 
         // Markers that are not session events (F4 §2.1, §2.4). app/eeg/baseline.py reads these names.
-        /// <summary>S3 and S9 sync test: the operator pulls a trigger while tapping Cz with that controller.</summary>
+        /// <summary>S3 and S9 sync test: the assistant strikes Cz's housing with a controller's ring and pulls its trigger at that instant (D-F6-150).</summary>
         public const string SyncTap = "SYNC_TAP";
         public const string EyesOpenStart = "EYES_OPEN_START";
         public const string EyesOpenEnd = "EYES_OPEN_END";

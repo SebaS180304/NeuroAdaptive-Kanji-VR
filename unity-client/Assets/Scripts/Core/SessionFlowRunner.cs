@@ -612,15 +612,17 @@ namespace NeuroAdaptiveVR.Core
         }
 
         /// <summary>
-        /// F4 §2.4: the operator pulls a controller's trigger while tapping Cz with that controller,
-        /// SyncTapCount times; each pull is a SYNC_TAP marker and each tap a spike on Cz, so the EEG
+        /// F4 §2.4, D-F6-150: the assistant strikes Cz's housing with a controller's ring and pulls its
+        /// trigger in the same movement, SyncTapCount times (one person: two would add a reaction time); each pull is a SYNC_TAP marker and each tap a spike on Cz, so the EEG
         /// and the markers line up at the start (S3) and the drift shows at the end (S9).
         /// </summary>
         private IEnumerator RunSyncTest(string phase)
         {
             Show("Please keep still.\nThe researcher will touch the top of the cap a few times.");
-            Debug.Log($"{Log} {phase} · sync test: pull a trigger while tapping Cz with that controller, " +
-                      $"{SyncTapCount} times, about 2 s apart ('Force advance' skips; recorded).");
+            Debug.Log($"{Log} {phase} · sync test (D-F6-150), ONE person, the assistant: rest the controller's ring on Cz's housing " +
+                      $"and pull the trigger AT THE SAME INSTANT the ring strikes it, {SyncTapCount} times. " +
+                      "Before the next one, check the spike on Cz in AURA's software. The participant does nothing " +
+                      "('Force advance' skips; recorded).");
             _forceAdvance = false;
             _syncTapRequested = false;
             int taps = 0;
