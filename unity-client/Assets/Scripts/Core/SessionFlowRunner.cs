@@ -117,6 +117,8 @@ namespace NeuroAdaptiveVR.Core
                  "Off only for sessions without the cap.")]
         [SerializeField] private bool eegStep = true;
         public const int SyncTapCount = 5;
+        [Tooltip("Block 3 (F4 §4): black headset screen after S9, to see whether the headset adds noise.")]
+        [SerializeField] private float blackBlockSeconds = 120f;
 
         [Header("Debug fallbacks (the session wins when it has them)")]
         [SerializeField] private string fallbackSet = "A";
@@ -331,6 +333,31 @@ namespace NeuroAdaptiveVR.Core
         /// <summary>One sync tap without a controller (Editor without the headset).</summary>
         [ContextMenu("Sync tap (researcher, no controller)")]
         public void RequestSyncTap() => _syncTapRequested = true;
+
+        /// <summary>Block 3 (F4 §4, pending since 29 Oct): the headset shows only black for
+        /// blackBlockSeconds, between BLACK_SCREEN_START/END markers. After S9, before LabRecorder's Stop.</summary>
+        [ContextMenu("Black screen block 3 (researcher, after S9)")]
+        public void RunBlackBlock()
+        {
+            if (_running) { Debug.LogWarning($"{Log} Block 3 only after S9: the session is still running."); return; }
+            StartCoroutine(BlackBlock());
+        }
+
+        private IEnumerator BlackBlock()
+        {
+            var cam = Camera.main;
+            if (cam == null) { Debug.LogError($"{Log} Block 3: no main camera."); yield break; }
+            var (mask, flags, color) = (cam.cullingMask, cam.clearFlags, cam.backgroundColor);
+            cam.cullingMask = 0;   // nothing rendered, world-space UI included
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            LslMarkers.Push(LslMarkers.BlackScreenStart, new Dictionary<string, object> { { "duration_s", blackBlockSeconds } });
+            Debug.Log($"{Log} Block 3: black screen for {blackBlockSeconds} s. Participant still, eyes open.");
+            yield return new WaitForSecondsRealtime(blackBlockSeconds);
+            LslMarkers.Push(LslMarkers.BlackScreenEnd);
+            (cam.cullingMask, cam.clearFlags, cam.backgroundColor) = (mask, flags, color);
+            Debug.Log($"{Log} Block 3 done. Now Stop in LabRecorder.");
+        }
 
         // ------------------------------------------------------------------
         // The chain

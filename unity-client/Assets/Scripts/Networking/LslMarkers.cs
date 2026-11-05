@@ -32,6 +32,9 @@ namespace NeuroAdaptiveVR.Networking
         public const string EyesClosedEnd = "EYES_CLOSED_END";
         /// <summary>Each S5 reading, when it starts sounding (D-F6-138): epochs.py drops the next second.</summary>
         public const string AudioOnset = "AUDIO_ONSET";
+        /// <summary>Block 3 after S9 (F4 §4): black headset screen, to look for screen-refresh peaks.</summary>
+        public const string BlackScreenStart = "BLACK_SCREEN_START";
+        public const string BlackScreenEnd = "BLACK_SCREEN_END";
 
         private static LSL.StreamOutlet _outlet;
         private static bool _failed;
