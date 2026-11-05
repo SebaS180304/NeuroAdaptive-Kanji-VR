@@ -117,6 +117,17 @@ def test_the_second_after_each_sound_onset_is_dropped() -> None:
     assert chunks[121.0] is False and chunks[122.0] is True
 
 
+def test_a_sound_drops_only_the_half_second_after_it() -> None:
+    # D-F6-149 (rule B): 0.5 s, so a sound at 114.4 s ends at 114.9 and leaves the 115 s chunk clean.
+    x, ts = _eeg()
+    markers = [(114.4, {"schema_version": 1, "event": "ANSWER_SELECTED", "trial_id": "S7-001"}),
+               (104.0, {"event": "AUDIO_ONSET", "kanji_id": "KANJI_TSUKI", "moment": "S5_EXPOSURE"})]
+    chunks = _chunks(epochs.make_epochs(x, ts, SR, MONTAGE, markers))
+    assert epochs.SOUND_S == 0.5
+    assert chunks[114.0] is False and chunks[115.0] is True
+    assert chunks[104.0] is False and chunks[105.0] is True
+
+
 def test_the_second_after_each_s5_reading_is_dropped() -> None:
     x, ts = _eeg()
     markers = [(104.0, {"event": "AUDIO_ONSET", "kanji_id": "KANJI_TSUKI", "moment": "S5_EXPOSURE"})]  # D-F6-138

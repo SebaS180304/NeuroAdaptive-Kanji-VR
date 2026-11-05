@@ -9,7 +9,7 @@ two overlapping epochs share it (P7 of D-F6-127). A chunk is dropped for:
   - amplitude: an index channel (all but Fp1) over 100 µV;
   - a flat index channel, or missing samples;
   - an open HEAD_AWAY;
-  - the second after a sound onset (select and reading at ANSWER_SELECTED, the result sound,
+  - the half second after a sound onset (D-F6-149) (select and reading at ANSWER_SELECTED, the result sound,
     the stage sound before STATE_ENTERED, each S5 reading at AUDIO_ONSET);
   - a FRAME_HITCH over 100 ms (D-F6-129).
 Quality: GOOD 4–5 clean chunks, ACCEPTABLE 3, POOR ≤ 2.
@@ -33,7 +33,7 @@ BLINK_UV, BLINK_PAD_S = 75.0, 0.2
 MAX_UV = 100.0
 FLAT_UV = 1.0         # peak to peak in a chunk; proposal, the 29 Oct signal sits at 7–17 µV
 MIN_SAMPLES = 0.9     # of a chunk's nominal samples
-SOUND_S = 1.0
+SOUND_S = 0.5         # rule B, D-F6-149: every sound, every stage, the three conditions
 HITCH_MS = 100.0
 
 
