@@ -2641,6 +2641,28 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X28", "S0 precalienta la fuente del board y el ojo de S4; despues no se agregan glifos ni se pinta (D-F6-139)",
                   p.Count == 0, p.Count == 0 ? detalle : Join(p));
+            FontAssetCases(source);
+        }
+
+        /// <summary>
+        /// X29. K0 (6 Nov, D-F6-159): the committed font asset already carries every character the board
+        /// can show, and TMP does not empty it on Editor quit or build. Otherwise each Play fills it and each
+        /// quit empties it, and git always shows it modified.
+        /// </summary>
+        private static void FontAssetCases(TMPro.TMP_FontAsset font)
+        {
+            var p = new List<string>();
+            if (font == null) p.Add("sin fuente por defecto");
+            else
+            {
+                if (new SerializedObject(font).FindProperty("m_ClearDynamicDataOnBuild").boolValue)
+                    p.Add("Clear Dynamic Data On Build activado: cerrar Unity o un build la vacia");
+                string chars = FontPrewarm.Characters(Resources.Load<TextAsset>("kanji_content").text);
+                string missing = new string(chars.Where(ch => !font.characterLookupTable.ContainsKey(ch)).ToArray());
+                if (missing.Length > 0) p.Add($"{missing.Length} de {chars.Length} caracteres sin glifo en el asset: {missing}");
+            }
+            Check("X29", "La fuente del board trae en el repo todos los caracteres del contenido y no se vacia al cerrar ni en build (K0, D-F6-159)",
+                  p.Count == 0, p.Count == 0 ? $"{font.characterTable.Count} caracteres en el asset" : Join(p));
         }
 
         /// <summary>
