@@ -189,6 +189,7 @@ async def test_save_rewrites_the_epochs_and_the_filter_of_the_session(client, pr
     assert [r.epoch_index for r in rows] == [0, 1]
     assert rows[0].chunk_clean == [True] * 5 and rows[0].quality == "GOOD" and rows[0].engagement_index is None
     assert fp["notch_hz"] == 60.0
+    assert fp["sound_s"] == 0.5 and fp["epochs_version"] == epochs.EPOCHS_VERSION  # D-F6-156: the rule travels
 
 
 # ---------- the 29 Oct recordings (on Sebas's PC only) ----------

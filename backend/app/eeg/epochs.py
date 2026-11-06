@@ -35,6 +35,7 @@ FLAT_UV = 1.0         # peak to peak in a chunk; proposal, the 29 Oct signal sit
 MIN_SAMPLES = 0.9     # of a chunk's nominal samples
 SOUND_S = 0.5         # rule B, D-F6-149: every sound, every stage, the three conditions
 HITCH_MS = 100.0
+EPOCHS_VERSION = "rule B (D-F6-149)"  # stored with the filter (D-F6-156); bump when a drop rule changes
 
 
 def quality(clean_chunks: int) -> str:
@@ -133,7 +134,7 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
 
 
 async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], filter_params: dict) -> None:
-    """Replaces the session's epochs and stores the filter they were computed with."""
+    """Replaces the session's epochs and stores the filter and the drop rule they were computed with."""
     sid = str(session_id)
     await db.execute(text("DELETE FROM eeg_epochs WHERE session_id = :s"), {"s": sid})
     if eps:
@@ -143,7 +144,7 @@ async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], f
             ":end_ms, :game_state, :trial_id, :esl_level, :chunk_clean, :clean_fraction, :quality)"),
             [{"s": sid, **e} for e in eps])
     await db.execute(text("UPDATE eeg_sessions SET filter_params = CAST(:f AS jsonb) WHERE session_id = :s"),
-                     {"s": sid, "f": json.dumps(filter_params)})
+                     {"s": sid, "f": json.dumps({**filter_params, "sound_s": SOUND_S, "epochs_version": EPOCHS_VERSION})})
 
 
 async def fill_from_xdf(session_id: str) -> list[dict]:
