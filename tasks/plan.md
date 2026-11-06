@@ -1,6 +1,6 @@
 # Implementation Plan: week of 2 – 6 Nov 2026 (F4 S2 · integrate the EEG)
 
-Written Mon 2 Nov 2026. **Aligned up to: D-F6-131** (`Estado_Actual.md`). **Approved by Sebas, 2 Nov (D-F6-132)**: the live LSL reader tries Docker for 30 min, else runs on the PC; a lure trial counts in the estimator window like any other, only `lure_selected` and `option_kind` stay out of the decisions; synthetic `AURA` for Monday's stop; LSL4Unity + liblsl.
+Written Mon 2 Nov 2026. **Fri 6 replanned on Fri 6 Nov, aligned up to D-F6-159, approved by Sebas (D-F6-159)**. Order: K0a → (K0b only if its gate holds) → K1 → F0 → F1 → F2 → F3, Stop after each; Mon–Thu sections aligned up to D-F6-131 (`Estado_Actual.md`). **Approved by Sebas, 2 Nov (D-F6-132)**: the live LSL reader tries Docker for 30 min, else runs on the PC; a lure trial counts in the estimator window like any other, only `lure_selected` and `option_kind` stay out of the decisions; synthetic `AURA` for Monday's stop; LSL4Unity + liblsl.
 Last week's plan is archived in `tasks/archive/semana_26oct_{plan,todo}.md`; its open items
 are carried over or dropped in the last section.
 
@@ -115,15 +115,141 @@ L1 + L3 ──▶ W4 S4 markers + EEG_BASELINE_RESULT ────────�
 - [ ] **H3:** EEG sample count around every `FRAME_HITCH` left: no lost samples.
 - [ ] **Stop:** results written for the EEG chat (`Claude outputs/`).
 
-## Fri 6 · cap
+## Fri 6 · cap (replanned 6 Nov; board §1 Vie 6, D-F6-149 to D-F6-155)
 
-- [ ] **F1:** full S1 → S9 with EEG and lures in the headset.
-- [ ] **F2:** `verify_eeg.sql` with the A-7 checks (D-F6-127) and what of F4 §7 exists today.
-- [ ] **F3:** review of spec v1.4 (PM sends it Thu); my notes as a draft, against
-  `Cambios_Spec_v1_4.md`.
-- [ ] **F4:** week log draft in `Claude outputs/`.
-- [ ] **Stop:** F4 S2 criterion met (`Planteamiento_Tecnico_F4.md` §4): one complete session
-  with EEG aligned to the events and quality per window in the database.
+Already in the code since Thu 5 pm: `SOUND_S = 0.5` (`4196699`, D-F6-149), the sync text for
+one person (`9d47670`, D-F6-150), `autorun` (`01e10ac`, D-F6-152). **Changed 6 Nov (Sebas):**
+before the cap, (K0) find and fix why the CJK font asset keeps showing as modified, then (K1)
+researcher keys instead of the components' menus (D-F6-158). New code today: K0, K1 and
+`database/verify_eeg.sql` (F2).
+
+```
+K0a font: diagnose ──Stop──▶ K0b font: the fix Sebas picks ──Stop──┐
+K1 researcher keys, letters (D-F6-158) ──Stop──────────────────┤
+                                                                   ▼
+F0 pre-cap list (D-F6-153) + autorun waiting ──Stop──▶ F1 session S1→S9, STATIC, set B
+   ──Stop──▶ F2 autorun output + offset/drift + verify_eeg.sql (b5bcf5bd and today's)
+   ──Stop──▶ F3 week close: F4 S2 criterion + Dudas para PM (Borrador_Plan_Fase6_9_6nov.md)
+```
+
+- [ ] **K0a · font, diagnosis only (correction, follows D-F6-139).** What I know: the asset
+  `NotoSansCJKjp-Regular SDF` is **Dynamic** (`m_AtlasPopulationMode: 1`,
+  `m_ClearDynamicDataOnBuild: 1`). `FontPrewarm.Run` (W5, `4b2f1ea`) adds every content
+  character in S0 with `TryAddCharacters`. In the Editor, TMP writes those glyphs into the
+  tracked `.asset` and its atlas, and something clears them again: right now the working copy
+  has empty glyph and character tables, while the commit has two (`…` and `_`). So the file
+  flips on every Play and every clear. To confirm, starting from a clean checkout, `git status`
+  after each of: open Unity → Play/Stop → close and reopen Unity → a build. Write down which
+  step writes and which clears. **Stop:** Sebas sees the cause and picks a fix.
+  Candidates, in my order of preference:
+  1. **Static atlas** made from `FontPrewarm.Characters(content json)` (ASCII + UI symbols +
+     every content character), committed once. Nothing writes at runtime. The S2 rasterizing
+     cost of T2 goes away for good, and the prewarm stays only as the "no glyph for" check.
+     Cost: the atlas must be regenerated when content adds characters. A harness case fails
+     if a content character is missing from it.
+  2. Keep it Dynamic, but rasterize into a **runtime copy** made in S0 and set it as the
+     default font. The tracked asset is never touched. It keeps the runtime cost that W5 moved
+     to S0.
+  3. Commit the cleared state and ignore the flips (`skip-worktree`): it hides the change,
+     it does not fix it. Not recommended.
+- [ ] **K0b · font fix** (correction): the option Sebas picks. Done when: clean checkout →
+  Play S0→S2 → Stop → restart Unity → `git status` clean. No glyph warnings in S0. S2 starts
+  without the hourglass (W5's 390 ms first frame or better). Harness green. One commit.
+  **Stop.**
+  **Gate before the cap (D-F6-159):** K0b goes in before the cap only if (1) the harness is
+  green with the "every content character has a glyph" case, (2) Sebas runs S0 → S2 in the
+  headset with no glyph warnings, and (3) there is still time before the cap. If any of the
+  three fails, K0b is not committed before the session: the session uses Thu 5's font (the
+  committed asset, with the working-copy diff discarded as on Thu 5), and K0b moves to after
+  the session or Mon 9. K1 goes next either way.
+- [ ] **K1 · researcher keys instead of component menus (F4, D-F6-74; D-F6-158, which brings
+  D-F6-154 forward and widens it).** Opening a component's menu freezes the headset for
+  1.6–3.9 s (A-22). Each of the five actions gets a letter key, read in
+  `SessionFlowRunner.Update` through `Keyboard.current` (Input System, as `DebugTrialPresenter`
+  and `DemoDirector` do). **No F-keys.** Each key acts only in its own state, calls the method
+  that exists today, and is logged:
+
+  | Key | Action (method today) | Acts only when |
+  | --- | --- | --- |
+  | **G** | Force advance (`ForceAdvance`) | a state is waiting (S1, S3) |
+  | **E** | EEG ready (`ConfirmEegReady`) | S3 |
+  | **T** | Sync tap without controller (`RequestSyncTap`) | Editor without headset, sync test of S3/S9 |
+  | **B** | Black screen block 3 (`RunBlackBlock`) | after S9 (the session chain has ended) |
+  | **C** | Force complete assembly (`KanjiAssemblyController.ForceComplete`) | an assembly is running (S5) |
+
+  1. **Clash check first, written down before any code** (D-F6-158). In the code, the debug
+     and demo keys are 1–4 and H (`DebugTrialPresenter`) and L, M, H and digits
+     (`DemoDirector`); `SessionFlowRunner` reads no keys. G, E, T, B and C are not among
+     them. I still check that neither component is active in `JapaneseLearningStudio`, and
+     in the Editor (Shortcut Manager + a real press in Play with the Game view focused) that
+     none of the five letters fires an Editor shortcut. W/E/R/T and friends are Scene-view
+     tool keys and should not fire with the Game view focused, but that needs a real check.
+     If a letter clashes, I propose another letter (never an F), write it in the draft, and
+     wait for Sebas.
+  2. One small static map, key → action + allowed state, so the harness can test it without
+     the Input System. `Update` only reads the five keys and calls the map.
+  3. Remove the five `[ContextMenu]` attributes. The methods stay public. "Start session
+     chain" and the debug/probe menus stay, since no session uses them.
+  4. The S0 log prints the key list with "Game view in front" (D-F6-154). The operator steps
+     of the draft replace "menu" with the letter.
+
+  **Done when:** a harness case passes (each key → its action in its state; in another
+  state, or with no key, nothing happens); the harness is green; in Play in the Editor
+  (headset by Link, no cap), pressing each key in its state gives no `FRAME_HITCH` > 100 ms;
+  the five menu entries are gone. One commit (body: F4, D-F6-158). **Stop.** If it is not
+  done before the cap, the session follows D-F6-153: menus only outside S4–S8.
+- [ ] **F0 · before the cap.** Unity restarted just before; Profiler closed; Blender, ChatGPT,
+  Firefox and VS Code closed on that PC (D-F6-153). Inspector: `condition = STATIC` (already
+  in the scene), **`newSessionKanjiSet = B`** (the scene has no override; the default is A),
+  `createNewSessionOnPlay` and `eegStep` on, `baselineTimeScale = 1`. Backend up without
+  `--reload`. `autorun` in a terminal says *waiting for a new session*. AURA all blue;
+  LabRecorder open, not recording. **Stop:** Sebas confirms the list.
+- [ ] **F1 · session.** The operator steps for Fri 6 in `Borrador_Plan_Fase6_9_5nov.md`. Sync
+  per D-F6-150: the assistant alone, controller ring on Cz's housing, trigger at the same
+  instant, 5 in S3 and 5 in S9, spike checked in AURA before the next. With K1: E in S3 and
+  B after S9, no menus. Without K1: menus only in S3 and after S9, opened and closed fast
+  (D-F6-153). **From S4 to S8 nobody touches the
+  PC, switches window or opens a menu, and nobody talks to the participant** (D-F6-152).
+  Block 3 before Stop, in the same XDF. **Stop:** session `COMPLETED`, XDF closed, autorun done.
+- [ ] **F2 · after.** Backend code, after the cap. The session doesn't wait for it.
+  - **F2a · autorun output:** *both streams recorded*; epoch counts with rule B; the
+    `eeg_sessions` alpha ratio from `baseline.py` (official, D-F6-155).
+  - **F2b · epochs record their rule; `b5bcf5bd` recomputed (D-F6-156).** `epochs.save` also
+    writes `sound_s` and `epochs_version` (a constant in `epochs.py`, bumped when a rule
+    changes) into `eeg_sessions.filter_params`, which already exists as jsonb, so no
+    migration is needed. Then `python -m app.eeg.epochs b5bcf5bd…` with rule B, which
+    rewrites its `eeg_epochs`; the XDF is the source, so nothing is lost. Test: `save` stores
+    both keys. Done when `b5bcf5bd`'s and today's rows say `sound_s = 0.5`. One commit.
+  - **F2c · offset and drift into `eeg_sessions` (D-F6-157).** New `app/eeg/sync.py`, made
+    from the 5 Nov scratch analysis. For each `SYNC_TAP`, find the Cz peak near the marker.
+    A tap without a clear peak does not count. **Offset** = median of (Cz peak time −
+    marker time) over the valid S3 taps. **Drift** = median over S9 − median over S3. With
+    fewer than 3 valid taps in S3 or in S9, the columns stay empty and the reason is kept.
+    Where to keep the reason and the per-tap detail: `eeg_sessions` has `sync_offset_ms` and
+    `sync_drift_ms` but no column for it, so I propose migration `0012` with a
+    `sync_detail jsonb` (taps, valid count, peak times, threshold, reason). The "clear peak"
+    threshold is not set in D-F6-157: **proposed, for Sebas** a search window of ±500 ms
+    around the marker and a peak > 5× the noise (MAD) of the 2 s before it (5 Nov: ≈ 480 µV
+    peak-to-peak vs ≈ 40 at rest). The value used is stored in `sync_detail`. Tests: a
+    synthetic XDF with known lags gives the expected offset and drift; 2 valid taps give
+    empty columns with a reason. `autorun` runs it after `epochs`. Done when today's session
+    has offset and drift (or empty with a reason) and `b5bcf5bd` has empty columns with
+    "no clear peak". One commit for 0012 + `sync.py` + autorun.
+  - **F2d · `database/verify_eeg.sql`**, read-only, in the style of
+    `verify_adaptation.sql` (`-v sid=`), with what of F4 §7 exists today: XDF + both streams
+    + row; offset/drift in range (±100 ms, drift < 50 ms) or empty with its reason; the rule
+    the epochs were made with; S4 alpha passes; S6 ≥ 6 non-POOR; % of S7 windows where the
+    EEG counts (≥ 2 non-POOR, ≥ 5 clean seconds counted once) ≥ 60 % (A-7, D-F6-127), as a
+    cross-check against the EEG chat's 61 % for `b5bcf5bd`; usable epochs per ESL level;
+    chunks dropped by `FRAME_HITCH` per state. Multimodal lines (`EEG_LED`, …) print "n/a,
+    no MULTIMODAL session yet". Run on `b5bcf5bd` (after F2b) and today's. One commit.
+  - **Stop:** Sebas sees both outputs.
+- [ ] **F3 · week close** in `Claude outputs/Borrador_Plan_Fase6_9_6nov.md`: done, findings,
+  F4 S2 criterion (§4: one complete session with EEG aligned to the events and quality per
+  window in the database) met or not, with the evidence; "Dudas para PM" (or "Sin dudas ·
+  6 nov"). `tasks/` up to date. **Stop:** Sebas's OK; the week's plan is archived Mon 9.
+- **Not today:** spec v1.4 review (moved to Mon 9, board §1); D-F6-151 (`window.py` ≥ 15 s)
+  week of 9 Nov; A-20 diagnosis.
 
 ## Checkpoints
 | When | Sebas checks | Blocks |
@@ -132,7 +258,13 @@ L1 + L3 ──▶ W4 S4 markers + EEG_BASELINE_RESULT ────────�
 | Tue pm | epochs and quality; hitch diagnosis and fix proposal | W5 |
 | Wed pm | lures S6–S8, S3, S4 in the Editor; no hourglass, no S4 hitches | Thu cap session |
 | Thu pm | offset, drift, alpha, black screen, sample loss | Fri full session |
-| Fri pm | F4 S2 criterion | S3 week (multimodal) |
+| Fri am, 1 | font cause (K0a) | the font fix |
+| Fri am, 2 | `git status` clean after Play + restart (K0b) | the cap |
+| Fri am, 3 | each letter in its state, no hitch > 100 ms (K1, D-F6-158) | the cap |
+| Fri am, 4 | pre-cap list (D-F6-153), autorun waiting | the session |
+| Fri, after S9 | session COMPLETED, XDF closed, autorun done | the analysis |
+| Fri pm | autorun output, offset/drift, `verify_eeg.sql` on both sessions | week close |
+| Fri close | F4 S2 criterion + Dudas para PM | S3 week (multimodal) |
 
 ## Risks and mitigations
 | Risk | Impact | Mitigation |
@@ -145,7 +277,26 @@ L1 + L3 ──▶ W4 S4 markers + EEG_BASELINE_RESULT ────────�
 | Lure trials and the estimator: "outside the decisions" (D-F6-71) is not explicit on whether a lure trial's error counts in the window | Different adaptations | Until PM answers, the estimator is untouched; lure fields are only recorded (question 2) |
 | 29 Oct XDFs have no markers | T1 test is partial | Artifact blocks are checked by time ranges from the F4 S1 summary; marker-based drops tested on synthetic data and on Monday's XDF |
 
-## Questions for Sebas (before the `/build` of Mon 2)
+## Fri 6 · risks
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| The sync taps leave no spike again | No offset/drift: the first line of `verify_eeg.sql` is empty, F4 S2 only partial | The assistant checks each spike in AURA before the next (D-F6-150); if none shows in S3, repeat before "EEG ready" |
+| `b5bcf5bd`'s epochs were made with rule A (1 s) | Its P7 % is not rule B | Question 6: re-run `epochs.py` on it, or report it as rule A |
+| STATIC has no adaptation decisions to mark the S7 windows | No windows for the P7 % | `verify_eeg.sql` builds them from 3 consecutive answered S7 trials, as the estimator does; checked on `b5bcf5bd` first |
+| A static atlas misses a character that content adds later | A blank glyph in the board | The S0 "no glyph for" warning stays, plus a harness case over the content json |
+| K0 or K1 is not ready before the cap | The session waits | The session doesn't wait for them: without K0b, the font diff is discarded as on Thu 5 (it is generated data); without K1, the D-F6-153 menu rule applies |
+| A letter is also an Editor shortcut with the Game view focused | The key triggers something else | Checked before coding (K1 step 1); on a clash, another letter is proposed, never an F (D-F6-158) |
+| "Clear peak" threshold too strict or too loose | Valid taps dropped, or noise counted as a tap | Threshold stored in `sync_detail`; the EEG chat recomputes from the XDF as a cross-check (D-F6-157) |
+## Questions for Sebas (Fri 6)
+5. ~~Font asset~~ → Sebas, 6 Nov: find the cause and fix it first (K0).
+6. ~~Re-run `b5bcf5bd`~~ → **D-F6-156** (F2b).
+7. ~~Offset/drift in `eeg_sessions`~~ → **D-F6-157** (F2c).
+8. ~~`sync_detail` and the clear-peak threshold~~ → **D-F6-159** (1): migration `0012` with
+   `eeg_sessions.sync_detail` jsonb (taps, valid ones, peak times, threshold used, reason);
+   clear peak = searched within ±500 ms of each `SYNC_TAP` and > 5× the MAD of the 2 s
+   before; the threshold used goes into `sync_detail`.
+
+## Questions for Sebas (before the `/build` of Mon 2; answered, D-F6-132)
 1. **Live LSL reader:** OK to try the container first (30 min) and, if it cannot see the
    streams, run `app/eeg` live as a host process on the PC? Wed needs it for
    `EEG_BASELINE_RESULT`.

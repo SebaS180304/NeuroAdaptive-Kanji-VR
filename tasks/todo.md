@@ -1,7 +1,7 @@
 # Todo: week of 2 – 6 Nov (F4 S2 · integrate the EEG)
 
 Plan: `tasks/plan.md`. Previous list: `tasks/archive/semana_26oct_todo.md`.
-**Aligned up to: D-F6-131** · approved by Sebas, 2 Nov (D-F6-132) (`Estado_Actual.md`, the board; it wins over this list).
+**Aligned up to: D-F6-159** (Fri 6 plan approved) (Fri 6 replanned 6 Nov; Mon–Thu: D-F6-131, approved 2 Nov, D-F6-132) (`Estado_Actual.md`, the board; it wins over this list).
 
 Every Unity commit body says **F4 (D-F6-74)**, **correction** or **content (D-F6-…)**.
 Every task ends with a **Stop**: Sebas's OK before the next dependent task.
@@ -76,20 +76,70 @@ Every task ends with a **Stop**: Sebas's OK before the next dependent task.
 
 ### [x] Stop Wed: lures S6–S8, S3/S4 markers in the Editor; no hourglass in S2, no hitches in S4. **Passed, Sebas, 4 Nov ~18:30:** `8a9e8deb` (`DEV_UNITY`, STATIC, S1–S9, synthetic AURA): no hourglass in S2, smooth S4 eye, lures fine (S6 2/3, S7 5/9, S8 2/5); sync 5/5 in S3 and S9; alpha 1.0 → not passed (expected, synthetic); 252 epochs. LabRecorder started before Play, so the XDF took the previous session's name (my step order; correct order D-F6-135); copied to the session's path, misnamed file deleted by Sebas. Finding: sounds leave S6–S8 mostly POOR (draft, finding 6).
 
-## Thu 5 · cap
+## Thu 5 · cap (session `b5bcf5bd`, BEHAVIOR_ADAPTIVE, set A; analysis in `Borrador_Plan_Fase6_9_5nov.md`)
 
-### [ ] H1: S3 and S4 in the headset with EEG: offset and drift (±100 ms, drift < 50 ms); alpha ratio.
-### [ ] H2: block 3, 2 min black screen, with markers.
-### [ ] H3: sample count around each `FRAME_HITCH`: no lost samples. Profiler connected during S4 in the headset (the ≈ 300 S4 slow frames of R2 not explained by T2).
-### [ ] Stop Thu: results for the EEG chat in `Claude outputs/`.
+### [-] H1: offset/drift **no data** (the taps missed Cz; method fixed in D-F6-150). Alpha 5.6 · 2.55 · 3.49, passes (official, D-F6-155).
+### [x] H2: block 3, `BLACK_SCREEN_START` → `END` 120.02 s (`14d46df`); no screen peak in 1–40 Hz.
+### [x] H3: 499–500 of 500 samples in ±1 s of every `FRAME_HITCH`. Hitches = Profiler recording + component menus (A-22 closed, D-F6-153).
+### [x] Afternoon: `SOUND_S = 0.5` (`4196699`), sync text (`9d47670`), `autorun` (`01e10ac`); backend 270 passed.
+### [x] Stop Thu: results for the EEG chat in `Claude outputs/Borrador_Plan_Fase6_9_5nov.md`.
 
-## Fri 6 · cap
+## Fri 6 · cap (STATIC, set B) · font and keys first (Sebas, 6 Nov)
 
-### [ ] F1: full S1 → S9 with EEG and lures in the headset.
-### [ ] F2: `verify_eeg.sql`: XDF + row, offset/drift in range, S4 alpha passes, S6 ≥ 6 non-POOR epochs (else S4 open marked), % S7 windows where the EEG counts (≥ 2 non-POOR, ≥ 5 clean seconds counted once) ≥ 60 % (D-F6-127).
-### [ ] F3: spec v1.4 review notes (draft in `Claude outputs/`).
-### [ ] F4: week log draft in `Claude outputs/`.
-### [ ] Stop Fri: F4 S2 criterion (`Planteamiento_Tecnico_F4.md` §4).
+### [x] K0a · font: why `NotoSansCJKjp-Regular SDF.asset` keeps showing as modified (diagnosis only; cause and options in `Borrador_Plan_Fase6_9_6nov.md`)
+- [x] Cause: Dynamic + Clear Dynamic Data On Build. Play (`FontPrewarm.Run`) fills it: 2 → 246 characters, 8.4 MB once saved (reproduced). Closing the Editor and every build empty it again (TMP source: `EditorApplication.quitting`, `TMP_PreBuildProcessor`; read in the source, not run live). The commit holds a 2-character state that no workflow produces.
+- [x] All 246 content characters have a glyph (no `[FontPrewarm]` warning).
+- [x] Asset back to the commit (Thu 5's font) and reimported; Thu 5's working copy saved in the scratchpad.
+- [ ] **Stop:** Sebas picks the fix (recommended: 1, untick the box + commit the 246 characters).
+
+### [x] K0b · font fix (correction; option 1, Sebas 6 Nov)
+- [x] X29 (RED 108/109: box on, 244/245 missing) → untick Clear Dynamic Data On Build + asset filled with the 245 characters (246, 4 pages, 8.4 MB) → GREEN 109/109.
+- [x] S0 prewarm on the real asset: 0 added, file byte-identical (sha1) after SaveAssets.
+- [x] Commit `ca53a70` (message `Downloads/commit_k0b_font.txt`, shown to Sebas first). `graphify update .`
+- [x] **Gate (D-F6-159):** met (Sebas, 6 Nov). Sebas runs S0→S2 in the headset, no glyph warnings · restart Unity → `git status` clean · time left before the cap. Otherwise no commit before the session: `git checkout` the asset (Thu 5's font) and K0b goes after the session or Mon 9.
+- [x] **Stop.**
+
+### [x] K1 · researcher keys instead of component menus (F4, D-F6-158; brings D-F6-154 forward and widens it)
+- [x] Clash check (draft, Shortcut Manager `[Default]`): no clash; G/E/T only switch Scene-view tools, C/B only inside closed windows. Live press in Play still pending (headset test). Was: G E T B C vs 1–4, H, L, M (`DebugTrialPresenter`, `DemoDirector`; are they active in `JapaneseLearningStudio`?) and vs Editor shortcuts with the Game view focused (Shortcut Manager + a real press in Play). On a clash: another letter, never an F, written down; wait for Sebas.
+- [x] Static map key → action + allowed state (`ResearcherKeyActs`; G = while the chain runs, since every wait takes Force advance); `SessionFlowRunner.Update` reads `Keyboard.current`: **G** Force advance · **E** EEG ready (S3) · **T** sync tap without controller (Editor without headset) · **B** block 3 (after S9) · **C** force complete assembly (S5). Each press logged; outside its state, logged and ignored.
+- [x] Remove the five `[ContextMenu]` attributes (methods stay). "Start session chain" and the debug/probe menus stay.
+- [x] S0 log: the key list + "Game view in front". Operator steps in the draft: letters instead of menus.
+- [x] Harness case X30 (13 combinations + 5 menus gone): 110/110. Was: each key → its action in its state; wrong state or no key → nothing. Harness green.
+- [x] Editor + headset by Link, no cap (Sebas, 6 Nov): each letter in its state, no `FRAME_HITCH` > 100 ms.
+- [x] One commit (body: F4, D-F6-158). `graphify update .`
+- [x] **Stop.** Not ready before the cap → D-F6-153 (menus only outside S4–S8).
+
+### [ ] F0 · before the cap (D-F6-153)
+- [ ] Unity restarted just before; Profiler closed; Blender, ChatGPT, Firefox, VS Code closed on that PC.
+- [ ] Inspector: `condition = STATIC`, `newSessionKanjiSet = B`, `createNewSessionOnPlay` on, `eegStep` on, `baselineTimeScale = 1`.
+- [ ] Backend up (no `--reload`). From `backend\`: `$env:POSTGRES_HOST='127.0.0.1'; .venv\Scripts\python -m app.eeg.autorun` → *waiting for a new session*.
+- [ ] AURA's software, all channels blue; LabRecorder open, not recording.
+- [ ] **Stop:** Sebas confirms the list.
+
+### [ ] F1 · session S1 → S9 (STATIC, set B)
+- [ ] Play → autorun prints the id and `ses-<8>`. LabRecorder: Update, tick only `AURA` and `UnityMarkers` of `LaptopSebas1803` (not MSI's `AURA`), check the name, Start.
+- [ ] S3: "EEG ready" with **E** (with K1) or the menu opened and closed fast (without K1). Sync (D-F6-150): the assistant alone, ring on Cz's housing, trigger at the same instant, ×5, spike in AURA before each next.
+- [ ] S4 → S8: nobody touches the PC, switches window or opens menus; nobody talks to the participant (D-F6-152).
+- [ ] S9: 5 taps again. Block 3 (2 min; **B** with K1), then Stop in LabRecorder.
+- [ ] **Stop:** session `COMPLETED`, XDF closed, autorun done.
+
+### [x] F2 · after the session (backend; the session doesn't wait for it)
+- [x] F2a (`742ec49a`: 304 epochs 156/60/88, alpha passes): autorun says *both streams recorded*; epoch counts (GOOD/ACCEPTABLE/POOR) with rule B; `eeg_sessions` alpha ratio and passed (official, D-F6-155).
+- [x] F2b (D-F6-156; b5bcf5bd A→B 166→190 non-POOR; commit `99e89f6`): `epochs.save` writes `sound_s` and `epochs_version` into `eeg_sessions.filter_params` (jsonb, no migration); test. Re-run `epochs.py` on `b5bcf5bd` with rule B. Both sessions show `sound_s = 0.5`. One commit.
+- [x] F2c (D-F6-157; 742ec49a offset 155.3 ms OUT, drift 0.1; b5bcf5bd empty; 277 passed; commit `c5fbf90`): `app/eeg/sync.py` + migration `0012` (`sync_detail jsonb`, D-F6-159). Offset = median(Cz peak − `SYNC_TAP`) over the valid S3 taps; drift = median S9 − median S3; < 3 valid taps in S3 or S9 → empty columns + reason. Clear peak (D-F6-159): ±500 ms, > 5× MAD of the 2 s before (stored in `sync_detail`). Tests: synthetic known lags; 2 valid taps → empty + reason. `autorun` runs it after `epochs`. Run on today's and on `b5bcf5bd` (empty, "no clear peak"). One commit.
+- [x] F2d (P7 S7: b5bcf5bd 56 %, 742ec49a 6 %; A-7 NOT VALID both; commit `080af89`): `database/verify_eeg.sql` (read-only, `-v sid=`): XDF + both streams + row; offset/drift in range or empty with its reason; epochs' rule; S4 alpha passes; S6 ≥ 6 non-POOR; % S7 windows with P7 ≥ 60 % (A-7, D-F6-127; vs the EEG chat's 61 % on `b5bcf5bd`); usable epochs per ESL level; `FRAME_HITCH` chunks per state; multimodal lines "n/a". One commit.
+- [x] Run F2d on `b5bcf5bd` (after F2b) and today's; output in the draft. Commit messages in Downloads, shown first. `graphify update .`
+- [x] **Stop:** Sebas saw both outputs. Pz diagnosis (not the cause) in the draft; second cap run moved to Mon 9 (Dudas 11).
+
+### [x] F3 · week close in `Claude outputs/Borrador_Plan_Fase6_9_6nov.md`
+- [x] Done, findings (recorded, not fixed), F4 S2 criterion (`Planteamiento_Tecnico_F4.md` §4) met or not, with the evidence.
+- [x] "Dudas para PM" with the date, or "Sin dudas · 6 nov".
+- [x] `tasks/` boxes up to date.
+- [x] **Stop:** Sebas's OK (6 Nov).
+
+### Moved
+- [-] Spec v1.4 review → Mon 9 (board §1).
+- [-] D-F6-151 (`window.py` ≥ 15 s) → week of 9 Nov.
 
 ---
 
