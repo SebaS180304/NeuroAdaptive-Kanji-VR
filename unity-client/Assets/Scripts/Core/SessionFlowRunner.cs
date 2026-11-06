@@ -6,6 +6,7 @@ using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Data;
 using NeuroAdaptiveVR.Networking;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace NeuroAdaptiveVR.Core
 {
@@ -176,6 +177,8 @@ namespace NeuroAdaptiveVR.Core
             if (controlsIntro != null) controlsIntro.Prebuild();
             if (board != null) board.PrepareBaselineEye();
             Debug.Log($"{Log} S0 prewarm: {added} glyphs added, controls lectern and S4 eye ready");
+            Debug.Log($"{Log} Researcher keys, Game view in front (D-F6-158): G force advance · E EEG ready (S3) · " +
+                      "T sync tap without controller (S3/S9) · B black block 3 (after S9) · C complete assembly (S5)");
         }
 
         /// <summary>
@@ -300,6 +303,49 @@ namespace NeuroAdaptiveVR.Core
         // Researcher controls
         // ------------------------------------------------------------------
 
+        /// <summary>K1 (D-F6-158): the researcher's actions are letter keys, read with the Game view in front.
+        /// A component's menu froze the headset 1.6-3.9 s (A-22). No F-keys.</summary>
+        public static readonly Key[] ResearcherKeys = { Key.G, Key.E, Key.T, Key.B, Key.C };
+
+        /// <summary>Whether a researcher key acts now; outside its state it is logged and ignored.</summary>
+        public static bool ResearcherKeyActs(Key key, GameFlowState state, bool chainRunning, bool assemblyRunning) => key switch
+        {
+            Key.G => chainRunning,                                   // every wait of the chain takes Force advance
+            Key.E => chainRunning && state == GameFlowState.S3_SystemValidation,
+            Key.T => chainRunning && (state == GameFlowState.S3_SystemValidation || state == GameFlowState.S9_SessionSummary),
+            Key.B => !chainRunning && state == GameFlowState.S9_SessionSummary,
+            Key.C => assemblyRunning,
+            _ => false,
+        };
+
+        private void Update()
+        {
+            var k = Keyboard.current;
+            if (k == null) return;
+            foreach (var key in ResearcherKeys)
+                if (k[key].wasPressedThisFrame) OnResearcherKey(key);
+        }
+
+        private void OnResearcherKey(Key key)
+        {
+            if (assembly == null) assembly = FindAnyObjectByType<KanjiAssemblyController>();
+            var state = flow.CurrentState;
+            if (!ResearcherKeyActs(key, state, _running, assembly != null && assembly.Running))
+            {
+                Debug.Log($"{Log} Key {key} ignored in {state.ShortCode()}{(_running ? "" : ", chain not running")}.");
+                return;
+            }
+            Debug.Log($"{Log} Key {key} in {state.ShortCode()}.");
+            switch (key)
+            {
+                case Key.G: ForceAdvance(); break;
+                case Key.E: ConfirmEegReady(); break;
+                case Key.T: RequestSyncTap(); break;
+                case Key.B: RunBlackBlock(); break;
+                case Key.C: assembly.ForceComplete(); break;
+            }
+        }
+
         [ContextMenu("Start session chain")]
         private void StartFromMenu()
         {
@@ -314,7 +360,6 @@ namespace NeuroAdaptiveVR.Core
         /// Researcher override for a state that is waiting (S1 without a choice,
         /// S3 with a failed check). Recorded wherever it is consumed.
         /// </summary>
-        [ContextMenu("Force advance (researcher)")]
         public void ForceAdvance()
         {
             Debug.LogWarning($"{Log} Researcher forced the advance of {flow.CurrentState}.");
@@ -323,7 +368,6 @@ namespace NeuroAdaptiveVR.Core
 
         /// <summary>S3 EEG checklist done: every channel blue in AURA's software, and LabRecorder
         /// RECORDING only AURA and UnityMarkers of this PC (D-F6-127, D-F6-135).</summary>
-        [ContextMenu("EEG ready (researcher)")]
         public void ConfirmEegReady()
         {
             Debug.Log($"{Log} Researcher confirmed the EEG checklist.");
@@ -331,12 +375,10 @@ namespace NeuroAdaptiveVR.Core
         }
 
         /// <summary>One sync tap without a controller (Editor without the headset).</summary>
-        [ContextMenu("Sync tap (researcher, no controller)")]
         public void RequestSyncTap() => _syncTapRequested = true;
 
         /// <summary>Block 3 (F4 §4, pending since 29 Oct): the headset shows only black for
         /// blackBlockSeconds, between BLACK_SCREEN_START/END markers. After S9, before LabRecorder's Stop.</summary>
-        [ContextMenu("Black screen block 3 (researcher, after S9)")]
         public void RunBlackBlock()
         {
             if (_running) { Debug.LogWarning($"{Log} Block 3 only after S9: the session is still running."); return; }
@@ -572,7 +614,7 @@ namespace NeuroAdaptiveVR.Core
                 string why = (headset ? "" : "no headset (XR is not running) · ") +
                              (websocket ? "" : "backend WebSocket disconnected");
                 Debug.LogError($"{Log} S3 FAILED: {why.TrimEnd(' ', '·')}. The session waits. " +
-                               "Fix it, or use 'Force advance (researcher)' on SessionFlowRunner -- " +
+                               "Fix it, or press G (force advance) -- " +
                                "the override is recorded.");
                 Show("Please wait.\nThe researcher is checking the equipment.");
                 yield return new WaitUntil(() => _forceAdvance);
@@ -587,7 +629,7 @@ namespace NeuroAdaptiveVR.Core
                 Debug.Log($"{Log} S3 · EEG checklist: (1) every channel BLUE in AURA's software; " +
                           $"(2) LabRecorder RECORDING only AURA and UnityMarkers of {System.Environment.MachineName}, " +
                           $"Start pressed AFTER the session was created: the file name in LabRecorder has this session's id ({SessionContext.SessionId}) (D-F6-146). " +
-                          "Then 'EEG ready (researcher)' on SessionFlowRunner ('Force advance' if it cannot be met; recorded).");
+                          "Then press E (EEG ready); G if it cannot be met (recorded).");
                 _eegReady = false;
                 _forceAdvance = false;
                 yield return new WaitUntil(() => _eegReady || _forceAdvance);
@@ -622,7 +664,7 @@ namespace NeuroAdaptiveVR.Core
             Debug.Log($"{Log} {phase} · sync test (D-F6-150), ONE person, the assistant: rest the controller's ring on Cz's housing " +
                       $"and pull the trigger AT THE SAME INSTANT the ring strikes it, {SyncTapCount} times. " +
                       "Before the next one, check the spike on Cz in AURA's software. The participant does nothing " +
-                      "('Force advance' skips; recorded).");
+                      "(G skips; recorded).");
             _forceAdvance = false;
             _syncTapRequested = false;
             int taps = 0;

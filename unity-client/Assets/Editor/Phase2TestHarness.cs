@@ -2663,6 +2663,45 @@ namespace NeuroAdaptiveVR.EditorTools
             }
             Check("X29", "La fuente del board trae en el repo todos los caracteres del contenido y no se vacia al cerrar ni en build (K0, D-F6-159)",
                   p.Count == 0, p.Count == 0 ? $"{font.characterTable.Count} caracteres en el asset" : Join(p));
+            ResearcherKeyCases();
+        }
+
+        /// <summary>
+        /// X30. K1 (D-F6-158): the five researcher actions are letter keys, each acting only in its own
+        /// state, and their component menus are gone (opening one froze the headset 1.6-3.9 s, A-22).
+        /// </summary>
+        private static void ResearcherKeyCases()
+        {
+            var p = new List<string>();
+            const GameFlowState S1 = GameFlowState.S1_WelcomeOrientation, S3 = GameFlowState.S3_SystemValidation,
+                                S5 = GameFlowState.S5_StandardizedLearning, S9 = GameFlowState.S9_SessionSummary;
+            // (key, state, chain running, assembly running, expected)
+            var table = new (UnityEngine.InputSystem.Key, GameFlowState, bool, bool, bool)[]
+            {
+                (UnityEngine.InputSystem.Key.G, S1, true, false, true),  (UnityEngine.InputSystem.Key.G, S9, false, false, false),
+                (UnityEngine.InputSystem.Key.E, S3, true, false, true),  (UnityEngine.InputSystem.Key.E, S5, true, false, false),
+                (UnityEngine.InputSystem.Key.T, S3, true, false, true),  (UnityEngine.InputSystem.Key.T, S9, true, false, true),
+                (UnityEngine.InputSystem.Key.T, S5, true, false, false),
+                (UnityEngine.InputSystem.Key.B, S9, false, false, true), (UnityEngine.InputSystem.Key.B, S9, true, false, false),
+                (UnityEngine.InputSystem.Key.B, S3, false, false, false),
+                (UnityEngine.InputSystem.Key.C, S5, true, true, true),   (UnityEngine.InputSystem.Key.C, S5, true, false, false),
+                (UnityEngine.InputSystem.Key.H, S3, true, true, false),
+            };
+            foreach (var (k, s, run, asm, want) in table)
+                if (SessionFlowRunner.ResearcherKeyActs(k, s, run, asm) != want)
+                    p.Add($"{k} en {s.ShortCode()} (cadena {run}, ensamblaje {asm}) deberia {(want ? "actuar" : "ignorarse")}");
+            if (SessionFlowRunner.ResearcherKeys.Length != 5) p.Add($"{SessionFlowRunner.ResearcherKeys.Length} teclas, se esperan 5");
+            var menus = new[] { (typeof(SessionFlowRunner), "ForceAdvance"), (typeof(SessionFlowRunner), "ConfirmEegReady"),
+                                (typeof(SessionFlowRunner), "RequestSyncTap"), (typeof(SessionFlowRunner), "RunBlackBlock"),
+                                (typeof(KanjiAssemblyController), "ForceComplete") };
+            foreach (var (t, m) in menus)
+            {
+                var mi = t.GetMethod(m);
+                if (mi == null) p.Add($"{t.Name}.{m} ya no existe");
+                else if (mi.GetCustomAttributes(typeof(ContextMenu), false).Length > 0) p.Add($"{t.Name}.{m} sigue en el menu del componente");
+            }
+            Check("X30", "Las cinco acciones del investigador son teclas G/E/T/B/C, cada una solo en su estado, sin menus de componente (K1, D-F6-158)",
+                  p.Count == 0, p.Count == 0 ? $"{table.Length} combinaciones · 5 menus quitados" : Join(p));
         }
 
         /// <summary>

@@ -85,10 +85,9 @@ namespace NeuroAdaptiveVR.Controllers
         private void HandleSlot(int index) { if (Running) _slotClicks.Enqueue(index); }
 
         /// <summary>
-        /// Researcher escape hatch: completes the running assembly with every
-        /// remaining segment in place. Recorded as forced_by_researcher.
+        /// Researcher escape hatch (key C, SessionFlowRunner, D-F6-158): completes the running
+        /// assembly with every remaining segment in place. Recorded as forced_by_researcher.
         /// </summary>
-        [ContextMenu("Force complete assembly (researcher)")]
         public void ForceComplete()
         {
             if (Running) _forced = true;
