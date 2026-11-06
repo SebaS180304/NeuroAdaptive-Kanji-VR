@@ -8,7 +8,7 @@ On the PC (outside Docker, D-F6-132), started before Play:
 2. starts baseline.py for it at once (it buffers until S4 ends, so it is running before S4);
 3. waits for the session to be COMPLETED (S9) and for the XDF to stop growing (Stop in LabRecorder,
    after block 3, D-F6-148);
-4. runs lsl_reader and epochs on the XDF, as the operator did by hand on 5 Nov.
+4. runs lsl_reader and epochs on the XDF, as the operator did by hand on 5 Nov, then sync (offset and drift, D-F6-157).
 """
 
 import asyncio
@@ -79,7 +79,7 @@ async def wait_xdf_closed(path: str) -> None:
 async def main() -> int:
     from datetime import datetime, timezone
 
-    from app.eeg import epochs, lsl_reader
+    from app.eeg import epochs, lsl_reader, sync
 
     sid, path = await wait_new_session(datetime.now(timezone.utc))
     print(f"session {sid}\n  LabRecorder file must contain ses-{sid[:8]}: {path}")
@@ -94,6 +94,8 @@ async def main() -> int:
     eps = await epochs.fill_from_xdf(sid)
     counts = {q: sum(e["quality"] == q for e in eps) for q in ("GOOD", "ACCEPTABLE", "POOR")}
     print(f"{len(eps)} epochs: {counts}")
+    offset, drift, detail = await sync.fill_from_xdf(sid)
+    print(f"sync: offset {offset} ms · drift {drift} ms" + (f" · {detail['reason']}" if detail["reason"] else ""))
     return 0
 
 
