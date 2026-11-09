@@ -1,150 +1,253 @@
-# Todo: week of 2 – 6 Nov (F4 S2 · integrate the EEG)
+# Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan: `tasks/plan.md`. Previous list: `tasks/archive/semana_26oct_todo.md`.
-**Aligned up to: D-F6-159** (Fri 6 plan approved) (Fri 6 replanned 6 Nov; Mon–Thu: D-F6-131, approved 2 Nov, D-F6-132) (`Estado_Actual.md`, the board; it wins over this list).
-
-Every Unity commit body says **F4 (D-F6-74)**, **correction** or **content (D-F6-…)**.
-Every task ends with a **Stop**: Sebas's OK before the next dependent task.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-178.** Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
 
-## Mon 2 · markers and recording
+## Mon 9 · quality, sync, indices; cap at 18:00
 
-### [x] L1 (F4): Unity LSL marker outlet (`97a6259`, `975f4da`; LSL4Unity embedded with one patch, harness X25, 105/105)
-- [ ] LSL4Unity + liblsl x64 in the project; Editor and Link build load it.
-- [ ] Outlet `UnityMarkers` / `Markers`, 1 string channel (JSON: `event`, `trial_id`, `event_id`, session clock), irregular rate.
-- [ ] Mirror every `SessionCommunicationClient.SendSessionEvent` (one call site). Check which of F4 §2.1's list are not session events today (sound onsets, S4 segments) and push only those.
-- [ ] `FRAME_HITCH` with `duration_ms` from `FrameRateLog` when a frame > 50 ms (D-F6-129).
-- [ ] Test: EditMode/harness case, an in-process inlet resolves the stream and receives a mirrored event and a synthetic 60 ms `FRAME_HITCH`; a 40 ms frame sends nothing. Harness green.
-
-### [x] L2: migration `0010` · `eeg_sessions` (`336c1ee`)
-- [ ] Session FK, XDF path, stream info (jsonb), filter params, montage (default CH1 Fp1 … CH8 P4, changes + reason), sync offset/drift, alpha ratio + passed, reason if the EEG does not count.
-- [ ] Test: upgrade/downgrade; default montage written.
-
-### [x] L3: `app/eeg/lsl_reader.py` (`b0bb83b`, `d455e33`; Docker spike negative: the live reader runs on the PC)
-- [ ] XDF read with corrected clock (`pyxdf`, dejitter); live inlet with `clocksync | dejitter` (P9).
-- [ ] Stream info into `eeg_sessions`; deps `pylsl`, `pyxdf`, `numpy`, `scipy` in `requirements.txt`.
-- [ ] Spike (30 min): can the container see LSL streams (`KnownPeers`)? If not, host process (question 1).
-- [ ] Test: the 29 Oct XDF 1 → 8 ch, 250.0 Hz, 70 254 samples, no gaps.
-
-### [x] L5: unique XDF name (P9) (`771e101` + fix: the backend sends `filename` and `stop` only; LabRecorder's remote `start` ticks every stream on the network, so the operator ticks the two and presses Start)
-- [ ] Check LabRecorder's remote-control commands in its docs/source first.
-- [ ] Backend sets `sub-<p>_ses-<session>_task-<condition>_run-<n>` and starts/stops recording; run counts up from existing files.
-- [ ] Test: fake TCP server receives the expected commands.
-- [-] Fallback: manual name field + box in the S3 checklist. Not needed: the remote control works from the container.
-
-### [x] L4 Stop: Editor session → one XDF with `AURA` (synthetic if no cap, question 3) and `UnityMarkers`, plus its `eeg_sessions` row. **Passed, Sebas, 2 Nov 16:48:** `41524441` (`DEV_UNITY`, STATIC, S1–S2): AURA 17 877 samples at 249.9998 Hz, 33 markers, all inside the EEG span; both streams from `LaptopSebas1803`. First try `2b91ff7d` recorded every stream on the network (LabRecorder's remote `start`); fixed in `31e0efb`, XDF deleted by Sebas.
-
-### [x] Close Mon: `tasks/`, `Borrador_Plan_Fase6_9_2nov.md` with "Dudas para PM" (lure trials in the estimator, question 2).
-
-## Tue 3 · epochs and performance
-
-### [x] T1: `preprocess.py`, `epochs.py`, migration `0011` · `eeg_epochs` (`e25bf8b`, done Wed 4; 29 Oct artifact blocks POOR; XDF 3 70 % clean chunks vs 81 % in the summary, the 200 ms blink pad: finding in `Borrador_Plan_Fase6_9_4nov.md`)
-- [ ] 1–40 Hz band-pass, 60 Hz notch; params stored per session. P16 relative-power helper (1–40 Hz denominator).
-- [ ] Epochs 5 s every 2.5 s; 1 s chunks with clean flags; drops: blink (Fp1 > 75 µV), amplitude > 100 µV, flat, `HEAD_AWAY` open, 1 s after a sound onset, `FRAME_HITCH` > 100 ms (D-F6-129). GOOD/ACCEPTABLE/POOR per reevaluation §5.3.
-- [ ] `eeg_epochs`: session, start/end, game state, `trial_id`, ESL level, chunk flags, clean fraction, quality (index columns empty until S3 week).
-- [ ] Tests: synthetic blink/flat/hitch chunks dropped; 29 Oct XDF 2 artifact blocks → POOR; XDF 3 S6/S7 counts near the S1 summary (14/14, 17/22) as a sanity check.
-
-### [x] T2 (correction, diagnosis only): Profiler (4 Nov; S2 = dynamic CJK font writes/reimports its asset + glyph rasterizing, 1.7 s; S4 = `PaintEye` on the CPU every frame, 14–89 ms; proposals 1 and 2 in `Borrador_Plan_Fase6_9_4nov.md`)
-- [ ] S2 entry hourglass: what stalls the main thread (load, instantiate, shader compile, GC).
-- [ ] S4 eye-closing hitches: where they fall (open/closed/switch) and the cause.
-- [ ] Proposal per hitch, not applied.
-
-### [ ] Stop Tue: epochs with quality; diagnosis + fix proposal.
-
-## Wed 4 · lures, S3 and S4
-
-### [x] W1: lure fields from `kanji_metrics.py` (D-F6-130, D-F6-131) (`39c1f3c`; §2.4 checks in the default verdict, not a `--verify` flag: the script had none)
-- [ ] Per kanji, per type (T1/T2/T3): `lure_strong`, `unrelated`, `provisional`. T1 strong = §15.2; T1 unrelated = outside the pool, minimum similarity, one per kanji. T2/T3 empty.
-- [ ] `--verify` rules (§2.4): never two correct (not a reading/meaning of the target nor of any pool kanji), one distinct lure per kanji and type, outside the pool.
-
-### [x] W2: lure trials in Unity + contract (`4ba0d4d`; harness 107/107, X27; no projection column yet: the keys are in `session_events.payload`)
-- [ ] `TrialOption` gets its kind; `BuildOptions` builds [CORRECT, LURE_STRONG, IN_SET, UNRELATED] in half of each active type's trials per block (S6, S7, S8), seeded, same in the three conditions. Per-type switch; only T1 on.
-- [ ] `option_kind` of the selected option and `lure_selected` in the contract (`EVENT_CONTRACT.md`, backend schema, LSL marker says the trial has a lure).
-- [ ] Estimator untouched: a lure trial counts in the window like any other (D-F6-132).
-- [ ] Harness: half of T1 per block, never two correct, same trials across conditions, T2/T3 unchanged.
-
-### [x] W3 (F4): S3 step: channels blue (operator confirms) + sync test (5 taps at start, 5 in S9, each a marker). (`e57e395`; checklist in S3 with "EEG ready (researcher)", `SYNC_TAP` markers, `SYNC_TEST_COMPLETED`; harness 106/106)
-- [ ] S3 checklist box: LabRecorder is **recording** only `AURA (LaptopSebas1803)` and `UnityMarkers (LaptopSebas1803)` (the operator presses Start by hand; the backend only names the file, 2 Nov).
-
-### [x] W4 (F4): S4 eye markers + `EEG_BASELINE_RESULT` (alpha ratio P3, Pz, P4; passes ≥ 1.2). (`e57e395` markers, `c9d5670` `app/eeg/baseline.py`, live on the PC; 29 Oct XDF 1: 5.18 / 3.46 / 4.29)
-
-### [x] W5 (correction): the approved perf fix; harness green. (`4b2f1ea`, D-F6-139: S0 prewarm of the font, the S2 lectern and the S4 eye frames; S2 first frame 1707 → 390 ms in the Editor; X28, 108/108)
-### [x] AUDIO_ONSET (F4, D-F6-138): marker on each S5 reading, dropped by `epochs.py` (`6c9e02c`).
-### [x] D-F6-145 (replaces D-F6-142): odd T1 counts round the half by the block seed (`ee79474`; X27, 108/108).
-### [x] Content (D-F6-122): set A M images with the new edge colour (`ac26857`).
-
-### [x] Stop Wed: lures S6–S8, S3/S4 markers in the Editor; no hourglass in S2, no hitches in S4. **Passed, Sebas, 4 Nov ~18:30:** `8a9e8deb` (`DEV_UNITY`, STATIC, S1–S9, synthetic AURA): no hourglass in S2, smooth S4 eye, lures fine (S6 2/3, S7 5/9, S8 2/5); sync 5/5 in S3 and S9; alpha 1.0 → not passed (expected, synthetic); 252 epochs. LabRecorder started before Play, so the XDF took the previous session's name (my step order; correct order D-F6-135); copied to the session's path, misnamed file deleted by Sebas. Finding: sounds leave S6–S8 mostly POOR (draft, finding 6).
-
-## Thu 5 · cap (session `b5bcf5bd`, BEHAVIOR_ADAPTIVE, set A; analysis in `Borrador_Plan_Fase6_9_5nov.md`)
-
-### [-] H1: offset/drift **no data** (the taps missed Cz; method fixed in D-F6-150). Alpha 5.6 · 2.55 · 3.49, passes (official, D-F6-155).
-### [x] H2: block 3, `BLACK_SCREEN_START` → `END` 120.02 s (`14d46df`); no screen peak in 1–40 Hz.
-### [x] H3: 499–500 of 500 samples in ±1 s of every `FRAME_HITCH`. Hitches = Profiler recording + component menus (A-22 closed, D-F6-153).
-### [x] Afternoon: `SOUND_S = 0.5` (`4196699`), sync text (`9d47670`), `autorun` (`01e10ac`); backend 270 passed.
-### [x] Stop Thu: results for the EEG chat in `Claude outputs/Borrador_Plan_Fase6_9_5nov.md`.
-
-## Fri 6 · cap (STATIC, set B) · font and keys first (Sebas, 6 Nov)
-
-### [x] K0a · font: why `NotoSansCJKjp-Regular SDF.asset` keeps showing as modified (diagnosis only; cause and options in `Borrador_Plan_Fase6_9_6nov.md`)
-- [x] Cause: Dynamic + Clear Dynamic Data On Build. Play (`FontPrewarm.Run`) fills it: 2 → 246 characters, 8.4 MB once saved (reproduced). Closing the Editor and every build empty it again (TMP source: `EditorApplication.quitting`, `TMP_PreBuildProcessor`; read in the source, not run live). The commit holds a 2-character state that no workflow produces.
-- [x] All 246 content characters have a glyph (no `[FontPrewarm]` warning).
-- [x] Asset back to the commit (Thu 5's font) and reimported; Thu 5's working copy saved in the scratchpad.
-- [ ] **Stop:** Sebas picks the fix (recommended: 1, untick the box + commit the 246 characters).
-
-### [x] K0b · font fix (correction; option 1, Sebas 6 Nov)
-- [x] X29 (RED 108/109: box on, 244/245 missing) → untick Clear Dynamic Data On Build + asset filled with the 245 characters (246, 4 pages, 8.4 MB) → GREEN 109/109.
-- [x] S0 prewarm on the real asset: 0 added, file byte-identical (sha1) after SaveAssets.
-- [x] Commit `ca53a70` (message `Downloads/commit_k0b_font.txt`, shown to Sebas first). `graphify update .`
-- [x] **Gate (D-F6-159):** met (Sebas, 6 Nov). Sebas runs S0→S2 in the headset, no glyph warnings · restart Unity → `git status` clean · time left before the cap. Otherwise no commit before the session: `git checkout` the asset (Thu 5's font) and K0b goes after the session or Mon 9.
+### [x] M1 · sync at strike onset (S)
+`backend/app/eeg/sync.py`, `autorun.py`, `tests/test_eeg_sync.py`, `test_eeg_autorun.py`.
+- [x] Onset (D-F6-161, F4 §2.4): last point before the peak where **raw** |Cz| falls under max(5 × noise, 10 % of the peak). Noise = MAD × 1.4826 of Cz **from 400 to 150 ms before the peak** (F4 Registro 6 Nov §1), not the 2 s before the search window: taps close together contaminate that one. Peak stays in `sync_detail`, does not correct.
+- [x] Each tap keeps its onset lag and its peak lag; `sync_detail` adds the spread of every clear tap (S3 and S9). The requirement (spread ≤ 50 ms, drift < 50 ms, |offset| ≤ 250 ms) is checked in `verify_eeg.sql` (M3), as today.
+- [x] Offset = median of S3 only; S9 only measures drift; S9 under 3 clear taps → drift empty, session marked with its reason, offset kept (D-F6-173, D-F6-176).
+- [x] `autorun`: lsl_reader → **sync → epochs**. Remove "Now block 3" (D-F6-167).
+- [x] Tests: synthetic strike with known onset; 2 valid taps in S9 → offset kept, marked; 2 in S3 → empty; autorun order.
+- [x] **Check:** on `742ec49a`, S3 offset 35.3 ms, spread 18.4, drift +16.9; `b5bcf5bd` empty with reason. Per tap, exactly one sample (4 ms) before the EEG chat's; their ≈ 47 is the median of all 10 taps, the offset is S3 only (D-F6-157/173/176).
 - [x] **Stop.**
 
-### [x] K1 · researcher keys instead of component menus (F4, D-F6-158; brings D-F6-154 forward and widens it)
-- [x] Clash check (draft, Shortcut Manager `[Default]`): no clash; G/E/T only switch Scene-view tools, C/B only inside closed windows. Live press in Play still pending (headset test). Was: G E T B C vs 1–4, H, L, M (`DebugTrialPresenter`, `DemoDirector`; are they active in `JapaneseLearningStudio`?) and vs Editor shortcuts with the Game view focused (Shortcut Manager + a real press in Play). On a clash: another letter, never an F, written down; wait for Sebas.
-- [x] Static map key → action + allowed state (`ResearcherKeyActs`; G = while the chain runs, since every wait takes Force advance); `SessionFlowRunner.Update` reads `Keyboard.current`: **G** Force advance · **E** EEG ready (S3) · **T** sync tap without controller (Editor without headset) · **B** block 3 (after S9) · **C** force complete assembly (S5). Each press logged; outside its state, logged and ignored.
-- [x] Remove the five `[ContextMenu]` attributes (methods stay). "Start session chain" and the debug/probe menus stay.
-- [x] S0 log: the key list + "Game view in front". Operator steps in the draft: letters instead of menus.
-- [x] Harness case X30 (13 combinations + 5 menus gone): 110/110. Was: each key → its action in its state; wrong state or no key → nothing. Harness green.
-- [x] Editor + headset by Link, no cap (Sebas, 6 Nov): each letter in its state, no `FRAME_HITCH` > 100 ms.
-- [x] One commit (body: F4, D-F6-158). `graphify update .`
-- [x] **Stop.** Not ready before the cap → D-F6-153 (menus only outside S4–S8).
+### [x] M2 · epochs: 9 chunks, covered time, offset (M)
+`backend/app/eeg/epochs.py`, migration `0013`, `tests/test_eeg_epochs.py`.
+- [x] 9 chunks of 1 s every 0.5 s from the epoch start (D-F6-163).
+- [x] Quality = union of clean chunks: GOOD ≥ 4 s, ACCEPTABLE ≥ 3 s, POOR < 3 s (D-F6-166). `clean_fraction` = covered / 5.
+- [x] `fill_from_xdf` subtracts the S3 offset from the EEG stamps, the same as live and replay (D-F6-176). Under 3 clear taps in S3: no correction, marked. Only S9 fails: corrected, marked, no drift.
+- [x] Migration 0013: `cardinality(chunk_clean) IN (5, 9)`, up and down. Rows of sessions not recomputed stay valid.
+- [x] `EPOCHS_VERSION` bumped; docstring.
+- [x] Tests: 3 s of clean time in separate stretches is ACCEPTABLE; 2 clean chunks is POOR; five clean fixed chunks grade as D-F6-73; the offset moves a sound's exclusion by exactly that; migration up/down.
+- [x] **Stop.**
 
-### [ ] F0 · before the cap (D-F6-153)
-- [ ] Unity restarted just before; Profiler closed; Blender, ChatGPT, Firefox, VS Code closed on that PC.
-- [ ] Inspector: `condition = STATIC`, `newSessionKanjiSet = B`, `createNewSessionOnPlay` on, `eegStep` on, `baselineTimeScale = 1`.
-- [ ] Backend up (no `--reload`). From `backend\`: `$env:POSTGRES_HOST='127.0.0.1'; .venv\Scripts\python -m app.eeg.autorun` → *waiting for a new session*.
-- [ ] AURA's software, all channels blue; LabRecorder open, not recording.
-- [ ] **Stop:** Sebas confirms the list.
+### [x] M3 · verify_eeg.sql and recompute (S)
+`database/verify_eeg.sql`.
+- [x] Chunk start from the epoch's own length: `(k − 1) × 4000 / (cardinality − 1)` ms.
+- [x] P7 window (D-F6-162, D-F6-151, D-F6-172): ends at `answered_elapsed_ms`, reaches back over max(3 trials, 15 s), epochs by centre **and finished at the answer**, clean seconds as a union.
+- [x] Block 5 prints the official figure and, as a contrast only, the figure by centre without the finished rule. A-7 uses the official one.
+- [x] Sync block: spread ≤ 50, drift < 50, |offset| ≤ 250; session marked when there is no valid sync.
+- [x] Recompute `742ec49a` and `b5bcf5bd` (`sync` then `epochs`, D-F6-156).
+- [x] **Check:** official P7 `b5bcf5bd` 67 % (12/18), `742ec49a` 78 % (14/18), both A-7 VALID. Contrast 72 % and 83 % vs the EEG chat's 78 % and 72 %: 1 and 2 windows of difference, reported in the draft, not adjusted.
+- [x] **Stop:** Sebas sees both outputs. **Target 17:00; the cap does not wait for it.**
 
-### [ ] F1 · session S1 → S9 (STATIC, set B)
-- [ ] Play → autorun prints the id and `ses-<8>`. LabRecorder: Update, tick only `AURA` and `UnityMarkers` of `LaptopSebas1803` (not MSI's `AURA`), check the name, Start.
-- [ ] S3: "EEG ready" with **E** (with K1) or the menu opened and closed fast (without K1). Sync (D-F6-150): the assistant alone, ring on Cz's housing, trigger at the same instant, ×5, spike in AURA before each next.
-- [ ] S4 → S8: nobody touches the PC, switches window or opens menus; nobody talks to the participant (D-F6-152).
-- [ ] S9: 5 taps again. Block 3 (2 min; **B** with K1), then Stop in LabRecorder.
-- [ ] **Stop:** session `COMPLETED`, XDF closed, autorun done.
+### [x] M7 · cap session (17:15 list, 18:00–19:45)
+- [x] 17:15 D-F6-153: Unity restarted; Profiler closed; Blender, ChatGPT, Firefox, VS Code closed.
+- [x] Inspector: `condition = BEHAVIOR_ADAPTIVE`, `newSessionKanjiSet = C`, `createNewSessionOnPlay` on, `eegStep` on, `baselineTimeScale = 1`. Inspector changes reverted after.
+- [x] Backend up, no `--reload`, restarted with today's commits. `autorun` waiting. AURA all blue, **Pz checked** (D-F6-164); LabRecorder open, not recording.
+- [x] **Stop:** Sebas confirms the list.
+- [x] Play → LabRecorder: Update, tick only this PC's `AURA` and `UnityMarkers`, name has this session's id (D-F6-146), Start.
+- [x] S3 and S9: 5 taps each, **≈ 3 s apart**, spike seen in AURA before the next (D-F6-150, D-F6-164). **E** for EEG ready.
+- [x] S4 → S8: nobody touches the PC, nobody talks to the participant. **No block 3.** Stop in LabRecorder after S9.
+- [x] Autorun finishes (if M1 is not committed yet, `sync` and `epochs` are rerun after it); `verify_eeg.sql` on the new session; second sync measurement noted (A-23).
+- [x] 19:45 XDF to the EEG chat.
+- [x] **Stop:** session `COMPLETED`, XDF closed.
 
-### [x] F2 · after the session (backend; the session doesn't wait for it)
-- [x] F2a (`742ec49a`: 304 epochs 156/60/88, alpha passes): autorun says *both streams recorded*; epoch counts (GOOD/ACCEPTABLE/POOR) with rule B; `eeg_sessions` alpha ratio and passed (official, D-F6-155).
-- [x] F2b (D-F6-156; b5bcf5bd A→B 166→190 non-POOR; commit `99e89f6`): `epochs.save` writes `sound_s` and `epochs_version` into `eeg_sessions.filter_params` (jsonb, no migration); test. Re-run `epochs.py` on `b5bcf5bd` with rule B. Both sessions show `sound_s = 0.5`. One commit.
-- [x] F2c (D-F6-157; 742ec49a offset 155.3 ms OUT, drift 0.1; b5bcf5bd empty; 277 passed; commit `c5fbf90`): `app/eeg/sync.py` + migration `0012` (`sync_detail jsonb`, D-F6-159). Offset = median(Cz peak − `SYNC_TAP`) over the valid S3 taps; drift = median S9 − median S3; < 3 valid taps in S3 or S9 → empty columns + reason. Clear peak (D-F6-159): ±500 ms, > 5× MAD of the 2 s before (stored in `sync_detail`). Tests: synthetic known lags; 2 valid taps → empty + reason. `autorun` runs it after `epochs`. Run on today's and on `b5bcf5bd` (empty, "no clear peak"). One commit.
-- [x] F2d (P7 S7: b5bcf5bd 56 %, 742ec49a 6 %; A-7 NOT VALID both; commit `080af89`): `database/verify_eeg.sql` (read-only, `-v sid=`): XDF + both streams + row; offset/drift in range or empty with its reason; epochs' rule; S4 alpha passes; S6 ≥ 6 non-POOR; % S7 windows with P7 ≥ 60 % (A-7, D-F6-127; vs the EEG chat's 61 % on `b5bcf5bd`); usable epochs per ESL level; `FRAME_HITCH` chunks per state; multimodal lines "n/a". One commit.
-- [x] Run F2d on `b5bcf5bd` (after F2b) and today's; output in the draft. Commit messages in Downloads, shown first. `graphify update .`
-- [x] **Stop:** Sebas saw both outputs. Pz diagnosis (not the cause) in the draft; second cap run moved to Mon 9 (Dudas 11).
+### [x] M4 · features.py (S)
+`backend/app/eeg/features.py` (new), `epochs.py` save, test.
+- [x] Welch with Hann 1 s on clean chunks only; bins 4–7 / 8–12 / 13–22 / 1–40 Hz (Reevaluación §4.4.1).
+- [x] EI per channel then averaged over the 7 channels present; theta relative on Fz; parietal alpha and theta/beta stored only (D-F6-129). POOR epochs stay empty.
+- [x] Tests: synthetic known spectrum gives the expected ratios; a lost channel averages the rest.
+- [x] **Stop.**
 
-### [x] F3 · week close in `Claude outputs/Borrador_Plan_Fase6_9_6nov.md`
-- [x] Done, findings (recorded, not fixed), F4 S2 criterion (`Planteamiento_Tecnico_F4.md` §4) met or not, with the evidence.
-- [x] "Dudas para PM" with the date, or "Sin dudas · 6 nov".
-- [x] `tasks/` boxes up to date.
-- [x] **Stop:** Sebas's OK (6 Nov).
+### [x] M5 · reference.py (S)
+`backend/app/eeg/reference.py` (new), migration `0014`, test.
+- [x] Mean and SD of ln(index) over non-POOR S6 epochs; under 6 → S4 eyes open, marked (D-F6-73). Stored in `eeg_sessions`.
+- [x] SD of 0 → that index does not count (no division by zero).
+- [x] Tests: S6 normal; 5 epochs → S4 and the mark; SD 0.
+- [x] **Stop.**
 
-### Moved
-- [-] Spec v1.4 review → Mon 9 (board §1).
-- [-] D-F6-151 (`window.py` ≥ 15 s) → week of 9 Nov.
+### [x] M6 · window.py (S)
+`backend/app/eeg/window.py` (new), test.
+- [x] The window ends at the answer of the 3rd trial, as `verify_eeg.sql` (D-F6-177); the 15 s count back from it. Counts: ≥ 2 non-POOR epochs by centre and finished at the decision (D-F6-172), ≥ 5 s clean as a union, over max(3 trials, last 15 s) (D-F6-127/151/162). z = mean of the non-POOR epochs' z.
+- [x] Tests: 3 s trials still reach back 15 s; a second shared by two epochs counts once; an epoch ending after the decision does not count.
+- [x] **Check 1:** same counts as `verify_eeg.sql`, window by window: 18/18 on `b5bcf5bd` and on `742ec49a`. `07343b5d`: 18/18.
+- [x] **Check 2 (F4 §5 "done when"):** `b5bcf5bd` parietal alpha z = +4.16 with eyes closed in S4 (n 17, by centre), expected ≈ +4.6; right direction and size, reported, not adjusted.
+- [x] **Check 3 (D-F6-172):** P7 of S7 with finished epochs, against 78 % / 72 %, **in today's draft for the EEG chat**.
+- [x] **Stop.**
+
+### [x] M8 · close
+- [x] `tasks/` ticked; `Claude outputs/Borrador_Plan_Fase6_9_9nov.md` updated with done, findings, P7, Dudas.
+- [x] **Stop:** Sebas's OK.
+
+---
+
+## Tue 10 · rules; spec review; EEG staff (12:00)
+
+### [ ] T0 · autorun writes its output to a log file (S) · before T1 (Sebas, 9 Nov)
+`backend/app/eeg/autorun.py`, its test; the log folder gitignored.
+- [ ] Everything `autorun` prints, tracebacks and the output of the `baseline` child go to a file per run; its path is printed at the start.
+- [ ] Python's fatal errors go there too (`faulthandler`), and the process writes a last line when it ends, so a silent death shows as a log with no end line.
+- [ ] Why the first run died on 9 Nov stays unconfirmed: this is for the next time, not a diagnosis of that one.
+- [ ] Test: the file receives a print and a child's output; no change in the steps `autorun` runs.
+- [ ] **Stop.**
+
+### [ ] T1 · concordance.py (S)
+`backend/app/eeg/concordance.py` (new), test.
+- [ ] Input: behavioural state and cause, this window's EEG, the previous window's. Output: `CONFIRMED`, `VETO`, `LED`, `UNAVAILABLE`, `ONLY_ALERT` or neutral.
+- [ ] One synthetic test **per row of §3.5** (D-F6-128).
+- [ ] Three lead tests: leads with LAL one step down; at LOW gives `AT_LIMIT`; one of the two windows without valid EEG does not lead.
+- [ ] `STABLE` with z ≤ −1.5 in a single window → `ONLY_ALERT` (D-F6-174, marked in the code).
+- [ ] Alpha never changes the result (D-F6-129).
+- [ ] **Stop.**
+
+### [ ] T2 · rules-v2-mm (M)
+`backend/app/adaptation/rules.py`, `state.py`, migration `0015`, tests. Golden `--json` replay captured **before** editing.
+- [ ] Coincides: acts in 1 window. Veto: `NO_CHANGE`. Unavailable: as `BEHAVIOR_ADAPTIVE`, marked. Lead: per §3.3.
+- [ ] D-F6-174, each marked in the code and with a test: a vetoed window counts for the hysteresis; `STABLE` off MEDIUM with the EEG leading leads; coinciding when behaviour would act anyway gives `reason_code` `EEG_CONFIRMED`.
+- [ ] Unchanged and tested: initial window, cooldown 3, tail 4, level limits, one change at a time, D9; a difficulty raise only returns with `DISENGAGED` or `OVERLOADED` (D-F6-59).
+- [ ] Migration 0015: `eeg_counted`, `eeg_ei_z`, `eeg_theta_z`, `eeg_effect`; `project_event` copies them; `v_adaptations` recreated as 0009 did.
+- [ ] Check every reader of `reason_code` (`outcome.py`, research API, dashboard) accepts the new codes.
+- [ ] **Check:** `BEHAVIOR_ADAPTIVE` replay byte-identical to the golden; all earlier tests green.
+- [ ] **D-F6-178, when T2 closes (Benkyokai demo):** with the backend up, `docker compose exec backend python -m app.adaptation.replay 678b7806-6f0d-4c6c-9673-6f1addd53701` (its own version: behavior-v1, rules-v1) and the same with `--version behavior-v2`. Both outputs in `Claude outputs/Borrador_Plan_Fase6_9_10nov.md`, with the full id. Sebas records the backup video on Tue night from that output: if T2 is late, run them anyway on the committed code and say so.
+- [ ] **Stop.**
+
+### [ ] T3 · spec v1.4 review
+- [ ] Read PM's v1.4 against the code. Notes go in the draft for PM (the document is PM's, D-F6-88). If it is not ready, this moves and PM is told.
+- [ ] **Stop.**
+
+### [ ] T4 · from the EEG staff session
+- [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). If nothing is numbered by the evening, nothing is applied.
+- [ ] **Stop.**
+
+### [ ] T5 · close (draft, Dudas, `tasks/`)
+- [ ] **Stop:** Sebas's OK.
+
+---
+
+## Wed 11 · live, replay, fallback, lures (Benkyokai: no headset stops; each Stop is a note in the draft)
+
+**13:30–14:30 (D-F6-178, demo ≈ 14:00):** no backend restart and `replay.py` never half done, committed or untouched. X2 is finished before 13:30 or starts after 14:30; X1's backend restart too. No migrations in that hour.
+
+### [ ] X1 · live path and heartbeat (M) · D-F6-171
+`backend/app/eeg/live.py` (new), `autorun.py`, migration `0016`, `api/routes/websocket.py`, `adaptation/state.py`, tests.
+- [ ] Buffers both streams on the PC; offset from the S3 taps (D-F6-173); every finished epoch to `eeg_epochs` with indices; reference on entering S7.
+- [ ] Heartbeat: `heartbeat_at` and the current EEG gap every 2 s.
+- [ ] Backend, on an S7 answer in `MULTIMODAL_ADAPTIVE`: reads the window's finished epochs (D-F6-172), calls `window.py`, feeds `decide()`; the EEG block goes into `ADAPTATION_DECISION`, and `rebuild` reads it.
+- [ ] Arrival margin measured against the synthetic stream, recorded, and applied in `window.py` and `verify_eeg.sql`.
+- [ ] `STATIC` and `BEHAVIOR_ADAPTIVE` never read the EEG (test).
+- [ ] **Check:** synthetic stream + `ws_smoke_test`: epochs arrive, heartbeat moves, a decision carries its EEG block, `decision_latency_ms` noted.
+- [ ] **Stop.**
+
+### [ ] X2 · replay.py with XDF (S)
+`backend/app/adaptation/replay.py`, test.
+- [ ] Adds XDF input: same filter-and-epoch path cut at the decision instants, S3 offset subtracted (D-F6-161, D-F6-173). Existing replay unchanged.
+- [ ] Windows where `EEG_STATUS` says the process was down do not count, as they did not live.
+- [ ] Reports `FRAME_HITCH` chunks per state (F4 §7; they are not in the database).
+- [ ] **Check:** a session recorded through X1 replays to the same decisions; z differences reported.
+- [ ] **Stop.**
+
+### [ ] X3 · fallback, emulated (S) · D-F6-174
+`live.py`, `state.py`, `scripts/synthetic_aura.py` (pause option), tests.
+- [ ] `EEG_STATUS` (connected, lost, recovered, process down); `BEHAVIOR_FALLBACK` mark; > 60 s lost cancels the EEG for the session (§5.5); S4 alpha failing too.
+- [ ] Heartbeat distinction: fresh with no valid epochs is not "process down"; stale is, and the backend writes it (D-F6-171).
+- [ ] Emulated: stream stops pushing (cap off, Bluetooth); outlet gone (AURA closed); `live.py` killed.
+- [ ] **Check:** in each case the session goes on with behaviour and is marked. **Real cases: J3.**
+- [ ] **Stop.**
+
+### [ ] X4 · lure columns (S) · D-F6-143
+Migration `0017`, `project_event`, test.
+- [ ] `option_kind`, `lure_selected`, `option_kinds` on `trials`, from the payload Unity already sends.
+- [ ] Test: lure and no-lure trials project correctly; old sessions unaffected.
+- [ ] **Stop.**
+
+### [ ] X5 · A-20, LSL privacy
+- [ ] Try (a) `.cfg` in AURA's executable folder, (b) PC off the lab network; synthetic stream, no cap.
+- [ ] Check (b) keeps Link, AURA, LabRecorder, `autorun` and `live.py` working. **Seeing it from another PC needs someone at that PC.**
+- [ ] Result in the draft, for a decision.
+- [ ] **Stop.**
+
+### [ ] X6a · T1 official lists (S) · D-F6-168, §16.2 and §16.3
+`tools/kanji_metrics.py` → `kanji_content.json`, TMP font asset; commit as content.
+- [ ] `LURE_T1` as §16.2 (10 of the sets change; reserve unchanged).
+- [ ] "Sin relación" as an explicit table of the 35 of §16.2 instead of the greedy choice (4 of the reserve change); `provisional` true only for ⚑ metric (月, 竹, the reserve).
+- [ ] `check_lures` clean. The components rule of §16.3 stays out this week.
+- [ ] Font asset filled with the new characters and committed with the content; S0 prewarm leaves it byte-identical; X29 green.
+- [ ] Harness green.
+- [ ] **Stop.**
+
+### [ ] X6b · T2/T3 official lists, active (S) · §16.4 · **second to cut**
+`tools/kanji_metrics.py` → `kanji_content.json`, font asset, `TrialSequenceGenerator.ActiveLureTypes`, `SessionFlowRunner` card sizing, harness; commit as content + lures (D-F6-131).
+- [ ] Font asset with the new characters **in this same commit** (as X6a). T2 and T3 strong and unrelated of the 35 (学 in katakana). Categories stay in the document; Sebas's changes before Wed are content.
+- [ ] `check_lures`: T2/T3 present for all, distinct, and none is a taught meaning or reading of the pool (never two correct).
+- [ ] Answer cards also sized from the lure texts.
+- [ ] Harness: half of each type per block, never two correct, same trials across conditions; X29 green.
+- [ ] **Stop.**
+
+### [ ] X7 · reserve 16–20 (M) · **first to cut**
+- [ ] FBX and the four images of `pistas/`, as sets A–C (D-F6-160); 18 and 19 with +90° X at the root. Harness only: **the headset look moves to Thu or Fri, after the cap.**
+- [ ] **Stop.**
+
+### [ ] X8 · close (draft, Dudas, `tasks/`)
+- [ ] **Stop:** Sebas reads it Thu morning.
+
+---
+
+## Thu 12 · MULTIMODAL_ADAPTIVE end to end; rules frozen at night
+
+### [ ] J1 · synthetic end to end
+- [ ] Editor, `MULTIMODAL_ADAPTIVE`, synthetic stream that varies between S6 and S7. Decisions with their EEG block; latency acceptable.
+- [ ] **Stop** before the cap.
+
+### [ ] J2 · cap, S1 → S9 in the headset
+- [ ] Same list as M7, condition `MULTIMODAL_ADAPTIVE`; T1 lures on (T2/T3 if X6b), declared. New lure characters and card sizes seen in the headset.
+- [ ] **Done when:** at least one decision with `EEG_CONFIRMED`, `EEG_VETO` or `EEG_LED`, applied and explained (F4 §5).
+- [ ] None → forced state in the Editor, real signal confirms or vetoes; **declared as such**.
+- [ ] **Stop.**
+
+### [ ] J3 · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it
+For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as M7, `autorun` relaunched, its own XDF.
+- [ ] Reach S7 with **G**, but **S4 complete** (no G in S4). If S6 is short, the reference falls to S4 eyes open, marked (D-F6-73).
+- [ ] **Before cutting:** the EEG has counted in at least one S7 window (visible in `autorun`'s console).
+- [ ] Case 1: cap off. Case 2: AURA software closed. Case 3: Bluetooth off.
+- [ ] **Check, each case:** the session goes on with behaviour; `EEG_STATUS` lost and `BEHAVIOR_FALLBACK` in the database; heartbeat still fresh (the process did not die).
+- [ ] A case that does not fit tonight moves to Fri morning, and PM is told.
+- [ ] **Stop.**
+
+### [ ] J4 · replay of J2
+- [ ] Same decisions as live; every `EEG_LED` read one by one (F4 risk 8).
+- [ ] **Stop.**
+
+### [ ] J5 · freeze and close
+- [ ] **The four defaults of D-F6-174 reviewed** against J2.
+- [ ] Parameters of F4 §6 listed with their values in the draft, plus heartbeat period, staleness and arrival margin; tag proposed, created only with Sebas's OK.
+- [ ] Sebas has fixed the dry run's set and participant.
+- [ ] **Stop:** rules frozen.
+
+---
+
+## Fri 13 · dry run with EEG
+
+### [ ] V1 · verify_eeg.sql, multimodal lines (S)
+- [ ] Every S7 decision in `MULTIMODAL_ADAPTIVE` has its EEG effect and none in the other conditions; counts per effect; `EEG_LED` outcome vs behaviour (F4 §7).
+- [ ] Run on J2.
+- [ ] **Stop.**
+
+### [ ] V2 · dry run
+- [ ] `MULTIMODAL_ADAPTIVE` (D-F6-175); lures active that day, declared (T1, and T2/T3 if X6b); set and participant as Sebas fixed them; the participant is not from the team and signs consent v1 (D-F6-76); lists as M7.
+- [ ] **Done when:** full session with a participant, XDF with both streams.
+- [ ] **Stop.**
+
+### [ ] V3 · analysis
+- [ ] `verify_eeg.sql` complete; replay matches; A-7 result; third sync measurement (A-23); `EEG_LED` one by one.
+- [ ] **Stop.**
+
+### [ ] V4 · week close
+- [ ] Criterion of F4 S3 met or not, with evidence; findings recorded, not fixed.
+- [ ] `tasks/` up to date; draft with Dudas or "Sin dudas · 13 nov".
+- [ ] **Stop:** Sebas's OK.
 
 ---
 
 ## Later (not this week)
-- [ ] B4c SDF morph (D-F6-115), before 13 Nov if at all.
-- [ ] Two Playwright tests failing on today's data (26 Oct).
-- [ ] T2/T3 lures on when Content's lists and MIRAI's answer (A-17) arrive.
-- [ ] Look at the set A M images (`ac26857`) in the headset: not seen at Stop 3 because STATIC keeps LAL at MEDIUM; needs a session that reaches the LAL level that shows them.
+- [ ] B4c SDF morph (D-F6-115).
+- [ ] Two Playwright tests failing on the 26 Oct data.
+- [ ] Set A M images in the headset (`ac26857`): needs a set A session reaching that LAL.
+- [ ] Trial-level theta analysis from the XDF (F4 §5): a later script.
+- [ ] Components rule of §16.3 in `check_lures`; classic pairs for the reserve (week of 16, Content).
