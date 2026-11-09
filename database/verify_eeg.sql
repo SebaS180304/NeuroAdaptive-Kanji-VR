@@ -1,5 +1,6 @@
 -- verify_eeg.sql -- F4 S2: a session recorded with the AURA cap (migrations 0010-0012)
--- Planteamiento_Tecnico_F4.md §2-§4; D-F6-127 (P7, P9, A-7), D-F6-149 (rule B), D-F6-156, D-F6-157, D-F6-159.
+-- Planteamiento_Tecnico_F4.md §2-§4; D-F6-127 (P7, P9, A-7), D-F6-149 (rule B), D-F6-156, D-F6-157, D-F6-159,
+-- D-F6-151, D-F6-161, D-F6-162, D-F6-172, D-F6-173, D-F6-176.
 -- Read only. One block per check; each says what it expects.
 --
 -- Usage (PowerShell, repo root):
@@ -23,12 +24,17 @@ SELECT left(t.id::text, 8) AS session, t.condition, t.status,
        (SELECT count(*) FROM eeg_epochs p WHERE p.session_id = t.id) AS epochs
 FROM target t ORDER BY 1;
 
-\echo '== 2 · Sync (F4 §2.4, D-F6-157): |offset| <= 100 ms and |drift| < 50 ms, or empty with its reason'
-SELECT left(t.id::text, 8) AS session, t.sync_offset_ms AS offset_ms, t.sync_drift_ms AS drift_ms,
+\echo '== 2 · Sync (F4 §2.4, D-F6-161): spread <= 50 ms, |drift| < 50 ms, |offset| <= 250 ms. No offset: session not corrected; S9 short: corrected and marked (D-F6-176)'
+SELECT left(t.id::text, 8) AS session, t.sync_offset_ms AS offset_ms, (t.sync_detail ->> 'spread_ms')::numeric AS spread_ms,
+       t.sync_drift_ms AS drift_ms,
        CASE WHEN t.sync_offset_ms IS NULL THEN 'n/a'
-            WHEN abs(t.sync_offset_ms) <= 100 THEN 'ok' ELSE 'OUT' END AS offset_check,
+            WHEN abs(t.sync_offset_ms) <= 250 THEN 'ok' ELSE 'OUT' END AS offset_check,
+       CASE WHEN t.sync_detail ->> 'spread_ms' IS NULL THEN 'n/a'
+            WHEN (t.sync_detail ->> 'spread_ms')::numeric <= 50 THEN 'ok' ELSE 'OUT' END AS spread_check,
        CASE WHEN t.sync_drift_ms IS NULL THEN 'n/a'
             WHEN abs(t.sync_drift_ms) < 50 THEN 'ok' ELSE 'OUT' END AS drift_check,
+       CASE WHEN t.sync_offset_ms IS NULL THEN 'NOT CORRECTED'
+            WHEN t.sync_drift_ms IS NULL THEN 'corrected, MARKED (S9)' ELSE 'corrected' END AS correction,
        (SELECT count(*) FROM jsonb_array_elements(t.sync_detail -> 'taps') x WHERE (x ->> 'valid')::boolean) AS clear_taps,
        jsonb_array_length(coalesce(t.sync_detail -> 'taps', '[]')) AS taps,
        coalesce(t.sync_detail ->> 'reason', CASE WHEN t.sync_detail IS NULL THEN 'sync.py not run' END) AS reason
@@ -45,29 +51,40 @@ SELECT left(t.id::text, 8) AS session,
 FROM target t LEFT JOIN eeg_epochs p ON p.session_id = t.id AND p.game_state = 'S6_GUIDED_PRACTICE_CALIBRATION'
 GROUP BY t.id ORDER BY 1;
 
--- P7 (D-F6-127): the EEG counts in a decision window with >= 2 non-POOR epochs and >= 5 s of clean chunks,
--- each second once. Window = 3 consecutive S7 trials, sliding, from the first one's start to the last one's
--- end; an epoch is in it when it lies entirely inside. Without the "last 15 s" of D-F6-151 (window.py, Mon 9),
--- so it compares with the EEG chat's 5 Nov figures (b5bcf5bd, rule B: 61 %).
+-- P7 (D-F6-127), the same as window.py and replay.py (D-F6-162, D-F6-172). The window ends at the answer, where the
+-- decision is taken, and reaches back over its 3 S7 trials or 15 s, whichever is longer (D-F6-151). An epoch is in it
+-- by its centre AND only if it had finished at the answer. The EEG counts with >= 2 non-POOR epochs and >= 5 s of
+-- clean chunks, each second once. The *_centre columns drop the "finished" rule: a contrast with the EEG chat's
+-- 78 % and 72 %, never used for A-7.
+CREATE FUNCTION pg_temp.secs(m int4multirange) RETURNS numeric LANGUAGE sql AS
+$$ SELECT coalesce(sum(upper(r) - lower(r)), 0) / 1000.0 FROM unnest(m) r $$;
+
 CREATE TEMP VIEW s7_windows AS
-SELECT w.*,
-       (SELECT count(*) FROM eeg_epochs p WHERE p.session_id = w.session_id AND p.quality <> 'POOR'
-          AND p.start_ms >= w.lo AND p.end_ms <= w.hi) AS non_poor,
-       (SELECT coalesce(sum(upper(r) - lower(r)), 0) / 1000.0 FROM unnest((
-          SELECT range_agg(int4range(p.start_ms + (k - 1) * 1000, p.start_ms + k * 1000))
-          FROM eeg_epochs p, generate_subscripts(p.chunk_clean, 1) k
-          WHERE p.session_id = w.session_id AND p.chunk_clean[k] AND p.start_ms >= w.lo AND p.end_ms <= w.hi)) r) AS clean_s
-FROM (SELECT x.session_id, x.trial_id,
-             lag(x.started_elapsed_ms, 2) OVER o AS lo, x.completed_elapsed_ms AS hi
+SELECT w.session_id, w.trial_id, w.lo, w.hi, e.non_poor, e.non_poor_centre,
+       pg_temp.secs(c.finished) AS clean_s, pg_temp.secs(c.centre) AS clean_s_centre
+FROM (SELECT x.session_id, x.trial_id, x.answered_elapsed_ms AS hi,
+             lag(x.started_elapsed_ms, 2) OVER o AS first_start,
+             least(lag(x.started_elapsed_ms, 2) OVER o, x.answered_elapsed_ms - 15000) AS lo
       FROM trials x JOIN target t ON t.id = x.session_id
       WHERE x.block_state = 'S7_EXPERIMENTAL_RETRIEVAL'
       WINDOW o AS (PARTITION BY x.session_id ORDER BY x.started_elapsed_ms)) w
-WHERE w.lo IS NOT NULL AND w.hi IS NOT NULL;
+CROSS JOIN LATERAL (
+    SELECT count(*) FILTER (WHERE p.end_ms <= w.hi) AS non_poor, count(*) AS non_poor_centre
+    FROM eeg_epochs p
+    WHERE p.session_id = w.session_id AND p.quality <> 'POOR' AND p.start_ms + 2500 BETWEEN w.lo AND w.hi) e
+CROSS JOIN LATERAL (
+    SELECT range_agg(ch.r) FILTER (WHERE ch.end_ms <= w.hi) AS finished, range_agg(ch.r) AS centre
+    FROM (SELECT p.end_ms, int4range(p.start_ms + (k - 1) * 4000 / (cardinality(p.chunk_clean) - 1),
+                                     p.start_ms + (k - 1) * 4000 / (cardinality(p.chunk_clean) - 1) + 1000) AS r
+          FROM eeg_epochs p, generate_subscripts(p.chunk_clean, 1) k
+          WHERE p.session_id = w.session_id AND p.chunk_clean[k] AND p.start_ms + 2500 BETWEEN w.lo AND w.hi) ch) c
+WHERE w.first_start IS NOT NULL AND w.hi IS NOT NULL;
 
-\echo '== 5 · S7 windows where the EEG counts (P7; A-7 asks >= 60 %)'
+\echo '== 5 · S7 windows where the EEG counts (P7, epochs finished at the answer; A-7 asks >= 60 %). pct_centre is only a contrast'
 SELECT left(t.id::text, 8) AS session, count(w.*) AS windows,
        count(w.*) FILTER (WHERE w.non_poor >= 2 AND w.clean_s >= 5) AS eeg_counts,
        round(100.0 * count(w.*) FILTER (WHERE w.non_poor >= 2 AND w.clean_s >= 5) / nullif(count(w.*), 0)) AS pct,
+       round(100.0 * count(w.*) FILTER (WHERE w.non_poor_centre >= 2 AND w.clean_s_centre >= 5) / nullif(count(w.*), 0)) AS pct_centre,
        CASE WHEN count(w.*) = 0 THEN 'n/a'
             WHEN count(w.*) FILTER (WHERE w.non_poor >= 2 AND w.clean_s >= 5) >= 0.6 * count(w.*) THEN 'ok'
             ELSE 'SHORT' END AS check
