@@ -6,9 +6,8 @@ On the PC (outside Docker, D-F6-132), started before Play:
     POSTGRES_HOST=127.0.0.1 python -m app.eeg.autorun
 1. waits for a new session: its eeg_sessions row, written by POST /sessions with the XDF path;
 2. starts baseline.py for it at once (it buffers until S4 ends, so it is running before S4);
-3. waits for the session to be COMPLETED (S9) and for the XDF to stop growing (Stop in LabRecorder,
-   after block 3, D-F6-148);
-4. runs lsl_reader and epochs on the XDF, as the operator did by hand on 5 Nov, then sync (offset and drift, D-F6-157).
+3. waits for the session to be COMPLETED (S9) and for the XDF to stop growing (Stop in LabRecorder);
+4. runs lsl_reader, sync (offset and drift, D-F6-157) and epochs on the XDF: epochs needs the offset (D-F6-176).
 """
 
 import asyncio
@@ -58,7 +57,7 @@ async def wait_completed(session_id: str, baseline: subprocess.Popen) -> None:
     while not (await _scalar("SELECT 1 FROM experiment_sessions WHERE id = :s AND completed_at IS NOT NULL",
                              s=session_id)):
         await asyncio.sleep(POLL_S)
-    print("session COMPLETED (S9). Now block 3, then Stop in LabRecorder.")
+    print("session COMPLETED (S9). Now Stop in LabRecorder.")
     if baseline.poll() is None:  # S4 never ended inside this session
         baseline.terminate()
         print("WARNING: baseline.py had no S4 result; stopped. The alpha ratio is missing.")
@@ -91,11 +90,11 @@ async def main() -> int:
     print("both streams recorded" if not missing else f"NOT multimodal, missing: {', '.join(missing)}")
     if missing:
         return 1
+    offset, drift, detail = await sync.fill_from_xdf(sid)
+    print(f"sync: offset {offset} ms · drift {drift} ms" + (f" · {detail['reason']}" if detail["reason"] else ""))
     eps = await epochs.fill_from_xdf(sid)
     counts = {q: sum(e["quality"] == q for e in eps) for q in ("GOOD", "ACCEPTABLE", "POOR")}
     print(f"{len(eps)} epochs: {counts}")
-    offset, drift, detail = await sync.fill_from_xdf(sid)
-    print(f"sync: offset {offset} ms · drift {drift} ms" + (f" · {detail['reason']}" if detail["reason"] else ""))
     return 0
 
 
