@@ -29,6 +29,8 @@ import numpy as np
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.eeg import features
+
 EPOCH_S, STEP_S, CHUNK_S, CHUNK_STEP_S, CHUNKS = 5.0, 2.5, 1.0, 0.5, 9
 BLINK_UV, BLINK_PAD_S = 75.0, 0.2
 MAX_UV = 100.0
@@ -131,18 +133,22 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
     n = int((span - EPOCH_S) // STEP_S) + 1
     for j in range(max(n, 0)):
         start = float(ts[0] + j * STEP_S)
-        flags = []
+        flags, clean = [], []
         for k in range(CHUNKS):
             chunk = start + k * CHUNK_STEP_S
             lo, hi = np.searchsorted(ts, [chunk, chunk + CHUNK_S])
             seg = x[lo:hi, index_ch]
             flags.append(bool(hi - lo >= min_n and not bad[lo:hi].any() and (np.ptp(seg, axis=0) >= FLAT_UV).all()))
+            if flags[-1]:
+                clean.append(x[lo:hi])
         i = bisect.bisect_right(times, start + EPOCH_S / 2) - 1  # the context at the epoch's midpoint
         state, esl, trial = ctx[i] if i >= 0 else (None, None, None)
         covered = covered_s(flags)
+        grade = quality(covered)
         out.append({"epoch_index": j, "lsl_start": start, "start_ms": to_ms(start), "end_ms": to_ms(start + EPOCH_S),
                     "game_state": state, "esl_level": esl, "trial_id": trial, "chunk_clean": flags,
-                    "clean_fraction": covered / EPOCH_S, "quality": quality(covered)})
+                    "clean_fraction": covered / EPOCH_S, "quality": grade,
+                    **(features.compute(clean, labels, srate) if grade != "POOR" else features.EMPTY)})
     return out
 
 
@@ -153,8 +159,9 @@ async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], f
     if eps:
         await db.execute(text(
             "INSERT INTO eeg_epochs (session_id, epoch_index, lsl_start, start_ms, end_ms, game_state, trial_id, "
-            "esl_level, chunk_clean, clean_fraction, quality) VALUES (:s, :epoch_index, :lsl_start, :start_ms, "
-            ":end_ms, :game_state, :trial_id, :esl_level, :chunk_clean, :clean_fraction, :quality)"),
+            "esl_level, chunk_clean, clean_fraction, quality, engagement_index, theta_fz, alpha_parietal, theta_beta) "
+            "VALUES (:s, :epoch_index, :lsl_start, :start_ms, :end_ms, :game_state, :trial_id, :esl_level, :chunk_clean, "
+            ":clean_fraction, :quality, :engagement_index, :theta_fz, :alpha_parietal, :theta_beta)"),
             [{"s": sid, **e} for e in eps])
     await db.execute(text("UPDATE eeg_sessions SET filter_params = CAST(:f AS jsonb) WHERE session_id = :s"),
                      {"s": sid, "f": json.dumps({**filter_params, "sound_s": SOUND_S, "epochs_version": EPOCHS_VERSION})})
