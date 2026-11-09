@@ -25,7 +25,7 @@ def _eeg(seconds: float = 30.0, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
 
 def _chunks(eps: list[dict]) -> dict[float, bool]:
     """Every chunk by its start time (rounded), clean or not."""
-    return {round(e["lsl_start"] + k, 2): c for e in eps for k, c in enumerate(e["chunk_clean"])}
+    return {round(e["lsl_start"] + k * 0.5, 2): c for e in eps for k, c in enumerate(e["chunk_clean"])}
 
 
 # ---------- preprocess ----------
@@ -55,8 +55,32 @@ def test_relative_power_divides_by_1_to_40_hz_p16() -> None:
 
 # ---------- epochs ----------
 
-def test_quality_follows_d_f6_73() -> None:
-    assert [epochs.quality(n) for n in (5, 4, 3, 2, 0)] == ["GOOD", "GOOD", "ACCEPTABLE", "POOR", "POOR"]
+def _flags(*starts: float) -> list[bool]:
+    """The 9 chunk flags with only the chunks starting at `starts` (seconds into the epoch) clean."""
+    return [k * 0.5 in starts for k in range(9)]
+
+
+def test_quality_is_the_time_covered_d_f6_166() -> None:
+    assert [epochs.quality(s) for s in (5.0, 4.0, 3.5, 3.0, 2.5, 0.0)] ==         ["GOOD", "GOOD", "ACCEPTABLE", "ACCEPTABLE", "POOR", "POOR"]
+
+
+def test_overlapping_chunks_count_each_second_once() -> None:
+    assert epochs.covered_s(_flags(0.0, 0.5)) == 1.5
+    assert epochs.covered_s([True] * 9) == 5.0
+    assert epochs.covered_s([False] * 9) == 0.0
+
+
+def test_three_seconds_in_separate_stretches_are_acceptable() -> None:
+    assert epochs.quality(epochs.covered_s(_flags(0.0, 1.5, 3.0))) == "ACCEPTABLE"
+
+
+def test_two_clean_chunks_are_always_poor() -> None:
+    assert epochs.quality(epochs.covered_s(_flags(0.0, 4.0))) == "POOR"
+
+
+def test_five_fixed_chunks_grade_as_d_f6_73() -> None:
+    graded = [epochs.quality(epochs.covered_s(_flags(*[float(i) for i in range(n)]))) for n in (5, 4, 3, 2)]
+    assert graded == ["GOOD", "GOOD", "ACCEPTABLE", "POOR"]
 
 
 def test_clean_signal_gives_5_s_epochs_every_2_5_s_all_good() -> None:
@@ -64,7 +88,7 @@ def test_clean_signal_gives_5_s_epochs_every_2_5_s_all_good() -> None:
     eps = epochs.make_epochs(x, ts, SR, MONTAGE, [])
     assert len(eps) == 11
     assert [e["lsl_start"] for e in eps[:3]] == [100.0, 102.5, 105.0]
-    assert all(e["quality"] == "GOOD" and e["clean_fraction"] == 1.0 for e in eps)
+    assert all(e["quality"] == "GOOD" and e["clean_fraction"] == 1.0 and len(e["chunk_clean"]) == 9 for e in eps)
 
 
 def test_a_blink_on_fp1_drops_its_chunk_with_200_ms_around() -> None:
@@ -187,9 +211,37 @@ async def test_save_rewrites_the_epochs_and_the_filter_of_the_session(client, pr
         fp = (await db.execute(text("SELECT filter_params FROM eeg_sessions WHERE session_id = :s"),
                                {"s": sid})).scalar_one()
     assert [r.epoch_index for r in rows] == [0, 1]
-    assert rows[0].chunk_clean == [True] * 5 and rows[0].quality == "GOOD" and rows[0].engagement_index is None
+    assert rows[0].chunk_clean == [True] * 9 and rows[0].quality == "GOOD" and rows[0].engagement_index is None
     assert fp["notch_hz"] == 60.0
     assert fp["sound_s"] == 0.5 and fp["epochs_version"] == epochs.EPOCHS_VERSION  # D-F6-156: the rule travels
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("offset_ms,clean_at,dirty_at", [(100.0, 110.9, 110.4), (None, 110.5, 110.0)])
+async def test_fill_from_xdf_subtracts_the_s3_offset_when_there_is_one(client, pretested, monkeypatch, offset_ms,
+                                                                       clean_at, dirty_at) -> None:
+    from app.eeg import lsl_reader
+
+    x, ts = _eeg(20)
+    answer = json.dumps({"schema_version": 1, "event": "ANSWER_SELECTED", "trial_id": "S7-001"})
+    streams = {"AURA": {"time_series": x, "time_stamps": ts, "info": {"nominal_srate": ["250"]}},
+               "UnityMarkers": {"time_series": [[answer]], "time_stamps": np.array([110.0])}}
+    monkeypatch.setattr(lsl_reader, "load_xdf", lambda _path: streams)
+    pid = await pretested("TEST_EEG")
+    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path, sync_offset_ms) VALUES (:s, 'x.xdf', :o) "
+                              "ON CONFLICT (session_id) DO UPDATE SET xdf_path = 'x.xdf', sync_offset_ms = :o"),
+                         {"s": sid, "o": offset_ms})
+        await db.commit()
+    eps = await epochs.fill_from_xdf(sid)
+    chunks = _chunks(eps)
+    assert eps[0]["lsl_start"] == pytest.approx(100.0 - (offset_ms or 0) / 1000)
+    assert chunks[clean_at] is True and chunks[dirty_at] is False   # the sound at 110.0 lasts 0.5 s on the marker clock
+    async with AsyncSessionLocal() as db:
+        fp = (await db.execute(text("SELECT filter_params FROM eeg_sessions WHERE session_id = :s"),
+                               {"s": sid})).scalar_one()
+    assert fp["sync_offset_ms"] == offset_ms
 
 
 # ---------- the 29 Oct recordings (on Sebas's PC only) ----------

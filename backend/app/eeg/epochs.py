@@ -2,9 +2,9 @@
 Epochs of a session's EEG and their quality (D-F6-73; Reevaluacion_EEG_Justificacion.md §4.4.1
 and §5.3; Planteamiento_Tecnico_F4.md §2.2).
 
-An epoch is 5 s of filtered signal and a new one starts every 2.5 s. Each epoch keeps its five
-1 s chunks as clean or not, so the decision window can count every clean second once even when
-two overlapping epochs share it (P7 of D-F6-127). A chunk is dropped for:
+An epoch is 5 s of filtered signal and a new one starts every 2.5 s. Each epoch keeps its nine
+1 s chunks, one starting every 0.5 s (D-F6-163), as clean or not, so the decision window can count
+every clean second once even when two overlapping epochs share it (P7 of D-F6-127). A chunk is dropped for:
   - a blink: Fp1 over 75 µV, 200 ms around it (F3, Fz and F4 if Fp1 moved to Oz, D-F6-75);
   - amplitude: an index channel (all but Fp1) over 100 µV;
   - a flat index channel, or missing samples;
@@ -12,7 +12,8 @@ two overlapping epochs share it (P7 of D-F6-127). A chunk is dropped for:
   - the half second after a sound onset (D-F6-149) (select and reading at ANSWER_SELECTED, the result sound,
     the stage sound before STATE_ENTERED, each S5 reading at AUDIO_ONSET);
   - a FRAME_HITCH over 100 ms (D-F6-129).
-Quality: GOOD 4–5 clean chunks, ACCEPTABLE 3, POOR ≤ 2.
+Quality is the time the union of clean chunks covers (D-F6-166): GOOD ≥ 4 s, ACCEPTABLE ≥ 3 s, POOR < 3 s.
+The "at least 2 clean chunks" of that decision needs no check: 2 chunks cover 2 s at most.
 
 Thresholds are *to validate* (F4 §6). Not here: the IMU (AURA does not send it yet) and
 saturation (AURA's range is not known).
@@ -28,19 +29,29 @@ import numpy as np
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-EPOCH_S, STEP_S, CHUNK_S, CHUNKS = 5.0, 2.5, 1.0, 5
+EPOCH_S, STEP_S, CHUNK_S, CHUNK_STEP_S, CHUNKS = 5.0, 2.5, 1.0, 0.5, 9
 BLINK_UV, BLINK_PAD_S = 75.0, 0.2
 MAX_UV = 100.0
 FLAT_UV = 1.0         # peak to peak in a chunk; proposal, the 29 Oct signal sits at 7–17 µV
 MIN_SAMPLES = 0.9     # of a chunk's nominal samples
 SOUND_S = 0.5         # rule B, D-F6-149: every sound, every stage, the three conditions
 HITCH_MS = 100.0
-EPOCHS_VERSION = "rule B (D-F6-149)"  # stored with the filter (D-F6-156); bump when a drop rule changes
+EPOCHS_VERSION = "rule B (D-F6-149), 9 chunks by time covered (D-F6-163, D-F6-166), S3 offset (D-F6-176)"  # stored with the filter (D-F6-156); bump when a drop rule changes
 
 
-def quality(clean_chunks: int) -> str:
-    q = clean_chunks / CHUNKS
-    return "GOOD" if q >= 0.75 else "ACCEPTABLE" if q >= 0.5 else "POOR"
+def covered_s(chunk_clean: list[bool]) -> float:
+    """Seconds of the epoch inside at least one clean chunk: overlapping chunks count once."""
+    covered, end = 0.0, 0.0
+    for k, clean in enumerate(chunk_clean):
+        if clean:
+            start = k * CHUNK_STEP_S
+            covered += CHUNK_S - max(0.0, end - start)
+            end = start + CHUNK_S
+    return covered
+
+
+def quality(covered: float) -> str:
+    return "GOOD" if covered >= 4 else "ACCEPTABLE" if covered >= 3 else "POOR"
 
 
 def markers_of(stream: dict | None) -> list[tuple[float, dict]]:
@@ -122,14 +133,16 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
         start = float(ts[0] + j * STEP_S)
         flags = []
         for k in range(CHUNKS):
-            lo, hi = np.searchsorted(ts, [start + k * CHUNK_S, start + (k + 1) * CHUNK_S])
+            chunk = start + k * CHUNK_STEP_S
+            lo, hi = np.searchsorted(ts, [chunk, chunk + CHUNK_S])
             seg = x[lo:hi, index_ch]
             flags.append(bool(hi - lo >= min_n and not bad[lo:hi].any() and (np.ptp(seg, axis=0) >= FLAT_UV).all()))
         i = bisect.bisect_right(times, start + EPOCH_S / 2) - 1  # the context at the epoch's midpoint
         state, esl, trial = ctx[i] if i >= 0 else (None, None, None)
+        covered = covered_s(flags)
         out.append({"epoch_index": j, "lsl_start": start, "start_ms": to_ms(start), "end_ms": to_ms(start + EPOCH_S),
                     "game_state": state, "esl_level": esl, "trial_id": trial, "chunk_clean": flags,
-                    "clean_fraction": sum(flags) / CHUNKS, "quality": quality(sum(flags))})
+                    "clean_fraction": covered / EPOCH_S, "quality": quality(covered)})
     return out
 
 
@@ -153,14 +166,15 @@ async def fill_from_xdf(session_id: str) -> list[dict]:
     from app.eeg import lsl_reader, preprocess
 
     async with AsyncSessionLocal() as db:
-        path, montage = (await db.execute(text("SELECT xdf_path, montage FROM eeg_sessions WHERE session_id = :s"),
-                                          {"s": session_id})).one()
+        path, montage, offset = (await db.execute(text("SELECT xdf_path, montage, sync_offset_ms FROM eeg_sessions "
+                                                       "WHERE session_id = :s"), {"s": session_id})).one()
         streams = lsl_reader.load_xdf(path)
         aura = streams[lsl_reader.EEG_STREAM]
         sr = float(aura["info"]["nominal_srate"][0])
-        eps = make_epochs(preprocess.filter_eeg(aura["time_series"], sr), aura["time_stamps"], sr, montage,
+        stamps = np.asarray(aura["time_stamps"], dtype=float) - (offset or 0.0) / 1000  # D-F6-176: no offset, no correction
+        eps = make_epochs(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage,
                           markers_of(streams.get(lsl_reader.MARKER_STREAM)))
-        await save(db, session_id, eps, preprocess.filter_params(sr))
+        await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset})
         await db.commit()
     return eps
 
