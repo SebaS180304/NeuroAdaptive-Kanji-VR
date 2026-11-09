@@ -170,7 +170,7 @@ async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], f
 async def fill_from_xdf(session_id: str) -> list[dict]:
     """After the session, on the PC: filters the XDF of its eeg_sessions row and stores its epochs."""
     from app.db.base import AsyncSessionLocal
-    from app.eeg import lsl_reader, preprocess
+    from app.eeg import baseline, lsl_reader, preprocess, reference
 
     async with AsyncSessionLocal() as db:
         path, montage, offset = (await db.execute(text("SELECT xdf_path, montage, sync_offset_ms FROM eeg_sessions "
@@ -179,9 +179,10 @@ async def fill_from_xdf(session_id: str) -> list[dict]:
         aura = streams[lsl_reader.EEG_STREAM]
         sr = float(aura["info"]["nominal_srate"][0])
         stamps = np.asarray(aura["time_stamps"], dtype=float) - (offset or 0.0) / 1000  # D-F6-176: no offset, no correction
-        eps = make_epochs(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage,
-                          markers_of(streams.get(lsl_reader.MARKER_STREAM)))
+        markers = markers_of(streams.get(lsl_reader.MARKER_STREAM))
+        eps = make_epochs(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers)
         await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset})
+        await reference.save(db, session_id, reference.compute(eps, baseline.spans(markers)))
         await db.commit()
     return eps
 
