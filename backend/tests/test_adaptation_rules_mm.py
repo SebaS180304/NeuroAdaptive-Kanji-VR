@@ -230,3 +230,20 @@ def test_confirmed_every_window_stops_at_three_changes() -> None:
 def test_behaviour_alone_never_reaches_the_cap() -> None:
     changes, blocked = _sustained(None)
     assert changes == [4, 9, 14] and blocked is None
+
+
+# D-F6-184: only eligible windows count for a lead -------------------------------------------------------------
+
+def test_a_window_of_the_initial_window_is_not_the_first_of_a_lead() -> None:
+    ds, _ = _run([(STABLE, N), (STABLE, _w(ei=-2.0)), (STABLE, _w(ei=-2.0)), (STABLE, _w(ei=-2.0))])
+    assert ds[2].reason_code == EEG_ONLY_ALERT          # trial 3: trial 2 was in the initial window
+    assert ds[3].reason_code == EEG_LED                 # trial 4: the earliest lead
+
+
+def test_after_a_change_a_lead_needs_two_eligible_windows() -> None:
+    low = _w(ei=-2.0)
+    items = _warm() + [(ENV, N), (ENV, N)] + [(STABLE, low)] * 3 + [(STABLE, low), (STABLE, low)]
+    ds, _ = _run(items)
+    assert ds[3].is_change and [d.reason_code for d in ds[4:7]] == [COOLDOWN] * 3   # cooldown 5-7, all low
+    assert ds[7].reason_code != EEG_LED and ds[7].eeg["effect"] == "ONLY_ALERT"     # trial 8: 1st eligible
+    assert ds[8].reason_code == EEG_LED                                              # trial 9: 2nd eligible

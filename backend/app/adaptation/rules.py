@@ -64,7 +64,8 @@ rules-v2 byte for byte. ``concordance.effect`` says what the EEG does:
 
 The other constraints (initial window, cooldown, tail, confidence, limits, one
 step of one dimension, D9) apply as in rules-v2. Every decision carries its EEG
-block (``eeg``), and the engine keeps the window for the next lead check.
+block (``eeg``), and the engine keeps the last eligible window for the next lead check (D-F6-184: not those of
+the initial window or a cooldown, and none across a change).
 
 Pure functions: ``decide`` takes the previous ``EngineState`` and returns the
 new one, with no clock and no database, so the live path and the replay agree.
@@ -323,7 +324,15 @@ def decide(
     block = {**window, "effect": effect}
     if effect not in (concordance.NEUTRAL, concordance.UNAVAILABLE):  # the EEG had a say, even if blocked (AT_LIMIT)
         decision = replace(decision, explanation=f"{decision.explanation.rstrip('.')}; EEG: {_eeg_text(block)}.")
-    return replace(decision, version=RULES_V2_MM, eeg=block), replace(new_state, last_eeg=block)
+    # D-F6-184: only eligible windows can be the first of a lead's two, as in the behavioural hysteresis; a change
+    # starts the count again, so the earliest lead is trial 4 and 2 trials after each cooldown.
+    if decision.is_change:
+        last = None
+    elif decision.reason_code in (INITIAL_WINDOW, COOLDOWN):
+        last = state.last_eeg
+    else:
+        last = block
+    return replace(decision, version=RULES_V2_MM, eeg=block), replace(new_state, last_eeg=last)
 
 
 def _decide(result: EstimatorResult, trial_sequence: int, answered_ms: int | None, state: EngineState,
