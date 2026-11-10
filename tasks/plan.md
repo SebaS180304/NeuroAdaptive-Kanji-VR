@@ -1,6 +1,6 @@
 # Implementation Plan: week of 9 – 13 Nov 2026 (F4 S3 · multimodal → dry run with EEG)
 
-Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
+Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; Tue updated to D-F6-180 on 10 Nov** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
 Last week's plan is archived in `tasks/archive/semana_2nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -83,17 +83,26 @@ Detail, criteria and checks in `tasks/todo.md`. Sizes: S 1–2 files, M 3–5.
 
 **The cap does not wait for the code (Sebas, 9 Nov):** 17:15 list and 18:00 cap even if M1–M3 are not done. The XDF is the source and it is recomputed afterwards (D-F6-156). M4–M6 go after the cap if needed, but M6's figure is due tonight: it may go to the EEG staff at 12:00 tomorrow (D-F6-172).
 
-### Tue 10 · rules; spec review; EEG staff
+### Tue 10 · from 14:30, in parallel with the reserve (D-F6-180)
+Sebas is in Blender all afternoon (reserve 2nd batch, 14:45–19:00): Stops are grouped at the end of each task and read together. The EEG staff session moved to the end of the day or Wed 11 before 13:30; nothing from it is applied until it has a number in §4.
+
 | Task | What | Size |
 | --- | --- | --- |
-| T0 | `autorun` writes its output to a log file, before T1 (Sebas, 9 Nov) | S |
+| T0 | `autorun` writes its output to a log file (D-F6-179 (2)); "autorun alive before S3" and the eyes-open line added to the J2/J3/V2 lists | S |
+| T0b | `sync.py` anchor at the first 50 % crossing of the peak (D-F6-179 (1)); recompute `742ec49a` (unchanged) and `07343b5d` (spread ≈ 15.6 ms) | S |
 | T1 | `concordance.py`, one test per row of §3.5 plus the three lead tests | S |
 | T2 | `rules-v2-mm` with the D-F6-174 cases; decision fields; migration 0015; `BEHAVIOR_ADAPTIVE` byte-identical | M |
-| T3 | Spec v1.4 review, as a list of notes for PM | — |
-| T4 | Whatever the EEG staff session (12:00) produces **and has a number in §4** | ? |
+| T3 | Spec v1.4 review against the code: the four "Developer review" points and other notes, in the draft for PM; the spec is not edited | — |
+| T4 | Whatever the EEG staff session produces **and has a number in §4**; if the session is Wed, after 14:30 | ? |
 | T5 | Close | — |
 
-**When T2 closes (D-F6-178):** the two `replay` runs on `678b7806` for the Benkyokai demo go into Tuesday's draft with the full id, whatever T2's state, because Sebas records the backup video that night.
+**When T2 closes (D-F6-178):** the two `replay` runs on `678b7806-6f0d-4c6c-9673-6f1addd53701` (own version and `--version behavior-v2`) go verbatim into `Borrador_Plan_Fase6_9_10nov.md`, whatever T2's state, because Sebas records the backup video at 19:00.
+
+**T0b, why it is small:** only the point the onset search starts from moves (peak → first 50 % crossing); noise window, threshold and "last point under it" stay (D-F6-179 (1)). On `07343b5d` S3-2 has a plateau whose maximum is at its end (337 ms), so the noise window fell inside the plateau and the onset came out 4 ms before the peak. Targets (F4 Registro 9 Nov night), S3 / S9 / drift / spread: `742ec49a` 35.3 / 52.2 / +16.9 / 18.4 unchanged; `07343b5d` 65.3 / 85.7 / +20.3 / 15.6, S3-2 → 68.7 ms. Compared in the draft before the Stop; a figure off is reported, not tuned.
+
+**T3 (PM, 10 Nov):** point 1 from the saved `LayoutOfRecord` output with its date or commit (before 30 Oct → re-measured Thu); point 2 today; point 3 today for `concordance` and `rules-v2-mm`, Wed for X1/X2, PM corrects the spec Thu before the freeze; point 4 Wed with X6b.
+
+**EEG staff (PM, 10 Nov):** Sebas aims for today. If Wed: X1 before 13:30 as planned; numbered items after 14:30 and before J1. The Thu freeze does not move; cut X7, then X6b.
 
 ### Wed 11 · live, replay, fallback, lures (Benkyokai: no headset stops)
 **13:30–14:30 (D-F6-178):** the demo runs `replay.py` in the backend container, which reads the repo's file. No backend restart, no migrations, and `replay.py` never half done: X2 before or after that hour.
@@ -124,7 +133,7 @@ V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `v
 | Wednesday is overloaded (X1–X7) and X1 is the largest piece of the week | High | Never-cut items first, reserve and T2/T3 last; if X1 slips, Thu morning absorbs it and J1 shrinks |
 | Thursday is long: J2 plus three sessions with S4 complete | High | J3 only after J2; each cut needs one counted window, and if a case does not fit, it moves to Fri morning and PM is told |
 | With G, S6 is short and the reference falls to S4 eyes open | Med | Expected and marked (D-F6-73, D-F6-174); M5 tests that branch |
-| The EEG staff change the quality rule or thresholds on Tue | Med | D-F6-166 says it is revised on Tue; epochs recompute from XDF in minutes (D-F6-156) |
+| The EEG staff (now end of Tue or Wed before 13:30, D-F6-180) change the quality rule, thresholds or the sync anchor | Med | D-F6-166 says it is revised on Tue; epochs recompute from XDF in minutes (D-F6-156) |
 | No EEG decision on Thu (ceiling effect, 2–3 adaptations) | Med | Forced test of F4 §5, declared |
 | Backend read at decision adds latency to `DECISION` | Med | Epoch rows only; `decision_latency_ms` already stored; checked in J1 |
 | Disconnecting the PC from the lab network (A-20 b) also cuts local LSL | Med | Tested in X5 with the synthetic stream before anyone relies on it |
@@ -132,6 +141,7 @@ V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `v
 | `EEG_LED` fires on fatigue | Med | Reviewed one by one (F4 risk 8) |
 
 ## Open items
+0. **Sebas:** the EEG staff session time (D-F6-180); if Wed, see the Tue note.
 1. **Sebas:** set and participant of the dry run, by Thu 12 at night (D-F6-175).
 2. **Sebas:** T2 categories of §16.4, before Wed. A change is content.
 3. **Sebas:** A-20 needs someone at another lab PC to see whether the streams are visible.

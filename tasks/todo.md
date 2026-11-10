@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-178.** Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-180** (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -78,15 +78,26 @@ Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Edito
 
 ---
 
-## Tue 10 · rules; spec review; EEG staff (12:00)
+## Tue 10 · rules; spec review (D-F6-180: from 14:30, in parallel with the reserve; Stops grouped at the end of each task, Sebas in Blender)
 
-### [ ] T0 · autorun writes its output to a log file (S) · before T1 (Sebas, 9 Nov)
-`backend/app/eeg/autorun.py`, its test; the log folder gitignored.
-- [ ] Everything `autorun` prints, tracebacks and the output of the `baseline` child go to a file per run; its path is printed at the start.
-- [ ] Python's fatal errors go there too (`faulthandler`), and the process writes a last line when it ends, so a silent death shows as a log with no end line.
-- [ ] Why the first run died on 9 Nov stays unconfirmed: this is for the next time, not a diagnosis of that one.
-- [ ] Test: the file receives a print and a child's output; no change in the steps `autorun` runs.
-- [ ] **Stop.**
+EEG staff session **no longer at 12:00** (D-F6-180 changes D-F6-170): end of today or Wed 11 before 13:30. Nothing from it is applied until it has a number in §4.
+
+### [ ] T0 · autorun writes its output to a log file (S) · D-F6-179 (2)
+`backend/app/eeg/autorun.py`, `tests/test_eeg_autorun.py`; the log folder gitignored.
+- [ ] Everything `autorun` prints, tracebacks and the `baseline` child's output go to one file per run; its path is printed at the start.
+- [ ] `faulthandler` writes Python's fatal errors there; a last line when the process ends, so a silent death shows as a log with no end line.
+- [ ] The cause of the 9 Nov death stays unconfirmed: this is for next time, not a diagnosis.
+- [ ] Test: the file receives a print and a child's output; the steps `autorun` runs do not change.
+- [ ] Operator lists (J2, J3, V2) add "autorun alive before S3" (D-F6-179 (2)) and "eyes open, looking at the dot" said at the end of S3 (D-F6-179 (3)). No code for the S4 halves notice (after the dry run).
+- [ ] **Stop** (grouped with T0b).
+
+### [ ] T0b · sync anchor at the first 50 % crossing (S) · D-F6-179 (1)
+`backend/app/eeg/sync.py`, `tests/test_eeg_sync.py`.
+- [ ] Anchor = first sample in the ±500 ms window where |Cz − median| reaches 50 % of the peak. Noise window 400–150 ms **before the anchor**; threshold max(5 × noise, 10 % of the peak); onset = last point before the anchor under it. Nothing else changes; peak and anchor lags kept in `sync_detail`, `SYNC_VERSION`/docstring updated.
+- [ ] Test: a strike with a plateau (peak at its end) gives the onset at the rise, not at the plateau's end; the existing tests stay green unchanged.
+- [ ] Recompute on the PC, `sync` then `epochs` (D-F6-156). Targets (F4 Registro 9 Nov night, PM 10 Nov), S3 / S9 / drift / spread: `742ec49a` **unchanged** 35.3 / 52.2 / +16.9 / 18.4 ms, tap by tap; `07343b5d` 65.3 / 85.7 / +20.3 / 15.6 ms, **S3-2 → 68.7 ms**; `b5bcf5bd` still empty with its reason. `verify_eeg.sql` on `07343b5d`: sync block now OK.
+- [ ] Mine vs the targets compared in the draft before the Stop; a figure off is reported, not tuned.
+- [ ] **Stop** (T0 + T0b): Sebas sees the three sync outputs.
 
 ### [ ] T1 · concordance.py (S)
 `backend/app/eeg/concordance.py` (new), test.
@@ -104,19 +115,25 @@ Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Edito
 - [ ] Unchanged and tested: initial window, cooldown 3, tail 4, level limits, one change at a time, D9; a difficulty raise only returns with `DISENGAGED` or `OVERLOADED` (D-F6-59).
 - [ ] Migration 0015: `eeg_counted`, `eeg_ei_z`, `eeg_theta_z`, `eeg_effect`; `project_event` copies them; `v_adaptations` recreated as 0009 did.
 - [ ] Check every reader of `reason_code` (`outcome.py`, research API, dashboard) accepts the new codes.
-- [ ] **Check:** `BEHAVIOR_ADAPTIVE` replay byte-identical to the golden; all earlier tests green.
-- [ ] **D-F6-178, when T2 closes (Benkyokai demo):** with the backend up, `docker compose exec backend python -m app.adaptation.replay 678b7806-6f0d-4c6c-9673-6f1addd53701` (its own version: behavior-v1, rules-v1) and the same with `--version behavior-v2`. Both outputs in `Claude outputs/Borrador_Plan_Fase6_9_10nov.md`, with the full id. Sebas records the backup video on Tue night from that output: if T2 is late, run them anyway on the committed code and say so.
+- [ ] **Check:** `BEHAVIOR_ADAPTIVE` replay **byte-identical** to the golden; all earlier tests green.
+- [ ] **D-F6-178, when T2 closes:** backend up, `docker compose exec backend python -m app.adaptation.replay 678b7806-6f0d-4c6c-9673-6f1addd53701` (its own version) and the same with `--version behavior-v2`. Both outputs verbatim in `Claude outputs/Borrador_Plan_Fase6_9_10nov.md` with the full id. If T2 is late, run them on the committed code anyway and say so (Sebas records the video at 19:00).
 - [ ] **Stop.**
 
-### [ ] T3 · spec v1.4 review
-- [ ] Read PM's v1.4 against the code. Notes go in the draft for PM (the document is PM's, D-F6-88). If it is not ready, this moves and PM is told.
+### [ ] T3 · spec v1.4 review (no edits to the spec, D-F6-88)
+Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.docx` (source `Spec_v1_4_borrador.md`) against the code.
+- [ ] Developer review 1 (§3.4): angles from the saved `LayoutOfRecord` output, **with its date or commit**; if it is before 30 Oct, said so: re-measured Thu with Unity free.
+- [ ] Developer review 2 (§11.3): head-away thresholds in the code (`HeadBehavior.cs`) vs `Medicion_D7_HeadAway.md` vs the spec.
+- [ ] Developer review 3 (§10.4, §11.5): today `concordance.py` and `rules-v2-mm` as committed; live path and EEG replay on Wed when X1/X2 close (PM corrects the spec Thu before the freeze).
+- [ ] Developer review 4 (§6.2): answered Wed with X6b.
+- [ ] Other mismatches with the code, by section, each with file and line.
+- [ ] All in the draft for PM; nothing written in `docs_proyecto/`.
 - [ ] **Stop.**
 
 ### [ ] T4 · from the EEG staff session
-- [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). If nothing is numbered by the evening, nothing is applied.
+- [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). Sebas aims for today, end of day. If Wed: X1 stays before 13:30; numbered items go after 14:30 and before J1 on Thu. Thursday's freeze does not move; if something does not fit, cut X7 first, then X6b.
 - [ ] **Stop.**
 
-### [ ] T5 · close (draft, Dudas, `tasks/`)
+### [ ] T5 · close (draft with done, findings, replay output, T3 notes, Dudas; `tasks/`)
 - [ ] **Stop:** Sebas's OK.
 
 ---
@@ -196,13 +213,13 @@ Migration `0017`, `project_event`, test.
 - [ ] **Stop** before the cap.
 
 ### [ ] J2 · cap, S1 → S9 in the headset
-- [ ] Same list as M7, condition `MULTIMODAL_ADAPTIVE`; T1 lures on (T2/T3 if X6b), declared. New lure characters and card sizes seen in the headset.
+- [ ] Same list as M7 plus D-F6-179: `autorun` alive (log file growing) before S3; at the end of S3 the assistant says "eyes open, looking at the dot". Condition `MULTIMODAL_ADAPTIVE`; T1 lures on (T2/T3 if X6b), declared. New lure characters and card sizes seen in the headset.
 - [ ] **Done when:** at least one decision with `EEG_CONFIRMED`, `EEG_VETO` or `EEG_LED`, applied and explained (F4 §5).
 - [ ] None → forced state in the Editor, real signal confirms or vetoes; **declared as such**.
 - [ ] **Stop.**
 
 ### [ ] J3 · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it
-For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as M7, `autorun` relaunched, its own XDF.
+For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2 (M7 plus D-F6-179), `autorun` relaunched, its own XDF.
 - [ ] Reach S7 with **G**, but **S4 complete** (no G in S4). If S6 is short, the reference falls to S4 eyes open, marked (D-F6-73).
 - [ ] **Before cutting:** the EEG has counted in at least one S7 window (visible in `autorun`'s console).
 - [ ] Case 1: cap off. Case 2: AURA software closed. Case 3: Bluetooth off.
@@ -230,7 +247,7 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as M7, `autoru
 - [ ] **Stop.**
 
 ### [ ] V2 · dry run
-- [ ] `MULTIMODAL_ADAPTIVE` (D-F6-175); lures active that day, declared (T1, and T2/T3 if X6b); set and participant as Sebas fixed them; the participant is not from the team and signs consent v1 (D-F6-76); lists as M7.
+- [ ] `MULTIMODAL_ADAPTIVE` (D-F6-175); lures active that day, declared (T1, and T2/T3 if X6b); set and participant as Sebas fixed them; the participant is not from the team and signs consent v1 (D-F6-76); lists as M7 plus the two D-F6-179 items of J2.
 - [ ] **Done when:** full session with a participant, XDF with both streams.
 - [ ] **Stop.**
 
