@@ -136,7 +136,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [ ] **Stop.**
 
 ### [x] T5 · close (draft with done, findings, replay output, T3 notes, Dudas; `tasks/`)
-- [ ] **Stop:** Sebas's OK.
+- [x] **Stop:** Sebas's OK, 10 Nov.
 
 ---
 
