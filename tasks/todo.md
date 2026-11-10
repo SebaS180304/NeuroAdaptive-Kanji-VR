@@ -231,14 +231,15 @@ Migration `0017`, `project_event`, test.
 - [ ] Result in the draft, for a decision.
 - [ ] **Stop.**
 
-### [ ] X6s · substitution condition 1 without overlapping meanings (S) · D-F6-181 (2) · before X6a
+### [x] X6s · substitution condition 1 without overlapping meanings (S) · D-F6-181 (2) · before X6a
 `tools/kanji_metrics.py` (`hard_clash`, a check, export) → `kanji_content.json`; `backend/app/pretest/rules.py` (`_hard_clash`); tests of both. Commit as content (D-F6-62/122).
-- [ ] `hard_clash` also fails when two meanings **share a word** (computed: *rice*/*rice field*) or one **includes** the other (an explicit `MEANING_INCLUDES` list, since no string shows it: *child*/*person*, *woman*/*person*, *shellfish*/*fish*; *thing* does not go in (precision of D-F6-181, 10 Nov). Both rules in one function, used by the table and the check of the nominal sets.
-- [ ] The contract exports the clashing meaning pairs (`meaningClashes`, keyed like `similarity`); the pre-test's `_hard_clash` reads them. **Without this, two substitutions in a row can still bring 田 and 米 together**: the table only covers one substitution.
-- [ ] The five nominal sets pass the new rule (no overlap among their own members).
-- [ ] Regenerated table vs today's, in the draft. Dry run on 10 Nov (child/person only): 94 → 93 entries, only C 牛 loses 子 (8 left); woman/person and shellfish/fish do not change the table (one substitution), **no experimental kanji without a substitute**. If the real run leaves one empty: **stop, tell PM, nothing further.**
-- [ ] Tests: `kanji_metrics` (child/person and rice/rice field clash; the table drops 子 for 牛); pre-test (with 田 already in the effective set, 米 is not offered). Backend suite green.
+- [x] `hard_clash` also fails when two meanings **share a word** (computed: *rice*/*rice field*) or one **includes** the other (an explicit `MEANING_INCLUDES` list, since no string shows it: *child*/*person*, *woman*/*person*, *shellfish*/*fish*; *thing* does not go in (precision of D-F6-181, 10 Nov). Both rules in one function, used by the table and the check of the nominal sets.
+- [x] The contract exports the clashing meaning pairs (`meaningClashes`, keyed like `similarity`); the pre-test's `_hard_clash` reads them. **Without this, two substitutions in a row can still bring 田 and 米 together**: the table only covers one substitution.
+- [x] The five nominal sets pass the new rule (no overlap among their own members).
+- [x] Regenerated table vs today's, in the draft. Dry run on 10 Nov (child/person only): 94 → 93 entries, only C 牛 loses 子 (8 left); woman/person and shellfish/fish do not change the table (one substitution), **no experimental kanji without a substitute**. If the real run leaves one empty: **stop, tell PM, nothing further.**
+- [x] Tests: `kanji_metrics` (child/person and rice/rice field clash; the table drops 子 for 牛); pre-test (with 田 already in the effective set, 米 is not offered). Backend suite green.
 - [ ] **Stop.**
+**Done Tue 10 (moved up):** `53f52c3` + seed `0d6956d`; 94 → 93, only C 牛 loses 子 (8 left), no orphan; nominal sets pass; `meaningClashes` = 女人 人子 田米 貝魚; the pre-test no longer offers 米 after 田 (it did in sets A and C). 396 tests.
 
 ### [ ] X6a · T1 official lists (S) · D-F6-168, §16.2 and §16.3
 `tools/kanji_metrics.py` → `kanji_content.json`, TMP font asset; commit as content.
