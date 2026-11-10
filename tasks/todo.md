@@ -241,7 +241,7 @@ Migration `0017`, `project_event`, test.
 - [x] Tests that pin the T2 defaults 2 and 3: done 10 Nov (`d4f901d`).
 - [x] **Stop.**
 
-**Done Tue 10 (moved up):** `9ffc4c2`; reason `MAX_CHANGES`; rules-v2 replay byte-identical (36/36); D-F6-184 not on the board, so the lead rule is unchanged (duda 3 open).
+**Done Tue 10 (moved up):** `9ffc4c2`; reason `MAX_CHANGES`; rules-v2 replay byte-identical (36/36); D-F6-184 applied (`b1ccb46`): only eligible windows count for a lead.
 
 ### [ ] J1 · synthetic end to end
 - [ ] Editor, `MULTIMODAL_ADAPTIVE`, synthetic stream that varies between S6 and S7. Decisions with their EEG block; latency acceptable.
