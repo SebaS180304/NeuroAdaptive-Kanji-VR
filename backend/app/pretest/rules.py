@@ -55,8 +55,10 @@ def _total(members, field: str) -> float:
 
 def _hard_clash(a: str, b: str) -> bool:
     ka, kb = _kanji()[a], _kanji()[b]
+    clashes = contract().get("meaningClashes", ())  # D-F6-181 (2): includes another or shares a word
     return (ka["targetReading"] == kb["targetReading"]
             or ka["meaning"] == kb["meaning"]
+            or a + b in clashes or b + a in clashes
             or _sim(a, b) > contract()["rules"]["simMaxPair"])
 
 

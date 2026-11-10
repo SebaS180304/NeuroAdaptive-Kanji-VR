@@ -172,3 +172,26 @@ def test_partially_known_primary_stays_and_triggers_no_extra_question():
 def test_blank_answers_are_wrong():
     assert auto_grade("月", "", "") == (False, False)
     assert auto_grade("月", "   ", " ") == (False, False)
+
+
+# --------------------------------------------------------------------------- #
+# D-F6-181 (2): no meaning in the resulting set includes another or shares a word with it (X6s)
+# --------------------------------------------------------------------------- #
+
+def test_a_meaning_that_includes_another_is_not_a_substitute():
+    # 子 child inside set C, which has 人 person: two correct answers in T2
+    assert "子" not in contract()["substitutionTable"]["C"]["牛"]
+
+
+def test_two_substitutions_never_bring_rice_and_rice_field_together():
+    # 火 -> 田 (rice field) already applied in set A: 米 (rice) shares a word with it
+    effective = ["月", "車", "田", "竹", "石"]
+    assert "米" not in valid_substitutes("A", effective, "竹")
+    assert "米" not in valid_substitutes("C", ["人", "田", "牛", "肉", "花"], "肉")
+
+
+def test_the_contract_lists_the_clashing_meanings():
+    clashes = set(contract()["meaningClashes"])
+    for a, b in (("人", "子"), ("人", "女"), ("貝", "魚"), ("田", "米")):
+        assert a + b in clashes or b + a in clashes, (a, b)
+    assert not any("物" in k for k in clashes)          # thing: not an inclusion (D-F6-181, 10 Nov)

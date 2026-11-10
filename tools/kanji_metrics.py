@@ -35,7 +35,7 @@ Requisitos: pillow, numpy. Sin red.
 """
 
 from __future__ import annotations
-import argparse, itertools, os, pathlib, sys
+import argparse, itertools, os, pathlib, re, sys
 from dataclasses import dataclass
 
 import numpy as np
@@ -363,6 +363,10 @@ SIM_MEAN_MAX = 0.12            # similitud gráfica media dentro de un set
 #   1. Sin colisión dura con los cuatro que quedan (S menos e): ni misma
 #      lectura, ni mismo significado, ni forma por encima de SIM_MAX. Si r
 #      choca con alguno de los cuatro, la sustitución rompe un tipo de trial.
+#      D-F6-181 (2): tampoco un significado que incluya a otro o comparta
+#      palabra con él (dos correctas en T2). Compartir palabra se calcula del
+#      texto (rice / rice field); incluir no se ve en el texto y va en
+#      MEANING_INCLUDES (precisión de D-F6-181, 10 nov: thing no entra).
 #   2. Complejidad comparable, ítem a ítem (spec §13.2).
 #   3. El set resultante sigue dentro de banda: un participante con
 #      sustituciones tiene que estar estudiando un set tan equilibrado como el
@@ -388,12 +392,27 @@ SUBST_APPLY_READINGS_BAND = False
 # Regla de sustitución, derivada de los datos
 # --------------------------------------------------------------------------- #
 
+MEANING_INCLUDES = {frozenset(p) for p in (("子", "人"), ("女", "人"), ("貝", "魚"))}  # child, woman ⊂ person; shellfish/fish
+
+
+def meaning_overlap(a: str, b: str) -> str | None:
+    """D-F6-181 (2): one meaning includes the other, or they share a word."""
+    if frozenset((a, b)) in MEANING_INCLUDES:
+        return f"significado incluido {KANJI[a].meaning}/{KANJI[b].meaning}"
+    words = lambda c: set(re.findall(r"[a-z]+", KANJI[c].meaning.lower()))
+    shared = words(a) & words(b)
+    return f"significado con palabra común '{min(shared)}'" if shared else None
+
+
 def hard_clash(g: "Glyphs", a: str, b: str) -> str | None:
     """Colisión que rompe un tipo de trial si a y b coinciden en un set."""
     if KANJI[a].reading == KANJI[b].reading:
         return f"lectura {KANJI[a].reading}"
     if KANJI[a].meaning == KANJI[b].meaning:
         return f"significado {KANJI[a].meaning}"
+    overlap = meaning_overlap(a, b)
+    if overlap:
+        return overlap
     sim = g.similarity(a, b)
     if sim > SIM_MAX:
         return f"forma {sim:+.3f}"
@@ -568,6 +587,10 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
         "sets": {n: list(v) for n, v in SETS.items()},
         "reserve": list(RESERVE),
         "substitutionTable": table,
+        # D-F6-181 (2): pairs of experimental/reserve kanji whose meanings include one another or share a word,
+        # keyed like "similarity". The pre-test reads them to re-check a set after more than one substitution.
+        "meaningClashes": [a + b for a, b in itertools.combinations(
+            [c for v in SETS.values() for c in v] + list(RESERVE), 2) if meaning_overlap(a, b)],
         # Glyph similarity of every experimental/reserve pair, key = the two
         # characters in kanji-list order. The pre-test (backend/app/pretest)
         # needs it to re-check a set after more than one substitution, which
@@ -736,7 +759,7 @@ def check_reading_collisions() -> list[str]:
 
     for name, members in SETS.items():
         for a, b in itertools.combinations(members, 2):
-            what = clash(a, b)
+            what = clash(a, b) or meaning_overlap(a, b)  # D-F6-181 (2): the nominal sets pass it too
             if what:
                 problems.append(f"{what}: {a}/{b} dentro del set {name} ← SIN RESTRICCIÓN")
 
