@@ -94,3 +94,53 @@ def test_decision_event_carries_context_and_latency(events):
     assert p["estimator_version"] == "behavior-v1" and p["rules_version"] == "rules-v1"
     assert "slow_errors" in p["evidence"]
     assert json.loads(json.dumps(p)) == p
+
+
+# X1 · the live EEG in the decision (D-F6-171, D-F6-172) ---------------------------------------------------------
+
+def _low_ei(trial_id, first_start_ms, decision_ms):
+    """An eeg_source: what window.evaluate() gives over the session's epochs (here, EI z -2 in every window)."""
+    return {"counted": True, "non_poor": 3, "clean_s": 9.0,
+            "z": {"engagement_index": -2.0, "theta_fz": 0.0, "alpha_parietal": 0.0, "theta_beta": None}}
+
+
+def _feed_eeg(condition, evs, source):
+    state = SessionAdaptationState(condition, ESTIMATOR_V1)
+    pending = [p for e in evs if (p := state.feed(e["event_type"], e.get("payload") or {}, eeg_source=source))]
+    return state, pending
+
+
+def test_multimodal_decisions_carry_their_eeg_block(events):
+    seen = []
+    _, pending = _feed_eeg("MULTIMODAL_ADAPTIVE", events[OBS_01], lambda *a: seen.append(a) or _low_ei(*a))
+    assert len(pending) == 20 and all(p.decision.version == "rules-v2-mm" for p in pending)
+    payload = pending[5].event_payload(1.0)
+    assert payload["eeg"]["ei_z"] == -2.0 and payload["rules_version"] == "rules-v2-mm"
+    tid, first_start, decision = seen[5]
+    assert tid == "S7-006" and first_start <= decision     # the window ends at the answer (D-F6-177)
+
+
+def test_multimodal_without_a_source_is_unavailable_never_an_error(events):
+    _, pending = _feed_eeg("MULTIMODAL_ADAPTIVE", events[OBS_01], None)
+    assert {p.decision.eeg["effect"] for p in pending} == {"UNAVAILABLE"}
+
+
+@pytest.mark.parametrize("condition", ["STATIC", "BEHAVIOR_ADAPTIVE"])
+def test_the_other_conditions_never_read_the_eeg(events, condition):
+    def boom(*_a):
+        raise AssertionError("read the EEG")
+    _, pending = _feed_eeg(condition, events[OBS_01], boom)
+    assert all(p.decision.eeg is None for p in pending)
+
+
+def test_rebuild_of_a_multimodal_session_decides_as_live(events):
+    live, pending = _feed_eeg("MULTIMODAL_ADAPTIVE", events[OBS_01], _low_ei)
+    stored = []
+    by_trial = {p.decision.trial_id: p for p in pending}
+    for e in events[OBS_01]:
+        stored.append(e)
+        if e["event_type"] == "ANSWER_SELECTED" and (p := by_trial.get((e.get("payload") or {}).get("trial_id"))):
+            stored.append({"event_type": "ADAPTATION_DECISION", "payload": p.event_payload(1.0)})
+    rebuilt = SessionAdaptationState.rebuild("MULTIMODAL_ADAPTIVE", stored, ESTIMATOR_V1)
+    assert rebuilt.engine == live.engine                      # last_eeg included: a lead survives a reconnect
+    assert {t: d.as_dict() for t, d in rebuilt.decisions.items()} == {t: p.decision.as_dict() for t, p in by_trial.items()}

@@ -28,6 +28,8 @@ def _r(z: float | None) -> float | None:
 
 def block(window: dict) -> dict:
     """window.evaluate() as the decision stores it (payload ``eeg``, without ``effect``); z rounded to 3 decimals."""
+    if "z" not in window:  # already a block (the payload of a stored decision, when the state is rebuilt)
+        return {k: window.get(k) for k in ("counted", "non_poor", "clean_s", "ei_z", "theta_z", "alpha_z")}
     z = window.get("z") or {}
     return {"counted": window.get("counted"), "non_poor": window.get("non_poor"), "clean_s": window.get("clean_s"),
             "ei_z": _r(z.get("engagement_index")), "theta_z": _r(z.get("theta_fz")),

@@ -164,8 +164,11 @@ async def _handle_session_event(
 
     state = _adaptation.get(session_id)
     if state is not None:
+        source = None
+        if state.multimodal and parsed.event_type == "ANSWER_SELECTED":
+            source = await _eeg_source(session_id, parsed.payload.get("session_elapsed_ms"))
         try:
-            pending = state.feed(parsed.event_type, parsed.payload)
+            pending = state.feed(parsed.event_type, parsed.payload, eeg_source=source)
         except Exception:  # never lose the session over the estimator
             logger.exception("adaptation failed on event %s (session=%s)", event.id, session_id)
             pending = None
@@ -174,6 +177,36 @@ async def _handle_session_event(
         outcomes = state.take_outcomes()
         if outcomes:
             await _store_outcomes(session_id, outcomes)
+
+
+EEG_LOOKBACK_MS = 60_000  # more than any decision window (3 trials or 15 s, D-F6-151)
+_EPOCH_COLUMNS = ("start_ms", "end_ms", "quality", "chunk_clean",
+                  "engagement_index", "theta_fz", "alpha_parietal", "theta_beta")
+
+
+async def _eeg_source(session_id: uuid.UUID, answered_ms):
+    """MULTIMODAL_ADAPTIVE (D-F6-171): the epochs live.py has written so far and the session's reference, read
+    once per answer; window.py then keeps only those finished at the decision (D-F6-172). Any failure: no EEG
+    for this window (UNAVAILABLE), never a lost decision."""
+    from app.eeg import window
+
+    if answered_ms is None:
+        return None
+    try:
+        async with AsyncSessionLocal() as db:
+            ref = (await db.execute(text("SELECT reference FROM eeg_sessions WHERE session_id = :s"),
+                                    {"s": str(session_id)})).scalar_one_or_none()
+            rows = (await db.execute(text(
+                f"SELECT {', '.join(_EPOCH_COLUMNS)} FROM eeg_epochs WHERE session_id = :s "
+                "AND start_ms BETWEEN :lo AND :hi"),
+                {"s": str(session_id), "lo": int(answered_ms) - EEG_LOOKBACK_MS, "hi": int(answered_ms)})).all()
+    except Exception:
+        logger.exception("EEG not read for the decision (session=%s)", session_id)
+        return None
+    epochs = [dict(zip(_EPOCH_COLUMNS, r)) for r in rows]
+    reference = ref or {"indices": {}}
+    return lambda _trial_id, first_start_ms, decision_ms: window.evaluate(epochs, first_start_ms, decision_ms,
+                                                                          reference)
 
 
 async def _load_adaptation(db, session_id: uuid.UUID, condition: str | None) -> None:

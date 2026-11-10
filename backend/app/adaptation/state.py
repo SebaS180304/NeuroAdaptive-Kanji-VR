@@ -37,7 +37,7 @@ STATIC, and every state other than S7, never reaches the estimator
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from app.adaptation.estimator import (
     DEFAULT_THRESHOLDS,
@@ -145,6 +145,14 @@ def decision_id_for(trial_id: str | None) -> str:
     return f"d-{trial_id}"
 
 
+MULTIMODAL = "MULTIMODAL_ADAPTIVE"
+# No EEG for this window (no source, no epochs yet, process down): the decision is rules-v2-mm with UNAVAILABLE.
+NO_EEG: dict[str, Any] = {"counted": False, "non_poor": 0, "clean_s": 0.0, "z": {}}
+
+# eeg_source(trial_id, first_start_ms, decision_ms) -> window.evaluate() of that window (D-F6-171, D-F6-172, D-F6-177).
+EegSource = Callable[[str, int, int], Mapping[str, Any] | None]
+
+
 class SessionAdaptationState:
     """Everything the live path needs to decide for one session."""
 
@@ -162,8 +170,16 @@ class SessionAdaptationState:
     def adaptive(self) -> bool:
         return adaptation_allowed(S7_STATE, self.condition)
 
-    def feed(self, event_type: str, payload: Mapping[str, Any]) -> PendingDecision | None:
-        """Process one stored event; returns a decision for an answered adaptive S7 trial."""
+    @property
+    def multimodal(self) -> bool:
+        return self.condition == MULTIMODAL
+
+    def feed(self, event_type: str, payload: Mapping[str, Any],
+             eeg_source: EegSource | None = None) -> PendingDecision | None:
+        """Process one stored event; returns a decision for an answered adaptive S7 trial.
+
+        ``eeg_source`` is only read in MULTIMODAL_ADAPTIVE: STATIC and BEHAVIOR_ADAPTIVE never see the EEG.
+        """
         payload = payload or {}
         record = self.builder.feed(event_type, payload)
 
@@ -183,10 +199,16 @@ class SessionAdaptationState:
         self.engine = self.engine.with_levels(esl=payload.get("esl"), lal=payload.get("lal"))
 
         trials = self.builder.records
-        window = window_indicators(window_trials(trials, record.trial_id), self.profile)
+        in_window = window_trials(trials, record.trial_id)
+        window = window_indicators(in_window, self.profile)
         result = estimate(window, self.profile, version=self.version)
         seq = record.trial_sequence or int(record.trial_id.split("-")[1])
-        decision, self.engine = decide(result, seq, record.answered_ms, self.engine)
+        eeg = None
+        if self.multimodal:
+            first = in_window[0]
+            first_start = first.started_ms if first.started_ms is not None else first.answered_ms
+            eeg = (eeg_source(record.trial_id, first_start, record.answered_ms) if eeg_source else None) or NO_EEG
+        decision, self.engine = decide(result, seq, record.answered_ms, self.engine, eeg=eeg)
         self.decisions[record.trial_id] = decision
         pending = PendingDecision(decision_id=decision_id_for(record.trial_id), decision=decision,
                                   trigger=dict(payload))
@@ -235,7 +257,12 @@ class SessionAdaptationState:
         """The state after the stored events, e.g. when the WebSocket reconnects."""
         events = list(events)
         state = cls(condition, version or stored_version(events) or ESTIMATOR_VERSION)
+        # MULTIMODAL: each decision re-reads the EEG block it stored, so the rebuilt engine (last_eeg, the lead)
+        # is the live one; the epochs may have been replaced by fill_from_xdf since (D-F6-156).
+        stored = {(e.get("payload") or {}).get("trial_id"): (e.get("payload") or {}).get("eeg")
+                  for e in events if e["event_type"] == ADAPTATION_DECISION}
         for event in events:
-            state.feed(event["event_type"], event.get("payload") or {})
+            state.feed(event["event_type"], event.get("payload") or {},
+                       eeg_source=lambda trial_id, *_: stored.get(trial_id))
         state.take_outcomes()     # already stored by the live run
         return state
