@@ -64,3 +64,17 @@ def test_the_log_gets_this_process_and_the_child_output(tmp_path, monkeypatch) -
         log.close()
     text = next(tmp_path.glob("autorun-*.log")).read_text(encoding="utf-8")
     assert "log: " in text and "parent line" in text and "alpha ratio ≥ 1.2" in text
+
+
+def test_the_log_gets_the_line_even_when_the_console_fails(tmp_path) -> None:
+    class Broken:
+        def write(self, _s):
+            raise OSError("console gone")
+
+        def flush(self):
+            pass
+
+    with open(tmp_path / "x.log", "w", encoding="utf-8") as log:
+        with pytest.raises(OSError):
+            autorun._Tee(Broken(), log).write("last words\n")
+    assert (tmp_path / "x.log").read_text(encoding="utf-8") == "last words\n"

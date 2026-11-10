@@ -31,8 +31,8 @@ LOG_DIR = Path("logs")
 
 
 class _Tee:
-    def __init__(self, *streams):
-        self.streams = streams
+    def __init__(self, console, log):
+        self.streams = (log, console)  # the log first: a console that fails must not cost the line
 
     def write(self, s: str) -> int:
         for st in self.streams:
