@@ -123,7 +123,9 @@ def _events() -> list[dict]:
         _decision("S7-002", 2, 8000, action="CHANGE_ASSISTANCE", dimension="LAL", from_level="MEDIUM",
                   to_level="HIGH", proactive_cues=True, learner_state="OVERLOADED", confidence=0.8,
                   reason_code="OVERLOADED", explanation="Raised the assistance from MEDIUM to HIGH.",
-                  cooldown_until_trial=5, evidence=["slow_errors"]),
+                  cooldown_until_trial=5, evidence=["slow_errors"],
+                  eeg={"counted": True, "non_poor": 3, "clean_s": 9.0, "ei_z": -0.41, "theta_z": 1.23,
+                       "alpha_z": 0.0, "effect": "CONFIRMED"}),       # rules-v2-mm (0015)
         t2[2],
         _ev("ADAPTATION_APPLIED", 9600, lal="HIGH", decision_id="d-S7-002", decision_trial_id="S7-002",
             applied_before_trial_id="S7-003", dimension="LAL", from_level="MEDIUM", to_level="HIGH",
@@ -219,3 +221,14 @@ async def test_projection_is_idempotent(session) -> None:
     assert await _scalar("SELECT project_session(:s)", s=session) == 0
     assert await _scalar("SELECT project_session(:s)", s=session) == 0
     assert await _scalar(snap, s=session) == before
+
+
+@pytest.mark.asyncio
+async def test_the_eeg_block_of_a_decision_is_projected(session) -> None:  # 0015, rules-v2-mm
+    rows = await _exec("SELECT trial_id, eeg_counted, eeg_ei_z, eeg_theta_z, eeg_effect FROM adaptation_decisions "
+                       "WHERE session_id = :s ORDER BY trial_id", s=session)
+    assert [(t, c, None if e is None else round(e, 2), None if th is None else round(th, 2), f)
+            for t, c, e, th, f in rows] == [
+        ("S7-001", None, None, None, None),                 # rules-v1/v2: no EEG block
+        ("S7-002", True, -0.41, 1.23, "CONFIRMED"),
+    ]

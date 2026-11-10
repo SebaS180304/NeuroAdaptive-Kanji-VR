@@ -1,0 +1,165 @@
+"""
+T2 (tasks/todo.md, Tue 10): rules-v2-mm, the branch of decide() taken only with an EEG window
+(Reevaluacion_EEG_Justificacion.md §3.3, D-F6-128, D-F6-174). Without one, decide() is rules-v2 untouched:
+test_adaptation_rules.py and the byte-identical replay check that.
+"""
+
+import pytest
+
+from app.adaptation.estimator import DISENGAGED, ENVIRONMENT, OVERLOADED, STABLE, EstimatorResult
+from app.adaptation.rules import (
+    AT_LIMIT,
+    COOLDOWN,
+    EEG_CONFIRMED,
+    EEG_LED,
+    EEG_ONLY_ALERT,
+    EEG_VETO,
+    ESL,
+    HYSTERESIS,
+    INITIAL_WINDOW,
+    LAL,
+    NO_CHANGE,
+    RULES_V2,
+    RULES_V2_MM,
+    STABLE_NO_ACTION,
+    TAIL_FREEZE,
+    decide,
+    initial_state,
+)
+
+TRIAL_MS = 7_000
+ENV = (DISENGAGED, ENVIRONMENT)
+
+
+@pytest.fixture(autouse=True)
+def _clean_test_participants():
+    """Overrides the conftest fixture: no database here."""
+    yield
+
+
+def _w(ei=None, theta=None, counted=True) -> dict:
+    return {"counted": counted, "non_poor": 3, "clean_s": 9.0,
+            "z": {"engagement_index": ei, "theta_fz": theta, "alpha_parietal": 0.0, "theta_beta": None}}
+
+
+N = _w(ei=0.0, theta=0.0)   # neutral EEG
+
+
+def _run(items, esl="MEDIUM", lal="MEDIUM"):
+    """items: (state or (state, cause), window) per trial from S7-001."""
+    engine = initial_state(esl, lal, 0)
+    out = []
+    for i, (st, window) in enumerate(items, start=1):
+        state, cause = st if isinstance(st, tuple) else (st, None)
+        result = EstimatorResult(trial_id=f"S7-{i:03d}", state=state, cause=cause, confidence=1.0, support=1.0,
+                                 disengaged=(), overloaded=(), indicators={}, underchallenged=())
+        d, engine = decide(result, i, i * TRIAL_MS, engine, eeg=window)
+        out.append(d)
+    return out, engine
+
+
+def _warm(n=2):
+    return [(STABLE, N)] * n   # initial window: trials 1-2
+
+
+# Coincides / veto / unavailable --------------------------------------------------------------------------------
+
+def test_confirmed_acts_in_one_window() -> None:
+    ds, _ = _run(_warm() + [(ENV, _w(ei=-1.2))])
+    d = ds[-1]
+    assert (d.dimension, d.from_level, d.to_level, d.reason_code) == (ESL, "MEDIUM", "LOW", EEG_CONFIRMED)
+    assert d.eeg["effect"] == "CONFIRMED" and d.version == RULES_V2_MM
+
+
+def test_neutral_keeps_the_two_windows_of_hysteresis() -> None:
+    ds, _ = _run(_warm() + [(ENV, N), (ENV, N)])
+    assert ds[2].reason_code == HYSTERESIS and ds[3].is_change and ds[3].reason_code == "DISENGAGED_ENVIRONMENT"
+
+
+def test_confirmed_when_behaviour_would_act_anyway_is_eeg_confirmed() -> None:  # D-F6-174
+    ds, _ = _run(_warm() + [(ENV, N), (ENV, _w(ei=-1.0))])
+    assert ds[3].is_change and ds[3].reason_code == EEG_CONFIRMED
+
+
+def test_veto_is_no_change_and_the_vetoed_window_counts_for_the_hysteresis() -> None:  # D-F6-174
+    ds, _ = _run(_warm() + [(ENV, _w(ei=+1.0)), (ENV, N)])
+    assert (ds[2].action, ds[2].reason_code) == (NO_CHANGE, EEG_VETO)
+    assert ds[3].is_change and ds[3].reason_code == "DISENGAGED_ENVIRONMENT"   # 2nd window of the run
+
+
+def test_overloaded_confirmed_by_theta_raises_assistance_with_cues() -> None:
+    ds, _ = _run(_warm() + [(OVERLOADED, _w(theta=+1.3))])
+    d = ds[-1]
+    assert (d.dimension, d.to_level, d.proactive_cues, d.reason_code) == (LAL, "HIGH", True, EEG_CONFIRMED)
+
+
+def test_unavailable_is_behaviour_adaptive_and_marked() -> None:
+    ds, _ = _run(_warm() + [(ENV, _w(ei=-3.0, counted=False)), (ENV, _w(counted=False))])
+    assert ds[2].reason_code == HYSTERESIS
+    assert ds[3].reason_code == "DISENGAGED_ENVIRONMENT" and ds[3].eeg["effect"] == "UNAVAILABLE"
+    assert ds[3].version == RULES_V2_MM
+
+
+# Lead (§3.3, D-F6-128, D-F6-174) -------------------------------------------------------------------------------
+
+def test_stable_with_ei_low_twice_leads_lal_one_step_down() -> None:
+    ds, engine = _run(_warm() + [(STABLE, _w(ei=-1.6)), (STABLE, _w(ei=-1.8))])
+    assert (ds[2].action, ds[2].reason_code) == (NO_CHANGE, EEG_ONLY_ALERT)
+    d = ds[3]
+    assert (d.dimension, d.from_level, d.to_level, d.reason_code, d.proactive_cues) == (LAL, "MEDIUM", "LOW", EEG_LED, False)
+    assert engine.esl == "MEDIUM"
+
+
+def test_lead_at_low_is_at_limit_without_raising_the_esl() -> None:
+    ds, engine = _run(_warm() + [(STABLE, _w(ei=-2.0)), (STABLE, _w(ei=-2.0))], lal="LOW")
+    assert (ds[3].action, ds[3].reason_code) == (NO_CHANGE, AT_LIMIT)
+    assert ds[3].eeg["effect"] == "LED" and engine.esl == "MEDIUM" and engine.lal == "LOW"
+
+
+def test_lead_off_medium_leads_instead_of_the_stable_return() -> None:  # D-F6-174
+    items = _warm() + [(ENV, N), (ENV, N)] + [(STABLE, N)] * 3 + [(STABLE, _w(ei=-2.0)), (STABLE, _w(ei=-2.0))]
+    ds, _ = _run(items)
+    assert ds[3].dimension == ESL and ds[3].to_level == "LOW"       # trial 4: ESL down, cooldown to 7
+    d = ds[8]                                                       # behaviour alone: STABLE_RETURN of the ESL
+    assert (d.dimension, d.to_level, d.reason_code) == (LAL, "LOW", EEG_LED)
+
+
+def test_a_lead_is_never_returned_by_stable() -> None:  # D-F6-59: a harder change only returns with DISENGAGED/OVERLOADED
+    items = _warm() + [(STABLE, _w(ei=-2.0)), (STABLE, _w(ei=-2.0))] + [(STABLE, N)] * 6
+    ds, engine = _run(items)
+    assert ds[3].reason_code == EEG_LED
+    assert [d.reason_code for d in ds[7:]] == [STABLE_NO_ACTION] * 3 and engine.lal == "LOW"
+
+
+# Constraints unchanged -----------------------------------------------------------------------------------------
+
+def test_confirmed_respects_initial_window_cooldown_and_tail() -> None:
+    ds, _ = _run([(ENV, _w(ei=-2.0))] * 2)
+    assert {d.reason_code for d in ds} == {INITIAL_WINDOW}
+    ds, _ = _run(_warm() + [(ENV, _w(ei=-2.0))] * 4)
+    assert ds[2].is_change and [d.reason_code for d in ds[3:6]] == [COOLDOWN] * 3
+    ds, _ = _run([(STABLE, N)] * 16 + [(ENV, _w(ei=-2.0))])
+    assert ds[16].reason_code == TAIL_FREEZE
+
+
+def test_confirmed_at_the_limit_is_at_limit() -> None:
+    ds, _ = _run(_warm() + [(ENV, _w(ei=-2.0))], esl="LOW")
+    assert (ds[2].action, ds[2].reason_code) == (NO_CHANGE, AT_LIMIT)
+
+
+# The record ----------------------------------------------------------------------------------------------------
+
+def test_the_decision_carries_its_eeg_block() -> None:
+    ds, _ = _run(_warm() + [(OVERLOADED, _w(ei=-0.41234, theta=1.23456))])
+    block = ds[-1].as_dict()["eeg"]
+    assert block == {"counted": True, "non_poor": 3, "clean_s": 9.0, "ei_z": -0.412, "theta_z": 1.235,
+                     "alpha_z": 0.0, "effect": "CONFIRMED"}
+    assert ds[-1].as_dict()["rules_version"] == RULES_V2_MM
+
+
+def test_without_eeg_nothing_changes_in_the_record() -> None:
+    engine = initial_state("MEDIUM", "MEDIUM", 0)
+    result = EstimatorResult(trial_id="S7-003", state=STABLE, cause=None, confidence=1.0, support=1.0,
+                             disengaged=(), overloaded=(), indicators={}, underchallenged=())
+    d, _ = decide(result, 3, 21_000, engine)
+    assert "eeg" not in d.as_dict() and d.version == RULES_V2 and d.eeg is None

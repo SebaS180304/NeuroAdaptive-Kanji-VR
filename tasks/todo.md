@@ -109,16 +109,16 @@ EEG staff session **Wed 11 at 12:00** (confirmed by Sebas, board §1). Nothing f
 - [x] Default of T1, marked in the code: the index the state reads is missing (reference SD 0, M5) → `UNAVAILABLE`. Reviewed in J5 with D-F6-174.
 - [ ] **Stop.**
 
-### [ ] T2 · rules-v2-mm (M)
+### [x] T2 · rules-v2-mm (M)
 `backend/app/adaptation/rules.py`, `state.py`, migration `0015`, tests. Golden `--json` replay captured **before** editing.
-- [ ] Coincides: acts in 1 window. Veto: `NO_CHANGE`. Unavailable: as `BEHAVIOR_ADAPTIVE`, marked. Lead: per §3.3.
-- [ ] Lead action (moved from T1): `EEG_LED` → LAL one step down; at LOW → `NO_CHANGE` with `AT_LIMIT`, ESL unchanged (D-F6-128).
-- [ ] D-F6-174, each marked in the code and with a test: a vetoed window counts for the hysteresis; `STABLE` off MEDIUM with the EEG leading leads; coinciding when behaviour would act anyway gives `reason_code` `EEG_CONFIRMED`.
-- [ ] Unchanged and tested: initial window, cooldown 3, tail 4, level limits, one change at a time, D9; a difficulty raise only returns with `DISENGAGED` or `OVERLOADED` (D-F6-59).
-- [ ] Migration 0015: `eeg_counted`, `eeg_ei_z`, `eeg_theta_z`, `eeg_effect`; `project_event` copies them; `v_adaptations` recreated as 0009 did.
-- [ ] Check every reader of `reason_code` (`outcome.py`, research API, dashboard) accepts the new codes.
-- [ ] **Check:** `BEHAVIOR_ADAPTIVE` replay **byte-identical** to the golden; all earlier tests green.
-- [ ] **D-F6-178, when T2 closes:** backend up, `docker compose exec backend python -m app.adaptation.replay 678b7806-6f0d-4c6c-9673-6f1addd53701` (its own version) and the same with `--version behavior-v2`. Both outputs verbatim in `Claude outputs/Borrador_Plan_Fase6_9_10nov.md` with the full id. If T2 is late, run them on the committed code anyway and say so (Sebas records the video at 19:00).
+- [x] Coincides: acts in 1 window. Veto: `NO_CHANGE`. Unavailable: as `BEHAVIOR_ADAPTIVE`, marked. Lead: per §3.3.
+- [x] Lead action (moved from T1): `EEG_LED` → LAL one step down; at LOW → `NO_CHANGE` with `AT_LIMIT`, ESL unchanged (D-F6-128).
+- [x] D-F6-174, each marked in the code and with a test: a vetoed window counts for the hysteresis; `STABLE` off MEDIUM with the EEG leading leads; coinciding when behaviour would act anyway gives `reason_code` `EEG_CONFIRMED`.
+- [x] Unchanged and tested: initial window, cooldown 3, tail 4, level limits, one change at a time, D9; a difficulty raise only returns with `DISENGAGED` or `OVERLOADED` (D-F6-59).
+- [x] Migration 0015: `eeg_counted`, `eeg_ei_z`, `eeg_theta_z`, `eeg_effect`; `project_event` copies them; `v_adaptations` not touched: it lists its columns one by one, so adding columns does not need it recreated. `proj_apply` patched in place from its own definition (fails loudly if the text moved); up/down/up checked.
+- [x] Check every reader of `reason_code` (`outcome.py`, research API, dashboard) accepts the new codes. Research API and dashboard show it as text (VARCHAR 32); `outcome.py` gets `EEG_LED` → `UNCERTAIN` when still `STABLE` (marked default).
+- [x] **Check:** `BEHAVIOR_ADAPTIVE` replay **byte-identical** to the golden; all earlier tests green. **Done:** 36/36 golden files identical (18 sessions × own and `behavior-v2`; 3 with no S7, empty both times); 361 passed, 4 skipped.
+- [x] **D-F6-178, when T2 closes:** backend up, `docker compose exec backend python -m app.adaptation.replay 678b7806-6f0d-4c6c-9673-6f1addd53701` (its own version) and the same with `--version behavior-v2`. Both outputs verbatim in `Claude outputs/Borrador_Plan_Fase6_9_10nov.md` with the full id. If T2 is late, run them on the committed code anyway and say so (Sebas records the video at 19:00).
 - [ ] **Stop.**
 
 ### [ ] T3 · spec v1.4 review (no edits to the spec, D-F6-88)

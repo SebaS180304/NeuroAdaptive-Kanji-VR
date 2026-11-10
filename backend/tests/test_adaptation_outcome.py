@@ -233,3 +233,19 @@ def test_leaving_s7_with_an_open_change_is_uncertain():
     out = state.take_outcomes()
     assert [(o["outcome"], o["outcome_reason"]) for o in out] == [(UNCERTAIN, "INCOMPLETE")]
     assert ADAPTATION_OUTCOME == "ADAPTATION_OUTCOME"
+
+
+# -- a change only the EEG asked for (rules-v2-mm, EEG_LED) --------------------
+
+LED = {"decision_id": "d-S7-009", "trial_id": "S7-009", "reason_code": "EEG_LED",
+       "learner_state": STABLE, "action": "CHANGE_ASSISTANCE"}
+
+
+def test_a_lead_still_stable_is_uncertain_behaviour_cannot_grade_it():
+    o = classify(LED, _res(STABLE), _res(STABLE))
+    assert (o.outcome, o.reason_code) == (UNCERTAIN, "EEG_LED")
+
+
+def test_a_lead_that_overloads_is_negative_switched():
+    o = classify(LED, _res(STABLE), _res(OVERLOADED, confidence=0.8, acc_delta=-0.54, rt_ratio=1.6, rt_z=4.0))
+    assert (o.outcome, o.reason_code) == (NEGATIVE, "SWITCHED")

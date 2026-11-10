@@ -48,6 +48,23 @@ from the ones S7 was entered with, and assumes each change it decides is
 applied before the next trial. When Unity skips one (``ADAPTATION_SKIPPED``),
 the session state (``state.py``) corrects them with ``with_levels``.
 
+**rules-v2-mm** (Reevaluacion_EEG_Justificacion.md §3.3, D-F6-128) is the branch
+taken only when ``decide`` gets an EEG window (``window.evaluate()``), i.e. in
+``MULTIMODAL_ADAPTIVE``; without one nothing below applies and the decision is
+rules-v2 byte for byte. ``concordance.effect`` says what the EEG does:
+
+| Effect | What changes | ``reason_code`` |
+| --- | --- | --- |
+| ``CONFIRMED`` | 1 window of hysteresis instead of 2 | ``EEG_CONFIRMED`` when it changes |
+| ``VETO`` | ``NO_CHANGE``; the window still counts for the hysteresis | ``EEG_VETO`` |
+| ``LED`` (``STABLE``) | LAL one step down, at LOW ``AT_LIMIT``; never returned by ``STABLE`` | ``EEG_LED`` |
+| ``ONLY_ALERT`` (``STABLE``) | nothing | ``EEG_ONLY_ALERT`` instead of ``STABLE`` |
+| ``UNAVAILABLE`` / ``NEUTRAL`` | nothing: rules-v2 | rules-v2's |
+
+The other constraints (initial window, cooldown, tail, confidence, limits, one
+step of one dimension, D9) apply as in rules-v2. Every decision carries its EEG
+block (``eeg``), and the engine keeps the window for the next lead check.
+
 Pure functions: ``decide`` takes the previous ``EngineState`` and returns the
 new one, with no clock and no database, so the live path and the replay agree.
 """
@@ -71,11 +88,13 @@ from app.adaptation.estimator import (
     UNDERCHALLENGED,
     EstimatorResult,
 )
+from app.eeg import concordance
 
 RULES_V1 = "rules-v1"
 RULES_V2 = "rules-v2"
 RULES_FOR = {ESTIMATOR_V1: RULES_V1, ESTIMATOR_V2: RULES_V2}
 RULES_VERSION = RULES_V2                  # what new sessions run with
+RULES_V2_MM = "rules-v2-mm"               # rules-v2 plus the EEG table, only with an EEG window
 
 S7_STATE = "S7_EXPERIMENTAL_RETRIEVAL"
 ADAPTIVE_CONDITIONS = frozenset({"BEHAVIOR_ADAPTIVE", "MULTIMODAL_ADAPTIVE"})
@@ -100,6 +119,10 @@ HYSTERESIS = "HYSTERESIS"
 AT_LIMIT = "AT_LIMIT"
 STABLE_NO_ACTION = "STABLE"
 STABLE_RETURN = "STABLE_RETURN"
+EEG_CONFIRMED = "EEG_CONFIRMED"
+EEG_VETO = "EEG_VETO"
+EEG_LED = "EEG_LED"
+EEG_ONLY_ALERT = "EEG_ONLY_ALERT"
 
 
 @dataclass(frozen=True)
@@ -136,6 +159,7 @@ class EngineState:
     streak_len: int = 0
     moved: tuple[str, ...] = ()             # dimensions the engine eased off MEDIUM, oldest first
     changes: int = 0
+    last_eeg: dict | None = None            # rules-v2-mm: the previous decision's EEG window, for the lead
 
     def level(self, dimension: str) -> str:
         return self.esl if dimension == ESL else self.lal
@@ -171,13 +195,14 @@ class Decision:
     cooldown_until_trial: int | None
     estimator: dict[str, Any] = field(default_factory=dict)
     version: str = RULES_VERSION
+    eeg: dict[str, Any] | None = None       # rules-v2-mm only
 
     @property
     def is_change(self) -> bool:
         return self.action != NO_CHANGE
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        out = {
             "trial_id": self.trial_id,
             "trial_sequence": self.trial_sequence,
             "action": self.action,
@@ -193,6 +218,9 @@ class Decision:
             "cooldown_until_trial": self.cooldown_until_trial,
             "rules_version": self.version,
         }
+        if self.eeg is not None:                # absent without EEG: rules-v2 records stay byte-identical
+            out["eeg"] = self.eeg
+        return out
 
 
 # -- gate ---------------------------------------------------------------------
@@ -256,6 +284,25 @@ def _evidence_text(result: EstimatorResult) -> str:
     return "; ".join(parts) if parts else "no indicator outside the practice profile"
 
 
+def _r(z: float | None) -> float | None:
+    return None if z is None else round(z, 3)
+
+
+def _eeg_block(window: dict, effect: str) -> dict[str, Any]:
+    z = window.get("z") or {}
+    return {"counted": window.get("counted"), "non_poor": window.get("non_poor"), "clean_s": window.get("clean_s"),
+            "ei_z": _r(z.get("engagement_index")), "theta_z": _r(z.get("theta_fz")),
+            "alpha_z": _r(z.get("alpha_parietal")), "effect": effect}
+
+
+def _fmt_z(z: float | None) -> str:
+    return "—" if z is None else f"{z:+.2f}"
+
+
+def _eeg_text(block: dict) -> str:
+    return f"engagement index z {_fmt_z(block['ei_z'])}, frontal theta z {_fmt_z(block['theta_z'])}"
+
+
 def _verb(dimension: str, delta: int) -> str:
     name = "the environment" if dimension == ESL else "the assistance"
     return f"{'Raised' if delta > 0 else 'Lowered'} {name}"
@@ -270,8 +317,25 @@ def decide(
     answered_ms: int | None,
     state: EngineState,
     config: RuleConfig = DEFAULT_CONFIG,
+    eeg: dict | None = None,
 ) -> tuple[Decision, EngineState]:
-    """The decision for one answered S7 trial and the engine state after it."""
+    """The decision for one answered S7 trial and the engine state after it.
+
+    ``eeg``: this window's ``window.evaluate()`` in MULTIMODAL_ADAPTIVE (rules-v2-mm), else None (rules-v2).
+    """
+    if eeg is None:
+        return _decide(result, trial_sequence, answered_ms, state, config, None)
+    effect = concordance.effect(result.state, eeg, state.last_eeg)
+    decision, new_state = _decide(result, trial_sequence, answered_ms, state, config, effect)
+    block = _eeg_block(eeg, effect)
+    if decision.reason_code in (EEG_CONFIRMED, EEG_VETO, EEG_LED, EEG_ONLY_ALERT):
+        decision = replace(decision, explanation=f"{decision.explanation.rstrip('.')}; EEG: {_eeg_text(block)}.")
+    return replace(decision, version=RULES_V2_MM, eeg=block), replace(new_state, last_eeg=eeg)
+
+
+def _decide(result: EstimatorResult, trial_sequence: int, answered_ms: int | None, state: EngineState,
+            config: RuleConfig, effect: str | None) -> tuple[Decision, EngineState]:
+    """rules-v2; with ``effect`` (concordance, rules-v2-mm) the EEG's part is folded in."""
     cfg = config
     seq = trial_sequence
 
@@ -318,9 +382,20 @@ def decide(
                          f"{result.state} with confidence {result.confidence:.2f}, below "
                          f"{cfg.min_confidence:.2f}: ignored.", counted)
 
+    # rules-v2-mm: a veto stops this window, and the window still counts for the hysteresis (D-F6-174)
+    if effect == concordance.VETO:
+        return no_change(EEG_VETO, f"{result.state}, but the EEG contradicts it: no change in this window.", counted)
+
     # 5 · what the sustained state asks for
-    if result.state == STABLE:
+    needed = 1 if effect == concordance.CONFIRMED else cfg.hysteresis_windows
+    if effect == concordance.LED:
+        # the lead already took 2 windows; it wins over STABLE_RETURN off MEDIUM (D-F6-174)
+        dimension, delta, reason, needed = LAL, -1, EEG_LED, 1
+    elif result.state == STABLE:
         if not state.moved:
+            if effect == concordance.ONLY_ALERT:
+                return no_change(EEG_ONLY_ALERT, "Stable at the current levels; the EEG alone points to "
+                                                 "disengagement, recorded as an alert.", counted)
             return no_change(STABLE_NO_ACTION, "Stable at the current levels.", counted)
         dimension = state.moved[-1]
         delta = _towards_home(state.level(dimension))
@@ -342,10 +417,12 @@ def decide(
     else:  # unknown state: never act on it
         return no_change(STABLE_NO_ACTION, f"Unknown state {result.state}.", counted)
 
-    if streak_len < cfg.hysteresis_windows:
+    if streak_len < needed:
         return no_change(HYSTERESIS,
-                         f"{result.state} in {streak_len} of the {cfg.hysteresis_windows} consecutive windows "
+                         f"{result.state} in {streak_len} of the {needed} consecutive windows "
                          f"needed to act.", counted)
+    if effect == concordance.CONFIRMED:
+        reason = EEG_CONFIRMED  # D-F6-174: also when behaviour would have acted anyway
 
     from_level = state.level(dimension)
     to_level = _step(from_level, delta)
@@ -370,7 +447,10 @@ def decide(
         changes=state.changes + 1,
     )
 
-    if reason == STABLE_RETURN:
+    if reason == EEG_LED:
+        why = ("no sign of overload or disengagement in behaviour, and the engagement index 1.5 SD or more "
+               "below the S6 reference in two windows in a row")
+    elif reason == STABLE_RETURN:
         # Says what held, not "your usual pace": STABLE only means no overload
         # or disengagement condition was met (session 099690e1, S7-012, was
         # STABLE at 4.2x the practice pace because accuracy held).

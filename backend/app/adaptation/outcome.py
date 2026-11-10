@@ -35,6 +35,11 @@ except that staying ``UNDERCHALLENGED`` is always ``NEUTRAL`` / ``PERSISTED``
 (no key indicator). ``STABLE`` after = ``RESOLVED`` (it held the harder task);
 ``DISENGAGED`` or ``OVERLOADED`` = ``SWITCHED`` (it went too far).
 
+Changes only the EEG asked for (``EEG_LED``, rules-v2-mm): behaviour was
+``STABLE`` before, so ``STABLE`` after says nothing about them: ``UNCERTAIN`` /
+``EEG_LED`` (default, to review with D-F6-174 on Thu 12). ``OVERLOADED`` or
+``DISENGAGED`` after = ``SWITCHED``, as for the other harder changes.
+
 ``UNCERTAIN``: the change was not applied (the next answer reports the old
 level; ``NOT_APPLIED``) or S7 ended before the post window closed
 (``INCOMPLETE``).
@@ -65,7 +70,7 @@ from app.adaptation.estimator import (
     UNDERCHALLENGED,
     EstimatorResult,
 )
-from app.adaptation.rules import DEFAULT_CONFIG, STABLE_RETURN
+from app.adaptation.rules import DEFAULT_CONFIG, EEG_LED, STABLE_RETURN
 
 OUTCOME_VERSION = "outcome-v1"
 POST_WINDOW = 3
@@ -217,6 +222,10 @@ def classify(
             return out(NEUTRAL, "HELD_WITH_DROP", f"Neutral: still stable after going back towards MEDIUM, "
                        f"but accuracy or pace dropped ({nums}).", post_s)
         return out(POSITIVE, "HELD", f"Positive: still stable after going back towards MEDIUM ({nums}).", post_s)
+
+    if reason == EEG_LED and now == STABLE:
+        return out(UNCERTAIN, EEG_LED, f"Uncertain: still stable after a change only the EEG asked for; "
+                   f"behaviour cannot grade it ({nums}).", post_s)
 
     was = pre_s["state"] if pre_s["state"] in (OVERLOADED, DISENGAGED) else decision.get("learner_state")
     if now == STABLE:
