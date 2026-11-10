@@ -102,7 +102,7 @@ Sebas is in Blender all afternoon (reserve 2nd batch, 14:45–19:00): Stops are 
 
 **T3 (PM, 10 Nov):** point 1 from the saved `LayoutOfRecord` output with its date or commit (before 30 Oct → re-measured Thu); point 2 today; point 3 today for `concordance` and `rules-v2-mm`, Wed for X1/X2, PM corrects the spec Thu before the freeze; point 4 Wed with X6b.
 
-**EEG staff (PM, 10 Nov):** Sebas aims for today. If Wed: X1 before 13:30 as planned; numbered items after 14:30 and before J1. The Thu freeze does not move; cut X7, then X6b.
+**EEG staff: Wed 11 at 12:00, confirmed** (board §1). No Stops from Sebas 12:00–14:30: X1 with its Stop before 12:00; numbered answers after 14:30 and before J1. The Thu freeze does not move; cut X7, then X6b.
 
 ### Wed 11 · live, replay, fallback, lures (Benkyokai: no headset stops)
 **13:30–14:30 (D-F6-178):** the demo runs `replay.py` in the backend container, which reads the repo's file. No backend restart, no migrations, and `replay.py` never half done: X2 before or after that hour.
@@ -144,7 +144,6 @@ V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `v
 | `EEG_LED` fires on fatigue | Med | Reviewed one by one (F4 risk 8) |
 
 ## Open items
-0. **Sebas:** the EEG staff session time (D-F6-180); if Wed, see the Tue note.
 1. **Sebas:** set and participant of the dry run, by Thu 12 at night (D-F6-175).
 2. **Sebas:** T2 categories of §16.4, before Wed. A change is content.
 3. **Sebas:** A-20 needs someone at another lab PC to see whether the streams are visible.

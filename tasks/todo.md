@@ -80,7 +80,7 @@ Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Edito
 
 ## Tue 10 · rules; spec review (D-F6-180: from 14:30, in parallel with the reserve; Stops grouped at the end of each task, Sebas in Blender)
 
-EEG staff session **no longer at 12:00** (D-F6-180 changes D-F6-170): end of today or Wed 11 before 13:30. Nothing from it is applied until it has a number in §4.
+EEG staff session **Wed 11 at 12:00** (confirmed by Sebas, board §1). Nothing from it is applied until it has a number in §4.
 
 ### [x] T0 · autorun writes its output to a log file (S) · D-F6-179 (2)
 `backend/app/eeg/autorun.py`, `tests/test_eeg_autorun.py`; the log folder gitignored.
@@ -132,7 +132,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [ ] **Stop.**
 
 ### [ ] T4 · from the EEG staff session
-- [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). Sebas aims for today, end of day. If Wed: X1 stays before 13:30; numbered items go after 14:30 and before J1 on Thu. Thursday's freeze does not move; if something does not fit, cut X7 first, then X6b.
+- [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). **Session confirmed Wed 11 at 12:00:** numbered items go after 14:30 and before J1 on Thu. Thursday's freeze does not move; if something does not fit, cut X7 first, then X6b.
 - [ ] **Stop.**
 
 ### [ ] T5 · close (draft with done, findings, replay output, T3 notes, Dudas; `tasks/`)
@@ -141,6 +141,8 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 ---
 
 ## Wed 11 · live, replay, fallback, lures (Benkyokai: no headset stops; each Stop is a note in the draft)
+
+**EEG staff session Wed 11 at 12:00** (board §1, Wed row). **No Stops from Sebas 12:00–14:30:** X1 closes and has its Stop **before 12:00**; work from 12:00 to 13:30 goes on without Stops (each one a note in the draft). Staff answers with a number are applied **after 14:30** and before J1 (T4).
 
 **13:30–14:30 (D-F6-178, demo ≈ 14:00):** no backend restart and `replay.py` never half done, committed or untouched. X2 is finished before 13:30 or starts after 14:30; X1's backend restart too. No migrations in that hour.
 
