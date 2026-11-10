@@ -223,7 +223,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 Migration `0017`, `project_event`, test.
 - [x] `option_kind`, `lure_selected`, `option_kinds` on `trials`, from the payload Unity already sends.
 - [x] Test: lure and no-lure trials project correctly; old sessions unaffected.
-- [ ] **Stop.**
+- [x] **Stop.** Sebas OK, 10 Nov.
 **Done Tue 10 (moved up):** migration 0017; projected trials filled from their events (269, 3 lures chosen); up/down/up same function. 397 tests.
 
 ### [ ] X5 · A-20, LSL privacy
@@ -239,7 +239,7 @@ Migration `0017`, `project_event`, test.
 - [x] The five nominal sets pass the new rule (no overlap among their own members).
 - [x] Regenerated table vs today's, in the draft. Dry run on 10 Nov (child/person only): 94 → 93 entries, only C 牛 loses 子 (8 left); woman/person and shellfish/fish do not change the table (one substitution), **no experimental kanji without a substitute**. If the real run leaves one empty: **stop, tell PM, nothing further.**
 - [x] Tests: `kanji_metrics` (child/person and rice/rice field clash; the table drops 子 for 牛); pre-test (with 田 already in the effective set, 米 is not offered). Backend suite green.
-- [ ] **Stop.**
+- [x] **Stop.** Sebas OK, 10 Nov.
 **Done Tue 10 (moved up):** `53f52c3` + seed `0d6956d`; 94 → 93, only C 牛 loses 子 (8 left), no orphan; nominal sets pass; `meaningClashes` = 女人 人子 田米 貝魚; the pre-test no longer offers 米 after 田 (it did in sets A and C). 396 tests.
 
 ### [ ] X6a · T1 official lists (S) · D-F6-168, §16.2 and §16.3
