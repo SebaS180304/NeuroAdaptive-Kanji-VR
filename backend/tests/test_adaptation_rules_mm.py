@@ -173,3 +173,21 @@ def test_an_unknown_state_with_eeg_does_not_act() -> None:
 def test_a_lead_at_the_limit_says_the_eeg_asked_for_it() -> None:  # review 10 Nov, item 5
     ds, _ = _run(_warm() + [(STABLE, _w(ei=-2.0)), (STABLE, _w(ei=-2.1))], lal="LOW")
     assert ds[3].reason_code == AT_LIMIT and "EEG: engagement index z -2.10" in ds[3].explanation
+
+
+# T2 defaults, marked in the code for J5 (review 10 Nov: pinned) -------------------------------------------------
+
+def test_default_2_an_alert_does_not_replace_hysteresis_or_a_stable_return() -> None:
+    items = _warm() + [(ENV, N), (ENV, N)] + [(STABLE, N)] * 3 + [(STABLE, _w(ei=-1.2)), (STABLE, _w(ei=-1.2))]
+    ds, _ = _run(items)
+    assert ds[7].reason_code == HYSTERESIS and ds[7].eeg["effect"] == "ONLY_ALERT"
+    assert ds[8].reason_code == "STABLE_RETURN" and ds[8].eeg["effect"] == "ONLY_ALERT"
+
+
+def test_default_3_low_confidence_blocks_a_lead() -> None:
+    engine = initial_state("MEDIUM", "MEDIUM", 0)
+    for i, (conf, window) in enumerate([(1.0, N), (1.0, N), (1.0, _w(ei=-2.0)), (0.4, _w(ei=-2.0))], start=1):
+        result = EstimatorResult(trial_id=f"S7-{i:03d}", state=STABLE, cause=None, confidence=conf, support=1.0,
+                                 disengaged=(), overloaded=(), indicators={}, underchallenged=())
+        d, engine = decide(result, i, i * TRIAL_MS, engine, eeg=window)
+    assert d.reason_code == "LOW_CONFIDENCE" and d.eeg["effect"] == "LED" and engine.lal == "MEDIUM"
