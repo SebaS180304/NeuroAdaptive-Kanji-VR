@@ -1,6 +1,6 @@
 # Implementation Plan: week of 9 – 13 Nov 2026 (F4 S3 · multimodal → dry run with EEG)
 
-Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; Tue updated to D-F6-180 and X6 to D-F6-181 on 10 Nov** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
+Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; updated on 10 Nov up to D-F6-187 (audit fixes waiting for Sebas's OK)** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
 Last week's plan is archived in `tasks/archive/semana_2nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -121,6 +121,31 @@ Sebas is in Blender all afternoon (reserve 2nd batch, 14:45–19:00): Stops are 
 | X8 | Close | — | |
 
 **X6s (D-F6-181 (2)), why the pre-test too:** the substitution table only answers "one substitution into the nominal set". The pre-test re-checks the set after each substitution with its own `_hard_clash` in `backend/app/pretest/rules.py`, which reads the contract. *Rice*/*rice field* can only meet there (田 and 米 are both reserve), so the rule travels in the contract as `meaningClashes` and both sides use the same pairs. "Includes" (*child*/*person*) is not visible in the strings, so it is an explicit list; only the pair D-F6-181 names goes in until PM answers the Duda of 10 Nov.
+
+### Audit fixes (D-F6-186, D-F6-187), added 10 Nov evening · waiting for Sebas's OK
+
+They protect session data, which cannot be repeated in the pilot. Detail in `tasks/todo.md`.
+
+| When | Task | What | Size |
+| --- | --- | --- | --- |
+| Tue 10 evening | **A1** | Backend only on `127.0.0.1:8000`; Editor, dashboard, `ws_smoke_test`, `autorun` checked | XS |
+| Tue 10 evening, if time | X1b -> X6s -> X4 | As approved, each its own commit and Stop | — |
+| Wed before 12:00 | **A2** (with X1b) | Live EEG read without the 60 s bound; test with a 75 s window | XS |
+| Wed before 12:00 | **A3** | WebSocket closes a session like the PATCH (one function); backend `ERROR` logged | S |
+| Wed 13:30–14:30 | — | No backend restart, no migrations, `replay.py` never half done (D-F6-178) | — |
+| Wed after 14:30 | T4 -> **A8** -> X2–X6 | T4 only numbered answers; A8 checks every session-creating flow **before** changing anything | S |
+| Thu before J2 | **A4–A7** | One Unity commit (exception to the VR freeze, D-F6-122): no send on a closed socket, queue saved on quit, flush on first open, `ERROR` logged; Editor test with the backend cut in S7 and S8 | S |
+| Thu, J5 | C9 | Audit fixes in the freeze checklist | — |
+| Later | — | Unity dead code (253 lines + 3 events), own reason for a refused ESL change | — |
+
+**Cut order unchanged:** X7, then X6b. The Thursday freeze does not move.
+
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| Something else reaches the backend over the LAN (another PC, a Quest build) | Med | A1 checks every known client; a standalone Quest build would need the LAN IP, and none is planned before the pilot |
+| A8: the short visit 4 of D-F6-125 has no set of its own (it only tests visit 3's) | Med | A8 checks before changing anything; if so, it stops and PM decides |
+| A4–A7 touch Unity two days before the dry run | Med | One small commit, Editor test with real disconnects, J2 in the headset |
+| Wednesday gets heavier (A2, A3, A8 on top of X1b–X6) | High | A2 and A3 are XS/S; cut X7 then X6b as agreed |
 
 ### Thu 12 · multimodal end to end; rules frozen at night
 J1 synthetic end to end in the Editor → J2 cap, `MULTIMODAL_ADAPTIVE` → J3 three real fallbacks, one S7 each (D-F6-174) → J4 replay of J2 → J5 freeze and close. If J2 gives no EEG decision: the forced test of F4 §5, declared as such.

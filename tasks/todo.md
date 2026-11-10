@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-185** (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-187** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -140,6 +140,16 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 
 ---
 
+### [ ] A1 · backend only on 127.0.0.1 (XS) · D-F6-186 (1) · Tue 10 evening
+`docker-compose.yml` (backend `ports`).
+- [ ] `"127.0.0.1:8000:8000"`, as `db` and `pgadmin`. Backend restarted.
+- [ ] **Check:** from this PC, `curl 127.0.0.1:8000/health` 200; dashboard through the Vite proxy (`127.0.0.1:8000`); `ws_smoke_test` (localhost) passes; Unity in the Editor (`localhost:8000`, Play until S1, a session created and events ACKed); `autorun` unaffected (it talks to the database, not to the API). From another machine the port no longer answers: noted for X5 (A-20), not tested here.
+- [ ] **Stop.**
+
+**Then, Tue evening if time allows, in this order (each its own commit and Stop):** X1b (with A2, below) → X6s → X4.
+
+---
+
 ## Wed 11 · live, replay, fallback, lures (Benkyokai: no headset stops; each Stop is a note in the draft)
 
 **EEG staff session Wed 11 at 12:00** (board §1, Wed row). **No Stops from Sebas 12:00–14:30:** X1 closes and has its Stop **before 12:00**; work from 12:00 to 13:30 goes on without Stops (each one a note in the draft). Staff answers with a number are applied **after 14:30** and before J1 (T4).
@@ -154,6 +164,19 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 
 **Done Tue 10 (moved up):** `432de21`; live backend rejects a session without seed (422).
 
+### [ ] A2 · live EEG read without the 60 s bound (XS) · D-F6-186 (2) · with X1b or right after, before 12:00
+`backend/app/api/routes/websocket.py` (`_eeg_source`), `tests/test_eeg_live_read.py`.
+- [ ] All epochs up to the answer (`start_ms <= answered_ms`), no lower bound; `EEG_LOOKBACK_MS` removed.
+- [ ] Test: three trials spanning 75 s; the window counts the same epochs as `window.evaluate` over all of them (red before).
+- [ ] Stop grouped with X1b's.
+
+### [ ] A3 · the WebSocket closes a session like the PATCH (S) · D-F6-186 (3) · before 12:00
+`backend/app/api/routes/sessions.py`, `websocket.py` (`_sync_current_state`), tests.
+- [ ] One function for both paths: `current_state`, `status` (`_status_for`), `completed_at` once, the profile refresh, LabRecorder `stop` on S10; ABORTED is never overwritten (as today).
+- [ ] With A7's backend half: a validation `ERROR` is logged with `logger.warning` and the original message.
+- [ ] Test: S9's `STATE_ENTERED` over the WebSocket with no PATCH -> `COMPLETED`, `completed_at` set, `autorun.wait_completed` returns (sync and epochs then run, as `test_sync_runs_before_epochs_because_epochs_needs_the_offset` checks).
+- [ ] **Stop** (before 12:00, with X1b's if they meet).
+
 ### [~] X1 · live path and heartbeat (M) · D-F6-171 · **X1a done Tue 10 (`9800c3c`), X1b Wed before 12:00**
 **X1a (backend side), done:** at each S7 answer of `MULTIMODAL_ADAPTIVE` the WebSocket reads the epochs of the last 60 s and the reference; `feed(eeg_source=…)` → `window.evaluate()` ending at the answer → `decide()`. No epochs / no reference / read error → `UNAVAILABLE`. `STATIC` and `BEHAVIOR_ADAPTIVE` never read it (test). `rebuild` re-reads each stored block (test: same engine and decisions as live). 381 tests.
 **X1b (`live.py` on the PC), notes for Wed:** reuse `epochs.make_epochs` over the **tail** of the buffer (≈ 30 s), sliced at a grid point (multiples of 2.5 s from the first sample) so `epoch_index` matches `fill_from_xdf`'s grid; the zero-phase filter needs a margin after the epoch's end before computing (edge), which is part of the arrival margin; offset from `sync.compute` once S3 ends (first `STATE_ENTERED` S4); `reference.compute` on entering S7; heartbeat (migration 0016) every 2 s; `autorun` starts it next to `baseline.py`.
@@ -165,6 +188,12 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [ ] Arrival margin measured against the synthetic stream, recorded, and applied in `window.py` and `verify_eeg.sql`.
 - [x] `STATIC` and `BEHAVIOR_ADAPTIVE` never read the EEG (test).
 - [ ] **Check:** synthetic stream + `ws_smoke_test`: epochs arrive, heartbeat moves, a decision carries its EEG block, `decision_latency_ms` noted.
+- [ ] **Stop.**
+
+### [ ] A8 · no session without a set (S) · D-F6-187 · Wed after 14:30
+`backend/app/schemas/session.py`, tests, `ws_smoke_test`.
+- [ ] **First, in the draft:** every flow that creates a session and whether it sends a set: Unity `SessionBootstrap` (sends `newSessionKanjiSet`, default "A"); pre-test (creates participants, not sessions: to confirm); **short visit 4 and block R of D-F6-125** (not in code yet: which set would visit 4 be created with?); `ws_smoke_test` and the 13 test files that post `/sessions` (today without set; they would get one, as with the seed). **If any real flow has no set of its own: stop and tell PM; nothing is changed.**
+- [ ] Only then: `assigned_kanji_set` required, `A`, `B` or `C` (422 otherwise); test; callers updated.
 - [ ] **Stop.**
 
 ### [ ] X2 · replay.py with XDF (S)
@@ -243,6 +272,15 @@ Migration `0017`, `project_event`, test.
 
 **Done Tue 10 (moved up):** `9ffc4c2`; reason `MAX_CHANGES`; rules-v2 replay byte-identical (36/36); D-F6-184 applied (`b1ccb46`): only eligible windows count for a lead. D-F6-185 (`3c8d9b7`): a low-confidence window cuts that count.
 
+### [ ] A4–A7 · Unity: no event lost on a disconnect (S) · D-F6-186 (4)–(7) · Thu before J2 · one Unity commit, exception to the VR freeze (D-F6-122)
+`unity-client/Assets/Scripts/Networking/SessionCommunicationClient.cs`. The commit body says it is the D-F6-186 exception.
+- [ ] A4: send only with `_isConnected && _socket.State == WebSocketState.Open`; otherwise queue.
+- [ ] A5: on quit with a non-empty queue, write it to `Logs/` as JSON and `Debug.LogError` with the count.
+- [ ] A6: on open, flush the queue whenever it is not empty (first connection too), in order.
+- [ ] A7: an `ERROR` from the backend -> `Debug.LogError` with its detail (backend half with A3).
+- [ ] **Check in the Editor:** stop the backend in S7 and again in S8, start it again: no trial missing in `trials`, the queue arrives in order, `RECONNECTED` after it; quit with the backend down -> the JSON in `Logs/` and the count. J2 confirms it in the headset.
+- [ ] **Stop.**
+
 ### [ ] J1 · synthetic end to end
 - [ ] Editor, `MULTIMODAL_ADAPTIVE`, synthetic stream that varies between S6 and S7. Decisions with their EEG block; latency acceptable.
 - [ ] **Stop** before the cap.
@@ -270,6 +308,7 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2 (M7 plus
 - [ ] **§2, conditions C1–C8**, each marked in the draft with its evidence: C1 = J1, C2 = J2 (or the forced state, declared), C3 = J4, **C4 = the four defaults of D-F6-174 and T1's (index with SD 0 → `UNAVAILABLE`) reviewed against J2**, C5 = `rules-v2` byte-identical, C6–C8 Sebas/PM (only noted).
 - [ ] **C5:** `replay --json` of the 18 adaptive sessions (own version and `--version behavior-v2`) against the reference kept in `Claude outputs/referencia_replay_rules_v2_10nov/` (36 files, captured before T2): 36/36 identical.
 - [ ] **§3, every parameter with its value** in the draft, read from the code at the commit to tag (not copied from the checklist): §3.1 epochs, quality, drop rules (F4 §6), P7 window, A-7, reference, offset; §3.2 confirm/veto, lead (D-F6-184/185), cap (`MAX_CHANGES`), defaults, **T1 default: the EEG counts but the index the state reads has no z (SD 0 in the reference) → `eeg_effect` = `UNAVAILABLE`, behavioural decision** (`concordance.py:49` theta for `OVERLOADED`, `:54` EI for the rest; test `test_the_index_the_state_reads_missing_is_unavailable`; duda 5, checklist row added by PM), `eeg_effect`, O4 of `EEG_LED`; §3.3 heartbeat, process down, **arrival margin (measured Wed)**, the > 60 s rule; §3.4 lures active on the dry run, seed, operation lists.
+- [ ] **C9:** audit fixes 1–7 done (commits), A4–A7 tested in J2; D-F6-187 applied or why not.
 - [ ] Tag proposed (name and commit), **created only with Sebas's OK**.
 - [ ] **Stop:** rules frozen.
 
@@ -299,6 +338,8 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2 (M7 plus
 ---
 
 ## Later (not this week)
+- [ ] Audit (D-F6-186, after the dry run): delete Unity's dead code (5 Phase-1 stubs and `XRTrackingProbe`, 253 lines, with their `.meta`; events `AdaptationClient.OnDecision`, `SessionCommunicationClient.OnDisconnected`/`OnReconnected`); own `ADAPTATION_SKIPPED` reason for an ESL change refused for a missing profile.
+- [ ] V3: declare the up-to-one-frame delay of each `SYNC_TAP` (A-23 note) when analysing the 3rd offset measurement; no code.
 - [ ] B4c SDF morph (D-F6-115).
 - [ ] Two Playwright tests failing on the 26 Oct data.
 - [ ] Set A M images in the headset (`ac26857`): needs a set A session reaching that LAL.
