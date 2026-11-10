@@ -232,3 +232,18 @@ async def test_the_eeg_block_of_a_decision_is_projected(session) -> None:  # 001
         ("S7-001", None, None, None, None),                 # rules-v1/v2: no EEG block
         ("S7-002", True, -0.41, 1.23, "CONFIRMED"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_lure_fields_are_projected_and_older_trials_stay_empty(session) -> None:  # X4, D-F6-143 (0017)
+    tr = ("S7-004", 4)
+    kinds = ["CORRECT", "LURE_STRONG", "IN_SET", "UNRELATED"]
+    await _insert_and_project(session, [
+        _ev("TRIAL_STARTED", 20_000, trial=tr, options=OPTS, correct_option="KANJI_YAMA", hint_available=True,
+            option_kinds=kinds, has_lure=True),
+        _ev("ANSWER_SELECTED", 22_000, trial=tr, selected_option="KANJI_KI", is_correct=False,
+            response_time_ms=2000, timed_out=False, option_kind="LURE_STRONG", lure_selected=True),
+    ])
+    rows = await _exec("SELECT trial_id, option_kinds, option_kind, lure_selected FROM trials "
+                       "WHERE session_id = :s AND trial_id IN ('S7-001', 'S7-004') ORDER BY trial_id", s=session)
+    assert rows == [("S7-001", None, None, None), ("S7-004", kinds, "LURE_STRONG", True)]

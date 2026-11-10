@@ -144,7 +144,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 `docker-compose.yml` (backend `ports`).
 - [x] `"127.0.0.1:8000:8000"` **and `"[::1]:8000:8000"`** (Windows resolves `localhost` to ::1 first: without it Unity's WebSocket took 2.24 s instead of 0.42 s), as `db` and `pgadmin`. Backend restarted.
 - [x] **Check:** from this PC, `curl 127.0.0.1:8000/health` 200; dashboard through the Vite proxy (`127.0.0.1:8000`); `ws_smoke_test` (localhost) passes; Unity in the Editor (`localhost:8000`, Play until S1, a session created and events ACKed); `autorun` unaffected (it talks to the database, not to the API). From another machine the port no longer answers: noted for X5 (A-20), not tested here. **Done:** LAN address 192.168.10.122 refuses; NativeWebSocket from the Editor to `localhost` opens in 0.42 s; dashboard proxy 200; `ws_smoke_test` OK.
-- [ ] **Stop.**
+- [x] **Stop.** Sebas OK, 10 Nov.
 
 **Then, Tue evening if time allows, in this order (each its own commit and Stop):** X1b (with A2, below) → X6s → X4.
 
@@ -168,7 +168,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 `backend/app/api/routes/websocket.py` (`_eeg_source`), `tests/test_eeg_live_read.py`.
 - [x] All epochs up to the answer (`start_ms <= answered_ms`), no lower bound; `EEG_LOOKBACK_MS` removed.
 - [x] Test: three trials spanning 75 s; the window counts the same epochs as `window.evaluate` over all of them (red before: 23 vs 29). **Done Tue 10: `424646c`.**
-- [ ] Stop grouped with X1b's.
+- [x] Stop grouped with X1b's. Sebas OK, 10 Nov.
 
 ### [ ] A3 · the WebSocket closes a session like the PATCH (S) · D-F6-186 (3) · before 12:00
 `backend/app/api/routes/sessions.py`, `websocket.py` (`_sync_current_state`), tests.
@@ -188,7 +188,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [~] Arrival margin **measured** (synthetic AURA + markers, S3 → S9): median 1.11–1.15 s, max 1.27–1.34 s after an epoch's end (1 s of it is the filter wait). **Fixed at 1.5 s by D-F6-188: applied in A9 (Wed after 14:30).**
 - [x] `STATIC` and `BEHAVIOR_ADAPTIVE` never read the EEG (test).
 - [~] **Check:** synthetic stream: epochs arrive (26, consecutive), heartbeat fresh, reference from S6 (all 11). A decision with its EEG block: covered by X1a's tests; **end to end through the WebSocket with `decision_latency_ms` goes to J1** (needs S7 answers in `MULTIMODAL_ADAPTIVE`).
-- [ ] **Stop.**
+- [x] **Stop** (X1b). Sebas OK, 10 Nov; end-to-end decision in J1.
 
 ### [ ] A9 · arrival margin of 1.5 s in the three counts (S) · D-F6-188 · **Wed after 14:30, not before the EEG staff session**
 `backend/app/eeg/window.py` (live and replay), `database/verify_eeg.sql`, their tests.
@@ -219,11 +219,12 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [ ] **Check:** in each case the session goes on with behaviour and is marked. **Real cases: J3.**
 - [ ] **Stop.**
 
-### [ ] X4 · lure columns (S) · D-F6-143
+### [x] X4 · lure columns (S) · D-F6-143
 Migration `0017`, `project_event`, test.
-- [ ] `option_kind`, `lure_selected`, `option_kinds` on `trials`, from the payload Unity already sends.
-- [ ] Test: lure and no-lure trials project correctly; old sessions unaffected.
+- [x] `option_kind`, `lure_selected`, `option_kinds` on `trials`, from the payload Unity already sends.
+- [x] Test: lure and no-lure trials project correctly; old sessions unaffected.
 - [ ] **Stop.**
+**Done Tue 10 (moved up):** migration 0017; projected trials filled from their events (269, 3 lures chosen); up/down/up same function. 397 tests.
 
 ### [ ] X5 · A-20, LSL privacy
 - [ ] Try (a) `.cfg` in AURA's executable folder, (b) PC off the lab network; synthetic stream, no cap.
