@@ -155,7 +155,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 ### [ ] X1 · live path and heartbeat (M) · D-F6-171
 `backend/app/eeg/live.py` (new), `autorun.py`, migration `0016`, `api/routes/websocket.py`, `adaptation/state.py`, tests.
 - [ ] Buffers both streams on the PC; offset from the S3 taps (D-F6-173); every finished epoch to `eeg_epochs` with indices; reference on entering S7.
-- [ ] **`rebuild` and the lead (review 10 Nov):** the payload's `eeg` block is flat (`ei_z`, `counted`) and `concordance` reads `window.evaluate()`'s shape (`z: {engagement_index…}`). `rebuild` must give `last_eeg` the same shape the live path used, or a reconnect between two low windows loses a lead. Test: live and rebuilt decide the same lead.
+- [ ] **`rebuild` and the lead:** `last_eeg` = the previous decision's payload `eeg` block, as is (one shape since `concordance.block()`, review 10 Nov). Test: live and rebuilt decide the same lead through `SessionAdaptationState.rebuild`.
 - [ ] Heartbeat: `heartbeat_at` and the current EEG gap every 2 s.
 - [ ] Backend, on an S7 answer in `MULTIMODAL_ADAPTIVE`: reads the window's finished epochs (D-F6-172), calls `window.py`, feeds `decide()`; the EEG block goes into `ADAPTATION_DECISION`, and `rebuild` reads it.
 - [ ] Arrival margin measured against the synthetic stream, recorded, and applied in `window.py` and `verify_eeg.sql`.
@@ -234,7 +234,7 @@ Migration `0017`, `project_event`, test.
 - [ ] Explicit cap in `RuleConfig`, for both adaptive conditions; a blocked change is `NO_CHANGE` with its own `reason_code` (proposal `MAX_CHANGES`).
 - [ ] Test: `rules-v2-mm` with `EEG_CONFIRMED` every window stops at 3 (trials 3, 7, 11; 15 blocked).
 - [ ] **Check:** `rules-v2` replay byte-identical to the golden (it never reaches 3 + 1).
-- [ ] Same commit or before: tests that pin the T2 defaults 2 and 3 (review 10 Nov, both mutations survived): `ONLY_ALERT` does not replace `HYSTERESIS` or `STABLE_RETURN`; low confidence blocks a lead.
+- [x] Tests that pin the T2 defaults 2 and 3: done 10 Nov (`d4f901d`).
 - [ ] **Stop.**
 
 ### [ ] J1 · synthetic end to end
