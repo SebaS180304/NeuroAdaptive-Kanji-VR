@@ -179,13 +179,12 @@ async def _handle_session_event(
             await _store_outcomes(session_id, outcomes)
 
 
-EEG_LOOKBACK_MS = 60_000  # more than any decision window (3 trials or 15 s, D-F6-151)
 _EPOCH_COLUMNS = ("start_ms", "end_ms", "quality", "chunk_clean",
                   "engagement_index", "theta_fz", "alpha_parietal", "theta_beta")
 
 
 async def _eeg_source(session_id: uuid.UUID, answered_ms):
-    """MULTIMODAL_ADAPTIVE (D-F6-171): the epochs live.py has written so far and the session's reference, read
+    """MULTIMODAL_ADAPTIVE (D-F6-171): every epoch live.py has written up to the answer and the reference, read
     once per answer; window.py then keeps only those finished at the decision (D-F6-172). Any failure: no EEG
     for this window (UNAVAILABLE), never a lost decision."""
     from app.eeg import window
@@ -198,8 +197,8 @@ async def _eeg_source(session_id: uuid.UUID, answered_ms):
                                     {"s": str(session_id)})).scalar_one_or_none()
             rows = (await db.execute(text(
                 f"SELECT {', '.join(_EPOCH_COLUMNS)} FROM eeg_epochs WHERE session_id = :s "
-                "AND start_ms BETWEEN :lo AND :hi"),
-                {"s": str(session_id), "lo": int(answered_ms) - EEG_LOOKBACK_MS, "hi": int(answered_ms)})).all()
+                "AND start_ms <= :hi"),  # no lower bound: trials have no timeout, a window can last > 60 s (D-F6-186)
+                {"s": str(session_id), "hi": int(answered_ms)})).all()
     except Exception:
         logger.exception("EEG not read for the decision (session=%s)", session_id)
         return None
