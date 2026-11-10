@@ -109,3 +109,17 @@ async def test_save_writes_the_three_columns(client, pretested) -> None:
         row = (await db.execute(text("SELECT sync_offset_ms, sync_drift_ms, sync_detail FROM eeg_sessions "
                                      "WHERE session_id = :s"), {"s": sid})).one()
     assert row.sync_offset_ms == 48.0 and row.sync_drift_ms is None and row.sync_detail["reason"].startswith("S9")
+
+
+def test_a_strike_with_a_plateau_gets_its_onset_at_the_rise_not_at_the_plateau_end() -> None:
+    # F4 Registro 9 Nov night, 07343b5d S3-2: the controller rests on Cz after the strike, the level holds for
+    # > 300 ms and the absolute maximum falls at the plateau's end. The search starts at the first 50 % crossing.
+    t, start = 105.0, 0.060
+    x, ts = _cz([], seconds=20.0)
+    i = int(round((t + start - 100.0) * SR))
+    x[i:i + RISE] += 9000.0 * np.arange(1, RISE + 1) / RISE
+    plateau = int(0.25 * SR)
+    x[i + RISE:i + RISE + plateau] += np.linspace(9000.0, 9600.0, plateau)  # maximum ≈ 360 ms after the marker
+    tap = sync.compute(x, ts, _taps("S3", [t]))[2]["taps"][0]
+    assert tap["peak_lag_ms"] > 300
+    assert tap["lag_ms"] == pytest.approx(60.0, abs=ONSET_TOL)

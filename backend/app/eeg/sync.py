@@ -5,8 +5,11 @@ In S3 and again in S9 the assistant strikes Cz's housing with a controller's rin
 the same movement, 5 times: each pull is a SYNC_TAP marker, each strike a spike on Cz. On raw Cz, for each tap:
   - the peak is the largest |Cz − median| within ±500 ms of the marker (median of the 2 s before that window);
   - it is clear when it exceeds 5× the MAD of Cz in those 2 s;
-  - the onset of the strike is the last point before the peak under max(5 × noise, 10 % of the peak), with
-    level and noise (MAD × 1.4826) taken from 400 to 150 ms before the peak (F4 Registro, 6 Nov);
+  - the search for the onset starts at the anchor, the first point that reaches 50 % of the peak: when the
+    controller rests on Cz the level holds for > 300 ms and the peak falls at the plateau's end (D-F6-179 (1),
+    F4 Registro 9 Nov night);
+  - the onset of the strike is the last point before the anchor under max(5 × noise, 10 % of the peak), with
+    level and noise (MAD × 1.4826) taken from 400 to 150 ms before the anchor (F4 Registro, 6 Nov);
   - its lag is onset time − marker time (positive: the strike comes after the marker). The peak's lag is
     kept in sync_detail and corrects nothing (it carries the ≈ 110 ms the strike takes to rise).
 Offset = median lag of the clear S3 taps; drift = median of S9 − median of S3. With fewer than 3 clear taps
@@ -25,6 +28,7 @@ WINDOW_S = 0.5
 PRE_S = 2.0
 K_MAD = 5.0
 ONSET_FRACTION = 0.1
+ANCHOR_FRACTION = 0.5
 NOISE_FROM_S, NOISE_TO_S, MAD_TO_SD = 0.4, 0.15, 1.4826
 MIN_TAPS = 3
 PHASES = ("S3", "S9")
@@ -44,16 +48,18 @@ def _tap(x: np.ndarray, ts: np.ndarray, t: float) -> dict:
     seen = {**empty, "peak_uv": round(peak, 1), "mad_uv": round(mad, 2)}
     if peak <= K_MAD * mad:
         return {**seen, "why": "no clear peak"}
-    near = x[(ts >= stamps[i] - NOISE_FROM_S) & (ts < stamps[i] - NOISE_TO_S)]
+    a = int(np.argmax(level >= ANCHOR_FRACTION * peak))  # first crossing, never after the peak
+    near = x[(ts >= stamps[a] - NOISE_FROM_S) & (ts < stamps[a] - NOISE_TO_S)]
     if len(near) < 2:
         return {**seen, "why": "no onset before the peak"}
     base = float(np.median(near))
     rise = np.abs(x[win] - base)
     noise = MAD_TO_SD * float(np.median(np.abs(near - base)))
-    quiet = np.flatnonzero(rise[:i] < max(K_MAD * noise, ONSET_FRACTION * rise[i]))
+    quiet = np.flatnonzero(rise[:a] < max(K_MAD * noise, ONSET_FRACTION * rise[i]))
     if not quiet.size:
         return {**seen, "why": "no onset before the peak"}
     return {**seen, "valid": True, "lag_ms": round(float(stamps[quiet[-1]] - t) * 1000, 1),
+            "anchor_lag_ms": round(float(stamps[a] - t) * 1000, 1),
             "peak_lag_ms": round(float(stamps[i] - t) * 1000, 1), "why": None}
 
 
@@ -75,6 +81,7 @@ def compute(cz: np.ndarray, ts: np.ndarray, markers: list[tuple[float, dict]]):
     drift = round(med["S9"] - med["S3"], 1) if offset is not None and med["S9"] is not None else None
     spread = round(float(np.std(lags["S3"] + lags["S9"], ddof=1)), 1) if offset is not None else None
     detail = {"window_ms": int(WINDOW_S * 1000), "pre_s": PRE_S, "k_mad": K_MAD, "onset_fraction": ONSET_FRACTION,
+              "anchor_fraction": ANCHOR_FRACTION,
               "onset_noise_window_ms": [int(NOISE_FROM_S * 1000), int(NOISE_TO_S * 1000)],
               "min_taps": MIN_TAPS, "median_lag_ms": med, "spread_ms": spread, "taps": taps,
               "reason": "; ".join(reasons) or None}
