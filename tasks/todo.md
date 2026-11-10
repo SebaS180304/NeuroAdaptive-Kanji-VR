@@ -164,10 +164,10 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 
 **Done Tue 10 (moved up):** `432de21`; live backend rejects a session without seed (422).
 
-### [ ] A2 · live EEG read without the 60 s bound (XS) · D-F6-186 (2) · with X1b or right after, before 12:00
+### [x] A2 · live EEG read without the 60 s bound (XS) · D-F6-186 (2) · with X1b or right after, before 12:00
 `backend/app/api/routes/websocket.py` (`_eeg_source`), `tests/test_eeg_live_read.py`.
-- [ ] All epochs up to the answer (`start_ms <= answered_ms`), no lower bound; `EEG_LOOKBACK_MS` removed.
-- [ ] Test: three trials spanning 75 s; the window counts the same epochs as `window.evaluate` over all of them (red before).
+- [x] All epochs up to the answer (`start_ms <= answered_ms`), no lower bound; `EEG_LOOKBACK_MS` removed.
+- [x] Test: three trials spanning 75 s; the window counts the same epochs as `window.evaluate` over all of them (red before: 23 vs 29). **Done Tue 10: `424646c`.**
 - [ ] Stop grouped with X1b's.
 
 ### [ ] A3 · the WebSocket closes a session like the PATCH (S) · D-F6-186 (3) · before 12:00
@@ -177,17 +177,17 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [ ] Test: S9's `STATE_ENTERED` over the WebSocket with no PATCH -> `COMPLETED`, `completed_at` set, `autorun.wait_completed` returns (sync and epochs then run, as `test_sync_runs_before_epochs_because_epochs_needs_the_offset` checks).
 - [ ] **Stop** (before 12:00, with X1b's if they meet).
 
-### [~] X1 · live path and heartbeat (M) · D-F6-171 · **X1a done Tue 10 (`9800c3c`), X1b Wed before 12:00**
+### [~] X1 · live path and heartbeat (M) · D-F6-171 · **X1a `9800c3c`, X1b `f0b99da` `0dbde14` `2dffd48` (Tue 10); margin waits for PM (duda 6)**
 **X1a (backend side), done:** at each S7 answer of `MULTIMODAL_ADAPTIVE` the WebSocket reads the epochs of the last 60 s and the reference; `feed(eeg_source=…)` → `window.evaluate()` ending at the answer → `decide()`. No epochs / no reference / read error → `UNAVAILABLE`. `STATIC` and `BEHAVIOR_ADAPTIVE` never read it (test). `rebuild` re-reads each stored block (test: same engine and decisions as live). 381 tests.
 **X1b (`live.py` on the PC), notes for Wed:** reuse `epochs.make_epochs` over the **tail** of the buffer (≈ 30 s), sliced at a grid point (multiples of 2.5 s from the first sample) so `epoch_index` matches `fill_from_xdf`'s grid; the zero-phase filter needs a margin after the epoch's end before computing (edge), which is part of the arrival margin; offset from `sync.compute` once S3 ends (first `STATE_ENTERED` S4); `reference.compute` on entering S7; heartbeat (migration 0016) every 2 s; `autorun` starts it next to `baseline.py`.
 `backend/app/eeg/live.py` (new), `autorun.py`, migration `0016`, `api/routes/websocket.py`, `adaptation/state.py`, tests.
-- [ ] Buffers both streams on the PC; offset from the S3 taps (D-F6-173); every finished epoch to `eeg_epochs` with indices; reference on entering S7.
+- [x] Buffers both streams on the PC; offset from the S3 taps (D-F6-173); every finished epoch to `eeg_epochs` with indices; reference on entering S7.
 - [x] **`rebuild` and the lead:** `last_eeg` = the previous decision's payload `eeg` block, as is (one shape since `concordance.block()`, review 10 Nov). Test: live and rebuilt decide the same lead through `SessionAdaptationState.rebuild`.
-- [ ] Heartbeat: `heartbeat_at` and the current EEG gap every 2 s.
+- [x] Heartbeat: `heartbeat_at` and the current EEG gap every 2 s (migration 0016).
 - [x] Backend, on an S7 answer in `MULTIMODAL_ADAPTIVE`: reads the window's finished epochs (D-F6-172), calls `window.py`, feeds `decide()`; the EEG block goes into `ADAPTATION_DECISION`, and `rebuild` reads it.
-- [ ] Arrival margin measured against the synthetic stream, recorded, and applied in `window.py` and `verify_eeg.sql`.
+- [~] Arrival margin **measured** (synthetic AURA + markers, S3 → S9): median 1.11–1.15 s, max 1.27–1.34 s after an epoch's end (1 s of it is the filter wait). **Applying it in `window.py`, `verify_eeg.sql` and replay changes the official P7: waits for PM (duda 6).**
 - [x] `STATIC` and `BEHAVIOR_ADAPTIVE` never read the EEG (test).
-- [ ] **Check:** synthetic stream + `ws_smoke_test`: epochs arrive, heartbeat moves, a decision carries its EEG block, `decision_latency_ms` noted.
+- [~] **Check:** synthetic stream: epochs arrive (26, consecutive), heartbeat fresh, reference from S6 (all 11). A decision with its EEG block: covered by X1a's tests; **end to end through the WebSocket with `decision_latency_ms` goes to J1** (needs S7 answers in `MULTIMODAL_ADAPTIVE`).
 - [ ] **Stop.**
 
 ### [ ] A8 · no session without a set (S) · D-F6-187 · Wed after 14:30
