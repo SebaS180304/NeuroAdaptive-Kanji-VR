@@ -107,7 +107,7 @@ EEG staff session **Wed 11 at 12:00** (confirmed by Sebas, board §1). Nothing f
 - [x] `STABLE` with z ≤ −1.5 in a single window → `ONLY_ALERT` (D-F6-174, marked in the code).
 - [x] Alpha never changes the result (D-F6-129).
 - [x] Default of T1, marked in the code: the index the state reads is missing (reference SD 0, M5) → `UNAVAILABLE`. Reviewed in J5 with D-F6-174.
-- [ ] **Stop.**
+- [x] **Stop.** Sebas OK, 10 Nov.
 
 ### [x] T2 · rules-v2-mm (M)
 `backend/app/adaptation/rules.py`, `state.py`, migration `0015`, tests. Golden `--json` replay captured **before** editing.
@@ -119,23 +119,23 @@ EEG staff session **Wed 11 at 12:00** (confirmed by Sebas, board §1). Nothing f
 - [x] Check every reader of `reason_code` (`outcome.py`, research API, dashboard) accepts the new codes. Research API and dashboard show it as text (VARCHAR 32); `outcome.py` gets `EEG_LED` → `UNCERTAIN` when still `STABLE` (marked default).
 - [x] **Check:** `BEHAVIOR_ADAPTIVE` replay **byte-identical** to the golden; all earlier tests green. **Done:** 36/36 golden files identical (18 sessions × own and `behavior-v2`; 3 with no S7, empty both times); 361 passed, 4 skipped.
 - [x] **D-F6-178, when T2 closes:** backend up, `docker compose exec backend python -m app.adaptation.replay 678b7806-6f0d-4c6c-9673-6f1addd53701` (its own version) and the same with `--version behavior-v2`. Both outputs verbatim in `Claude outputs/Borrador_Plan_Fase6_9_10nov.md` with the full id. If T2 is late, run them on the committed code anyway and say so (Sebas records the video at 19:00).
-- [ ] **Stop.**
+- [x] **Stop.** Sebas OK, 10 Nov.
 
-### [ ] T3 · spec v1.4 review (no edits to the spec, D-F6-88)
+### [x] T3 · spec v1.4 review (no edits to the spec, D-F6-88)
 Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.docx` (source `Spec_v1_4_borrador.md`) against the code.
-- [ ] Developer review 1 (§3.4): angles from the saved `LayoutOfRecord` output, **with its date or commit**; if it is before 30 Oct, said so: re-measured Thu with Unity free.
-- [ ] Developer review 2 (§11.3): head-away thresholds in the code (`HeadBehavior.cs`) vs `Medicion_D7_HeadAway.md` vs the spec.
-- [ ] Developer review 3 (§10.4, §11.5): today `concordance.py` and `rules-v2-mm` as committed; live path and EEG replay on Wed when X1/X2 close (PM corrects the spec Thu before the freeze).
-- [ ] Developer review 4 (§6.2): answered Wed with X6b.
-- [ ] Other mismatches with the code, by section, each with file and line.
-- [ ] All in the draft for PM; nothing written in `docs_proyecto/`.
+- [x] Developer review 1 (§3.4): angles from the saved `LayoutOfRecord` output, **with its date or commit**; if it is before 30 Oct, said so: re-measured Thu with Unity free. **Done:** table from 23 Oct (`ea2d32b`), last edited 27 Oct: re-measure Thu.
+- [x] Developer review 2 (§11.3): head-away thresholds in the code (`HeadBehavior.cs`) vs `Medicion_D7_HeadAway.md` vs the spec.
+- [x] Developer review 3 (§10.4, §11.5): today `concordance.py` and `rules-v2-mm` as committed; live path and EEG replay on Wed when X1/X2 close (PM corrects the spec Thu before the freeze).
+- [x] Developer review 4 (§6.2): answered Wed with X6b.
+- [x] Other mismatches with the code, by section, each with file and line. **Done:** 13 in the draft; one Duda (cap of 3 changes in `rules-v2-mm`).
+- [x] All in the draft for PM; nothing written in `docs_proyecto/`.
 - [ ] **Stop.**
 
-### [ ] T4 · from the EEG staff session
+### [ ] T4 · from the EEG staff session · **moved to Wed 11 after 14:30**
 - [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). **Session confirmed Wed 11 at 12:00:** numbered items go after 14:30 and before J1 on Thu. Thursday's freeze does not move; if something does not fit, cut X7 first, then X6b.
 - [ ] **Stop.**
 
-### [ ] T5 · close (draft with done, findings, replay output, T3 notes, Dudas; `tasks/`)
+### [x] T5 · close (draft with done, findings, replay output, T3 notes, Dudas; `tasks/`)
 - [ ] **Stop:** Sebas's OK.
 
 ---
@@ -186,10 +186,10 @@ Migration `0017`, `project_event`, test.
 
 ### [ ] X6s · substitution condition 1 without overlapping meanings (S) · D-F6-181 (2) · before X6a
 `tools/kanji_metrics.py` (`hard_clash`, a check, export) → `kanji_content.json`; `backend/app/pretest/rules.py` (`_hard_clash`); tests of both. Commit as content (D-F6-62/122).
-- [ ] `hard_clash` also fails when two meanings **share a word** (computed: *rice*/*rice field*) or one **includes** the other (an explicit `MEANING_INCLUDES` list, since no string shows it: today only *child*/*person*, which D-F6-181 names; more pairs wait for PM, see the draft's Dudas). Both rules in one function, used by the table and the check of the nominal sets.
+- [ ] `hard_clash` also fails when two meanings **share a word** (computed: *rice*/*rice field*) or one **includes** the other (an explicit `MEANING_INCLUDES` list, since no string shows it: *child*/*person*, *woman*/*person*, *shellfish*/*fish*; *thing* does not go in (precision of D-F6-181, 10 Nov). Both rules in one function, used by the table and the check of the nominal sets.
 - [ ] The contract exports the clashing meaning pairs (`meaningClashes`, keyed like `similarity`); the pre-test's `_hard_clash` reads them. **Without this, two substitutions in a row can still bring 田 and 米 together**: the table only covers one substitution.
 - [ ] The five nominal sets pass the new rule (no overlap among their own members).
-- [ ] Regenerated table vs today's, in the draft. Dry run on 10 Nov: 94 → 93 entries, only C 牛 loses 子 (8 left), **no experimental kanji without a substitute**. If the real run leaves one empty: **stop, tell PM, nothing further.**
+- [ ] Regenerated table vs today's, in the draft. Dry run on 10 Nov (child/person only): 94 → 93 entries, only C 牛 loses 子 (8 left); woman/person and shellfish/fish do not change the table (one substitution), **no experimental kanji without a substitute**. If the real run leaves one empty: **stop, tell PM, nothing further.**
 - [ ] Tests: `kanji_metrics` (child/person and rice/rice field clash; the table drops 子 for 牛); pre-test (with 田 already in the effective set, 米 is not offered). Backend suite green.
 - [ ] **Stop.**
 
