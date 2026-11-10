@@ -159,7 +159,7 @@ class EngineState:
     streak_len: int = 0
     moved: tuple[str, ...] = ()             # dimensions the engine eased off MEDIUM, oldest first
     changes: int = 0
-    last_eeg: dict | None = None            # rules-v2-mm: the previous decision's EEG window, for the lead
+    last_eeg: dict | None = None            # rules-v2-mm: the previous decision's EEG block (as stored), for the lead
 
     def level(self, dimension: str) -> str:
         return self.esl if dimension == ESL else self.lal
@@ -284,17 +284,6 @@ def _evidence_text(result: EstimatorResult) -> str:
     return "; ".join(parts) if parts else "no indicator outside the practice profile"
 
 
-def _r(z: float | None) -> float | None:
-    return None if z is None else round(z, 3)
-
-
-def _eeg_block(window: dict, effect: str) -> dict[str, Any]:
-    z = window.get("z") or {}
-    return {"counted": window.get("counted"), "non_poor": window.get("non_poor"), "clean_s": window.get("clean_s"),
-            "ei_z": _r(z.get("engagement_index")), "theta_z": _r(z.get("theta_fz")),
-            "alpha_z": _r(z.get("alpha_parietal")), "effect": effect}
-
-
 def _fmt_z(z: float | None) -> str:
     return "—" if z is None else f"{z:+.2f}"
 
@@ -325,12 +314,13 @@ def decide(
     """
     if eeg is None:
         return _decide(result, trial_sequence, answered_ms, state, config, None)
-    effect = concordance.effect(result.state, eeg, state.last_eeg)
+    window = concordance.block(eeg)
+    effect = concordance.effect(result.state, window, state.last_eeg)
     decision, new_state = _decide(result, trial_sequence, answered_ms, state, config, effect)
-    block = _eeg_block(eeg, effect)
+    block = {**window, "effect": effect}
     if effect not in (concordance.NEUTRAL, concordance.UNAVAILABLE):  # the EEG had a say, even if blocked (AT_LIMIT)
         decision = replace(decision, explanation=f"{decision.explanation.rstrip('.')}; EEG: {_eeg_text(block)}.")
-    return replace(decision, version=RULES_V2_MM, eeg=block), replace(new_state, last_eeg=eeg)
+    return replace(decision, version=RULES_V2_MM, eeg=block), replace(new_state, last_eeg=block)
 
 
 def _decide(result: EstimatorResult, trial_sequence: int, answered_ms: int | None, state: EngineState,

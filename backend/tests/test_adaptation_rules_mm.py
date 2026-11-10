@@ -191,3 +191,15 @@ def test_default_3_low_confidence_blocks_a_lead() -> None:
                                  disengaged=(), overloaded=(), indicators={}, underchallenged=())
         d, engine = decide(result, i, i * TRIAL_MS, engine, eeg=window)
     assert d.reason_code == "LOW_CONFIDENCE" and d.eeg["effect"] == "LED" and engine.lal == "MEDIUM"
+
+
+def test_the_stored_block_is_enough_to_lead_after_a_rebuild() -> None:  # review 10 Nov, required item 2 (X1 rebuild)
+    from dataclasses import replace
+
+    ds, engine = _run(_warm() + [(STABLE, _w(ei=-1.8))])            # trial 3: the first low window
+    rebuilt = replace(engine, last_eeg=ds[-1].as_dict()["eeg"])     # what rebuild gets from the payload
+    result = EstimatorResult(trial_id="S7-004", state=STABLE, cause=None, confidence=1.0, support=1.0,
+                             disengaged=(), overloaded=(), indicators={}, underchallenged=())
+    live, _ = decide(result, 4, 4 * TRIAL_MS, engine, eeg=_w(ei=-1.9))
+    again, _ = decide(result, 4, 4 * TRIAL_MS, rebuilt, eeg=_w(ei=-1.9))
+    assert live.reason_code == again.reason_code == EEG_LED and live.as_dict() == again.as_dict()

@@ -1,6 +1,7 @@
 """
 What the EEG does in one decision window of MULTIMODAL_ADAPTIVE (Reevaluacion_EEG_Justificacion.md §3.2, §3.3, §3.5;
-D-F6-128). Pure: the behavioural state and two windows of window.evaluate() in, one effect out. Which action follows
+D-F6-128). Pure: the behavioural state and two EEG blocks in, one effect out. A block (``block()``) is what the
+ADAPTATION_DECISION payload stores, so a rebuilt session state reads the previous window exactly as the live one did. Which action follows
 (ESL or LAL, AT_LIMIT, the hysteresis) is rules-v2-mm's: the EEG decides when an action applies, not which.
 
 | State            | Index read     | Confirms     | Vetoes       |
@@ -18,16 +19,28 @@ CONFIRMED, VETO, LED, UNAVAILABLE, ONLY_ALERT, NEUTRAL = (
 
 Z_AGREE = 1.0
 Z_LEAD = 1.5
-EI, THETA = "engagement_index", "theta_fz"
+EI, THETA = "ei_z", "theta_z"
 
 
-def _z(window: dict | None, index: str) -> float | None:
+def _r(z: float | None) -> float | None:
+    return None if z is None else round(z, 3)
+
+
+def block(window: dict) -> dict:
+    """window.evaluate() as the decision stores it (payload ``eeg``, without ``effect``); z rounded to 3 decimals."""
+    z = window.get("z") or {}
+    return {"counted": window.get("counted"), "non_poor": window.get("non_poor"), "clean_s": window.get("clean_s"),
+            "ei_z": _r(z.get("engagement_index")), "theta_z": _r(z.get("theta_fz")),
+            "alpha_z": _r(z.get("alpha_parietal"))}
+
+
+def _z(eeg: dict | None, index: str) -> float | None:
     """z of the index when the EEG counted in the window (D-F6-127), else None."""
-    return window["z"][index] if window and window["counted"] else None
+    return eeg.get(index) if eeg and eeg.get("counted") else None
 
 
 def effect(state: str, window: dict | None, previous: dict | None) -> str:
-    """window: this decision's window.evaluate(); previous: the decision before it in S7 (None for the first)."""
+    """window: this decision's block(); previous: the block of the decision before it in S7 (None for the first)."""
     if state == OVERLOADED:
         z = _z(window, THETA)
         if z is None:

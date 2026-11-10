@@ -10,9 +10,9 @@ from app.eeg import concordance as c
 
 
 def _w(ei=None, theta=None, alpha=None, counted=True) -> dict:
-    """A window as window.evaluate() returns it."""
-    return {"counted": counted, "non_poor": 3, "clean_s": 9.0,
-            "z": {"engagement_index": ei, "theta_fz": theta, "alpha_parietal": alpha, "theta_beta": None}}
+    """A window as window.evaluate() returns it, as the decision stores it (block)."""
+    return c.block({"counted": counted, "non_poor": 3, "clean_s": 9.0,
+                    "z": {"engagement_index": ei, "theta_fz": theta, "alpha_parietal": alpha, "theta_beta": None}})
 
 
 # §3.5, one test per row ------------------------------------------------------------------------------------
