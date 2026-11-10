@@ -82,21 +82,21 @@ Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Edito
 
 EEG staff session **no longer at 12:00** (D-F6-180 changes D-F6-170): end of today or Wed 11 before 13:30. Nothing from it is applied until it has a number in §4.
 
-### [ ] T0 · autorun writes its output to a log file (S) · D-F6-179 (2)
+### [x] T0 · autorun writes its output to a log file (S) · D-F6-179 (2)
 `backend/app/eeg/autorun.py`, `tests/test_eeg_autorun.py`; the log folder gitignored.
-- [ ] Everything `autorun` prints, tracebacks and the `baseline` child's output go to one file per run; its path is printed at the start.
-- [ ] `faulthandler` writes Python's fatal errors there; a last line when the process ends, so a silent death shows as a log with no end line.
-- [ ] The cause of the 9 Nov death stays unconfirmed: this is for next time, not a diagnosis.
-- [ ] Test: the file receives a print and a child's output; the steps `autorun` runs do not change.
-- [ ] Operator lists (J2, J3, V2) add "autorun alive before S3" (D-F6-179 (2)) and "eyes open, looking at the dot" said at the end of S3 (D-F6-179 (3)). No code for the S4 halves notice (after the dry run).
+- [x] Everything `autorun` prints, tracebacks and the `baseline` child's output go to one file per run; its path is printed at the start.
+- [x] `faulthandler` writes Python's fatal errors there; a last line when the process ends, so a silent death shows as a log with no end line.
+- [x] The cause of the 9 Nov death stays unconfirmed: this is for next time, not a diagnosis.
+- [x] Test: the file receives a print and a child's output; the steps `autorun` runs do not change.
+- [x] Operator lists (J2, J3, V2) add "autorun alive before S3" (D-F6-179 (2)) and "eyes open, looking at the dot" said at the end of S3 (D-F6-179 (3)). No code for the S4 halves notice (after the dry run).
 - [ ] **Stop** (grouped with T0b).
 
-### [ ] T0b · sync anchor at the first 50 % crossing (S) · D-F6-179 (1)
+### [x] T0b · sync anchor at the first 50 % crossing (S) · D-F6-179 (1)
 `backend/app/eeg/sync.py`, `tests/test_eeg_sync.py`.
-- [ ] Anchor = first sample in the ±500 ms window where |Cz − median| reaches 50 % of the peak. Noise window 400–150 ms **before the anchor**; threshold max(5 × noise, 10 % of the peak); onset = last point before the anchor under it. Nothing else changes; peak and anchor lags kept in `sync_detail`, `SYNC_VERSION`/docstring updated.
-- [ ] Test: a strike with a plateau (peak at its end) gives the onset at the rise, not at the plateau's end; the existing tests stay green unchanged.
-- [ ] Recompute on the PC, `sync` then `epochs` (D-F6-156). Targets (F4 Registro 9 Nov night, PM 10 Nov), S3 / S9 / drift / spread: `742ec49a` **unchanged** 35.3 / 52.2 / +16.9 / 18.4 ms, tap by tap; `07343b5d` 65.3 / 85.7 / +20.3 / 15.6 ms, **S3-2 → 68.7 ms**; `b5bcf5bd` still empty with its reason. `verify_eeg.sql` on `07343b5d`: sync block now OK.
-- [ ] Mine vs the targets compared in the draft before the Stop; a figure off is reported, not tuned.
+- [x] Anchor = first sample in the ±500 ms window where |Cz − median| reaches 50 % of the peak. Noise window 400–150 ms **before the anchor**; threshold max(5 × noise, 10 % of the peak); onset = last point before the anchor under it. Nothing else changes; peak and anchor lags kept in `sync_detail` with `anchor_fraction` (there is no SYNC_VERSION); docstring updated.
+- [x] Test: a strike with a plateau (peak at its end) gives the onset at the rise, not at the plateau's end; the existing tests stay green unchanged.
+- [x] Recompute on the PC, `sync` then `epochs` (D-F6-156). Targets (F4 Registro 9 Nov night, PM 10 Nov), S3 / S9 / drift / spread: `742ec49a` **unchanged** 35.3 / 52.2 / +16.9 / 18.4 ms, tap by tap; `07343b5d` 65.3 / 85.7 / +20.3 / 15.6 ms, **S3-2 → 68.7 ms**; `b5bcf5bd` still empty with its reason. `verify_eeg.sql` on `07343b5d`: sync block now OK.
+- [x] Mine vs the targets compared in the draft before the Stop; a figure off is reported, not tuned. **Done:** all match; drift +20.4 (rounding of 85.7 − 65.3) and four S9 taps move 8 ms, not three (`b31c92e`, `fc44a3a`).
 - [ ] **Stop** (T0 + T0b): Sebas sees the three sync outputs.
 
 ### [ ] T1 · concordance.py (S)
