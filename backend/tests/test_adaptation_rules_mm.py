@@ -247,3 +247,15 @@ def test_after_a_change_a_lead_needs_two_eligible_windows() -> None:
     assert ds[3].is_change and [d.reason_code for d in ds[4:7]] == [COOLDOWN] * 3   # cooldown 5-7, all low
     assert ds[7].reason_code != EEG_LED and ds[7].eeg["effect"] == "ONLY_ALERT"     # trial 8: 1st eligible
     assert ds[8].reason_code == EEG_LED                                              # trial 9: 2nd eligible
+
+
+def test_a_low_confidence_window_cuts_the_count_for_a_lead() -> None:  # D-F6-185
+    low, engine, out = _w(ei=-2.0), initial_state("MEDIUM", "MEDIUM", 0), []
+    for i, conf in enumerate([1.0, 1.0, 0.4, 1.0, 1.0], start=1):
+        result = EstimatorResult(trial_id=f"S7-{i:03d}", state=STABLE, cause=None, confidence=conf, support=1.0,
+                                 disengaged=(), overloaded=(), indicators={}, underchallenged=())
+        d, engine = decide(result, i, i * TRIAL_MS, engine, eeg=low if i >= 3 else N)
+        out.append(d)
+    assert out[2].reason_code == "LOW_CONFIDENCE"                       # trial 3: not a first window
+    assert out[3].reason_code != EEG_LED and out[3].eeg["effect"] == "ONLY_ALERT"   # trial 4: the 1st again
+    assert out[4].reason_code == EEG_LED                                # trial 5
