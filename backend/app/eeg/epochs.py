@@ -109,8 +109,10 @@ def _context(markers: list[tuple[float, dict]]):
 
 
 def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
-                markers: list[tuple[float, dict]]) -> list[dict]:
-    """x: filtered EEG, samples × channels in µV; ts: corrected LSL stamps; montage: CH1… → label."""
+                markers: list[tuple[float, dict]], t0: float | None = None) -> list[dict]:
+    """x: filtered EEG, samples × channels in µV; ts: corrected LSL stamps; montage: CH1… → label.
+    t0: origin of the epoch grid (default ts[0]). live.py passes the session's first stamp with only the tail of
+    its buffer, so each epoch keeps its place and index on the session's grid."""
     ts = np.asarray(ts, dtype=float)
     labels = [montage[f"CH{i + 1}"] for i in range(x.shape[1])]
     blink_ch = [labels.index("Fp1")] if "Fp1" in labels else [i for i, l in enumerate(labels) if l in ("F3", "Fz", "F4")]
@@ -129,10 +131,13 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
     min_n = MIN_SAMPLES * srate * CHUNK_S
 
     out = []
-    span = ts[-1] - ts[0] + 1 / srate if len(ts) else 0.0  # the last sample covers 1/srate too
-    n = int((span - EPOCH_S) // STEP_S) + 1
-    for j in range(max(n, 0)):
-        start = float(ts[0] + j * STEP_S)
+    if not len(ts):
+        return out
+    t0 = float(ts[0]) if t0 is None else t0
+    first = max(0, math.ceil((ts[0] - t0) / STEP_S - 1e-9))  # the first epoch that starts inside ts
+    last = int((ts[-1] + 1 / srate - t0 - EPOCH_S) // STEP_S)  # the last sample covers 1/srate too
+    for j in range(first, last + 1):
+        start = float(t0 + j * STEP_S)
         flags, clean = [], []
         for k in range(CHUNKS):
             chunk = start + k * CHUNK_STEP_S

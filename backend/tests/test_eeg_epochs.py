@@ -275,3 +275,16 @@ def test_the_29_oct_session_keeps_most_chunks_clean() -> None:
     # F4 S1 summary: 81 %. With the 200 ms blink pad of F4 §6 this gives 70 % (75 % without it):
     # finding of 4 Nov, Borrador_Plan_Fase6_9_4nov.md.
     assert 0.65 <= clean <= 0.90
+
+
+def test_a_tail_cut_on_a_grid_origin_gives_the_same_epochs_with_their_global_index() -> None:  # X1b (live.py)
+    x, ts = _eeg(60.0)
+    whole = epochs.make_epochs(x, ts, SR, MONTAGE, [])
+    lo = int(31.3 * SR)                                   # a tail that does not start on the grid
+    tail = epochs.make_epochs(x[lo:], ts[lo:], SR, MONTAGE, [], t0=ts[0])
+    assert tail[0]["epoch_index"] == 13 and tail[0]["lsl_start"] == pytest.approx(ts[0] + 13 * 2.5)
+    by_index = {e["epoch_index"]: e for e in whole}
+    for e in tail:
+        same = by_index[e["epoch_index"]]
+        assert e["lsl_start"] == same["lsl_start"] and e["chunk_clean"] == same["chunk_clean"]
+    assert tail[-1]["epoch_index"] == whole[-1]["epoch_index"]
