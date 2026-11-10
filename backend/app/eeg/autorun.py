@@ -5,7 +5,8 @@ UnityMarkers and presses Start in LabRecorder, and watches the signal in AURA's 
 On the PC (outside Docker, D-F6-132), started before Play:
     POSTGRES_HOST=127.0.0.1 python -m app.eeg.autorun
 1. waits for a new session: its eeg_sessions row, written by POST /sessions with the XDF path;
-2. starts baseline.py for it at once (it buffers until S4 ends, so it is running before S4);
+2. starts baseline.py for it at once (it buffers until S4 ends, so it is running before S4), and live.py (the live
+   EEG path, D-F6-171: epochs, reference and heartbeat while the session runs; stopped when it is COMPLETED);
 3. waits for the session to be COMPLETED (S9) and for the XDF to stop growing (Stop in LabRecorder);
 4. runs lsl_reader, sync (offset and drift, D-F6-157) and epochs on the XDF: epochs needs the offset (D-F6-176).
 Everything it and baseline.py print, tracebacks and Python's fatal errors also go to logs/autorun-<time>.log; its
@@ -127,7 +128,10 @@ async def main() -> int:
     sid, path = await wait_new_session(datetime.now(timezone.utc))
     print(f"session {sid}\n  LabRecorder file must contain ses-{sid[:8]}: {path}")
     baseline, _ = start_child([sys.executable, "-m", "app.eeg.baseline", sid])
+    live, _ = start_child([sys.executable, "-m", "app.eeg.live", sid])
     await wait_completed(sid, baseline)
+    if live is not None and live.poll() is None:  # its rows are replaced by fill_from_xdf below (D-F6-156)
+        live.terminate()
     await wait_xdf_closed(path)
 
     missing = await lsl_reader.fill_from_xdf(sid)

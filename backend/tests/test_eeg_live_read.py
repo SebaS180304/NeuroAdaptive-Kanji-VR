@@ -65,3 +65,29 @@ async def test_a_window_of_75_s_reads_every_epoch_in_it(client, pretested) -> No
                "engagement_index": math.exp(-2.0), "theta_fz": 1.0, "alpha_parietal": 1.0, "theta_beta": 1.0}
               for s in starts]
     assert w["non_poor"] == window.evaluate(epochs, 25_000, 100_000, REF)["non_poor"] == 29
+
+
+# X1b · what live.py writes ----------------------------------------------------------------------------------------
+
+def _row(i: int, start_ms: int, quality: str = "GOOD") -> dict:
+    return {"epoch_index": i, "lsl_start": 100.0 + i * 2.5, "start_ms": start_ms, "end_ms": start_ms + 5000,
+            "game_state": "S7_EXPERIMENTAL_RETRIEVAL", "trial_id": None, "esl_level": "MEDIUM",
+            "chunk_clean": [True] * 9, "clean_fraction": 1.0, "quality": quality,
+            "engagement_index": 0.5, "theta_fz": 0.2, "alpha_parietal": 0.3, "theta_beta": 1.1}
+
+
+@pytest.mark.asyncio
+async def test_live_writes_each_epoch_once_and_the_heartbeat(client, pretested) -> None:
+    from app.eeg import live
+
+    sid = await _session_with_epochs(client, pretested, [])
+    async with AsyncSessionLocal() as db:
+        await live.save_epochs(db, sid, [_row(0, 1000), _row(1, 3500)])
+        await live.save_epochs(db, sid, [_row(1, 3500, "POOR")])        # the same epoch again: replaced, not doubled
+        await live.heartbeat(db, sid, gap_ms=120)
+        await db.commit()
+        rows = (await db.execute(text("SELECT epoch_index, quality FROM eeg_epochs WHERE session_id = :s "
+                                      "ORDER BY epoch_index"), {"s": sid})).all()
+        beat = (await db.execute(text("SELECT heartbeat_at IS NOT NULL, eeg_gap_ms FROM eeg_sessions "
+                                      "WHERE session_id = :s"), {"s": sid})).one()
+    assert rows == [(0, "GOOD"), (1, "POOR")] and tuple(beat) == (True, 120)

@@ -78,3 +78,42 @@ def test_the_log_gets_the_line_even_when_the_console_fails(tmp_path) -> None:
         with pytest.raises(OSError):
             autorun._Tee(Broken(), log).write("last words\n")
     assert (tmp_path / "x.log").read_text(encoding="utf-8") == "last words\n"
+
+
+@pytest.mark.asyncio
+async def test_live_runs_next_to_baseline_and_stops_when_the_session_completes(monkeypatch) -> None:  # X1b
+    from app.eeg import epochs, lsl_reader, sync
+
+    started, stopped = [], []
+
+    class Child:
+        def __init__(self, args):
+            self.name = args[-2]
+        def poll(self):
+            return None
+        def terminate(self):
+            stopped.append(self.name)
+
+    async def new_session(_after):
+        return "sid", "x.xdf"
+
+    async def ok(_sid):
+        return []
+
+    def child(args):
+        started.append(args[-2])
+        return Child(args), None
+
+    monkeypatch.setattr(autorun, "wait_new_session", new_session)
+    monkeypatch.setattr(autorun, "wait_completed", _nothing)
+    monkeypatch.setattr(autorun, "wait_xdf_closed", _nothing)
+    monkeypatch.setattr(autorun, "start_child", child)
+    monkeypatch.setattr(lsl_reader, "fill_from_xdf", ok)
+    monkeypatch.setattr(sync, "fill_from_xdf", lambda _s: _async((1.0, 1.0, {"reason": None})))
+    monkeypatch.setattr(epochs, "fill_from_xdf", ok)
+    assert await autorun.main() == 0
+    assert started == ["app.eeg.baseline", "app.eeg.live"] and stopped == ["app.eeg.live"]
+
+
+async def _async(value):
+    return value
