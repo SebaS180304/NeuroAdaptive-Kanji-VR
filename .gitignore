@@ -77,3 +77,6 @@ Claude outputs/
 
 # graphify knowledge graph (rebuilt locally by git hooks)
 graphify-out/
+
+# autorun logs (D-F6-179)
+backend/logs/

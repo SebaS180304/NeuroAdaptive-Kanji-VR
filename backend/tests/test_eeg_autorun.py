@@ -1,3 +1,6 @@
+import faulthandler
+import sys
+
 import pytest
 
 from app.eeg import autorun
@@ -39,9 +42,25 @@ async def test_sync_runs_before_epochs_because_epochs_needs_the_offset(monkeypat
     monkeypatch.setattr(autorun, "wait_new_session", new_session)
     monkeypatch.setattr(autorun, "wait_completed", _nothing)
     monkeypatch.setattr(autorun, "wait_xdf_closed", _nothing)
-    monkeypatch.setattr(autorun.subprocess, "Popen", lambda *_a, **_k: None)
+    monkeypatch.setattr(autorun, "start_child", lambda *_a, **_k: (None, None))
     monkeypatch.setattr(lsl_reader, "fill_from_xdf", step("lsl_reader", []))
     monkeypatch.setattr(sync, "fill_from_xdf", step("sync", (47.0, 17.0, {"reason": None})))
     monkeypatch.setattr(epochs, "fill_from_xdf", step("epochs", []))
     assert await autorun.main() == 0
     assert calls == ["lsl_reader", "sync", "epochs"]
+
+
+def test_the_log_gets_this_process_and_the_child_output(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(sys, "stdout", sys.stdout)
+    monkeypatch.setattr(sys, "stderr", sys.stderr)
+    log = autorun.open_log(tmp_path)
+    try:
+        print("parent line")
+        child, relay = autorun.start_child([sys.executable, "-c", "print('alpha ratio ≥ 1.2')"])
+        child.wait()
+        relay.join(5)
+    finally:
+        faulthandler.enable(file=sys.__stderr__)
+        log.close()
+    text = next(tmp_path.glob("autorun-*.log")).read_text(encoding="utf-8")
+    assert "log: " in text and "parent line" in text and "alpha ratio ≥ 1.2" in text

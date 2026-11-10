@@ -8,18 +8,62 @@ On the PC (outside Docker, D-F6-132), started before Play:
 2. starts baseline.py for it at once (it buffers until S4 ends, so it is running before S4);
 3. waits for the session to be COMPLETED (S9) and for the XDF to stop growing (Stop in LabRecorder);
 4. runs lsl_reader, sync (offset and drift, D-F6-157) and epochs on the XDF: epochs needs the offset (D-F6-176).
+Everything it and baseline.py print, tracebacks and Python's fatal errors also go to logs/autorun-<time>.log; its
+last line says it ended, so a log without that line is a process that died silently (D-F6-179 (2)).
 """
 
 import asyncio
+import faulthandler
 import os
 import subprocess
 import sys
+import threading
 import time
+import traceback
+from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import text
 
 POLL_S = 2.0
 QUIET_S = 15.0  # LabRecorder flushes far more often than this while it records
+LOG_DIR = Path("logs")
+
+
+class _Tee:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, s: str) -> int:
+        for st in self.streams:
+            st.write(s)
+            st.flush()  # a death right after a print still leaves it in the file
+        return len(s)
+
+    def flush(self) -> None:
+        for st in self.streams:
+            st.flush()
+
+
+def open_log(log_dir: Path = LOG_DIR):
+    """Mirrors stdout and stderr into a new file and points faulthandler at it. Returns the open file."""
+    log_dir.mkdir(parents=True, exist_ok=True)
+    path = log_dir / f"autorun-{datetime.now():%Y%m%d-%H%M%S}.log"
+    log = open(path, "a", encoding="utf-8")
+    sys.stdout, sys.stderr = _Tee(sys.stdout, log), _Tee(sys.stderr, log)
+    faulthandler.enable(file=log)
+    print(f"log: {path.resolve()}")
+    return log
+
+
+def start_child(args: list[str]) -> tuple[subprocess.Popen, threading.Thread]:
+    """Runs args with its output relayed line by line to this console and the log."""
+    env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8"}  # a pipe is cp1252 on Windows
+    child = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env,
+                             encoding="utf-8", errors="replace")
+    relay = threading.Thread(target=lambda: [print(line, end="") for line in child.stdout], daemon=True)
+    relay.start()
+    return child, relay
 
 
 def settled(history: list[tuple[float, int]], quiet_s: float = QUIET_S) -> bool:
@@ -82,7 +126,7 @@ async def main() -> int:
 
     sid, path = await wait_new_session(datetime.now(timezone.utc))
     print(f"session {sid}\n  LabRecorder file must contain ses-{sid[:8]}: {path}")
-    baseline = subprocess.Popen([sys.executable, "-m", "app.eeg.baseline", sid])  # same console, its own output
+    baseline, _ = start_child([sys.executable, "-m", "app.eeg.baseline", sid])
     await wait_completed(sid, baseline)
     await wait_xdf_closed(path)
 
@@ -99,4 +143,11 @@ async def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    open_log()
+    code = 1
+    try:
+        code = asyncio.run(main())
+    except BaseException:  # Ctrl+C too: the log says how it ended
+        traceback.print_exc()
+    print(f"autorun ended · exit code {code}")
+    sys.exit(code)
