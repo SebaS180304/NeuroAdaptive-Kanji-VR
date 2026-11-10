@@ -146,11 +146,13 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 
 **13:30–14:30 (D-F6-178, demo ≈ 14:00):** no backend restart and `replay.py` never half done, committed or untouched. X2 is finished before 13:30 or starts after 14:30; X1's backend restart too. No migrations in that hour.
 
-### [ ] X0 · no session without a seed (XS) · D-F6-183 · with X1, before 13:30
+### [x] X0 · no session without a seed (XS) · D-F6-183 · with X1, before 13:30
 `backend/app/schemas/session.py`, its route test. Unity untouched (`fallbackSeed` stays for the Editor without backend).
-- [ ] `random_seed` required and non-empty on session creation; 422 otherwise. Check every caller that creates sessions (Unity's `POST /sessions`, `ws_smoke_test`, test fixtures) still sends one.
-- [ ] Test: missing or empty seed → 422; with seed → created as today.
-- [ ] Stop grouped with X1's (before 12:00).
+- [x] `random_seed` required and non-empty on session creation; 422 otherwise. Check every caller that creates sessions (Unity's `POST /sessions`, `ws_smoke_test`, test fixtures) still sends one.
+- [x] Test: missing or empty seed → 422; with seed → created as today.
+- [x] Stop grouped with X1's (before 12:00).
+
+**Done Tue 10 (moved up):** `432de21`; live backend rejects a session without seed (422).
 
 ### [ ] X1 · live path and heartbeat (M) · D-F6-171
 `backend/app/eeg/live.py` (new), `autorun.py`, migration `0016`, `api/routes/websocket.py`, `adaptation/state.py`, tests.
@@ -229,13 +231,15 @@ Migration `0017`, `project_event`, test.
 
 ## Thu 12 · MULTIMODAL_ADAPTIVE end to end; rules frozen at night
 
-### [ ] J0 · cap of 3 changes per S7 (XS) · D-F6-182 · before the freeze (Thu morning, before J1)
+### [x] J0 · cap of 3 changes per S7 (XS) · D-F6-182 · before the freeze (Thu morning, before J1)
 `backend/app/adaptation/rules.py` (`RuleConfig.max_changes = 3`), test.
-- [ ] Explicit cap in `RuleConfig`, for both adaptive conditions; a blocked change is `NO_CHANGE` with its own `reason_code` (proposal `MAX_CHANGES`).
-- [ ] Test: `rules-v2-mm` with `EEG_CONFIRMED` every window stops at 3 (trials 3, 7, 11; 15 blocked).
-- [ ] **Check:** `rules-v2` replay byte-identical to the golden (it never reaches 3 + 1).
+- [x] Explicit cap in `RuleConfig`, for both adaptive conditions; a blocked change is `NO_CHANGE` with its own `reason_code` (proposal `MAX_CHANGES`).
+- [x] Test: `rules-v2-mm` with `EEG_CONFIRMED` every window stops at 3 (trials 3, 7, 11; 15 blocked).
+- [x] **Check:** `rules-v2` replay byte-identical to the golden (it never reaches 3 + 1).
 - [x] Tests that pin the T2 defaults 2 and 3: done 10 Nov (`d4f901d`).
-- [ ] **Stop.**
+- [x] **Stop.**
+
+**Done Tue 10 (moved up):** `9ffc4c2`; reason `MAX_CHANGES`; rules-v2 replay byte-identical (36/36); D-F6-184 not on the board, so the lead rule is unchanged (duda 3 open).
 
 ### [ ] J1 · synthetic end to end
 - [ ] Editor, `MULTIMODAL_ADAPTIVE`, synthetic stream that varies between S6 and S7. Decisions with their EEG block; latency acceptable.
