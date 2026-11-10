@@ -15,8 +15,11 @@ BEGIN
                 (p -> 'eeg' ->> 'counted')::boolean, (p -> 'eeg' ->> 'ei_z')::real,
                 (p -> 'eeg' ->> 'theta_z')::real, p -> 'eeg' ->> 'effect')$b$,
         $a$proj_arr(p, 'evidence'), p -> 'indicators', p -> 'thresholds')$a$);
-    IF patched = def THEN
-        RAISE EXCEPTION '0015 down: the patched insert of proj_apply was not found';
+    IF length(def) - length(patched) <> length($b$,
+            eeg_counted, eeg_ei_z, eeg_theta_z, eeg_effect$b$) + length($b$,
+                (p -> 'eeg' ->> 'counted')::boolean, (p -> 'eeg' ->> 'ei_z')::real,
+                (p -> 'eeg' ->> 'theta_z')::real, p -> 'eeg' ->> 'effect'$b$) THEN
+        RAISE EXCEPTION '0015 down: the patched insert of proj_apply was not found exactly once';
     END IF;
     EXECUTE patched;
 END $$;
