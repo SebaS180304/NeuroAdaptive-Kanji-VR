@@ -18,6 +18,7 @@ from app.adaptation.rules import (
     HYSTERESIS,
     INITIAL_WINDOW,
     LAL,
+    MAX_CHANGES,
     NO_CHANGE,
     RULES_V2,
     RULES_V2_MM,
@@ -203,3 +204,29 @@ def test_the_stored_block_is_enough_to_lead_after_a_rebuild() -> None:  # review
     live, _ = decide(result, 4, 4 * TRIAL_MS, engine, eeg=_w(ei=-1.9))
     again, _ = decide(result, 4, 4 * TRIAL_MS, rebuilt, eeg=_w(ei=-1.9))
     assert live.reason_code == again.reason_code == EEG_LED and live.as_dict() == again.as_dict()
+
+
+# D-F6-182: at most 3 changes per S7, in both adaptive conditions ----------------------------------------------
+
+def _sustained(eeg):
+    """DISENGAGED (environment) the 20 trials, with room to lower the ESL each time (as if the levels came back)."""
+    engine, changes, last = initial_state("MEDIUM", "MEDIUM", 0), [], None
+    for i in range(1, 21):
+        result = EstimatorResult(trial_id=f"S7-{i:03d}", state=DISENGAGED, cause=ENVIRONMENT, confidence=1.0,
+                                 support=1.0, disengaged=(), overloaded=(), indicators={}, underchallenged=())
+        d, engine = decide(result, i, i * TRIAL_MS, engine, eeg=eeg)
+        engine = engine.with_levels(esl="MEDIUM")
+        changes += [i] if d.is_change else []
+        last = d if d.reason_code == MAX_CHANGES else last
+    return changes, last
+
+
+def test_confirmed_every_window_stops_at_three_changes() -> None:
+    changes, blocked = _sustained(_w(ei=-2.0))
+    assert changes == [3, 7, 11]                     # the 4th (trial 15) is blocked
+    assert blocked.trial_sequence == 15 and blocked.action == NO_CHANGE
+
+
+def test_behaviour_alone_never_reaches_the_cap() -> None:
+    changes, blocked = _sustained(None)
+    assert changes == [4, 9, 14] and blocked is None

@@ -18,6 +18,7 @@ shows when the system chose not to act and why.
 | Confidence | States with confidence < 0.5 are ignored and break the streak | ``LOW_CONFIDENCE`` |
 | Hysteresis | The same state in 2 consecutive eligible windows before acting; to return, ``STABLE`` in 2 windows after the cooldown | ``HYSTERESIS`` |
 | Level bounds | ESL and LAL stay within LOW…HIGH | ``AT_LIMIT`` |
+| Cap | At most 3 changes per S7 (D-F6-182; rules-v2 never reaches it, rules-v2-mm could fit 4) | ``MAX_CHANGES`` |
 | One dimension | Every action changes exactly one of ESL or LAL by one step | — |
 
 Windows inside the initial window or the cooldown do not count for the
@@ -117,6 +118,7 @@ COOLDOWN = "COOLDOWN"
 LOW_CONFIDENCE = "LOW_CONFIDENCE"
 HYSTERESIS = "HYSTERESIS"
 AT_LIMIT = "AT_LIMIT"
+MAX_CHANGES = "MAX_CHANGES"
 STABLE_NO_ACTION = "STABLE"
 STABLE_RETURN = "STABLE_RETURN"
 EEG_CONFIRMED = "EEG_CONFIRMED"
@@ -134,6 +136,7 @@ class RuleConfig:
     cooldown_trials: int = 3
     hysteresis_windows: int = 2
     min_confidence: float = 0.5
+    max_changes: int = 3                    # D-F6-182
 
     @property
     def last_change_trial(self) -> int:
@@ -419,6 +422,10 @@ def _decide(result: EstimatorResult, trial_sequence: int, answered_ms: int | Non
     if to_level is None:
         return no_change(AT_LIMIT,
                          f"{result.state}: {dimension} is already {from_level}.", counted)
+
+    if state.changes >= cfg.max_changes:
+        return no_change(MAX_CHANGES, f"{result.state}: already {state.changes} changes in this S7, the most "
+                                      f"allowed.", counted)
 
     # 6 · change one dimension by one step
     cooldown_until = seq + cfg.cooldown_trials
