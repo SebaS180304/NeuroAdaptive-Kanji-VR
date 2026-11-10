@@ -52,6 +52,10 @@ class Buffer:
         self.synced = True
         return True
 
+    def cut_past(self, t: float) -> bool:
+        """Every epoch centred before t (a marker's time, as make_epochs assigns states) has been cut."""
+        return self.t0 is not None and self.t0 + self.next_index * epochs.STEP_S + epochs.EPOCH_S / 2 >= t
+
     def new_epochs(self) -> list[dict]:
         if not self.synced or not self.ts:
             return []
@@ -130,9 +134,10 @@ async def run(session_id: str) -> list[float]:
         buf.add(samples, stamps, new_markers)
         just_synced = not buf.synced and buf.sync_if_ready()
         eps = buf.new_epochs()
-        entered = {m.get("state") for _, m in buf.markers if m.get("event") == "STATE_ENTERED"}
+        entered = {m.get("state"): t for t, m in buf.markers if m.get("event") == "STATE_ENTERED"}
         now = pylsl.local_clock()
-        write_ref = not ref_done and S7_STATE in entered
+        # the reference waits for the last S6 epochs (cut EDGE_S after their end), as fill_from_xdf has them all
+        write_ref = not ref_done and S7_STATE in entered and buf.cut_past(entered[S7_STATE])
         beat = time.monotonic() - last_beat >= HEARTBEAT_S
         if just_synced or eps or write_ref or beat:
             async with AsyncSessionLocal() as db:

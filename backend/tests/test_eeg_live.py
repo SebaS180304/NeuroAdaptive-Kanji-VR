@@ -75,3 +75,17 @@ def test_under_three_clear_taps_there_is_no_correction() -> None:  # D-F6-176
     buf = live.Buffer(SR, DEFAULT_MONTAGE)
     got = _feed(buf, x, ts, [_state(100.0, S3, 0), _state(110.0, S4, 10_000)])
     assert buf.offset_ms is None and got[0]["lsl_start"] == pytest.approx(ts[0])
+
+
+def test_the_epochs_before_a_moment_are_all_cut_only_after_the_filter_wait() -> None:
+    # the reference waits for every S6 epoch (centre before S7's entry), not the moment S7 is entered
+    x, ts = _signal(60.0)
+    buf = live.Buffer(SR, DEFAULT_MONTAGE)
+    buf.add(x[:int(40 * SR)].tolist(), ts[:int(40 * SR)].tolist(), [_state(100.0, S3, 0), _state(110.0, S4, 10_000)])
+    buf.sync_if_ready()
+    cut = buf.new_epochs()
+    s7 = 139.5                                            # S7 entered 0.5 s before the last sample
+    assert not buf.cut_past(s7)                           # the epoch centred at 138.75 still waits for the filter
+    buf.add(x[int(40 * SR):int(45 * SR)].tolist(), ts[int(40 * SR):int(45 * SR)].tolist())
+    cut += buf.new_epochs()
+    assert buf.cut_past(s7) and max(e["lsl_start"] + 2.5 for e in cut) >= s7 - 2.5
