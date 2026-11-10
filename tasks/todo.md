@@ -89,7 +89,7 @@ EEG staff session **no longer at 12:00** (D-F6-180 changes D-F6-170): end of tod
 - [x] The cause of the 9 Nov death stays unconfirmed: this is for next time, not a diagnosis.
 - [x] Test: the file receives a print and a child's output; the steps `autorun` runs do not change.
 - [x] Operator lists (J2, J3, V2) add "autorun alive before S3" (D-F6-179 (2)) and "eyes open, looking at the dot" said at the end of S3 (D-F6-179 (3)). No code for the S4 halves notice (after the dry run).
-- [ ] **Stop** (grouped with T0b).
+- [x] **Stop** (grouped with T0b). Sebas OK, 10 Nov.
 
 ### [x] T0b · sync anchor at the first 50 % crossing (S) · D-F6-179 (1)
 `backend/app/eeg/sync.py`, `tests/test_eeg_sync.py`.
@@ -97,20 +97,22 @@ EEG staff session **no longer at 12:00** (D-F6-180 changes D-F6-170): end of tod
 - [x] Test: a strike with a plateau (peak at its end) gives the onset at the rise, not at the plateau's end; the existing tests stay green unchanged.
 - [x] Recompute on the PC, `sync` then `epochs` (D-F6-156). Targets (F4 Registro 9 Nov night, PM 10 Nov), S3 / S9 / drift / spread: `742ec49a` **unchanged** 35.3 / 52.2 / +16.9 / 18.4 ms, tap by tap; `07343b5d` 65.3 / 85.7 / +20.3 / 15.6 ms, **S3-2 → 68.7 ms**; `b5bcf5bd` still empty with its reason. `verify_eeg.sql` on `07343b5d`: sync block now OK.
 - [x] Mine vs the targets compared in the draft before the Stop; a figure off is reported, not tuned. **Done:** all match; drift +20.4 (rounding of 85.7 − 65.3) and four S9 taps move 8 ms, not three (`b31c92e`, `fc44a3a`).
-- [ ] **Stop** (T0 + T0b): Sebas sees the three sync outputs.
+- [x] **Stop** (T0 + T0b): Sebas sees the three sync outputs. OK, 10 Nov.
 
-### [ ] T1 · concordance.py (S)
+### [x] T1 · concordance.py (S)
 `backend/app/eeg/concordance.py` (new), test.
-- [ ] Input: behavioural state and cause, this window's EEG, the previous window's. Output: `CONFIRMED`, `VETO`, `LED`, `UNAVAILABLE`, `ONLY_ALERT` or neutral.
-- [ ] One synthetic test **per row of §3.5** (D-F6-128).
-- [ ] Three lead tests: leads with LAL one step down; at LOW gives `AT_LIMIT`; one of the two windows without valid EEG does not lead.
-- [ ] `STABLE` with z ≤ −1.5 in a single window → `ONLY_ALERT` (D-F6-174, marked in the code).
-- [ ] Alpha never changes the result (D-F6-129).
+- [x] Input: behavioural state, this window's `window.evaluate()`, the previous one's (the cause only changes the action: T2). Output: `CONFIRMED`, `VETO`, `LED`, `UNAVAILABLE`, `ONLY_ALERT` or `NEUTRAL`.
+- [x] One synthetic test **per row of §3.5** (D-F6-128).
+- [x] Lead tests: two windows ≤ −1.5 lead; one of the two without valid EEG does not lead; only `STABLE` leads. **The action tests (LAL one step down; `AT_LIMIT` at LOW) moved to T2**, where the action is chosen.
+- [x] `STABLE` with z ≤ −1.5 in a single window → `ONLY_ALERT` (D-F6-174, marked in the code).
+- [x] Alpha never changes the result (D-F6-129).
+- [x] Default of T1, marked in the code: the index the state reads is missing (reference SD 0, M5) → `UNAVAILABLE`. Reviewed in J5 with D-F6-174.
 - [ ] **Stop.**
 
 ### [ ] T2 · rules-v2-mm (M)
 `backend/app/adaptation/rules.py`, `state.py`, migration `0015`, tests. Golden `--json` replay captured **before** editing.
 - [ ] Coincides: acts in 1 window. Veto: `NO_CHANGE`. Unavailable: as `BEHAVIOR_ADAPTIVE`, marked. Lead: per §3.3.
+- [ ] Lead action (moved from T1): `EEG_LED` → LAL one step down; at LOW → `NO_CHANGE` with `AT_LIMIT`, ESL unchanged (D-F6-128).
 - [ ] D-F6-174, each marked in the code and with a test: a vetoed window counts for the hysteresis; `STABLE` off MEDIUM with the EEG leading leads; coinciding when behaviour would act anyway gives `reason_code` `EEG_CONFIRMED`.
 - [ ] Unchanged and tested: initial window, cooldown 3, tail 4, level limits, one change at a time, D9; a difficulty raise only returns with `DISENGAGED` or `OVERLOADED` (D-F6-59).
 - [ ] Migration 0015: `eeg_counted`, `eeg_ei_z`, `eeg_theta_z`, `eeg_effect`; `project_event` copies them; `v_adaptations` recreated as 0009 did.
