@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-180** (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-181** (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -180,6 +180,15 @@ Migration `0017`, `project_event`, test.
 - [ ] Result in the draft, for a decision.
 - [ ] **Stop.**
 
+### [ ] X6s · substitution condition 1 without overlapping meanings (S) · D-F6-181 (2) · before X6a
+`tools/kanji_metrics.py` (`hard_clash`, a check, export) → `kanji_content.json`; `backend/app/pretest/rules.py` (`_hard_clash`); tests of both. Commit as content (D-F6-62/122).
+- [ ] `hard_clash` also fails when two meanings **share a word** (computed: *rice*/*rice field*) or one **includes** the other (an explicit `MEANING_INCLUDES` list, since no string shows it: today only *child*/*person*, which D-F6-181 names; more pairs wait for PM, see the draft's Dudas). Both rules in one function, used by the table and the check of the nominal sets.
+- [ ] The contract exports the clashing meaning pairs (`meaningClashes`, keyed like `similarity`); the pre-test's `_hard_clash` reads them. **Without this, two substitutions in a row can still bring 田 and 米 together**: the table only covers one substitution.
+- [ ] The five nominal sets pass the new rule (no overlap among their own members).
+- [ ] Regenerated table vs today's, in the draft. Dry run on 10 Nov: 94 → 93 entries, only C 牛 loses 子 (8 left), **no experimental kanji without a substitute**. If the real run leaves one empty: **stop, tell PM, nothing further.**
+- [ ] Tests: `kanji_metrics` (child/person and rice/rice field clash; the table drops 子 for 牛); pre-test (with 田 already in the effective set, 米 is not offered). Backend suite green.
+- [ ] **Stop.**
+
 ### [ ] X6a · T1 official lists (S) · D-F6-168, §16.2 and §16.3
 `tools/kanji_metrics.py` → `kanji_content.json`, TMP font asset; commit as content.
 - [ ] `LURE_T1` as §16.2 (10 of the sets change; reserve unchanged).
@@ -191,7 +200,8 @@ Migration `0017`, `project_event`, test.
 
 ### [ ] X6b · T2/T3 official lists, active (S) · §16.4 · **second to cut**
 `tools/kanji_metrics.py` → `kanji_content.json`, font asset, `TrialSequenceGenerator.ActiveLureTypes`, `SessionFlowRunner` card sizing, harness; commit as content + lures (D-F6-131).
-- [ ] Font asset with the new characters **in this same commit** (as X6a). T2 and T3 strong and unrelated of the 35 (学 in katakana). Categories stay in the document; Sebas's changes before Wed are content.
+- [ ] Font asset with the new characters **in this same commit** (as X6a). T2 and T3 strong and unrelated of the 35 (学 in katakana), **from §16.4 as it is in `docs_proyecto/`: final, with the six changes of 10 Nov** (人 robot, 手 neck, 石 brick, 門 window, 糸 needle, 学 play; D-F6-181 (3)). Categories stay in the document.
+- [ ] D-F6-181 (1) (no part, whole or material as the T2 strong lure) is a content rule: no code; the current pairs already meet it.
 - [ ] `check_lures`: T2/T3 present for all, distinct, and none is a taught meaning or reading of the pool (never two correct).
 - [ ] Answer cards also sized from the lure texts.
 - [ ] Harness: half of each type per block, never two correct, same trials across conditions; X29 green.

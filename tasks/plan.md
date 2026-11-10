@@ -1,6 +1,6 @@
 # Implementation Plan: week of 9 – 13 Nov 2026 (F4 S3 · multimodal → dry run with EEG)
 
-Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; Tue updated to D-F6-180 on 10 Nov** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
+Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; Tue updated to D-F6-180 and X6 to D-F6-181 on 10 Nov** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
 Last week's plan is archived in `tasks/archive/semana_2nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -58,7 +58,7 @@ M1 sync at onset ─▶ M2 epochs (9 chunks, D-F6-166, offset) ─▶ M3 verify 
                                        X1 live path + heartbeat ◀──────────┤
                                                      ├─▶ X2 replay  ───────┤
                                                      └─▶ X3 fallback ──────┤
-   X4 lure columns ─▶ X6a T1 lists ─▶ X6b T2/T3 · X5 A-20 · X7 reserve     │
+   X4 lure columns ─▶ X6s subst. ─▶ X6a T1 ─▶ X6b T2/T3 · X5 A-20 · X7 reserve     │
                                                                            ▼
                         J1 synthetic E2E ─▶ J2 cap, multimodal ─▶ J3 three real fallbacks ─▶ J4 replay ─▶ J5 freeze
                                                                                                          │
@@ -114,10 +114,13 @@ Sebas is in Blender all afternoon (reserve 2nd batch, 14:45–19:00): Stops are 
 | X3 | Fallback with the synthetic stream; `EEG_STATUS`, `BEHAVIOR_FALLBACK` | S | never cut |
 | X4 | Lure columns (D-F6-143), migration 0017 | S | must be before the dry run |
 | X5 | A-20 (LSL privacy) | — | due before the dry run |
+| X6s | Substitution condition 1: no meaning shares a word with or includes another (D-F6-181 (2)); table regenerated; the pre-test gets the same rule | S | not cut; an orphan kanji stops it and goes to PM |
 | X6a | T1 official lists (§16.2, §16.3), font | S | not cut |
-| X6b | T2/T3 official lists (§16.4), active | S | **second to go** |
+| X6b | T2/T3 official lists (§16.4, final with the six changes of 10 Nov, D-F6-181 (3)), active | S | **second to go** |
 | X7 | Reserve 16–20 (D-F6-160), harness only; headset look moved | M | **first to go** |
 | X8 | Close | — | |
+
+**X6s (D-F6-181 (2)), why the pre-test too:** the substitution table only answers "one substitution into the nominal set". The pre-test re-checks the set after each substitution with its own `_hard_clash` in `backend/app/pretest/rules.py`, which reads the contract. *Rice*/*rice field* can only meet there (田 and 米 are both reserve), so the rule travels in the contract as `meaningClashes` and both sides use the same pairs. "Includes" (*child*/*person*) is not visible in the strings, so it is an explicit list; only the pair D-F6-181 names goes in until PM answers the Duda of 10 Nov.
 
 ### Thu 12 · multimodal end to end; rules frozen at night
 J1 synthetic end to end in the Editor → J2 cap, `MULTIMODAL_ADAPTIVE` → J3 three real fallbacks, one S7 each (D-F6-174) → J4 replay of J2 → J5 freeze and close. If J2 gives no EEG decision: the forced test of F4 §5, declared as such.
