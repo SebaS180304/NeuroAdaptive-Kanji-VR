@@ -83,3 +83,7 @@ def test_alpha_never_changes_the_result(state, ei, theta) -> None:
     results = {c.effect(state, _w(ei=ei, theta=theta, alpha=a), _w(ei=ei, theta=theta, alpha=a))
                for a in (None, -5.0, 0.0, 5.0)}
     assert len(results) == 1
+
+
+def test_an_unknown_state_is_unavailable_not_an_error() -> None:  # review 10 Nov: rules never act on it either
+    assert c.effect("SOMETHING_NEW", _w(ei=-3.0, theta=3.0), _w(ei=-3.0)) == c.UNAVAILABLE

@@ -44,4 +44,4 @@ def effect(state: str, window: dict | None, previous: dict | None) -> str:
         if z <= -Z_LEAD and before is not None and before <= -Z_LEAD:
             return LED  # a previous window without valid EEG does not lead (§3.3)
         return ONLY_ALERT if z <= -Z_AGREE else NEUTRAL  # D-F6-174: z <= -1.5 in a single window is only an alert
-    raise ValueError(f"unknown behavioural state {state!r}")
+    return UNAVAILABLE  # an unknown state: the EEG never stops a decision, and rules never act on it

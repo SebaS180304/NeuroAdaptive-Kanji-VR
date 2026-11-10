@@ -163,3 +163,8 @@ def test_without_eeg_nothing_changes_in_the_record() -> None:
                              disengaged=(), overloaded=(), indicators={}, underchallenged=())
     d, _ = decide(result, 3, 21_000, engine)
     assert "eeg" not in d.as_dict() and d.version == RULES_V2 and d.eeg is None
+
+
+def test_an_unknown_state_with_eeg_does_not_act() -> None:
+    ds, _ = _run(_warm() + [("SOMETHING_NEW", _w(ei=-3.0))] * 2)
+    assert all(not d.is_change for d in ds) and ds[-1].eeg["effect"] == "UNAVAILABLE"
