@@ -328,7 +328,7 @@ def decide(
     effect = concordance.effect(result.state, eeg, state.last_eeg)
     decision, new_state = _decide(result, trial_sequence, answered_ms, state, config, effect)
     block = _eeg_block(eeg, effect)
-    if decision.reason_code in (EEG_CONFIRMED, EEG_VETO, EEG_LED, EEG_ONLY_ALERT):
+    if effect not in (concordance.NEUTRAL, concordance.UNAVAILABLE):  # the EEG had a say, even if blocked (AT_LIMIT)
         decision = replace(decision, explanation=f"{decision.explanation.rstrip('.')}; EEG: {_eeg_text(block)}.")
     return replace(decision, version=RULES_V2_MM, eeg=block), replace(new_state, last_eeg=eeg)
 

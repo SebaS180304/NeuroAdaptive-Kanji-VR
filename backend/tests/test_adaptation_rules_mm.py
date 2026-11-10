@@ -168,3 +168,8 @@ def test_without_eeg_nothing_changes_in_the_record() -> None:
 def test_an_unknown_state_with_eeg_does_not_act() -> None:
     ds, _ = _run(_warm() + [("SOMETHING_NEW", _w(ei=-3.0))] * 2)
     assert all(not d.is_change for d in ds) and ds[-1].eeg["effect"] == "UNAVAILABLE"
+
+
+def test_a_lead_at_the_limit_says_the_eeg_asked_for_it() -> None:  # review 10 Nov, item 5
+    ds, _ = _run(_warm() + [(STABLE, _w(ei=-2.0)), (STABLE, _w(ei=-2.1))], lal="LOW")
+    assert ds[3].reason_code == AT_LIMIT and "EEG: engagement index z -2.10" in ds[3].explanation
