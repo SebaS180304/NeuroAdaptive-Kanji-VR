@@ -266,10 +266,11 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2 (M7 plus
 - [ ] Same decisions as live; every `EEG_LED` read one by one (F4 risk 8).
 - [ ] **Stop.**
 
-### [ ] J5 · freeze and close
-- [ ] **The four defaults of D-F6-174 reviewed** against J2.
-- [ ] Parameters of F4 §6 listed with their values in the draft, plus heartbeat period, staleness and arrival margin; tag proposed, created only with Sebas's OK.
-- [ ] Sebas has fixed the dry run's set and participant.
+### [ ] J5 · freeze and close · **checklist: `docs_proyecto/Checklist_Congelamiento_Reglas_12nov.md`** (PM)
+- [ ] **§2, conditions C1–C8**, each marked in the draft with its evidence: C1 = J1, C2 = J2 (or the forced state, declared), C3 = J4, **C4 = the four defaults of D-F6-174 reviewed against J2**, C5 = `rules-v2` byte-identical, C6–C8 Sebas/PM (only noted).
+- [ ] **C5:** `replay --json` of the 18 adaptive sessions (own version and `--version behavior-v2`) against the reference kept in `Claude outputs/referencia_replay_rules_v2_10nov/` (36 files, captured before T2): 36/36 identical.
+- [ ] **§3, every parameter with its value** in the draft, read from the code at the commit to tag (not copied from the checklist): §3.1 epochs, quality, drop rules (F4 §6), P7 window, A-7, reference, offset; §3.2 confirm/veto, lead (D-F6-184/185), cap (`MAX_CHANGES`), defaults, `eeg_effect`, O4 of `EEG_LED`; §3.3 heartbeat, process down, **arrival margin (measured Wed)**, the > 60 s rule; §3.4 lures active on the dry run, seed, operation lists.
+- [ ] Tag proposed (name and commit), **created only with Sebas's OK**.
 - [ ] **Stop:** rules frozen.
 
 ---
