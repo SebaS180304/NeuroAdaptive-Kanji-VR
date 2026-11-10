@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-181** (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-183** (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -129,7 +129,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [x] Developer review 4 (§6.2): answered Wed with X6b.
 - [x] Other mismatches with the code, by section, each with file and line. **Done:** 13 in the draft; one Duda (cap of 3 changes in `rules-v2-mm`).
 - [x] All in the draft for PM; nothing written in `docs_proyecto/`.
-- [ ] **Stop.**
+- [x] **Stop.** Sebas OK, 10 Nov.
 
 ### [ ] T4 · from the EEG staff session · **moved to Wed 11 after 14:30**
 - [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). **Session confirmed Wed 11 at 12:00:** numbered items go after 14:30 and before J1 on Thu. Thursday's freeze does not move; if something does not fit, cut X7 first, then X6b.
@@ -146,9 +146,16 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 
 **13:30–14:30 (D-F6-178, demo ≈ 14:00):** no backend restart and `replay.py` never half done, committed or untouched. X2 is finished before 13:30 or starts after 14:30; X1's backend restart too. No migrations in that hour.
 
+### [ ] X0 · no session without a seed (XS) · D-F6-183 · with X1, before 13:30
+`backend/app/schemas/session.py`, its route test. Unity untouched (`fallbackSeed` stays for the Editor without backend).
+- [ ] `random_seed` required and non-empty on session creation; 422 otherwise. Check every caller that creates sessions (Unity's `POST /sessions`, `ws_smoke_test`, test fixtures) still sends one.
+- [ ] Test: missing or empty seed → 422; with seed → created as today.
+- [ ] Stop grouped with X1's (before 12:00).
+
 ### [ ] X1 · live path and heartbeat (M) · D-F6-171
 `backend/app/eeg/live.py` (new), `autorun.py`, migration `0016`, `api/routes/websocket.py`, `adaptation/state.py`, tests.
 - [ ] Buffers both streams on the PC; offset from the S3 taps (D-F6-173); every finished epoch to `eeg_epochs` with indices; reference on entering S7.
+- [ ] **`rebuild` and the lead (review 10 Nov):** the payload's `eeg` block is flat (`ei_z`, `counted`) and `concordance` reads `window.evaluate()`'s shape (`z: {engagement_index…}`). `rebuild` must give `last_eeg` the same shape the live path used, or a reconnect between two low windows loses a lead. Test: live and rebuilt decide the same lead.
 - [ ] Heartbeat: `heartbeat_at` and the current EEG gap every 2 s.
 - [ ] Backend, on an S7 answer in `MULTIMODAL_ADAPTIVE`: reads the window's finished epochs (D-F6-172), calls `window.py`, feeds `decide()`; the EEG block goes into `ADAPTATION_DECISION`, and `rebuild` reads it.
 - [ ] Arrival margin measured against the synthetic stream, recorded, and applied in `window.py` and `verify_eeg.sql`.
@@ -221,6 +228,14 @@ Migration `0017`, `project_event`, test.
 ---
 
 ## Thu 12 · MULTIMODAL_ADAPTIVE end to end; rules frozen at night
+
+### [ ] J0 · cap of 3 changes per S7 (XS) · D-F6-182 · before the freeze (Thu morning, before J1)
+`backend/app/adaptation/rules.py` (`RuleConfig.max_changes = 3`), test.
+- [ ] Explicit cap in `RuleConfig`, for both adaptive conditions; a blocked change is `NO_CHANGE` with its own `reason_code` (proposal `MAX_CHANGES`).
+- [ ] Test: `rules-v2-mm` with `EEG_CONFIRMED` every window stops at 3 (trials 3, 7, 11; 15 blocked).
+- [ ] **Check:** `rules-v2` replay byte-identical to the golden (it never reaches 3 + 1).
+- [ ] Same commit or before: tests that pin the T2 defaults 2 and 3 (review 10 Nov, both mutations survived): `ONLY_ALERT` does not replace `HYSTERESIS` or `STABLE_RETURN`; low confidence blocks a lead.
+- [ ] **Stop.**
 
 ### [ ] J1 · synthetic end to end
 - [ ] Editor, `MULTIMODAL_ADAPTIVE`, synthetic stream that varies between S6 and S7. Decisions with their EEG block; latency acceptable.
