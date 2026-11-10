@@ -44,7 +44,7 @@ async def main() -> None:
 
         session = await client.post(
             "/sessions",
-            json={"participant_id": participant_id, "condition": "STATIC"},
+            json={"random_seed": "test-seed", "participant_id": participant_id, "condition": "STATIC"},
         )
         session.raise_for_status()
         session_id = session.json()["id"]

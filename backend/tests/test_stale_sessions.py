@@ -13,7 +13,7 @@ from app.services.stale_sessions import abort_stale_sessions
 
 
 async def _session(client, pid: str, state: str | None) -> str:
-    resp = await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})
+    resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})
     assert resp.status_code == 201
     sid = resp.json()["id"]
     if state:

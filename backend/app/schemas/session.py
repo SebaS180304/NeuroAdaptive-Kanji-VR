@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.session import ExperimentalCondition, GameFlowState, SessionStatus
 
@@ -11,7 +11,7 @@ class SessionCreate(BaseModel):
     condition: ExperimentalCondition
     assigned_kanji_set: str | None = None
     visit_number: int = 1
-    random_seed: str | None = None
+    random_seed: str = Field(pattern=r"\S")  # D-F6-183: without it the session cannot be reconstructed
     software_version: str | None = None
     experiment_config_version: str | None = None
     controller_config_version: str | None = None

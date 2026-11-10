@@ -17,7 +17,7 @@ async def test_full_session_walking_skeleton(client, pretested) -> None:
 
     session_resp = await client.post(
         "/sessions",
-        json={
+        json={"random_seed": "test-seed",
             "participant_id": participant_id,
             "condition": "BEHAVIOR_ADAPTIVE",
             "assigned_kanji_set": "A",
@@ -44,7 +44,7 @@ async def test_websocket_ping_and_events(client, pretested) -> None:
 
     session_resp = await client.post(
         "/sessions",
-        json={"participant_id": participant_id, "condition": "STATIC"},
+        json={"random_seed": "test-seed", "participant_id": participant_id, "condition": "STATIC"},
     )
     session_id = session_resp.json()["id"]
 
@@ -75,7 +75,7 @@ async def _patch(client, sid: str, state: str) -> None:
 @pytest.mark.asyncio
 async def test_completed_at_is_set_at_s9_and_kept_at_s10(client, pretested) -> None:
     pid = await pretested("TEST_COMPLETED_AT")
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
 
     await _patch(client, sid, "S8_IMMEDIATE_ASSESSMENT")
     assert await _completed_at(sid) is None
@@ -91,7 +91,7 @@ async def test_completed_at_is_set_at_s9_and_kept_at_s10(client, pretested) -> N
 @pytest.mark.asyncio
 async def test_late_s9_on_an_aborted_session_sets_no_completed_at(client, pretested) -> None:
     pid = await pretested("TEST_COMPLETED_AT_ABORTED")
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
     await _patch(client, sid, "S5_STANDARDIZED_LEARNING")
     async with AsyncSessionLocal() as db:
         await db.execute(text("UPDATE experiment_sessions SET status = 'ABORTED' WHERE id = :sid"), {"sid": sid})

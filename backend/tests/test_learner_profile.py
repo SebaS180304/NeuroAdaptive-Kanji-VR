@@ -118,7 +118,7 @@ async def test_dev_unity_profile_matches_its_completed_sessions() -> None:
 
 
 async def _session(client, pid: str, condition: str, state: str) -> str:
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": condition})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": condition})).json()["id"]
     assert (await client.patch(f"/sessions/{sid}/state", json={"new_state": state})).status_code == 200
     return sid
 
@@ -295,7 +295,7 @@ async def test_the_profile_never_changes_how_a_session_starts(client, pretested)
 
     started = {}
     for pid in (with_profile, without):
-        resp = await client.post("/sessions", json={"participant_id": pid, "condition": "BEHAVIOR_ADAPTIVE",
+        resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "BEHAVIOR_ADAPTIVE",
                                                     "assigned_kanji_set": "A"})
         assert resp.status_code == 201
         body = resp.json()

@@ -23,7 +23,7 @@ async def _sessions_of(pid: str) -> int:
 @pytest.mark.parametrize("visit", [1, 2, 3])
 async def test_no_session_without_a_completed_pretest(client, visit):
     pid = (await client.post("/participants", json={"external_code": CODE, "consent_obtained": True})).json()["id"]
-    resp = await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC",
+    resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC",
                                                 "assigned_kanji_set": "A", "visit_number": visit})
     assert resp.status_code == 409
     assert "http://127.0.0.1:5300/pretest" in resp.json()["detail"]
@@ -32,7 +32,7 @@ async def test_no_session_without_a_completed_pretest(client, visit):
 
 @pytest.mark.asyncio
 async def test_unknown_participant_is_404(client):
-    resp = await client.post("/sessions", json={"participant_id": "00000000-0000-0000-0000-000000000000",
+    resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": "00000000-0000-0000-0000-000000000000",
                                                 "condition": "STATIC"})
     assert resp.status_code == 404
 
@@ -40,7 +40,7 @@ async def test_unknown_participant_is_404(client):
 @pytest.mark.asyncio
 async def test_completed_pretest_gives_the_set_as_is(client, pretested):
     pid = await pretested(CODE)
-    resp = await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "B"})
+    resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "B"})
     assert resp.status_code == 201
     assert resp.json()["kanji_items"] == contract()["sets"]["B"]
 
@@ -54,7 +54,7 @@ async def test_a_substituted_participant_gets_the_substituted_list(client, prete
     (sub,) = [s for s in state["substitutions"] if s["original"] == "月"]
     expected = [sub["substitute"] if c == "月" else c for c in contract()["sets"]["A"]]
 
-    created = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC",
+    created = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC",
                                                     "assigned_kanji_set": "A"})).json()
     assert created["kanji_items"] == expected
     assert (await client.get(f"/sessions/{created['id']}")).json()["kanji_items"] == expected
@@ -67,5 +67,17 @@ async def test_a_substituted_participant_gets_the_substituted_list(client, prete
 @pytest.mark.asyncio
 async def test_no_set_assigned_means_no_kanji_items(client, pretested):
     pid = await pretested(CODE)
-    resp = await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})
+    resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})
     assert resp.status_code == 201 and resp.json()["kanji_items"] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("seed", [None, "", "   "])
+async def test_no_session_without_a_seed(client, pretested, seed):  # D-F6-183
+    pid = await pretested(CODE)
+    body = {"participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "B"}
+    if seed is not None:
+        body["random_seed"] = seed
+    resp = await client.post("/sessions", json=body)
+    assert resp.status_code == 422
+    assert await _sessions_of(pid) == 0

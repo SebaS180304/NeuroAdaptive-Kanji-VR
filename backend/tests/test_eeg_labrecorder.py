@@ -66,7 +66,7 @@ async def test_a_session_names_its_recording_and_stops_it(client, pretested, fak
     import asyncio
 
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
     for state in ("S9_SESSION_SUMMARY", "S10_HCI_SELF_REPORT", "S10_HCI_SELF_REPORT"):
         await client.patch(f"/sessions/{sid}/state", json={"new_state": state})
     for _ in range(50):  # the fake server reads on its own thread
@@ -84,7 +84,7 @@ async def test_a_session_names_its_recording_and_stops_it(client, pretested, fak
 @pytest.mark.asyncio
 async def test_without_labrecorder_configured_nothing_is_recorded(client, pretested) -> None:
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
     async with AsyncSessionLocal() as db:
         n = (await db.execute(text("SELECT count(*) FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
     assert n == 0

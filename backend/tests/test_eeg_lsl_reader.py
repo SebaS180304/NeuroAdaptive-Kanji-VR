@@ -61,7 +61,7 @@ def test_the_live_inlet_takes_only_this_pcs_stream(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_save_writes_and_rewrites_the_row(client, pretested) -> None:
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await lsl_reader.save(db, sid, "a.xdf", {"AURA": _stream("AURA", 3)})
         await lsl_reader.save(db, sid, "b.xdf", {"AURA": _stream("AURA", 3), "UnityMarkers": _stream("UnityMarkers", 2)})
@@ -85,7 +85,7 @@ def test_the_29_oct_recording_1_has_every_sample() -> None:
 @pytest.mark.asyncio
 async def test_fill_from_xdf_reads_the_path_of_the_row(client, pretested, monkeypatch) -> None:
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, 'C:/EEG/a.xdf')"), {"s": sid})
         await db.commit()

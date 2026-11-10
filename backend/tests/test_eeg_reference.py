@@ -68,7 +68,7 @@ async def test_fill_from_xdf_stores_the_reference_of_the_session(client, pretest
                "UnityMarkers": {"time_series": [[state]], "time_stamps": np.array([100.0])}}
     monkeypatch.setattr(lsl_reader, "load_xdf", lambda _path: streams)
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, 'x.xdf') "
                               "ON CONFLICT (session_id) DO UPDATE SET xdf_path = 'x.xdf'"), {"s": sid})
