@@ -140,10 +140,10 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 
 ---
 
-### [ ] A1 · backend only on 127.0.0.1 (XS) · D-F6-186 (1) · Tue 10 evening
+### [x] A1 · backend only on 127.0.0.1 (XS) · D-F6-186 (1) · Tue 10 evening
 `docker-compose.yml` (backend `ports`).
-- [ ] `"127.0.0.1:8000:8000"`, as `db` and `pgadmin`. Backend restarted.
-- [ ] **Check:** from this PC, `curl 127.0.0.1:8000/health` 200; dashboard through the Vite proxy (`127.0.0.1:8000`); `ws_smoke_test` (localhost) passes; Unity in the Editor (`localhost:8000`, Play until S1, a session created and events ACKed); `autorun` unaffected (it talks to the database, not to the API). From another machine the port no longer answers: noted for X5 (A-20), not tested here.
+- [x] `"127.0.0.1:8000:8000"` **and `"[::1]:8000:8000"`** (Windows resolves `localhost` to ::1 first: without it Unity's WebSocket took 2.24 s instead of 0.42 s), as `db` and `pgadmin`. Backend restarted.
+- [x] **Check:** from this PC, `curl 127.0.0.1:8000/health` 200; dashboard through the Vite proxy (`127.0.0.1:8000`); `ws_smoke_test` (localhost) passes; Unity in the Editor (`localhost:8000`, Play until S1, a session created and events ACKed); `autorun` unaffected (it talks to the database, not to the API). From another machine the port no longer answers: noted for X5 (A-20), not tested here. **Done:** LAN address 192.168.10.122 refuses; NativeWebSocket from the Editor to `localhost` opens in 0.42 s; dashboard proxy 200; `ws_smoke_test` OK.
 - [ ] **Stop.**
 
 **Then, Tue evening if time allows, in this order (each its own commit and Stop):** X1b (with A2, below) → X6s → X4.

@@ -35,8 +35,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # 127.0.0.1 only, as db and pgadmin: the API has no auth and serves participant data (D-F6-186).
+    # Unity in the Editor, the dashboard proxy and ws_smoke_test all use localhost; a standalone Quest build
+    # would need the PC's LAN address and is not planned before the pilot.
+    # Also ::1: Windows resolves "localhost" to ::1 first, and a refused connection there costs ~2 s
+    # before falling back to 127.0.0.1 (measured from Unity, 10 Nov).
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+      - "[::1]:8000:8000"
     volumes:
       - ./backend:/app
       # The kanji content contract, read-only, at the same path relative to
