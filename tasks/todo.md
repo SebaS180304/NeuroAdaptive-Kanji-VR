@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-187** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-188** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -185,10 +185,17 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [x] **`rebuild` and the lead:** `last_eeg` = the previous decision's payload `eeg` block, as is (one shape since `concordance.block()`, review 10 Nov). Test: live and rebuilt decide the same lead through `SessionAdaptationState.rebuild`.
 - [x] Heartbeat: `heartbeat_at` and the current EEG gap every 2 s (migration 0016).
 - [x] Backend, on an S7 answer in `MULTIMODAL_ADAPTIVE`: reads the window's finished epochs (D-F6-172), calls `window.py`, feeds `decide()`; the EEG block goes into `ADAPTATION_DECISION`, and `rebuild` reads it.
-- [~] Arrival margin **measured** (synthetic AURA + markers, S3 → S9): median 1.11–1.15 s, max 1.27–1.34 s after an epoch's end (1 s of it is the filter wait). **Applying it in `window.py`, `verify_eeg.sql` and replay changes the official P7: waits for PM (duda 6).**
+- [~] Arrival margin **measured** (synthetic AURA + markers, S3 → S9): median 1.11–1.15 s, max 1.27–1.34 s after an epoch's end (1 s of it is the filter wait). **Fixed at 1.5 s by D-F6-188: applied in A9 (Wed after 14:30).**
 - [x] `STATIC` and `BEHAVIOR_ADAPTIVE` never read the EEG (test).
 - [~] **Check:** synthetic stream: epochs arrive (26, consecutive), heartbeat fresh, reference from S6 (all 11). A decision with its EEG block: covered by X1a's tests; **end to end through the WebSocket with `decision_latency_ms` goes to J1** (needs S7 answers in `MULTIMODAL_ADAPTIVE`).
 - [ ] **Stop.**
+
+### [ ] A9 · arrival margin of 1.5 s in the three counts (S) · D-F6-188 · **Wed after 14:30, not before the EEG staff session**
+`backend/app/eeg/window.py` (live and replay), `database/verify_eeg.sql`, their tests.
+- [ ] An epoch counts in a window only if it **ended at least 1.5 s before the answer** (D-F6-172 + D-F6-188), in `window.py` and in `verify_eeg.sql`'s P7 block; each with its test (an epoch ending 1.4 s before the answer does not count, one ending 1.5 s before does).
+- [ ] **Check:** `window.py` and `verify_eeg.sql` still agree window by window on `b5bcf5bd`, `742ec49a`, `07343b5d` (as M6).
+- [ ] Official P7 recomputed for the three (today 67 %, 78 %, 83 %) **in the draft for the EEG chat**; one under 60 % is reported as data, the rule is not changed.
+- [ ] Not between 13:30 and 14:30 (D-F6-178). **Stop.**
 
 ### [ ] A8 · no session without a set (S) · D-F6-187 · Wed after 14:30
 `backend/app/schemas/session.py`, tests, `ws_smoke_test`.
