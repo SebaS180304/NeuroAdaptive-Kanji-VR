@@ -269,13 +269,14 @@ Migration `0017`, `project_event`, test.
 **Done Wed 11, 15:28: `719c9be`, seed `8570a5a`.** Font 246 → 259, second prewarm byte-identical; harness 110/110.
 - [x] **Stop:** Sebas OK, Wed 11 16:00.
 
-### [ ] X6b · T2/T3 official lists, active (S) · §16.4 · **second to cut**
+### [x] X6b · T2/T3 official lists, active (S) · §16.4 · **second to cut**
 `tools/kanji_metrics.py` → `kanji_content.json`, font asset, `TrialSequenceGenerator.ActiveLureTypes`, `SessionFlowRunner` card sizing, harness; commit as content + lures (D-F6-131).
-- [ ] Font asset with the new characters **in this same commit** (as X6a). T2 and T3 strong and unrelated of the 35 (学 in katakana), **from §16.4 as it is in `docs_proyecto/`: final, with the six changes of 10 Nov** (人 robot, 手 neck, 石 brick, 門 window, 糸 needle, 学 play; D-F6-181 (3)). Categories stay in the document.
-- [ ] D-F6-181 (1) (no part, whole or material as the T2 strong lure) is a content rule: no code; the current pairs already meet it.
-- [ ] `check_lures`: T2/T3 present for all, distinct, and none is a taught meaning or reading of the pool (never two correct).
-- [ ] Answer cards also sized from the lure texts.
-- [ ] Harness: half of each type per block, never two correct, same trials across conditions; X29 green.
+- [x] Font asset with the new characters **in this same commit** (as X6a). T2 and T3 strong and unrelated of the 35 (学 in katakana), **from §16.4 as it is in `docs_proyecto/`: final, with the six changes of 10 Nov** (人 robot, 手 neck, 石 brick, 門 window, 糸 needle, 学 play; D-F6-181 (3)). Categories stay in the document.
+- [x] D-F6-181 (1) (no part, whole or material as the T2 strong lure) is a content rule: no code; the current pairs already meet it.
+- [x] `check_lures`: T2/T3 present for all, distinct, and none is a taught meaning or reading of the pool (never two correct).
+- [x] Answer cards also sized from the lure texts.
+- [x] Harness: half of each type per block, never two correct, same trials across conditions; X29 green.
+**Done Wed 11, 16:12: `e33abf6`, seed `bb80c93`.** check 0 failures (by mora); font 259 → 285; harness 110/110. Spec v1.4 point 4 to PM in the draft.
 - [ ] **Stop.**
 
 ### [ ] X7 · reserve 16–20 (M) · **first to cut**
