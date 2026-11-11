@@ -33,7 +33,7 @@ async def test_no_session_without_a_completed_pretest(client, visit):
 @pytest.mark.asyncio
 async def test_unknown_participant_is_404(client):
     resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": "00000000-0000-0000-0000-000000000000",
-                                                "condition": "STATIC"})
+                                                "condition": "STATIC", "assigned_kanji_set": "A"})
     assert resp.status_code == 404
 
 
@@ -65,10 +65,15 @@ async def test_a_substituted_participant_gets_the_substituted_list(client, prete
 
 
 @pytest.mark.asyncio
-async def test_no_set_assigned_means_no_kanji_items(client, pretested):
+async def test_an_old_session_without_a_set_reads_with_no_kanji_items(client, pretested):
+    # Before D-F6-187 a session could be created without a set; those rows still read, with no list.
     pid = await pretested(CODE)
-    resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})
-    assert resp.status_code == 201 and resp.json()["kanji_items"] is None
+    async with AsyncSessionLocal() as db:
+        sid = (await db.execute(text("INSERT INTO experiment_sessions (participant_id, condition) "
+                                     "VALUES (:p, 'STATIC') RETURNING id"), {"p": pid})).scalar_one()
+        await db.commit()
+    resp = await client.get(f"/sessions/{sid}")
+    assert resp.status_code == 200 and resp.json()["kanji_items"] is None
 
 
 @pytest.mark.asyncio
@@ -81,3 +86,24 @@ async def test_no_session_without_a_seed(client, pretested, seed):  # D-F6-183
     resp = await client.post("/sessions", json=body)
     assert resp.status_code == 422
     assert await _sessions_of(pid) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kanji_set", [None, "", "D", "a", "AB"])
+async def test_no_session_without_a_set(client, pretested, kanji_set):  # D-F6-187
+    pid = await pretested(CODE)
+    body = {"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"}
+    if kanji_set is not None:
+        body["assigned_kanji_set"] = kanji_set
+    resp = await client.post("/sessions", json=body)
+    assert resp.status_code == 422
+    assert await _sessions_of(pid) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kanji_set", ["A", "B", "C"])
+async def test_a_session_with_set_a_b_or_c_is_created(client, pretested, kanji_set):
+    pid = await pretested(CODE)
+    resp = await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid,
+                                                "condition": "STATIC", "assigned_kanji_set": kanji_set})
+    assert resp.status_code == 201 and resp.json()["assigned_kanji_set"] == kanji_set

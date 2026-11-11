@@ -49,7 +49,7 @@ async def test_s9_over_the_websocket_completes_the_session_like_the_patch(client
     monkeypatch.setattr(labrecorder, "send", lambda host, port, cmds, **_: sent.append(cmds))
     pid = await pretested("TEST_WS_CLOSE")
     sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid,
-                                                "condition": "STATIC"})).json()["id"]
+                                                "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
 
     await _enter(sid, "S5_STANDARDIZED_LEARNING")
     assert (await _row(sid))[0] == "IN_PROGRESS"
@@ -70,7 +70,7 @@ async def test_s9_over_the_websocket_completes_the_session_like_the_patch(client
 async def test_late_s9_over_the_websocket_does_not_reopen_an_aborted_session(client, pretested) -> None:
     pid = await pretested("TEST_WS_CLOSE_ABORTED")
     sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid,
-                                                "condition": "STATIC"})).json()["id"]
+                                                "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await db.execute(text("UPDATE experiment_sessions SET status = 'ABORTED' WHERE id = :s"), {"s": sid})
         await db.commit()

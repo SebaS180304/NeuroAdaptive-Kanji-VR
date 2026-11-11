@@ -101,7 +101,7 @@ def test_no_sync_taps_at_all() -> None:
 @pytest.mark.asyncio
 async def test_save_writes_the_three_columns(client, pretested) -> None:
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, 'x.xdf')"), {"s": sid})
         await sync.save(db, sid, 48.0, None, {"reason": "S9: 0 of 5 taps with a clear peak (< 3)", "taps": []})

@@ -20,7 +20,7 @@ async def _scalar(query: str, **params):
 @pytest.mark.asyncio
 async def test_a_row_gets_the_fixed_montage_and_goes_with_its_session(client, pretested) -> None:
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, 'x.xdf')"), {"s": sid})
         await db.commit()

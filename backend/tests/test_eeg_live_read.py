@@ -19,7 +19,7 @@ REF = {"source": "S6", "indices": {"engagement_index": {"mean": 0.0, "sd": 1.0},
 async def _session_with_epochs(client, pretested, starts):
     pid = await pretested("TEST_EEG")
     sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid,
-                                                "condition": "MULTIMODAL_ADAPTIVE"})).json()["id"]
+                                                "condition": "MULTIMODAL_ADAPTIVE", "assigned_kanji_set": "A"})).json()["id"]
     async with AsyncSessionLocal() as db:
         # live.py alive: fresh heartbeat, samples flowing (X3)
         await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path, reference, heartbeat_at, eeg_gap_ms) "

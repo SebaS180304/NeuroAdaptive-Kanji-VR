@@ -21,7 +21,7 @@ REF = {"source": "S6", "indices": {k: {"mean": 0.0, "sd": 1.0} for k in
 async def _session(client, pretested, heartbeat_age_s, gap_ms, alpha_passed=True) -> str:
     pid = await pretested("TEST_EEG")
     sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid,
-                                                "condition": "MULTIMODAL_ADAPTIVE"})).json()["id"]
+                                                "condition": "MULTIMODAL_ADAPTIVE", "assigned_kanji_set": "A"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await db.execute(text(
             "INSERT INTO eeg_sessions (session_id, xdf_path, reference, alpha_passed, heartbeat_at, eeg_gap_ms) "

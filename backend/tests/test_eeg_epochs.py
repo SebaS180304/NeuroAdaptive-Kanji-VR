@@ -198,7 +198,7 @@ def test_markers_are_read_from_the_xdf_stream() -> None:
 @pytest.mark.asyncio
 async def test_save_rewrites_the_epochs_and_the_filter_of_the_session(client, pretested) -> None:
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
     x, ts = _eeg(20)
     eps = epochs.make_epochs(x, ts, SR, MONTAGE, [])
     async with AsyncSessionLocal() as db:
@@ -228,7 +228,7 @@ async def test_fill_from_xdf_subtracts_the_s3_offset_when_there_is_one(client, p
                "UnityMarkers": {"time_series": [[answer]], "time_stamps": np.array([110.0])}}
     monkeypatch.setattr(lsl_reader, "load_xdf", lambda _path: streams)
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path, sync_offset_ms) VALUES (:s, 'x.xdf', :o) "
                               "ON CONFLICT (session_id) DO UPDATE SET xdf_path = 'x.xdf', sync_offset_ms = :o"),

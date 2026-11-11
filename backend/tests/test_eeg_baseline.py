@@ -65,7 +65,7 @@ def test_spans_come_from_the_s4_markers() -> None:
 @pytest.mark.asyncio
 async def test_save_writes_the_row_and_the_event(client, pretested) -> None:
     pid = await pretested("TEST_EEG")
-    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC"})).json()["id"]
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
     async with AsyncSessionLocal() as db:
         await baseline.save(db, sid, {"P3": 4.9, "Pz": 3.6, "P4": 4.0})  # no eeg_sessions row yet
         await db.commit()

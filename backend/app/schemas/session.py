@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,7 +10,7 @@ from app.models.session import ExperimentalCondition, GameFlowState, SessionStat
 class SessionCreate(BaseModel):
     participant_id: uuid.UUID
     condition: ExperimentalCondition
-    assigned_kanji_set: str | None = None
+    assigned_kanji_set: Literal["A", "B", "C"]  # D-F6-187: as the seed, no session without its set
     visit_number: int = 1
     random_seed: str = Field(pattern=r"\S")  # D-F6-183: without it the session cannot be reconstructed
     software_version: str | None = None
