@@ -226,13 +226,14 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 **Done Wed 11, 15:03: `0676fe8`.** Live cut vs offline on `07343b5d`/`742ec49a`: same counted windows and decisions 18/18, |dz| ≤ 0.13; plain replay 36/36 identical. The X1-recorded check moves to J4 (no multimodal session yet). X3 must write `EEG_STATUS` `payload.status` = `PROCESS_DOWN` etc.
 - [ ] **Stop** (note in the draft; Sebas at 16:00).
 
-### [ ] X3 · fallback, emulated (S) · D-F6-174
+### [x] X3 · fallback, emulated (S) · D-F6-174
 `live.py`, `state.py`, `scripts/synthetic_aura.py` (pause option), tests.
-- [ ] `EEG_STATUS` (connected, lost, recovered, process down); `BEHAVIOR_FALLBACK` mark; > 60 s lost cancels the EEG for the session (§5.5); S4 alpha failing too.
-- [ ] Heartbeat distinction: fresh with no valid epochs is not "process down"; stale is, and the backend writes it (D-F6-171).
-- [ ] Emulated: stream stops pushing (cap off, Bluetooth); outlet gone (AURA closed); `live.py` killed.
-- [ ] **Check:** in each case the session goes on with behaviour and is marked. **Real cases: J3.**
-- [ ] **Stop.**
+- [x] `EEG_STATUS` (connected, lost, recovered, process down); `BEHAVIOR_FALLBACK` mark; > 60 s lost cancels the EEG for the session (§5.5); S4 alpha failing too.
+- [x] Heartbeat distinction: fresh with no valid epochs is not "process down"; stale is, and the backend writes it (D-F6-171).
+- [x] Emulated: stream stops pushing (cap off, Bluetooth); outlet gone (AURA closed); `live.py` killed.
+- [x] **Check:** in each case the session goes on with behaviour and is marked. **Real cases: J3.**
+**Done Wed 11, 15:21: `ccbfe26`.** `app/eeg/status.py`; `fallback` in the decision's `eeg` block; `not_counted_reason` for S4 / > 60 s. Emulated: AURA killed → LOST, `live.py` killed → PROCESS_DOWN, > 60 s → LOST_OVER_60S. 417 tests. Live with A8's restart.
+- [ ] **Stop** (note in the draft; Sebas at 16:00).
 
 ### [x] X4 · lure columns (S) · D-F6-143
 Migration `0017`, `project_event`, test.
