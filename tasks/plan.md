@@ -1,6 +1,6 @@
 # Implementation Plan: week of 9 – 13 Nov 2026 (F4 S3 · multimodal → dry run with EEG)
 
-Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; updated on 10 Nov up to D-F6-187 (audit fixes waiting for Sebas's OK)** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
+Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; updated on 10 Nov up to D-F6-187 (audit fixes waiting for Sebas's OK); Wed reordered 11 Nov up to D-F6-189 (waiting for Sebas's OK)** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
 Last week's plan is archived in `tasks/archive/semana_2nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -146,6 +146,21 @@ They protect session data, which cannot be repeated in the pilot. Detail in `tas
 | A8: the short visit 4 of D-F6-125 has no set of its own (it only tests visit 3's) | Med | A8 checks before changing anything; if so, it stops and PM decides |
 | A4–A7 touch Unity two days before the dry run | Med | One small commit, Editor test with real disconnects, J2 in the headset |
 | Wednesday gets heavier (A2, A3, A8 on top of X1b–X6) | High | A2 and A3 are XS/S; cut X7 then X6b as agreed |
+
+### Wed 11 · reordered by D-F6-189 (11 Nov, 12:26) · replaces the Wed timings above
+
+| When | Task | Stop | Restart? |
+| --- | --- | --- | --- |
+| now → ≈ 12:55 | **A3** WebSocket close = PATCH close, one function | Sebas | yes, grouped |
+| → ≈ 13:20 | **A9** 1.5 s margin in `window.py` + `verify_eeg.sql`; **P7 old → new for the three sessions in the draft** (EEG chat → F4; presentation chat → deck at 14:30) | Sebas | yes, grouped |
+| ≈ 13:20 | **One** `docker compose restart backend` for A3 + A9, only if both are committed and the backup video is recorded; else it moves to 16:00 | — | — |
+| → 16:00 | **A8-flows** in the draft (no code); **X2** if it fits (committed before 13:30 or started after 14:30) | notes in the draft | no (13:30–14:30 never) |
+| 15:00 · ≈ 16:30 | EEG staff; numbered decisions → **T4** before J1 | — | — |
+| from 16:00 | **A8** (if the flows allow) → X3 → X5 → X6a → X6b → X7; T4 slotted in when numbered | Sebas, each | after each backend task |
+
+**Why the order holds at 12:26:** A9 is the one with an outside deadline (deck 14:30), so if A3 has not passed its Stop by ≈ 12:55 it is parked uncommitted and A9 goes first. Neither change is needed live before J1 (code is mounted, no `--reload`, P7 is computed with a one-off `exec`), so a missed 13:20 restart costs nothing but moves to 16:00. `replay.py` does not import `window.py`: the 14:00 demo is untouched by A9.
+
+**Cut order unchanged:** X7, then X6b. A3, A9, A8-flows, X2, X3, X5, X6a are not cut.
 
 ### Thu 12 · multimodal end to end; rules frozen at night
 J1 synthetic end to end in the Editor → J2 cap, `MULTIMODAL_ADAPTIVE` → J3 three real fallbacks, one S7 each (D-F6-174) → J4 replay of J2 → J5 freeze and close. If J2 gives no EEG decision: the forced test of F4 §5, declared as such.

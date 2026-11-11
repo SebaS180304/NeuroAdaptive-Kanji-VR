@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-188** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-189 (Wed reordered 11 Nov, waiting for Sebas's OK)** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -131,7 +131,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [x] All in the draft for PM; nothing written in `docs_proyecto/`.
 - [x] **Stop.** Sebas OK, 10 Nov.
 
-### [ ] T4 · from the EEG staff session · **moved to Wed 11 after 14:30**
+### [ ] T4 · from the EEG staff session · **staff at 15:00, decisions ≈ 16:30 (D-F6-189 (4)); applied before J1 on Thu, slotted between the 16:00 tasks**
 - [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). **Session confirmed Wed 11 at 12:00:** numbered items go after 14:30 and before J1 on Thu. Thursday's freeze does not move; if something does not fit, cut X7 first, then X6b.
 - [ ] **Stop.**
 
@@ -152,9 +152,13 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 
 ## Wed 11 · live, replay, fallback, lures (Benkyokai: no headset stops; each Stop is a note in the draft)
 
-**EEG staff session Wed 11 at 12:00** (board §1, Wed row). **No Stops from Sebas 12:00–14:30:** X1 closes and has its Stop **before 12:00**; work from 12:00 to 13:30 goes on without Stops (each one a note in the draft). Staff answers with a number are applied **after 14:30** and before J1 (T4).
+**Wed order, D-F6-189 (replaces the 12:00 notes below it):** A3 → Stop → **A9 (moved up)** → Stop → A8 flows in the draft (no code) → X2 if it fits. **Everything that restarts the backend, before 13:30.** 13:30–14:30: no restart, no migration, `replay.py` committed or untouched (D-F6-178). **13:30–16:00: no Stops from Sebas** (each Stop is a note in `Claude outputs/Borrador_Plan_Fase6_9_11nov.md`). EEG staff at **15:00**; numbered answers ≈ 16:30 → T4, before J1. **From 16:00, with Stops:** A8 (code, if the flows allow), X3, X5, X6a, X6b, X7 (cut X7, then X6b). Thu freeze does not move.
 
-**13:30–14:30 (D-F6-178, demo ≈ 14:00):** no backend restart and `replay.py` never half done, committed or untouched. X2 is finished before 13:30 or starts after 14:30; X1's backend restart too. No migrations in that hour.
+**Restarts, why they can wait:** the code is mounted and uvicorn has no `--reload`, so a commit changes nothing live until `docker compose restart backend`; a one-off `docker compose exec backend python …` already runs the new code. Nothing live needs A3/A9 before J1 (Thu). So: **one restart for A3 + A9 at ≈ 13:20 if both are committed; otherwise the restart moves to 16:00.** Before any restart, check Sebas recorded the Benkyokai backup video (D-F6-189 (1)). `replay.py` does not import `window.py`: A9 cannot touch the 14:00 demo.
+
+**Started 12:26 (planning).** ≈ 60 min until 13:30 for A3 + A9; if A3 has not passed its Stop by ≈ 12:55, it is left uncommitted or stashed and A9 goes next, because A9's P7 is due in the 14:30 deck.
+
+~~**EEG staff session Wed 11 at 12:00**~~ (moved to 15:00 by D-F6-189).
 
 ### [x] X0 · no session without a seed (XS) · D-F6-183 · with X1, before 13:30
 `backend/app/schemas/session.py`, its route test. Unity untouched (`fallbackSeed` stays for the Editor without backend).
@@ -170,12 +174,14 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [x] Test: three trials spanning 75 s; the window counts the same epochs as `window.evaluate` over all of them (red before: 23 vs 29). **Done Tue 10: `424646c`.**
 - [x] Stop grouped with X1b's. Sebas OK, 10 Nov.
 
-### [ ] A3 · the WebSocket closes a session like the PATCH (S) · D-F6-186 (3) · before 12:00
+### [x] A3 · the WebSocket closes a session like the PATCH (S) · D-F6-186 (3) · **1st on Wed, before 13:30** (D-F6-189)
+Today the close rule lives only in `update_session_state` (`sessions.py:136–164`: `_status_for`, `completed_at`, `learner_profile.refresh`, LabRecorder `stop`); `_sync_current_state` (`websocket.py:297`) only moves `current_state`. Extract it there, call it from both. Verification: `docker compose exec backend pytest -q` (all green, today 397).
 `backend/app/api/routes/sessions.py`, `websocket.py` (`_sync_current_state`), tests.
-- [ ] One function for both paths: `current_state`, `status` (`_status_for`), `completed_at` once, the profile refresh, LabRecorder `stop` on S10; ABORTED is never overwritten (as today).
-- [ ] With A7's backend half: a validation `ERROR` is logged with `logger.warning` and the original message.
-- [ ] Test: S9's `STATE_ENTERED` over the WebSocket with no PATCH -> `COMPLETED`, `completed_at` set, `autorun.wait_completed` returns (sync and epochs then run, as `test_sync_runs_before_epochs_because_epochs_needs_the_offset` checks).
-- [ ] **Stop** (before 12:00, with X1b's if they meet).
+- [x] One function for both paths: `current_state`, `status` (`_status_for`), `completed_at` once, the profile refresh, LabRecorder `stop` on S10; ABORTED is never overwritten (as today).
+- [x] With A7's backend half: a validation `ERROR` is logged with `logger.warning` and the original message.
+- [x] Test: S9's `STATE_ENTERED` over the WebSocket with no PATCH -> `COMPLETED`, `completed_at` set, `autorun.wait_completed` returns (sync and epochs then run, as `test_sync_runs_before_epochs_because_epochs_needs_the_offset` checks).
+**Done Wed 11, 12:49:** `enter_state()` in `sessions.py`, called by the PATCH and by `_sync_current_state`; the WebSocket runs its follow-ups after the commit. `tests/test_session_close_ws.py` (3); 400 passed. Not live until the restart.
+- [ ] **Stop** (Sebas, before 13:30). Commit; restart grouped with A9's.
 
 ### [~] X1 · live path and heartbeat (M) · D-F6-171 · **X1a `9800c3c`, X1b `f0b99da` `0dbde14` `2dffd48` (Tue 10); margin waits for PM (duda 6)**
 **X1a (backend side), done:** at each S7 answer of `MULTIMODAL_ADAPTIVE` the WebSocket reads the epochs of the last 60 s and the reference; `feed(eeg_source=…)` → `window.evaluate()` ending at the answer → `decide()`. No epochs / no reference / read error → `UNAVAILABLE`. `STATIC` and `BEHAVIOR_ADAPTIVE` never read it (test). `rebuild` re-reads each stored block (test: same engine and decisions as live). 381 tests.
@@ -190,20 +196,25 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [~] **Check:** synthetic stream: epochs arrive (26, consecutive), heartbeat fresh, reference from S6 (all 11). A decision with its EEG block: covered by X1a's tests; **end to end through the WebSocket with `decision_latency_ms` goes to J1** (needs S7 answers in `MULTIMODAL_ADAPTIVE`).
 - [x] **Stop** (X1b). Sebas OK, 10 Nov; end-to-end decision in J1.
 
-### [ ] A9 · arrival margin of 1.5 s in the three counts (S) · D-F6-188 · **Wed after 14:30, not before the EEG staff session**
+### [ ] A9 · arrival margin of 1.5 s in the three counts (S) · D-F6-188 · **moved up to Wed morning, before 13:30 (D-F6-189 (2))**
 `backend/app/eeg/window.py` (live and replay), `database/verify_eeg.sql`, their tests.
+Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 500 ms constant); `verify_eeg.sql:72` and `:76` (`end_ms <= w.hi` → `w.hi - 1500`), header comment of block 5 updated. The `*_centre` contrast columns stay as they are.
 - [ ] An epoch counts in a window only if it **ended at least 1.5 s before the answer** (D-F6-172 + D-F6-188), in `window.py` and in `verify_eeg.sql`'s P7 block; each with its test (an epoch ending 1.4 s before the answer does not count, one ending 1.5 s before does).
 - [ ] **Check:** `window.py` and `verify_eeg.sql` still agree window by window on `b5bcf5bd`, `742ec49a`, `07343b5d` (as M6).
-- [ ] Official P7 recomputed for the three (today 67 %, 78 %, 83 %) **in the draft for the EEG chat**; one under 60 % is reported as data, the rule is not changed.
-- [ ] Not between 13:30 and 14:30 (D-F6-178). **Stop.**
+- [ ] Official P7 recomputed for the three (today 67 %, 78 %, 83 %) **in `Borrador_Plan_Fase6_9_11nov.md`, a table old → new per session, with the commit**, for the EEG chat (→ F4) and the presentation chat (→ deck, closes 14:30); one under 60 % is reported as data, the rule is not changed. Computed with `psql` on the db and a one-off `docker compose exec`: no restart needed for the figure.
+- [ ] Before 13:30 (D-F6-189). **Stop** (Sebas reads the table). Then the restart for A3 + A9 if ≤ 13:20, else at 16:00.
 
-### [ ] A8 · no session without a set (S) · D-F6-187 · Wed after 14:30
+### [ ] A8-flows · every session-creating flow, in the draft, no code · D-F6-187 condition · before 13:30, else 13:30–16:00 (no Stop, a note)
+- [ ] The list of A8's first bullet below, each flow with file:line and whether it sends `assigned_kanji_set`.
+- [ ] Verdict in one line: "no real flow without a set" → A8 code after 16:00; or "flow X has none" → **Dudas para PM**, A8 code stays out, Sebas told in one line.
+
+### [ ] A8 · no session without a set (S) · D-F6-187 · **Wed from 16:00, only if A8-flows says so** (it is a backend change: restart after it, outside 13:30–14:30)
 `backend/app/schemas/session.py`, tests, `ws_smoke_test`.
 - [ ] **First, in the draft:** every flow that creates a session and whether it sends a set: Unity `SessionBootstrap` (sends `newSessionKanjiSet`, default "A"); pre-test (creates participants, not sessions: to confirm); **short visit 4 and block R of D-F6-125** (not in code yet: which set would visit 4 be created with?); `ws_smoke_test` and the 13 test files that post `/sessions` (today without set; they would get one, as with the seed). **If any real flow has no set of its own: stop and tell PM; nothing is changed.**
 - [ ] Only then: `assigned_kanji_set` required, `A`, `B` or `C` (422 otherwise); test; callers updated.
 - [ ] **Stop.**
 
-### [ ] X2 · replay.py with XDF (S)
+### [ ] X2 · replay.py with XDF (S) · **if it fits:** committed before 13:30 or started after 14:30, never half done in between (D-F6-178); with no Stop until 16:00, it closes with a note and Sebas's OK comes at 16:00
 `backend/app/adaptation/replay.py`, test.
 - [ ] Adds XDF input: same filter-and-epoch path cut at the decision instants, S3 offset subtracted (D-F6-161, D-F6-173). Existing replay unchanged.
 - [ ] Windows where `EEG_STATUS` says the process was down do not count, as they did not live.
