@@ -43,6 +43,7 @@ protocolo queda con un solo tipo por campo, y quien necesite el valor
 numerico lo convierte donde lo necesita.
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -59,6 +60,7 @@ from app.adaptation.state import (
     PendingDecision,
     SessionAdaptationState,
 )
+from app.api.routes.sessions import enter_state
 from app.db.base import AsyncSessionLocal
 from app.models.session import ExperimentSession, GameFlowState
 from app.models.system_event import SystemValidationEvent
@@ -142,6 +144,7 @@ async def _handle_session_event(
             client_timestamp=message.get("client_timestamp"),
         )
     except ValidationError as exc:
+        logger.warning("invalid message, not stored (session=%s): %s; raw: %s", session_id, exc, json.dumps(message))
         await websocket.send_json({"type": "ERROR", "detail": str(exc)})
         return
 
@@ -150,7 +153,7 @@ async def _handle_session_event(
             event = SessionEventModel(**parsed.model_dump())
             db.add(event)
             await db.flush()  # assigns event.id
-            await _sync_current_state(db, session_id, parsed)
+            after = await _sync_current_state(db, session_id, parsed)
             await _project(db, event.id)
             await db.commit()
             await db.refresh(event)
@@ -161,6 +164,8 @@ async def _handle_session_event(
         return
 
     await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": str(event.id)})
+    for task, *args in after:  # as the PATCH's BackgroundTasks: after the commit, never in the way of the ACK
+        _after_commit(task, *args)
 
     state = _adaptation.get(session_id)
     if state is not None:
@@ -294,7 +299,7 @@ async def _project(db, event_id: int) -> None:
         logger.exception("project_event(%s) unavailable; event stored without projection", event_id)
 
 
-async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCreate) -> None:
+async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCreate) -> list[tuple]:
     """
     Mantiene `experiment_sessions.current_state` al dia con los
     STATE_ENTERED que llegan por el WebSocket.
@@ -316,7 +321,7 @@ async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCre
     investigador; deja de ser la unica via de actualizacion.
     """
     if parsed.event_type != "STATE_ENTERED":
-        return
+        return []
 
     raw_state = parsed.payload.get("state")
     if not raw_state:
@@ -325,7 +330,7 @@ async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCre
             "current_state no se actualiza",
             session_id,
         )
-        return
+        return []
 
     try:
         new_state = GameFlowState(raw_state)
@@ -338,12 +343,32 @@ async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCre
             raw_state,
             session_id,
         )
-        return
+        return []
 
     session = await db.get(ExperimentSession, session_id)
     if session is None:  # pragma: no cover - validado al abrir el socket
-        return
-    session.current_state = new_state
+        return []
+    # Same close rule as the PATCH (D-F6-186 (3)): status, completed_at once, profile, LabRecorder stop.
+    return enter_state(session, new_state)
+
+
+_background: set[asyncio.Task] = set()
+
+
+def _after_commit(task, *args) -> None:
+    """Runs one of enter_state's follow-ups in the background; a failure is logged, never raised."""
+    async def run() -> None:
+        try:
+            if asyncio.iscoroutinefunction(task):
+                await task(*args)
+            else:
+                await asyncio.to_thread(task, *args)
+        except Exception:
+            logger.exception("after-commit task %s failed", getattr(task, "__name__", task))
+
+    t = asyncio.create_task(run())
+    _background.add(t)  # keeps a reference until it ends
+    t.add_done_callback(_background.discard)
 
 
 async def _handle_validation_event(
@@ -358,6 +383,7 @@ async def _handle_validation_event(
             client_timestamp=message.get("client_timestamp"),
         )
     except ValidationError as exc:
+        logger.warning("invalid message, not stored (session=%s): %s; raw: %s", session_id, exc, json.dumps(message))
         await websocket.send_json({"type": "ERROR", "detail": str(exc)})
         return
 

@@ -132,6 +132,33 @@ def _status_for(state: GameFlowState) -> SessionStatus:
     return SessionStatus.IN_PROGRESS
 
 
+def enter_state(session: ExperimentSession, new_state: GameFlowState) -> list[tuple]:
+    """The close rule of both paths: this PATCH and the WebSocket's STATE_ENTERED (D-F6-186 (3)).
+
+    Moves the session and returns the (function, *args) to run after the commit: LabRecorder `stop`
+    on entering S10, and the profile refresh when it completes (D-F6-3; a failure is logged, never returned).
+    """
+    after: list[tuple] = []
+    # The recording stops on entering S10, after S9's five sync taps (F4 §2.4).
+    # shortcut: a session that never reaches S10 is stopped by the operator in LabRecorder.
+    settings = get_settings()
+    if (settings.labrecorder_host and new_state == GameFlowState.S10_HCI_SELF_REPORT
+            and session.current_state != GameFlowState.S10_HCI_SELF_REPORT):
+        after.append((labrecorder.send, settings.labrecorder_host, settings.labrecorder_port, ["stop"]))
+
+    session.current_state = new_state
+
+    # Una sesion ABORTED no vuelve sola a IN_PROGRESS porque llegue un estado
+    # tardio: abortar es una decision del investigador y este endpoint no la
+    # revierte.
+    if session.status != SessionStatus.ABORTED:
+        session.status = _status_for(new_state)
+        if session.status == SessionStatus.COMPLETED and session.completed_at is None:
+            session.completed_at = now_utc()
+            after.append((learner_profile.refresh, [session.participant_id]))
+    return after
+
+
 @router.patch("/{session_id}/state", response_model=SessionRead)
 async def update_session_state(
     session_id: uuid.UUID, payload: SessionStateUpdate, background: BackgroundTasks,
@@ -141,24 +168,8 @@ async def update_session_state(
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
 
-    # The recording stops on entering S10, after S9's five sync taps (F4 §2.4).
-    # shortcut: a session that never reaches S10 is stopped by the operator in LabRecorder.
-    settings = get_settings()
-    if (settings.labrecorder_host and payload.new_state == GameFlowState.S10_HCI_SELF_REPORT
-            and session.current_state != GameFlowState.S10_HCI_SELF_REPORT):
-        background.add_task(labrecorder.send, settings.labrecorder_host, settings.labrecorder_port, ["stop"])
-
-    session.current_state = payload.new_state
-
-    # Una sesion ABORTED no vuelve sola a IN_PROGRESS porque llegue un estado
-    # tardio: abortar es una decision del investigador y este endpoint no la
-    # revierte.
-    if session.status != SessionStatus.ABORTED:
-        session.status = _status_for(payload.new_state)
-        if session.status == SessionStatus.COMPLETED and session.completed_at is None:
-            session.completed_at = now_utc()
-            # Runs after get_db commits (D-F6-3); a failure is logged, never returned.
-            background.add_task(learner_profile.refresh, [session.participant_id])
+    for task, *args in enter_state(session, payload.new_state):
+        background.add_task(task, *args)
 
     await db.flush()
     await db.refresh(session)
