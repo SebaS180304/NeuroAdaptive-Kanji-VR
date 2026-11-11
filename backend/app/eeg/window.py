@@ -3,8 +3,8 @@ Does the EEG count in a decision window, and with which z (Planteamiento_Tecnico
 The same definition as verify_eeg.sql (D-F6-162) and, later, the live path and replay.py.
 
 The window ends at the answer of its 3rd trial, where the decision is taken (D-F6-177), and reaches back over its
-3 trials or 15 s, whichever is longer (D-F6-151). An epoch is in it by its centre and only if it had finished at the
-answer (D-F6-172). The EEG counts with >= 2 non-POOR epochs and >= 5 s of clean chunks, each second once (D-F6-127).
+3 trials or 15 s, whichever is longer (D-F6-151). An epoch is in it by its centre and only if it had finished at least
+1.5 s before the answer (D-F6-172, D-F6-188: what reaches the database in time live). The EEG counts with >= 2 non-POOR epochs and >= 5 s of clean chunks, each second once (D-F6-127).
 z of an index = mean over the non-POOR epochs of (ln index - mean) / SD of the session's reference (§4.4.1).
 """
 
@@ -19,6 +19,7 @@ MIN_NON_POOR = 2
 MIN_CLEAN_S = 5.0
 CENTRE_MS = int(EPOCH_S * 500)
 CHUNK_MS = 1000
+ARRIVAL_MARGIN_MS = 1500  # D-F6-188; measured 1.1–1.35 s from an epoch's end to its row (X1b)
 
 
 def _clean_s(eps: list[dict]) -> float:
@@ -43,7 +44,7 @@ def evaluate(eps: list[dict], first_start_ms: int, decision_ms: int, ref: dict) 
     """eps: the session's epochs; first_start_ms: start of the window's 1st trial; decision_ms: answer of its 3rd."""
     lo = min(first_start_ms, decision_ms - MIN_SPAN_MS)
     inside = [e for e in eps if e["start_ms"] is not None and lo <= e["start_ms"] + CENTRE_MS <= decision_ms
-              and e["end_ms"] <= decision_ms]
+              and e["end_ms"] <= decision_ms - ARRIVAL_MARGIN_MS]
     usable = [e for e in inside if e["quality"] != "POOR"]
     clean_s = _clean_s(inside)
     return {"counted": len(usable) >= MIN_NON_POOR and clean_s >= MIN_CLEAN_S, "non_poor": len(usable), "clean_s": clean_s,

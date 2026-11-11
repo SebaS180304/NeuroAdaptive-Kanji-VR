@@ -53,7 +53,7 @@ GROUP BY t.id ORDER BY 1;
 
 -- P7 (D-F6-127), the same as window.py and replay.py (D-F6-162, D-F6-172). The window ends at the answer, where the
 -- decision is taken, and reaches back over its 3 S7 trials or 15 s, whichever is longer (D-F6-151). An epoch is in it
--- by its centre AND only if it had finished at the answer. The EEG counts with >= 2 non-POOR epochs and >= 5 s of
+-- by its centre AND only if it had finished at least 1.5 s before the answer (D-F6-188, window.ARRIVAL_MARGIN_MS). The EEG counts with >= 2 non-POOR epochs and >= 5 s of
 -- clean chunks, each second once. The *_centre columns drop the "finished" rule: a contrast with the EEG chat's
 -- 78 % and 72 %, never used for A-7.
 CREATE FUNCTION pg_temp.secs(m int4multirange) RETURNS numeric LANGUAGE sql AS
@@ -69,18 +69,18 @@ FROM (SELECT x.session_id, x.trial_id, x.answered_elapsed_ms AS hi,
       WHERE x.block_state = 'S7_EXPERIMENTAL_RETRIEVAL'
       WINDOW o AS (PARTITION BY x.session_id ORDER BY x.started_elapsed_ms)) w
 CROSS JOIN LATERAL (
-    SELECT count(*) FILTER (WHERE p.end_ms <= w.hi) AS non_poor, count(*) AS non_poor_centre
+    SELECT count(*) FILTER (WHERE p.end_ms <= w.hi - 1500) AS non_poor, count(*) AS non_poor_centre
     FROM eeg_epochs p
     WHERE p.session_id = w.session_id AND p.quality <> 'POOR' AND p.start_ms + 2500 BETWEEN w.lo AND w.hi) e
 CROSS JOIN LATERAL (
-    SELECT range_agg(ch.r) FILTER (WHERE ch.end_ms <= w.hi) AS finished, range_agg(ch.r) AS centre
+    SELECT range_agg(ch.r) FILTER (WHERE ch.end_ms <= w.hi - 1500) AS finished, range_agg(ch.r) AS centre
     FROM (SELECT p.end_ms, int4range(p.start_ms + (k - 1) * 4000 / (cardinality(p.chunk_clean) - 1),
                                      p.start_ms + (k - 1) * 4000 / (cardinality(p.chunk_clean) - 1) + 1000) AS r
           FROM eeg_epochs p, generate_subscripts(p.chunk_clean, 1) k
           WHERE p.session_id = w.session_id AND p.chunk_clean[k] AND p.start_ms + 2500 BETWEEN w.lo AND w.hi) ch) c
 WHERE w.first_start IS NOT NULL AND w.hi IS NOT NULL;
 
-\echo '== 5 · S7 windows where the EEG counts (P7, epochs finished at the answer; A-7 asks >= 60 %). pct_centre is only a contrast'
+\echo '== 5 · S7 windows where the EEG counts (P7, epochs finished 1.5 s before the answer; A-7 asks >= 60 %). pct_centre is only a contrast'
 SELECT left(t.id::text, 8) AS session, count(w.*) AS windows,
        count(w.*) FILTER (WHERE w.non_poor >= 2 AND w.clean_s >= 5) AS eeg_counts,
        round(100.0 * count(w.*) FILTER (WHERE w.non_poor >= 2 AND w.clean_s >= 5) / nullif(count(w.*), 0)) AS pct,

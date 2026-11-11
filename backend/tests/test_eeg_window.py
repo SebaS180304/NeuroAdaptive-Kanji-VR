@@ -41,6 +41,12 @@ def test_an_epoch_that_has_not_finished_at_the_answer_does_not_count() -> None:
     assert out["non_poor"] == 1                  # the second ends at 101 s, with its centre inside
 
 
+def test_an_epoch_counts_only_if_it_ended_1_5_s_before_the_answer() -> None:
+    # D-F6-188: ends at 98.5 s counts, at 98.6 s (1.4 s before the answer) does not; both centres are inside.
+    eps = [_epoch(90_000), _epoch(93_500), _epoch(93_600)]
+    assert window.evaluate(eps, first_start_ms=90_000, decision_ms=100_000, ref=REF)["non_poor"] == 2
+
+
 def test_a_second_shared_by_two_epochs_counts_once() -> None:
     out = window.evaluate([_epoch(90_000), _epoch(92_500)], first_start_ms=88_000, decision_ms=100_000, ref=REF)
     assert out["clean_s"] == 7.5

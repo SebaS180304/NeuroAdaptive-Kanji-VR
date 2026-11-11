@@ -57,14 +57,14 @@ async def test_without_the_answer_time_there_is_no_source() -> None:
 @pytest.mark.asyncio
 async def test_a_window_of_75_s_reads_every_epoch_in_it(client, pretested) -> None:  # D-F6-186 (2), D-F6-172
     # three slow trials from 25 s to 100 s: the window starts at the 1st trial, 75 s before the answer
-    starts = list(range(25_000, 95_001, 2_500))                     # epochs that end by the answer (100 s)
+    starts = list(range(25_000, 92_501, 2_500))                     # epochs that end 1.5 s before the answer (D-F6-188)
     sid = await _session_with_epochs(client, pretested, starts)
     w = (await _eeg_source(sid, 100_000))("S7-006", 25_000, 100_000)
     from app.eeg import window
     epochs = [{"start_ms": s, "end_ms": s + 5000, "quality": "GOOD", "chunk_clean": [True] * 9,
                "engagement_index": math.exp(-2.0), "theta_fz": 1.0, "alpha_parietal": 1.0, "theta_beta": 1.0}
               for s in starts]
-    assert w["non_poor"] == window.evaluate(epochs, 25_000, 100_000, REF)["non_poor"] == 29
+    assert w["non_poor"] == window.evaluate(epochs, 25_000, 100_000, REF)["non_poor"] == 28
 
 
 # X1b · what live.py writes ----------------------------------------------------------------------------------------
