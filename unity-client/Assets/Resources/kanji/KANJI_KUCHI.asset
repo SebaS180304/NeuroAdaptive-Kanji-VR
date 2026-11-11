@@ -29,6 +29,9 @@ MonoBehaviour:
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   targetReadingAudio: {fileID: 8300000, guid: b443fcd60fe663241ae0bea8ac8c8e02, type: 3}
-  anchorObjectPrefab: {fileID: 0}
+  anchorObjectPrefab: {fileID: 8806404523161374245, guid: f1efdb6978618b34383d86eadd426449, type: 3}
   transformationAnimation: {fileID: 0}
-  visualAssociationSprite: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: df9b9771fe1ded543ae34837969326e1, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: 935462d3d2977f64ba8006abec37efd3, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: 73369d9ac8a57db4a816f32b588f0904, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: d73b17e199287e54a83f3fbf90f4d328, type: 3}

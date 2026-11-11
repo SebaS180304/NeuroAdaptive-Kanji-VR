@@ -21,7 +21,7 @@ MonoBehaviour:
   visualAssociation: 
   assemblySegments:
   - segmentId: KANJI_TSUCHI_SEG1
-    description: 十
+    description: "\u5341"
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   - segmentId: KANJI_TSUCHI_SEG2
@@ -29,6 +29,9 @@ MonoBehaviour:
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   targetReadingAudio: {fileID: 8300000, guid: 08ed31f60d9b7bd428cbd4602e9831b2, type: 3}
-  anchorObjectPrefab: {fileID: 0}
+  anchorObjectPrefab: {fileID: 303430637739788999, guid: 71d5a3037e7cff147a73f0daed7812ac, type: 3}
   transformationAnimation: {fileID: 0}
-  visualAssociationSprite: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: c43b7ecb8b5f7f0438a94ca0f99db263, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: bc7157e182e9e8f46a3bb93c36113e9b, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: 5da52b5117da0c742b7514b2d814d53d, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: 3aacb8c65153a16468e08596114cd505, type: 3}

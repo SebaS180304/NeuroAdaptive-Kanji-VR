@@ -40,6 +40,29 @@ namespace NeuroAdaptiveVR.EditorTools
             ("KANJI_NIKU", "14_NIKU"), ("KANJI_HANA", "15_HANA"),
         };
 
+        // Reserve (D-F6-160, D-F6-170; X7): two batches of five, each all or none like a set. Hints named R_NN_CODE_*.
+        private static readonly (string kanjiId, string code)[] Reserve1 =
+        {
+            ("KANJI_NICHI", "16_HI"), ("KANJI_KI", "17_KI"), ("KANJI_KAWA", "18_KAWA"),
+            ("KANJI_TA", "19_TA"), ("KANJI_KUCHI", "20_KUCHI"),
+        };
+
+        private static readonly (string kanjiId, string code)[] Reserve2 =
+        {
+            ("KANJI_TSUCHI", "21_TSUCHI"), ("KANJI_KO", "22_KO"), ("KANJI_MIZU", "23_MIZU"),
+            ("KANJI_ME", "24_ME"), ("KANJI_KOME", "25_KOME"),
+        };
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 16-25", priority = 307)]
+        public static void RunReserve()
+        {
+            foreach (var batch in new[] { Reserve1, Reserve2 })
+            {
+                Integrate("R", batch);
+                IntegrateHints("R", batch);
+            }
+        }
+
         [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set A", priority = 301)]
         public static void Run() => Integrate("A", SetA);
 
@@ -137,7 +160,9 @@ namespace NeuroAdaptiveVR.EditorTools
                 foreach (var c in instance.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
                 // The cart is read from above: its top to the player, the axle vertical (+90° X in Blender, ESTADO.md 02).
                 // 14 肉 the same: its top face to the player, or edge-on it is only a red strip (COORDINACION_27oct.md §3).
-                if (code == "02_KURUMA" || code == "14_NIKU") instance.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+                // 18 川 and 19 田 are models seen from above too: the same root turn (Tabla_Autoria, Registro 6 nov).
+                if (code == "02_KURUMA" || code == "14_NIKU" || code == "18_KAWA" || code == "19_TA")
+                    instance.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
                 var prefab = PrefabUtility.SaveAsPrefabAsset(instance, $"{prefabDir}/{code}.prefab");
                 Object.DestroyImmediate(instance);
 

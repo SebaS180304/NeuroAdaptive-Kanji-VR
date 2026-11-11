@@ -21,6 +21,9 @@ MonoBehaviour:
   visualAssociation: 
   assemblySegments: []
   targetReadingAudio: {fileID: 8300000, guid: 29f8fa989d985864d8b9a0b4153b7e99, type: 3}
-  anchorObjectPrefab: {fileID: 0}
+  anchorObjectPrefab: {fileID: 7678616721863528689, guid: 59da60e1904be564297b89bcc8abb9e4, type: 3}
   transformationAnimation: {fileID: 0}
-  visualAssociationSprite: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: 8aadc279f05a9ef4c93d412fbb6206e3, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: 0ec86bf5badbb804abd3a3fd6d6f3692, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: 7bb7fb3ddb2d5f048bb7951c287a05ba, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: 14b65d596a4a65741b6989102dcc96ef, type: 3}
