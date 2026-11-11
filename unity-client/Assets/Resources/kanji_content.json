@@ -31,7 +31,7 @@
       "applyReadingsBand": false
     },
     "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)",
-    "lures": "in half of each active type's trials of S6-S8, seeded and the same in the three conditions: [CORRECT, LURE_STRONG, IN_SET, UNRELATED]; only T1 active, provisional (D-F6-129, D-F6-130, D-F6-131)"
+    "lures": "in half of each active type's trials of S6-S8, seeded and the same in the three conditions: [CORRECT, LURE_STRONG, IN_SET, UNRELATED]; T1, T2 and T3 active, official lists of Metricas section 16 (D-F6-129, D-F6-131, D-F6-168)"
   },
   "sets": {
     "A": [
@@ -844,8 +844,16 @@
           "similarityStrong": 0.7064,
           "similarityUnrelated": -0.3201
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "star",
+          "unrelated": "holiday",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "つぎ",
+          "unrelated": "ほね",
+          "provisional": false
+        }
       }
     },
     {
@@ -872,8 +880,16 @@
           "similarityStrong": 0.4643,
           "similarityUnrelated": -0.347
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "train",
+          "unrelated": "idea",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "くるみ",
+          "unrelated": "めがね",
+          "provisional": false
+        }
       }
     },
     {
@@ -900,8 +916,16 @@
           "similarityStrong": 0.6414,
           "similarityUnrelated": -0.1071
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "smoke",
+          "unrelated": "price",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "ち",
+          "unrelated": "ゆ",
+          "provisional": false
+        }
       }
     },
     {
@@ -928,8 +952,16 @@
           "similarityStrong": 0.5335,
           "similarityUnrelated": -0.1289
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "pine",
+          "unrelated": "law",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "たて",
+          "unrelated": "ゆび",
+          "provisional": false
+        }
       }
     },
     {
@@ -956,8 +988,16 @@
           "similarityStrong": 0.2489,
           "similarityUnrelated": -0.3037
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "brick",
+          "unrelated": "dream",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "いじ",
+          "unrelated": "さる",
+          "provisional": false
+        }
       }
     },
     {
@@ -984,8 +1024,16 @@
           "similarityStrong": 0.6605,
           "similarityUnrelated": -0.401
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "valley",
+          "unrelated": "speed",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "やみ",
+          "unrelated": "ふえ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1012,8 +1060,16 @@
           "similarityStrong": 0.655,
           "similarityUnrelated": -0.5015
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "window",
+          "unrelated": "luck",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "もや",
+          "unrelated": "なべ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1040,8 +1096,16 @@
           "similarityStrong": 0.3537,
           "similarityUnrelated": -0.1698
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "man",
+          "unrelated": "week",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "おんど",
+          "unrelated": "たまご",
+          "provisional": false
+        }
       }
     },
     {
@@ -1068,8 +1132,16 @@
           "similarityStrong": 0.4701,
           "similarityUnrelated": -0.1579
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "neck",
+          "unrelated": "news",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "へ",
+          "unrelated": "よ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1096,8 +1168,16 @@
           "similarityStrong": 0.838,
           "similarityUnrelated": -0.3382
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "snow",
+          "unrelated": "answer",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "あみ",
+          "unrelated": "ぬの",
+          "provisional": false
+        }
       }
     },
     {
@@ -1124,8 +1204,16 @@
           "similarityStrong": 0.8963,
           "similarityUnrelated": -0.1197
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "robot",
+          "unrelated": "noise",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "ひも",
+          "unrelated": "ろば",
+          "provisional": false
+        }
       }
     },
     {
@@ -1152,8 +1240,16 @@
           "similarityStrong": 0.3379,
           "similarityUnrelated": -0.2597
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "arm",
+          "unrelated": "story",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "あじ",
+          "unrelated": "よる",
+          "provisional": false
+        }
       }
     },
     {
@@ -1180,8 +1276,16 @@
           "similarityStrong": 0.7399,
           "similarityUnrelated": -0.1222
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "pig",
+          "unrelated": "rule",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "うじ",
+          "unrelated": "かぜ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1208,8 +1312,16 @@
           "similarityStrong": 0.5497,
           "similarityUnrelated": -0.2575
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "egg",
+          "unrelated": "joke",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "にし",
+          "unrelated": "ゆめ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1236,8 +1348,16 @@
           "similarityStrong": 0.2453,
           "similarityUnrelated": -0.2645
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "leaf",
+          "unrelated": "debt",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "はら",
+          "unrelated": "せみ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1264,8 +1384,16 @@
           "similarityStrong": 0.6959,
           "similarityUnrelated": -0.5946
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "cloud",
+          "unrelated": "peace",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "み",
+          "unrelated": "わ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1292,8 +1420,16 @@
           "similarityStrong": 0.7411,
           "similarityUnrelated": 0.0239
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "moss",
+          "unrelated": "plan",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "け",
+          "unrelated": "ほ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1320,8 +1456,16 @@
           "similarityStrong": 0.5282,
           "similarityUnrelated": -0.2673
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "lake",
+          "unrelated": "age",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "かに",
+          "unrelated": "くつ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1348,8 +1492,16 @@
           "similarityStrong": 0.7947,
           "similarityUnrelated": -0.3712
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "garden",
+          "unrelated": "truth",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "と",
+          "unrelated": "す",
+          "provisional": false
+        }
       }
     },
     {
@@ -1376,8 +1528,16 @@
           "similarityStrong": 0.6531,
           "similarityUnrelated": -0.4762
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "nose",
+          "unrelated": "game",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "くじ",
+          "unrelated": "そら",
+          "provisional": false
+        }
       }
     },
     {
@@ -1404,8 +1564,16 @@
           "similarityStrong": 0.8191,
           "similarityUnrelated": -0.2331
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "sea",
+          "unrelated": "size",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "つじ",
+          "unrelated": "へそ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1432,8 +1600,16 @@
           "similarityStrong": 0.7056,
           "similarityUnrelated": -0.1754
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "parent",
+          "unrelated": "sleep",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "か",
+          "unrelated": "せ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1460,8 +1636,16 @@
           "similarityStrong": 0.7719,
           "similarityUnrelated": -0.0831
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "oil",
+          "unrelated": "history",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "みぞ",
+          "unrelated": "わに",
+          "provisional": false
+        }
       }
     },
     {
@@ -1488,8 +1672,16 @@
           "similarityStrong": 0.7733,
           "similarityUnrelated": -0.3908
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "tooth",
+          "unrelated": "trip",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "ね",
+          "unrelated": "う",
+          "provisional": false
+        }
       }
     },
     {
@@ -1516,8 +1708,16 @@
           "similarityStrong": 0.7832,
           "similarityUnrelated": -0.045
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "wheat",
+          "unrelated": "hour",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "こけ",
+          "unrelated": "えび",
+          "provisional": false
+        }
       }
     },
     {
@@ -1544,8 +1744,16 @@
           "similarityStrong": 0.5917,
           "similarityUnrelated": -0.0885
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "needle",
+          "unrelated": "victory",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "いど",
+          "unrelated": "ふね",
+          "provisional": false
+        }
       }
     },
     {
@@ -1572,8 +1780,16 @@
           "similarityStrong": 0.5624,
           "similarityUnrelated": -0.18
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "lip",
+          "unrelated": "anger",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "みき",
+          "unrelated": "むね",
+          "provisional": false
+        }
       }
     },
     {
@@ -1600,8 +1816,16 @@
           "similarityStrong": 0.6231,
           "similarityUnrelated": -0.3049
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "seaweed",
+          "unrelated": "courage",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "かみ",
+          "unrelated": "ふろ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1628,8 +1852,16 @@
           "similarityStrong": 0.6722,
           "similarityUnrelated": -0.0998
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "play",
+          "unrelated": "spoon",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "ガム",
+          "unrelated": "ノリ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1656,8 +1888,16 @@
           "similarityStrong": 0.5971,
           "similarityUnrelated": -0.2244
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "place",
+          "unrelated": "yesterday",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "もも",
+          "unrelated": "ゆき",
+          "provisional": false
+        }
       }
     },
     {
@@ -1684,8 +1924,16 @@
           "similarityStrong": 0.8464,
           "similarityUnrelated": 0.042
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "silver",
+          "unrelated": "friendship",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "きく",
+          "unrelated": "はと",
+          "provisional": false
+        }
       }
     },
     {
@@ -1712,8 +1960,16 @@
           "similarityStrong": 0.6364,
           "similarityUnrelated": -0.0031
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "coffee",
+          "unrelated": "winter",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "しゃ",
+          "unrelated": "しゅ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1740,8 +1996,16 @@
           "similarityStrong": 0.6545,
           "similarityUnrelated": -0.1238
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "sheep",
+          "unrelated": "music",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "うみ",
+          "unrelated": "おけ",
+          "provisional": false
+        }
       }
     },
     {
@@ -1768,8 +2032,16 @@
           "similarityStrong": 0.6484,
           "similarityUnrelated": -0.0286
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "turtle",
+          "unrelated": "noon",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "さかば",
+          "unrelated": "ふとん",
+          "provisional": false
+        }
       }
     },
     {
@@ -1796,8 +2068,16 @@
           "similarityStrong": 0.7998,
           "similarityUnrelated": 0.0836
         },
-        "T2": null,
-        "T3": null
+        "T2": {
+          "lureStrong": "butterfly",
+          "unrelated": "silence",
+          "provisional": false
+        },
+        "T3": {
+          "lureStrong": "とし",
+          "unrelated": "さら",
+          "provisional": false
+        }
       }
     },
     {

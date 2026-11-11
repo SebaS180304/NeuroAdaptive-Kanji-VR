@@ -248,6 +248,46 @@ UNRELATED_T1_CANDIDATES: dict[str, str] = {
     "道": "road", "電": "electricity", "黄": "yellow", "黒": "black", "色": "colour",
     "声": "voice", "頭": "head", "弓": "bow", "矢": "arrow", "刀": "sword",
 }
+# T2 (kanji -> significado) y T3 (kanji -> lectura): listas OFICIALES de §16.4
+# (D-F6-168), con los seis cambios del 10 nov (D-F6-181 (3)). Las categorías de T2
+# quedan en el documento. 学 va en katakana (ガク), así que sus opciones de T3 también.
+LURE_T2: dict[str, str] = {  # §16.4: misma categoría, nunca una segunda correcta (D-F6-181)
+    "月": "star", "車": "train", "火": "smoke", "竹": "pine", "石": "brick",
+    "山": "valley", "門": "window", "女": "man", "手": "neck", "雨": "snow",
+    "人": "robot", "足": "arm", "牛": "pig", "肉": "egg", "花": "leaf",
+    "日": "cloud", "木": "moss", "川": "lake", "田": "garden", "口": "nose",
+    "土": "sea", "子": "parent", "水": "oil", "目": "tooth", "米": "wheat",
+    "糸": "needle", "耳": "lip", "貝": "seaweed", "学": "play", "物": "place",
+    "金": "silver", "茶": "coffee", "馬": "sheep", "魚": "turtle", "鳥": "butterfly",
+}
+UNRELATED_T2: dict[str, str] = {  # §16.4: otra categoría
+    "月": "holiday", "車": "idea", "火": "price", "竹": "law", "石": "dream",
+    "山": "speed", "門": "luck", "女": "week", "手": "news", "雨": "answer",
+    "人": "noise", "足": "story", "牛": "rule", "肉": "joke", "花": "debt",
+    "日": "peace", "木": "plan", "川": "age", "田": "truth", "口": "game",
+    "土": "size", "子": "sleep", "水": "history", "目": "trip", "米": "hour",
+    "糸": "victory", "耳": "anger", "貝": "courage", "学": "spoon", "物": "yesterday",
+    "金": "friendship", "茶": "winter", "馬": "music", "魚": "noon", "鳥": "silence",
+}
+LURE_T3: dict[str, str] = {  # §16.4: cambia una mora, nunca un dakuten en la primera (rendaku)
+    "月": "つぎ", "車": "くるみ", "火": "ち", "竹": "たて", "石": "いじ",
+    "山": "やみ", "門": "もや", "女": "おんど", "手": "へ", "雨": "あみ",
+    "人": "ひも", "足": "あじ", "牛": "うじ", "肉": "にし", "花": "はら",
+    "日": "み", "木": "け", "川": "かに", "田": "と", "口": "くじ",
+    "土": "つじ", "子": "か", "水": "みぞ", "目": "ね", "米": "こけ",
+    "糸": "いど", "耳": "みき", "貝": "かみ", "学": "ガム", "物": "もも",
+    "金": "きく", "茶": "しゃ", "馬": "うみ", "魚": "さかば", "鳥": "とし",
+}
+UNRELATED_T3: dict[str, str] = {  # §16.4: mismo largo, sin moras en común con la lectura ni con su trampa
+    "月": "ほね", "車": "めがね", "火": "ゆ", "竹": "ゆび", "石": "さる",
+    "山": "ふえ", "門": "なべ", "女": "たまご", "手": "よ", "雨": "ぬの",
+    "人": "ろば", "足": "よる", "牛": "かぜ", "肉": "ゆめ", "花": "せみ",
+    "日": "わ", "木": "ほ", "川": "くつ", "田": "す", "口": "そら",
+    "土": "へそ", "子": "せ", "水": "わに", "目": "う", "米": "えび",
+    "糸": "ふね", "耳": "むね", "貝": "ふろ", "学": "ノリ", "物": "ゆき",
+    "金": "はと", "茶": "しゅ", "馬": "おけ", "魚": "ふとん", "鳥": "さら",
+}
+
 LURE_TYPES = ("T1", "T2", "T3")
 
 # ── IDENTIDAD ESTABLE ───────────────────────────────────────────────────────
@@ -488,14 +528,68 @@ def substitution_table(g: "Glyphs") -> dict[str, dict[str, list[str]]]:
 def lure_table(g: "Glyphs") -> dict[str, dict]:
     """Trampas por kanji (sets y reserva) y por tipo. T1: la fuerte de LURE_T1 y la
     sin relación de UNRELATED_T1 (§16.2); provisional solo las ⚑ de la métrica
-    (月, 竹 y la reserva). T2 y T3: None (X6b)."""
+    (月, 竹 y la reserva). T2 y T3: las de §16.4, oficiales."""
     out: dict[str, dict] = {}
     for ch in [c for v in SETS.values() for c in v] + RESERVE:
         out[ch] = {"T1": {"lureStrong": LURE_T1[ch], "unrelated": UNRELATED_T1[ch],
                           "provisional": ch in METRIC_LURES or ch in RESERVE,
                           "similarityStrong": round(g.similarity(ch, LURE_T1[ch]), 4),
                           "similarityUnrelated": round(g.similarity(ch, UNRELATED_T1[ch]), 4)},
-                   "T2": None, "T3": None}
+                   "T2": {"lureStrong": LURE_T2[ch], "unrelated": UNRELATED_T2[ch], "provisional": False},
+                   "T3": {"lureStrong": LURE_T3[ch], "unrelated": UNRELATED_T3[ch], "provisional": False}}
+    return out
+
+
+_SMALL = set("ゃゅょぁぃぅぇぉャュョァィゥェォ")
+
+
+def _morae(kana: str) -> list[str]:
+    """ちゃ is one mora: a small kana goes with the one before it."""
+    out: list[str] = []
+    for c in kana:
+        if c in _SMALL and out:
+            out[-1] += c
+        else:
+            out.append(c)
+    return out
+
+
+def _voiced_first(a: str, b: str) -> bool:
+    """b's first mora is a's with a dakuten or handakuten: rendaku, a real reading of the kanji."""
+    import unicodedata
+    da, db = unicodedata.normalize("NFD", a[0]), unicodedata.normalize("NFD", b[0])
+    return da != db and db.startswith(da[0]) and db[1:] in (chr(0x3099), chr(0x309A))  # combining dakuten, handakuten
+
+
+def check_lures_t2_t3(table: dict[str, dict]) -> list[str]:
+    """Reglas de §2.4 y §16.5 para T2 y T3: nunca dos correctas. Cada línea es un fallo."""
+    pool = [c for v in SETS.values() for c in v] + RESERVE
+    meanings = {KANJI[c].meaning.lower() for c in pool + TUTORIAL}
+    words = {w.strip() for m in meanings for w in m.replace(",", " ").split()}
+    readings = {KANJI[c].reading for c in pool + TUTORIAL} | {"し", "よん"}   # 四 se lee también し
+    out = []
+    for t in ("T2", "T3"):
+        rows = {ch: table[ch][t] for ch in pool if table.get(ch, {}).get(t)}
+        if len(rows) != len(pool):
+            out.append(f"sin trampa {t}: {''.join(c for c in pool if c not in rows)}")
+        texts = [x for r in rows.values() for x in (r["lureStrong"], r["unrelated"])]
+        if len(set(texts)) != len(texts):
+            out.append(f"{t}: opciones repetidas: {sorted({x for x in texts if texts.count(x) > 1})}")
+        for ch, r in rows.items():
+            for kind in ("lureStrong", "unrelated"):
+                x = r[kind]
+                if t == "T2" and (x.lower() in meanings or set(x.lower().split()) & words):
+                    out.append(f"{ch} T2 {kind} {x!r}: es o comparte palabra con un significado enseñado")
+                if t == "T3" and x in readings:
+                    out.append(f"{ch} T3 {kind} {x}: es una lectura enseñada")
+            if t == "T3":
+                reading, strong, unrel = (_morae(x) for x in (KANJI[ch].reading, r["lureStrong"], r["unrelated"]))
+                if len(strong) != len(reading) or sum(a != b for a, b in zip(strong, reading)) != 1:
+                    out.append(f"{ch} T3: {''.join(strong)} no cambia exactamente una mora de {''.join(reading)}")
+                if _voiced_first(reading[0], strong[0]):
+                    out.append(f"{ch} T3: {''.join(strong)} pone dakuten en la primera mora (rendaku de {''.join(reading)})")
+                if len(unrel) != len(reading) or set(unrel) & (set(reading) | set(strong)):
+                    out.append(f"{ch} T3: la sin relación {''.join(unrel)} no tiene el largo o comparte mora")
     return out
 
 
@@ -598,8 +692,8 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
             },
             "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)",
             "lures": ("in half of each active type's trials of S6-S8, seeded and the same in the "
-                      "three conditions: [CORRECT, LURE_STRONG, IN_SET, UNRELATED]; only T1 active, "
-                      "provisional (D-F6-129, D-F6-130, D-F6-131)"),
+                      "three conditions: [CORRECT, LURE_STRONG, IN_SET, UNRELATED]; T1, T2 and T3 active, "
+                      "official lists of Metricas section 16 (D-F6-129, D-F6-131, D-F6-168)"),
         },
         "sets": {n: list(v) for n, v in SETS.items()},
         "reserve": list(RESERVE),
@@ -949,7 +1043,7 @@ def main() -> int:
         flag = " ⚑" if r["provisional"] else ""
         print(f"  {ch}  {r['lureStrong']} ({r['similarityStrong']:+.2f})  {r['unrelated']} ({r['similarityUnrelated']:+.2f}){flag}")
     print()
-    lure_problems = check_lures(g, lures)
+    lure_problems = check_lures(g, lures) + check_lures_t2_t3(lures)
 
     print("Imageabilidad - se reporta, no se exige (ver §12, D10):")
     for tag, tbl in (("R1 glifo ", IMAGEABILITY_R1),
@@ -987,7 +1081,7 @@ def main() -> int:
         return 1
 
     print("Todos los sets dentro de banda; todas las colisiones restringidas; "
-          "todos los kanji con sustituto; trampas T1 según §2.4.")
+          "todos los kanji con sustituto; trampas T1, T2 y T3 según §2.4 y §16.5.")
     return 0
 
 

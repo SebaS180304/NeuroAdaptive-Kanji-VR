@@ -47,11 +47,12 @@ namespace NeuroAdaptiveVR.Core
         private const int TagLures    = 6;
 
         /// <summary>
-        /// Trial types whose lure trials are on (D-F6-131): only T1 until Content's T2/T3 lists
-        /// and MIRAI's answer (A-17). Adding a type here is the whole switch.
+        /// Trial types whose lure trials are on (D-F6-131): the three since Content's official lists
+        /// (Metricas §16, D-F6-168; X6b). Adding a type here is the whole switch.
         /// </summary>
         public static readonly IReadOnlyCollection<RetrievalTrialType> ActiveLureTypes =
-            new[] { RetrievalTrialType.MeaningToKanji };
+            new[] { RetrievalTrialType.MeaningToKanji, RetrievalTrialType.KanjiToMeaning,
+                    RetrievalTrialType.KanjiToReading };
 
         /// <summary>Lures go in S6, S7 and S8, the same rule in the three (D-F6-129, D-F6-132).</summary>
         public static bool HasLures(GameFlowState state) =>

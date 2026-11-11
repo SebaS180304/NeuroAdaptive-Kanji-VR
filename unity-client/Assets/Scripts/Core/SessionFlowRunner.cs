@@ -966,8 +966,17 @@ namespace NeuroAdaptiveVR.Core
             var texts = new HashSet<string> { StartLabel, ContinueLabel };
             var types = (RetrievalTrialType[])System.Enum.GetValues(typeof(RetrievalTrialType));
             foreach (var item in content.All.Concat(content.Tutorial))
+            {
                 foreach (var t in types)
                     texts.Add(TrialSequenceGenerator.OptionText(item, t));
+                // the lure options too (X6b): T2's "friendship" or "butterfly" are wider than any meaning
+                if (item.Content?.Lures != null)
+                    foreach (var l in item.Content.Lures.Values.Where(l => l != null))
+                    {
+                        if (!string.IsNullOrEmpty(l.LureStrong)) texts.Add(l.LureStrong);
+                        if (!string.IsNullOrEmpty(l.Unrelated)) texts.Add(l.Unrelated);
+                    }
+            }
             board.FitCardsTo(texts);
         }
 

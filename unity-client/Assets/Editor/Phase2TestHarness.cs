@@ -2705,10 +2705,10 @@ namespace NeuroAdaptiveVR.EditorTools
         }
 
         /// <summary>
-        /// X27. Lures (D-F6-129, D-F6-131, D-F6-132): in S6, S7 and S8 half of the T1 trials, rounded
-        /// down, carry [CORRECT, LURE_STRONG, IN_SET, UNRELATED] with four distinct texts and one correct;
-        /// T2, T3, S2 and S5 have none; the same seed gives the same lure trials; a trial without a lure
-        /// has exactly the options it had before lures.
+        /// X27. Lures (D-F6-129, D-F6-131, D-F6-132; T2/T3 since X6b): in S6, S7 and S8 half of the trials
+        /// of each type (odd: the seed rounds) carry [CORRECT, LURE_STRONG, IN_SET, UNRELATED] with four
+        /// distinct texts and one correct; S2 and S5 have none; the same seed gives the same lure trials;
+        /// a trial without a lure has exactly the options it had before lures.
         /// </summary>
         private static void LureCases(IReadOnlyList<KanjiItem> set, int seed, int minLag)
         {
@@ -2722,13 +2722,18 @@ namespace NeuroAdaptiveVR.EditorTools
                 var plan = TrialSequenceGenerator.Build(state, set, n, minLag, bs);
                 var again = TrialSequenceGenerator.Build(state, set, n, minLag, bs);
                 bool Lure(PlannedTrial t) => t.Options.Any(o => o.Kind == OptionKind.LureStrong);
-                int t1 = plan.Trials.Count(t => t.TrialType == RetrievalTrialType.MeaningToKanji);
-                int conTrampa = plan.Trials.Count(Lure);
-                resumen.Add($"{state.ShortCode()} {conTrampa}/{t1} T1");
-                if (conTrampa != t1 / 2 && !(t1 % 2 == 1 && conTrampa == t1 / 2 + 1))
-                    p.Add($"{state.ShortCode()}: {conTrampa} trampas en {t1} T1");
-                if (plan.Trials.Any(t => Lure(t) && t.TrialType != RetrievalTrialType.MeaningToKanji))
-                    p.Add($"{state.ShortCode()}: trampa fuera de T1");
+                var porTipo = new List<string>();
+                foreach (var tipo in TrialSequenceGenerator.ActiveLureTypes)
+                {
+                    int n_ = plan.Trials.Count(t => t.TrialType == tipo);
+                    int conTrampa = plan.Trials.Count(t => t.TrialType == tipo && Lure(t));
+                    porTipo.Add($"{conTrampa}/{n_} {TrialSequenceGenerator.TypeKey(tipo)}");
+                    if (conTrampa != n_ / 2 && !(n_ % 2 == 1 && conTrampa == n_ / 2 + 1))
+                        p.Add($"{state.ShortCode()}: {conTrampa} trampas en {n_} {TrialSequenceGenerator.TypeKey(tipo)}");
+                }
+                resumen.Add($"{state.ShortCode()} {Join(porTipo)}");
+                if (plan.Trials.Any(t => Lure(t) && !TrialSequenceGenerator.ActiveLureTypes.Contains(t.TrialType)))
+                    p.Add($"{state.ShortCode()}: trampa en un tipo apagado");
                 if (!plan.Trials.Select(Lure).SequenceEqual(again.Trials.Select(Lure)))
                     p.Add($"{state.ShortCode()}: la misma seed no da los mismos trials con trampa");
                 foreach (var t in plan.Trials.Where(Lure))
@@ -2762,14 +2767,15 @@ namespace NeuroAdaptiveVR.EditorTools
                 {
                     var plan = TrialSequenceGenerator.Build(state, set, n, minLag, TrialSequenceGenerator.BlockSeed(sesion, state));
                     int t1 = plan.Trials.Count(t => t.TrialType == RetrievalTrialType.MeaningToKanji);
-                    int lures = plan.Trials.Count(t => t.Options.Any(o => o.Kind == OptionKind.LureStrong));
+                    int lures = plan.Trials.Count(t => t.TrialType == RetrievalTrialType.MeaningToKanji &&
+                                                       t.Options.Any(o => o.Kind == OptionKind.LureStrong));
                     bool ok = t1 % 2 == 0 ? lures == t1 / 2 : (lures == t1 / 2 || lures == t1 / 2 + 1);
                     if (!ok) { p.Add($"sesion {sesion} {state.ShortCode()}: {lures} de {t1} T1"); break; }
                     if (state == GameFlowState.S6_GuidedPracticeCalibration) s6Counts.Add(lures);
                 }
             if (!s6Counts.SetEquals(new[] { 1, 2 })) p.Add($"S6 en 40 sesiones: {Join(s6Counts.Select(c => c.ToString()))} trampas (se esperan 1 y 2)");
             resumen.Add($"S6 en 40 sesiones: {Join(s6Counts.OrderBy(c => c).Select(c => c.ToString()))}");
-            Check("X27", "Trampas: la mitad de los T1 de S6-S8 (impar: la semilla redondea, D-F6-145) con CORRECT, LURE_STRONG, IN_SET y UNRELATED; nada en T2/T3 ni S2/S5",
+            Check("X27", "Trampas: la mitad de los T1, T2 y T3 de S6-S8 (impar: la semilla redondea, D-F6-145) con CORRECT, LURE_STRONG, IN_SET y UNRELATED, una sola correcta; nada en S2/S5",
                   p.Count == 0, p.Count == 0 ? Join(resumen) : Join(p));
         }
 
