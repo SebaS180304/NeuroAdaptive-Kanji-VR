@@ -211,11 +211,12 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 
 **Done Wed 11, 14:55:** no real flow creates a session without a set (Unity sends "A" by default; pre-test and portal create none; visit 4 / block R not in code). A8 code from 16:00: `ws_smoke_test` and 23 API test posts get a set. Duda 1 answered by D-F6-190 (not on the board mirror yet at 15:11): visit 4 uses visit 3's set; block R keeps the session it evaluates in its own field, not `assigned_kanji_set`. Applied with block R (week of 16 Nov); nothing changes today.
 
-### [ ] A8 · no session without a set (S) · D-F6-187 · **Wed from 16:00, only if A8-flows says so** (it is a backend change: restart after it, outside 13:30–14:30)
+### [x] A8 · no session without a set (S) · D-F6-187 · **Wed from 16:00, only if A8-flows says so** (it is a backend change: restart after it, outside 13:30–14:30)
 `backend/app/schemas/session.py`, tests, `ws_smoke_test`.
-- [ ] **First, in the draft:** every flow that creates a session and whether it sends a set: Unity `SessionBootstrap` (sends `newSessionKanjiSet`, default "A"); pre-test (creates participants, not sessions: to confirm); **short visit 4 and block R of D-F6-125** (not in code yet: which set would visit 4 be created with?); `ws_smoke_test` and the 13 test files that post `/sessions` (today without set; they would get one, as with the seed). **If any real flow has no set of its own: stop and tell PM; nothing is changed.**
-- [ ] Only then: `assigned_kanji_set` required, `A`, `B` or `C` (422 otherwise); test; callers updated.
-- [ ] **Stop.**
+- [x] **First, in the draft:** every flow that creates a session and whether it sends a set: Unity `SessionBootstrap` (sends `newSessionKanjiSet`, default "A"); pre-test (creates participants, not sessions: to confirm); **short visit 4 and block R of D-F6-125** (not in code yet: which set would visit 4 be created with?); `ws_smoke_test` and the 13 test files that post `/sessions` (today without set; they would get one, as with the seed). **If any real flow has no set of its own: stop and tell PM; nothing is changed.**
+- [x] Only then: `assigned_kanji_set` required, `A`, `B` or `C` (422 otherwise); test; callers updated.
+**Done Wed 11, 15:59: `1829024`.** Live with X3 in one restart (15:59). Missed flow found: Editor `SessionSetupTool.cs`, already sends a set.
+- [ ] **Stop** (note in the draft).
 
 ### [x] X2 · replay.py with XDF (S) · **if it fits:** committed before 13:30 or started after 14:30, never half done in between (D-F6-178); with no Stop until 16:00, it closes with a note and Sebas's OK comes at 16:00
 `backend/app/adaptation/replay.py`, test.
@@ -224,7 +225,7 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 - [x] Reports `FRAME_HITCH` chunks per state (F4 §7; they are not in the database).
 - [~] **Check:** a session recorded through X1 replays to the same decisions; z differences reported.
 **Done Wed 11, 15:03: `0676fe8`.** Live cut vs offline on `07343b5d`/`742ec49a`: same counted windows and decisions 18/18, |dz| ≤ 0.13; plain replay 36/36 identical. The X1-recorded check moves to J4 (no multimodal session yet). X3 must write `EEG_STATUS` `payload.status` = `PROCESS_DOWN` etc.
-- [ ] **Stop** (note in the draft; Sebas at 16:00).
+- [x] **Stop:** Sebas OK, Wed 11 16:00.
 
 ### [x] X3 · fallback, emulated (S) · D-F6-174
 `live.py`, `state.py`, `scripts/synthetic_aura.py` (pause option), tests.
@@ -233,7 +234,7 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 - [x] Emulated: stream stops pushing (cap off, Bluetooth); outlet gone (AURA closed); `live.py` killed.
 - [x] **Check:** in each case the session goes on with behaviour and is marked. **Real cases: J3.**
 **Done Wed 11, 15:21: `ccbfe26`.** `app/eeg/status.py`; `fallback` in the decision's `eeg` block; `not_counted_reason` for S4 / > 60 s. Emulated: AURA killed → LOST, `live.py` killed → PROCESS_DOWN, > 60 s → LOST_OVER_60S. 417 tests. Live with A8's restart.
-- [ ] **Stop** (note in the draft; Sebas at 16:00).
+- [x] **Stop:** Sebas OK, Wed 11 16:00.
 
 ### [x] X4 · lure columns (S) · D-F6-143
 Migration `0017`, `project_event`, test.
@@ -266,7 +267,7 @@ Migration `0017`, `project_event`, test.
 - [x] Font asset filled with the new characters and committed with the content; S0 prewarm leaves it byte-identical; X29 green.
 - [x] Harness green.
 **Done Wed 11, 15:28: `719c9be`, seed `8570a5a`.** Font 246 → 259, second prewarm byte-identical; harness 110/110.
-- [ ] **Stop** (note in the draft; Sebas at 16:00).
+- [x] **Stop:** Sebas OK, Wed 11 16:00.
 
 ### [ ] X6b · T2/T3 official lists, active (S) · §16.4 · **second to cut**
 `tools/kanji_metrics.py` → `kanji_content.json`, font asset, `TrialSequenceGenerator.ActiveLureTypes`, `SessionFlowRunner` card sizing, harness; commit as content + lures (D-F6-131).
