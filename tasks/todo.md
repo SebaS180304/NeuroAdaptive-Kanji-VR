@@ -209,7 +209,7 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 - [x] The list of A8's first bullet below, each flow with file:line and whether it sends `assigned_kanji_set`.
 - [x] Verdict in one line: "no real flow without a set" → A8 code after 16:00; or "flow X has none" → **Dudas para PM**, A8 code stays out, Sebas told in one line.
 
-**Done Wed 11, 14:55:** no real flow creates a session without a set (Unity sends "A" by default; pre-test and portal create none; visit 4 / block R not in code). A8 code from 16:00: `ws_smoke_test` and 23 API test posts get a set. Duda 1 for PM: which set visit 4 uses.
+**Done Wed 11, 14:55:** no real flow creates a session without a set (Unity sends "A" by default; pre-test and portal create none; visit 4 / block R not in code). A8 code from 16:00: `ws_smoke_test` and 23 API test posts get a set. Duda 1 answered by D-F6-190 (not on the board mirror yet at 15:11): visit 4 uses visit 3's set; block R keeps the session it evaluates in its own field, not `assigned_kanji_set`. Applied with block R (week of 16 Nov); nothing changes today.
 
 ### [ ] A8 · no session without a set (S) · D-F6-187 · **Wed from 16:00, only if A8-flows says so** (it is a backend change: restart after it, outside 13:30–14:30)
 `backend/app/schemas/session.py`, tests, `ws_smoke_test`.
