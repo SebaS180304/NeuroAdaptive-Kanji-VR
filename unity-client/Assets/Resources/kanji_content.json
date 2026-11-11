@@ -866,10 +866,10 @@
       "imageabilityObject": 5,
       "lures": {
         "T1": {
-          "lureStrong": "卓",
+          "lureStrong": "重",
           "unrelated": "白",
-          "provisional": true,
-          "similarityStrong": 0.799,
+          "provisional": false,
+          "similarityStrong": 0.4643,
           "similarityUnrelated": -0.347
         },
         "T2": null,
@@ -894,10 +894,10 @@
       "imageabilityObject": 2,
       "lures": {
         "T1": {
-          "lureStrong": "欠",
+          "lureStrong": "犬",
           "unrelated": "刀",
-          "provisional": true,
-          "similarityStrong": 0.6789,
+          "provisional": false,
+          "similarityStrong": 0.6414,
           "similarityUnrelated": -0.1071
         },
         "T2": null,
@@ -950,10 +950,10 @@
       "imageabilityObject": 5,
       "lures": {
         "T1": {
-          "lureStrong": "万",
+          "lureStrong": "右",
           "unrelated": "中",
-          "provisional": true,
-          "similarityStrong": 0.5271,
+          "provisional": false,
+          "similarityStrong": 0.2489,
           "similarityUnrelated": -0.3037
         },
         "T2": null,
@@ -978,10 +978,10 @@
       "imageabilityObject": 5,
       "lures": {
         "T1": {
-          "lureStrong": "由",
+          "lureStrong": "出",
           "unrelated": "夏",
-          "provisional": true,
-          "similarityStrong": 0.7428,
+          "provisional": false,
+          "similarityStrong": 0.6605,
           "similarityUnrelated": -0.401
         },
         "T2": null,
@@ -1006,10 +1006,10 @@
       "imageabilityObject": 5,
       "lures": {
         "T1": {
-          "lureStrong": "閉",
+          "lureStrong": "開",
           "unrelated": "書",
-          "provisional": true,
-          "similarityStrong": 0.7334,
+          "provisional": false,
+          "similarityStrong": 0.655,
           "similarityUnrelated": -0.5015
         },
         "T2": null,
@@ -1034,10 +1034,10 @@
       "imageabilityObject": 3,
       "lures": {
         "T1": {
-          "lureStrong": "食",
+          "lureStrong": "文",
           "unrelated": "頭",
-          "provisional": true,
-          "similarityStrong": 0.5467,
+          "provisional": false,
+          "similarityStrong": 0.3537,
           "similarityUnrelated": -0.1698
         },
         "T2": null,
@@ -1062,10 +1062,10 @@
       "imageabilityObject": 3,
       "lures": {
         "T1": {
-          "lureStrong": "芋",
+          "lureStrong": "毛",
           "unrelated": "左",
-          "provisional": true,
-          "similarityStrong": 0.7112,
+          "provisional": false,
+          "similarityStrong": 0.4701,
           "similarityUnrelated": -0.1579
         },
         "T2": null,
@@ -1092,7 +1092,7 @@
         "T1": {
           "lureStrong": "両",
           "unrelated": "音",
-          "provisional": true,
+          "provisional": false,
           "similarityStrong": 0.838,
           "similarityUnrelated": -0.3382
         },
@@ -1120,7 +1120,7 @@
         "T1": {
           "lureStrong": "入",
           "unrelated": "空",
-          "provisional": true,
+          "provisional": false,
           "similarityStrong": 0.8963,
           "similarityUnrelated": -0.1197
         },
@@ -1146,10 +1146,10 @@
       "imageabilityObject": 3,
       "lures": {
         "T1": {
-          "lureStrong": "示",
+          "lureStrong": "走",
           "unrelated": "先",
-          "provisional": true,
-          "similarityStrong": 0.6431,
+          "provisional": false,
+          "similarityStrong": 0.3379,
           "similarityUnrelated": -0.2597
         },
         "T2": null,
@@ -1176,7 +1176,7 @@
         "T1": {
           "lureStrong": "午",
           "unrelated": "町",
-          "provisional": true,
+          "provisional": false,
           "similarityStrong": 0.7399,
           "similarityUnrelated": -0.1222
         },
@@ -1202,10 +1202,10 @@
       "imageabilityObject": 4,
       "lures": {
         "T1": {
-          "lureStrong": "向",
+          "lureStrong": "内",
           "unrelated": "弓",
-          "provisional": true,
-          "similarityStrong": 0.6086,
+          "provisional": false,
+          "similarityStrong": 0.5497,
           "similarityUnrelated": -0.2575
         },
         "T2": null,
@@ -1230,10 +1230,10 @@
       "imageabilityObject": 5,
       "lures": {
         "T1": {
-          "lureStrong": "苑",
+          "lureStrong": "化",
           "unrelated": "力",
-          "provisional": true,
-          "similarityStrong": 0.5206,
+          "provisional": false,
+          "similarityStrong": 0.2453,
           "similarityUnrelated": -0.2645
         },
         "T2": null,
@@ -1287,10 +1287,10 @@
       "lures": {
         "T1": {
           "lureStrong": "本",
-          "unrelated": "校",
+          "unrelated": "夜",
           "provisional": true,
           "similarityStrong": 0.7411,
-          "similarityUnrelated": -0.0143
+          "similarityUnrelated": 0.0239
         },
         "T2": null,
         "T3": null
@@ -1343,10 +1343,10 @@
       "lures": {
         "T1": {
           "lureStrong": "円",
-          "unrelated": "黄",
+          "unrelated": "休",
           "provisional": true,
           "similarityStrong": 0.7947,
-          "similarityUnrelated": -0.3852
+          "similarityUnrelated": -0.3712
         },
         "T2": null,
         "T3": null
@@ -1679,10 +1679,10 @@
       "lures": {
         "T1": {
           "lureStrong": "余",
-          "unrelated": "王",
+          "unrelated": "船",
           "provisional": true,
           "similarityStrong": 0.8464,
-          "similarityUnrelated": -0.0073
+          "similarityUnrelated": 0.042
         },
         "T2": null,
         "T3": null
@@ -1707,10 +1707,10 @@
       "lures": {
         "T1": {
           "lureStrong": "革",
-          "unrelated": "文",
+          "unrelated": "黒",
           "provisional": true,
           "similarityStrong": 0.6364,
-          "similarityUnrelated": -0.0064
+          "similarityUnrelated": -0.0031
         },
         "T2": null,
         "T3": null

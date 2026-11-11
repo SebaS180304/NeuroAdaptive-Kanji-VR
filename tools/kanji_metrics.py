@@ -200,31 +200,48 @@ TUTORIAL = ["一", "二", "三", "四", "五"]
 # Solo T1 está activo (D-F6-131); T2 y T3 quedan vacíos hasta las listas de
 # Contenido (semana del 9 nov).
 #
-# T1, trampa fuerte: kanji de forma muy parecida. Es la lista de §15.2 de
-# Metricas_Dificultad_Kanji_Fase2.md, PROVISIONAL hasta que MIRAI responda (A-17).
-# Si cambia un par, se cambia aquí y se regenera el contrato (D-F6-130).
+# T1, trampa fuerte: kanji de forma muy parecida. Lista OFICIAL de §16.2 de
+# Metricas_Dificultad_Kanji_Fase2.md (D-F6-168): par clásico en 13 de los 15 de
+# los sets; 月, 竹 y la reserva conservan el candidato de la métrica de §15.2 (⚑,
+# METRIC_LURES). Si cambia un par, se cambia aquí y se regenera el contrato.
 LURE_T1: dict[str, str] = {
-    "月": "用", "車": "卓", "火": "欠", "竹": "枚", "石": "万",
-    "山": "由", "門": "閉", "女": "食", "手": "芋", "雨": "両",
-    "人": "入", "足": "示", "牛": "午", "肉": "向", "花": "苑",
+    "月": "用", "車": "重", "火": "犬", "竹": "枚", "石": "右",
+    "山": "出", "門": "開", "女": "文", "手": "毛", "雨": "両",
+    "人": "入", "足": "走", "牛": "午", "肉": "内", "花": "化",
     "日": "旧", "木": "本", "川": "刷", "田": "円", "口": "囚",
     "土": "上", "子": "干", "水": "氷", "目": "回", "米": "未",
     "糸": "系", "耳": "且", "貝": "居", "学": "半", "物": "牧",
     "金": "余", "茶": "革", "馬": "果", "魚": "危", "鳥": "島",
 }
 
-# T1, sin relación: el candidato de forma MENOS parecida al objetivo, uno distinto
-# por kanji, elegido por lure_table(). PROVISIONAL (desarrollo, 4 nov), hasta la
-# lista de Contenido. Candidatos: kanji de 1.º-2.º de primaria fuera del pool y de
-# las trampas, sin números (el tutorial son números) ni significados cercanos a
-# los del pool (森, 林, 男, 見, 草 quedan fuera). El significado está para
-# comprobar que ninguno es una segunda respuesta correcta.
+# Las ⚑ de §16.2: la trampa sale de la métrica, sin par clásico todavía (los de la
+# reserva van con el bloque R, semana del 16). Solo estas quedan "provisional".
+METRIC_LURES = {"月", "竹"}
+
+# T1, sin relación: lista OFICIAL de §16.2 (con los cuatro cambios de §16.3), una
+# por kanji. Antes la elegía lure_table() como la menos parecida; ahora es una
+# tabla, para que cambiar una sea contenido y no dependa del orden de elección.
+UNRELATED_T1: dict[str, str] = {
+    "月": "矢", "車": "白", "火": "刀", "竹": "正", "石": "中",
+    "山": "夏", "門": "書", "女": "頭", "手": "左", "雨": "音",
+    "人": "空", "足": "先", "牛": "町", "肉": "弓", "花": "力",
+    "日": "青", "木": "夜", "川": "春", "田": "休", "口": "年",
+    "土": "村", "子": "立", "水": "朝", "目": "赤", "米": "冬",
+    "糸": "早", "耳": "声", "貝": "名", "学": "色", "物": "玉",
+    "金": "船", "茶": "黒", "馬": "家", "魚": "星", "鳥": "夕",
+}
+
+# Candidatos de la sin relación (el método de D-F6-144, §16.3): kanji de 1.º-2.º de
+# primaria fuera del pool, sin números (el tutorial son números) ni significados
+# cercanos a los del pool (森, 林, 男, 見, 草 quedan fuera). El significado está para
+# comprobar que ninguno es una segunda respuesta correcta. 犬 y 文 salen: son
+# trampas fuertes desde §16.2.
 UNRELATED_T1_CANDIDATES: dict[str, str] = {
     "王": "king", "音": "sound", "気": "spirit", "休": "rest", "玉": "ball",
-    "空": "sky", "犬": "dog", "校": "school", "左": "left", "正": "correct",
+    "空": "sky", "校": "school", "左": "left", "正": "correct",
     "青": "blue", "夕": "evening", "赤": "red", "先": "ahead", "早": "early",
     "村": "village", "中": "middle", "虫": "insect", "町": "town", "年": "year",
-    "白": "white", "文": "writing", "名": "name", "立": "stand", "力": "power",
+    "白": "white", "名": "name", "立": "stand", "力": "power",
     "船": "ship", "星": "star", "風": "wind", "家": "house", "春": "spring",
     "夏": "summer", "秋": "autumn", "冬": "winter", "朝": "morning", "夜": "night",
     "歌": "song", "絵": "picture", "書": "write", "線": "line", "紙": "paper",
@@ -470,16 +487,14 @@ def substitution_table(g: "Glyphs") -> dict[str, dict[str, list[str]]]:
 
 def lure_table(g: "Glyphs") -> dict[str, dict]:
     """Trampas por kanji (sets y reserva) y por tipo. T1: la fuerte de LURE_T1 y la
-    sin relación de menor similitud, distinta para cada kanji; T2 y T3: None."""
-    used: set[str] = set()
+    sin relación de UNRELATED_T1 (§16.2); provisional solo las ⚑ de la métrica
+    (月, 竹 y la reserva). T2 y T3: None (X6b)."""
     out: dict[str, dict] = {}
     for ch in [c for v in SETS.values() for c in v] + RESERVE:
-        free = [c for c in UNRELATED_T1_CANDIDATES if c not in used]
-        sim, unrelated = min((g.similarity(ch, c), c) for c in free)
-        used.add(unrelated)
-        out[ch] = {"T1": {"lureStrong": LURE_T1[ch], "unrelated": unrelated, "provisional": True,
+        out[ch] = {"T1": {"lureStrong": LURE_T1[ch], "unrelated": UNRELATED_T1[ch],
+                          "provisional": ch in METRIC_LURES or ch in RESERVE,
                           "similarityStrong": round(g.similarity(ch, LURE_T1[ch]), 4),
-                          "similarityUnrelated": round(sim, 4)},
+                          "similarityUnrelated": round(g.similarity(ch, UNRELATED_T1[ch]), 4)},
                    "T2": None, "T3": None}
     return out
 
@@ -505,7 +520,9 @@ def check_lures(g: "Glyphs", table: dict[str, dict]) -> list[str]:
         out.append(f"un kanji es trampa fuerte y sin relación: {''.join(sorted(set(strong) & set(unrel)))}")
     # Nunca dos correctas: en T1 la opción es un glifo; solo el objetivo significa el prompt.
     for c in unrel:
-        if UNRELATED_T1_CANDIDATES[c].lower() in meanings:
+        if c not in UNRELATED_T1_CANDIDATES:
+            out.append(f"{c}: sin relación fuera de los candidatos (sin significado para comprobarlo)")
+        elif UNRELATED_T1_CANDIDATES[c].lower() in meanings:
             out.append(f"{c} ({UNRELATED_T1_CANDIDATES[c]}) significa lo mismo que un kanji del pool")
     for ch, r in t1.items():
         if r["similarityUnrelated"] >= r["similarityStrong"]:
@@ -926,10 +943,11 @@ def main() -> int:
     orphans = [e for rows in table.values() for e, v in rows.items() if not v]
 
     lures = lure_table(g)
-    print("Trampas T1 (provisionales, D-F6-130): kanji  fuerte (sim)  sin relación (sim)")
+    print("Trampas T1 (§16.2, D-F6-168; ⚑ = de la métrica, provisional): kanji  fuerte (sim)  sin relación (sim)")
     for ch, row in lures.items():
         r = row["T1"]
-        print(f"  {ch}  {r['lureStrong']} ({r['similarityStrong']:+.2f})  {r['unrelated']} ({r['similarityUnrelated']:+.2f})")
+        flag = " ⚑" if r["provisional"] else ""
+        print(f"  {ch}  {r['lureStrong']} ({r['similarityStrong']:+.2f})  {r['unrelated']} ({r['similarityUnrelated']:+.2f}){flag}")
     print()
     lure_problems = check_lures(g, lures)
 
