@@ -281,7 +281,7 @@ Migration `0017`, `project_event`, test.
 
 ### [x] X7 · reserve 16–20 (M) · **first to cut**
 - [x] FBX and the four images of `pistas/`, as sets A–C (D-F6-160); 18 and 19 with +90° X at the root. Harness only: **the headset look moves to Thu or Fri, after the cap.**
-**Done Wed 11, 16:33: `e8d784a`.** 16–25 (Sebas widened it from 16–20); 26–30 wait for their hints, after the dry run. Harness 112/112. Headset look after the cap (18/19 face, 21–24, 17 F2).
+**Done Wed 11: 16–25 `e8d784a` (16:33), 26–30 `cb64881` (17:23; hints official at 17:20).** 29 is v010. Harness 112/112. Headset look after the cap (18/19 face, 21–24, 17 F2).
 - [ ] **Stop.**
 
 ### [ ] X8 · close (draft, Dudas, `tasks/`)
