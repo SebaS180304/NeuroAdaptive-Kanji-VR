@@ -196,12 +196,13 @@ Today the close rule lives only in `update_session_state` (`sessions.py:136–16
 - [~] **Check:** synthetic stream: epochs arrive (26, consecutive), heartbeat fresh, reference from S6 (all 11). A decision with its EEG block: covered by X1a's tests; **end to end through the WebSocket with `decision_latency_ms` goes to J1** (needs S7 answers in `MULTIMODAL_ADAPTIVE`).
 - [x] **Stop** (X1b). Sebas OK, 10 Nov; end-to-end decision in J1.
 
-### [ ] A9 · arrival margin of 1.5 s in the three counts (S) · D-F6-188 · **moved up to Wed morning, before 13:30 (D-F6-189 (2))**
+### [x] A9 · arrival margin of 1.5 s in the three counts (S) · D-F6-188 · **moved up to Wed morning, before 13:30 (D-F6-189 (2))**
 `backend/app/eeg/window.py` (live and replay), `database/verify_eeg.sql`, their tests.
 Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 500 ms constant); `verify_eeg.sql:72` and `:76` (`end_ms <= w.hi` → `w.hi - 1500`), header comment of block 5 updated. The `*_centre` contrast columns stay as they are.
-- [ ] An epoch counts in a window only if it **ended at least 1.5 s before the answer** (D-F6-172 + D-F6-188), in `window.py` and in `verify_eeg.sql`'s P7 block; each with its test (an epoch ending 1.4 s before the answer does not count, one ending 1.5 s before does).
-- [ ] **Check:** `window.py` and `verify_eeg.sql` still agree window by window on `b5bcf5bd`, `742ec49a`, `07343b5d` (as M6).
-- [ ] Official P7 recomputed for the three (today 67 %, 78 %, 83 %) **in `Borrador_Plan_Fase6_9_11nov.md`, a table old → new per session, with the commit**, for the EEG chat (→ F4) and the presentation chat (→ deck, closes 14:30); one under 60 % is reported as data, the rule is not changed. Computed with `psql` on the db and a one-off `docker compose exec`: no restart needed for the figure.
+- [x] An epoch counts in a window only if it **ended at least 1.5 s before the answer** (D-F6-172 + D-F6-188), in `window.py` and in `verify_eeg.sql`'s P7 block; each with its test (an epoch ending 1.4 s before the answer does not count, one ending 1.5 s before does).
+- [x] **Check:** `window.py` and `verify_eeg.sql` still agree window by window on `b5bcf5bd`, `742ec49a`, `07343b5d` (as M6).
+- [x] Official P7 recomputed for the three (today 67 %, 78 %, 83 %) **in `Borrador_Plan_Fase6_9_11nov.md`, a table old → new per session, with the commit**, for the EEG chat (→ F4) and the presentation chat (→ deck, closes 14:30); one under 60 % is reported as data, the rule is not changed. Computed with `psql` on the db and a one-off `docker compose exec`: no restart needed for the figure.
+**Done Wed 11, 14:01: `33d3eae`.** P7 67→61 %, 78→72 %, 83→67 %, all VALID; window.py = SQL on 54/54 windows. 401 tests. Restart after 14:30 (A3 went live at 13:57, inside the no-restart hour: see the draft).
 - [ ] Before 13:30 (D-F6-189). **Stop** (Sebas reads the table). Then the restart for A3 + A9 if ≤ 13:20, else at 16:00.
 
 ### [ ] A8-flows · every session-creating flow, in the draft, no code · D-F6-187 condition · before 13:30, else 13:30–16:00 (no Stop, a note)
