@@ -154,7 +154,7 @@ def test_the_decision_carries_its_eeg_block() -> None:
     ds, _ = _run(_warm() + [(OVERLOADED, _w(ei=-0.41234, theta=1.23456))])
     block = ds[-1].as_dict()["eeg"]
     assert block == {"counted": True, "non_poor": 3, "clean_s": 9.0, "ei_z": -0.412, "theta_z": 1.235,
-                     "alpha_z": 0.0, "effect": "CONFIRMED"}
+                     "alpha_z": 0.0, "fallback": None, "effect": "CONFIRMED"}
     assert ds[-1].as_dict()["rules_version"] == RULES_V2_MM
 
 

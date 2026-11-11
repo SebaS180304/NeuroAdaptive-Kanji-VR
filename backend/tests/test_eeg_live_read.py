@@ -21,8 +21,11 @@ async def _session_with_epochs(client, pretested, starts):
     sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid,
                                                 "condition": "MULTIMODAL_ADAPTIVE"})).json()["id"]
     async with AsyncSessionLocal() as db:
-        await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path, reference) VALUES (:s, 'x.xdf', "
-                              "CAST(:r AS jsonb)) ON CONFLICT (session_id) DO UPDATE SET reference = CAST(:r AS jsonb)"),
+        # live.py alive: fresh heartbeat, samples flowing (X3)
+        await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path, reference, heartbeat_at, eeg_gap_ms) "
+                              "VALUES (:s, 'x.xdf', CAST(:r AS jsonb), now(), 200) ON CONFLICT (session_id) DO UPDATE "
+                              "SET reference = CAST(:r AS jsonb), heartbeat_at = now(), eeg_gap_ms = 200, "
+                              "not_counted_reason = NULL"),
                          {"s": sid, "r": json.dumps(REF)})
         for i, start in enumerate(starts):
             await db.execute(text(

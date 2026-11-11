@@ -16,6 +16,7 @@ from app.adaptation.estimator import DISENGAGED, OVERLOADED, STABLE, UNDERCHALLE
 
 CONFIRMED, VETO, LED, UNAVAILABLE, ONLY_ALERT, NEUTRAL = (
     "CONFIRMED", "VETO", "LED", "UNAVAILABLE", "ONLY_ALERT", "NEUTRAL")
+NOT_COUNTED = "NOT_COUNTED"  # the window's own P7 failed; the other fallback reasons are in app.eeg.status
 
 Z_AGREE = 1.0
 Z_LEAD = 1.5
@@ -29,11 +30,13 @@ def _r(z: float | None) -> float | None:
 def block(window: dict) -> dict:
     """window.evaluate() as the decision stores it (payload ``eeg``, without ``effect``); z rounded to 3 decimals."""
     if "z" not in window:  # already a block (the payload of a stored decision, when the state is rebuilt)
-        return {k: window.get(k) for k in ("counted", "non_poor", "clean_s", "ei_z", "theta_z", "alpha_z")}
+        return {k: window.get(k) for k in ("counted", "non_poor", "clean_s", "ei_z", "theta_z", "alpha_z", "fallback")}
     z = window.get("z") or {}
+    # BEHAVIOR_FALLBACK (§5.5, X3): why the behaviour decided alone; None when the EEG counted
+    fallback = None if window.get("counted") else window.get("fallback") or NOT_COUNTED
     return {"counted": window.get("counted"), "non_poor": window.get("non_poor"), "clean_s": window.get("clean_s"),
             "ei_z": _r(z.get("engagement_index")), "theta_z": _r(z.get("theta_fz")),
-            "alpha_z": _r(z.get("alpha_parietal"))}
+            "alpha_z": _r(z.get("alpha_parietal")), "fallback": fallback}
 
 
 def _z(eeg: dict | None, index: str) -> float | None:

@@ -188,18 +188,42 @@ _EPOCH_COLUMNS = ("start_ms", "end_ms", "quality", "chunk_clean",
                   "engagement_index", "theta_fz", "alpha_parietal", "theta_beta")
 
 
+_eeg_trackers: dict[str, "status.Tracker"] = {}
+
+
 async def _eeg_source(session_id: uuid.UUID, answered_ms):
     """MULTIMODAL_ADAPTIVE (D-F6-171): every epoch live.py has written up to the answer and the reference, read
     once per answer; window.py then keeps only those finished at the decision (D-F6-172). Any failure: no EEG
-    for this window (UNAVAILABLE), never a lost decision."""
-    from app.eeg import window
+    for this window (UNAVAILABLE), never a lost decision.
+
+    X3 (§5.5, D-F6-174): with the EEG down (LOST, PROCESS_DOWN) or cancelled for the session (S4 alpha failed,
+    > 60 s without EEG) the window does not count and carries the reason (BEHAVIOR_FALLBACK); each status change
+    is an EEG_STATUS event."""
+    from app.eeg import status, window
 
     if answered_ms is None:
         return None
     try:
         async with AsyncSessionLocal() as db:
-            ref = (await db.execute(text("SELECT reference FROM eeg_sessions WHERE session_id = :s"),
-                                    {"s": str(session_id)})).scalar_one_or_none()
+            row = (await db.execute(text(
+                "SELECT reference, alpha_passed, not_counted_reason, eeg_gap_ms, "
+                "EXTRACT(EPOCH FROM now() - heartbeat_at) AS age FROM eeg_sessions WHERE session_id = :s"),
+                {"s": str(session_id)})).one_or_none()
+            ref, alpha_passed, reason, gap_ms, age = row if row else (None, None, None, None, None)
+            tracker = _eeg_trackers.setdefault(str(session_id), status.Tracker())
+            now = status.classify(None if age is None else float(age), gap_ms)
+            report = tracker.observe(now, gap_ms, None if age is None else float(age))
+            if report:
+                await _store_eeg_status(db, session_id, report, answered_ms, gap_ms, age)
+            new_reason = reason or (status.S4_ALPHA_FAILED if alpha_passed is False else tracker.cancelled)
+            if row and new_reason and new_reason != reason:   # once, for the rest of the session (§5.5)
+                await db.execute(text("UPDATE eeg_sessions SET not_counted_reason = :r WHERE session_id = :s"),
+                                 {"s": str(session_id), "r": new_reason})
+                logger.warning("EEG cancelled for the session (session=%s): %s", session_id, new_reason)
+            await db.commit()
+            fallback = new_reason or (now if now != status.CONNECTED else None)
+            if fallback:
+                return lambda *_: {"counted": False, "non_poor": 0, "clean_s": 0.0, "z": {}, "fallback": fallback}
             rows = (await db.execute(text(
                 f"SELECT {', '.join(_EPOCH_COLUMNS)} FROM eeg_epochs WHERE session_id = :s "
                 "AND start_ms <= :hi"),  # no lower bound: trials have no timeout, a window can last > 60 s (D-F6-186)
@@ -209,6 +233,7 @@ async def _eeg_source(session_id: uuid.UUID, answered_ms):
         return None
     epochs = [dict(zip(_EPOCH_COLUMNS, r)) for r in rows]
     reference = ref or {"indices": {}}
+    # shortcut: a session without an eeg_sessions row (live.py never started) reads as PROCESS_DOWN above
     return lambda _trial_id, first_start_ms, decision_ms: window.evaluate(epochs, first_start_ms, decision_ms,
                                                                           reference)
 
@@ -257,6 +282,17 @@ async def _send_decision(
     d = pending.decision
     logger.info("DECISION %s %s %s (%s, %.1f ms) session=%s", d.trial_id, d.action, d.reason_code,
                 pending.decision_id, latency_ms or -1, session_id)
+
+
+async def _store_eeg_status(db, session_id, status_: str, answered_ms, gap_ms, age) -> None:
+    """EEG_STATUS (F4 §2.3), written by the backend: a dead live.py cannot write its own (D-F6-171)."""
+    event = SessionEventModel(session_id=session_id, event_type="EEG_STATUS", client_timestamp=None, payload={
+        "status": status_, "session_elapsed_ms": int(answered_ms), "eeg_gap_ms": gap_ms,
+        "heartbeat_age_s": None if age is None else round(float(age), 1), "source": "BACKEND"})
+    db.add(event)
+    await db.flush()
+    await _project(db, event.id)
+    logger.info("EEG_STATUS %s session=%s", status_, session_id)
 
 
 async def _store_outcomes(session_id: uuid.UUID, outcomes: list[dict]) -> None:
