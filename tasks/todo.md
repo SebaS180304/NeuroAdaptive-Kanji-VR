@@ -258,14 +258,15 @@ Migration `0017`, `project_event`, test.
 - [x] **Stop.** Sebas OK, 10 Nov.
 **Done Tue 10 (moved up):** `53f52c3` + seed `0d6956d`; 94 → 93, only C 牛 loses 子 (8 left), no orphan; nominal sets pass; `meaningClashes` = 女人 人子 田米 貝魚; the pre-test no longer offers 米 after 田 (it did in sets A and C). 396 tests.
 
-### [ ] X6a · T1 official lists (S) · D-F6-168, §16.2 and §16.3
+### [x] X6a · T1 official lists (S) · D-F6-168, §16.2 and §16.3
 `tools/kanji_metrics.py` → `kanji_content.json`, TMP font asset; commit as content.
-- [ ] `LURE_T1` as §16.2 (10 of the sets change; reserve unchanged).
-- [ ] "Sin relación" as an explicit table of the 35 of §16.2 instead of the greedy choice (4 of the reserve change); `provisional` true only for ⚑ metric (月, 竹, the reserve).
-- [ ] `check_lures` clean. The components rule of §16.3 stays out this week.
-- [ ] Font asset filled with the new characters and committed with the content; S0 prewarm leaves it byte-identical; X29 green.
-- [ ] Harness green.
-- [ ] **Stop.**
+- [x] `LURE_T1` as §16.2 (10 of the sets change; reserve unchanged).
+- [x] "Sin relación" as an explicit table of the 35 of §16.2 instead of the greedy choice (4 of the reserve change); `provisional` true only for ⚑ metric (月, 竹, the reserve).
+- [x] `check_lures` clean. The components rule of §16.3 stays out this week.
+- [x] Font asset filled with the new characters and committed with the content; S0 prewarm leaves it byte-identical; X29 green.
+- [x] Harness green.
+**Done Wed 11, 15:28: `719c9be`, seed `8570a5a`.** Font 246 → 259, second prewarm byte-identical; harness 110/110.
+- [ ] **Stop** (note in the draft; Sebas at 16:00).
 
 ### [ ] X6b · T2/T3 official lists, active (S) · §16.4 · **second to cut**
 `tools/kanji_metrics.py` → `kanji_content.json`, font asset, `TrialSequenceGenerator.ActiveLureTypes`, `SessionFlowRunner` card sizing, harness; commit as content + lures (D-F6-131).
