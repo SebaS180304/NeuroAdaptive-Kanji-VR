@@ -21,7 +21,7 @@ MonoBehaviour:
   visualAssociation: 
   assemblySegments:
   - segmentId: KANJI_KAI_SEG1
-    description: 目 box
+    description: "\u76EE box"
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   - segmentId: KANJI_KAI_SEG2
@@ -29,6 +29,9 @@ MonoBehaviour:
     slotPosition: {x: 0, y: 0, z: 0}
     segmentAsset: {fileID: 0}
   targetReadingAudio: {fileID: 8300000, guid: 1c0b19027e6352942ad82aff666bc013, type: 3}
-  anchorObjectPrefab: {fileID: 0}
+  anchorObjectPrefab: {fileID: 7202059981237922394, guid: 5b7bed6cea99b9848aa999b88c7962c5, type: 3}
   transformationAnimation: {fileID: 0}
-  visualAssociationSprite: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: 73f4942ac1ac96749b27211c907c15e2, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: 2539e2d25cb20664f93dc637ace6a65f, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: be4a2474b0e8c104eac4ba4606a99f3f, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: df103fd25f6b3e44c9aba3dbbc0fa8a8, type: 3}

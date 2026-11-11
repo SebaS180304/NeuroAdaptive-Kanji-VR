@@ -53,6 +53,19 @@ namespace NeuroAdaptiveVR.EditorTools
             ("KANJI_ME", "24_ME"), ("KANJI_KOME", "25_KOME"),
         };
 
+        private static readonly (string kanjiId, string code)[] Reserve3 =
+        {
+            ("KANJI_ITO", "26_ITO"), ("KANJI_MIMI", "27_MIMI"), ("KANJI_KAI", "28_KAI"),
+            ("KANJI_GAKU", "29_GAKU"), ("KANJI_MONO", "30_MONO"),
+        };
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 26-30", priority = 308)]
+        public static void RunReserve3()
+        {
+            Integrate("R", Reserve3);
+            IntegrateHints("R", Reserve3);
+        }
+
         [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 16-25", priority = 307)]
         public static void RunReserve()
         {
