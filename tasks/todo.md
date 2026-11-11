@@ -244,10 +244,10 @@ Migration `0017`, `project_event`, test.
 **Done Tue 10 (moved up):** migration 0017; projected trials filled from their events (269, 3 lures chosen); up/down/up same function. 397 tests.
 
 ### [ ] X5 · A-20, LSL privacy
-- [ ] Try (a) `.cfg` in AURA's executable folder, (b) PC off the lab network; synthetic stream, no cap.
-- [ ] Check (b) keeps Link, AURA, LabRecorder, `autorun` and `live.py` working. **Seeing it from another PC needs someone at that PC.**
-- [ ] Result in the draft, for a decision.
-**Wed 11, 17:26: prepared, waits for Sebas.** Offline script in the scratchpad (draft has the path and steps); (a) needs someone at another lab PC. Found: another `AURA` stream on the lab network (host Manuela); our readers filter by hostname. Not applied: no `lsl_api.cfg` written.
+- [~] Try (a) `.cfg` in AURA's executable folder, (b) PC off the lab network; synthetic stream, no cap.
+- [x] Check (b) keeps Link, AURA, LabRecorder, `autorun` and `live.py` working. **Seeing it from another PC needs someone at that PC.**
+- [x] Result in the draft, for a decision.
+**Wed 11: (b) passes (Sebas, 17:56, offline: script 5/5, Link, LabRecorder only this PC, AURA opens); Play test session `9ce593d8` deleted. Waits for D-F6-193 on the board.** Prepared 17:26. Offline script in the scratchpad (draft has the path and steps); (a) needs someone at another lab PC. Found: another `AURA` stream on the lab network (host Manuela); our readers filter by hostname. Not applied: no `lsl_api.cfg` written.
 - [ ] **Stop.**
 
 ### [x] X6s · substitution condition 1 without overlapping meanings (S) · D-F6-181 (2) · before X6a
