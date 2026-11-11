@@ -247,6 +247,7 @@ Migration `0017`, `project_event`, test.
 - [ ] Try (a) `.cfg` in AURA's executable folder, (b) PC off the lab network; synthetic stream, no cap.
 - [ ] Check (b) keeps Link, AURA, LabRecorder, `autorun` and `live.py` working. **Seeing it from another PC needs someone at that PC.**
 - [ ] Result in the draft, for a decision.
+**Wed 11, 17:26: prepared, waits for Sebas.** Offline script in the scratchpad (draft has the path and steps); (a) needs someone at another lab PC. Found: another `AURA` stream on the lab network (host Manuela); our readers filter by hostname. Not applied: no `lsl_api.cfg` written.
 - [ ] **Stop.**
 
 ### [x] X6s · substitution condition 1 without overlapping meanings (S) · D-F6-181 (2) · before X6a
@@ -284,7 +285,7 @@ Migration `0017`, `project_event`, test.
 **Done Wed 11: 16–25 `e8d784a` (16:33), 26–30 `cb64881` (17:23; hints official at 17:20).** 29 is v010. Harness 112/112. Headset look after the cap (18/19 face, 21–24, 17 F2).
 - [ ] **Stop.**
 
-### [ ] X8 · close (draft, Dudas, `tasks/`)
+### [x] X8 · close (draft, Dudas, `tasks/`)
 - [ ] **Stop:** Sebas reads it Thu morning.
 
 ---
