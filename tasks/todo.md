@@ -216,7 +216,7 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 - [x] **First, in the draft:** every flow that creates a session and whether it sends a set: Unity `SessionBootstrap` (sends `newSessionKanjiSet`, default "A"); pre-test (creates participants, not sessions: to confirm); **short visit 4 and block R of D-F6-125** (not in code yet: which set would visit 4 be created with?); `ws_smoke_test` and the 13 test files that post `/sessions` (today without set; they would get one, as with the seed). **If any real flow has no set of its own: stop and tell PM; nothing is changed.**
 - [x] Only then: `assigned_kanji_set` required, `A`, `B` or `C` (422 otherwise); test; callers updated.
 **Done Wed 11, 15:59: `1829024`.** Live with X3 in one restart (15:59). Missed flow found: Editor `SessionSetupTool.cs`, already sends a set.
-- [ ] **Stop** (note in the draft).
+- [x] **Stop:** Sebas OK, Wed 11.
 
 ### [x] X2 · replay.py with XDF (S) · **if it fits:** committed before 13:30 or started after 14:30, never half done in between (D-F6-178); with no Stop until 16:00, it closes with a note and Sebas's OK comes at 16:00
 `backend/app/adaptation/replay.py`, test.
@@ -277,10 +277,11 @@ Migration `0017`, `project_event`, test.
 - [x] Answer cards also sized from the lure texts.
 - [x] Harness: half of each type per block, never two correct, same trials across conditions; X29 green.
 **Done Wed 11, 16:12: `e33abf6`, seed `bb80c93`.** check 0 failures (by mora); font 259 → 285; harness 110/110. Spec v1.4 point 4 to PM in the draft.
-- [ ] **Stop.**
+- [x] **Stop:** Sebas OK, Wed 11.
 
-### [ ] X7 · reserve 16–20 (M) · **first to cut**
-- [ ] FBX and the four images of `pistas/`, as sets A–C (D-F6-160); 18 and 19 with +90° X at the root. Harness only: **the headset look moves to Thu or Fri, after the cap.**
+### [x] X7 · reserve 16–20 (M) · **first to cut**
+- [x] FBX and the four images of `pistas/`, as sets A–C (D-F6-160); 18 and 19 with +90° X at the root. Harness only: **the headset look moves to Thu or Fri, after the cap.**
+**Done Wed 11, 16:33: `e8d784a`.** 16–25 (Sebas widened it from 16–20); 26–30 wait for their hints, after the dry run. Harness 112/112. Headset look after the cap (18/19 face, 21–24, 17 F2).
 - [ ] **Stop.**
 
 ### [ ] X8 · close (draft, Dudas, `tasks/`)
