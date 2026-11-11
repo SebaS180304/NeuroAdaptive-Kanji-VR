@@ -205,9 +205,11 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 **Done Wed 11, 14:01: `33d3eae`.** P7 67→61 %, 78→72 %, 83→67 %, all VALID; window.py = SQL on 54/54 windows. 401 tests. Restart after 14:30 (A3 went live at 13:57, inside the no-restart hour: see the draft).
 - [ ] Before 13:30 (D-F6-189). **Stop** (Sebas reads the table). Then the restart for A3 + A9 if ≤ 13:20, else at 16:00.
 
-### [ ] A8-flows · every session-creating flow, in the draft, no code · D-F6-187 condition · before 13:30, else 13:30–16:00 (no Stop, a note)
-- [ ] The list of A8's first bullet below, each flow with file:line and whether it sends `assigned_kanji_set`.
-- [ ] Verdict in one line: "no real flow without a set" → A8 code after 16:00; or "flow X has none" → **Dudas para PM**, A8 code stays out, Sebas told in one line.
+### [x] A8-flows · every session-creating flow, in the draft, no code · D-F6-187 condition · before 13:30, else 13:30–16:00 (no Stop, a note)
+- [x] The list of A8's first bullet below, each flow with file:line and whether it sends `assigned_kanji_set`.
+- [x] Verdict in one line: "no real flow without a set" → A8 code after 16:00; or "flow X has none" → **Dudas para PM**, A8 code stays out, Sebas told in one line.
+
+**Done Wed 11, 14:55:** no real flow creates a session without a set (Unity sends "A" by default; pre-test and portal create none; visit 4 / block R not in code). A8 code from 16:00: `ws_smoke_test` and 23 API test posts get a set. Duda 1 for PM: which set visit 4 uses.
 
 ### [ ] A8 · no session without a set (S) · D-F6-187 · **Wed from 16:00, only if A8-flows says so** (it is a backend change: restart after it, outside 13:30–14:30)
 `backend/app/schemas/session.py`, tests, `ws_smoke_test`.
@@ -215,13 +217,14 @@ Touch points: `window.py:46` (`e["end_ms"] <= decision_ms` → minus a named 1 5
 - [ ] Only then: `assigned_kanji_set` required, `A`, `B` or `C` (422 otherwise); test; callers updated.
 - [ ] **Stop.**
 
-### [ ] X2 · replay.py with XDF (S) · **if it fits:** committed before 13:30 or started after 14:30, never half done in between (D-F6-178); with no Stop until 16:00, it closes with a note and Sebas's OK comes at 16:00
+### [x] X2 · replay.py with XDF (S) · **if it fits:** committed before 13:30 or started after 14:30, never half done in between (D-F6-178); with no Stop until 16:00, it closes with a note and Sebas's OK comes at 16:00
 `backend/app/adaptation/replay.py`, test.
-- [ ] Adds XDF input: same filter-and-epoch path cut at the decision instants, S3 offset subtracted (D-F6-161, D-F6-173). Existing replay unchanged.
-- [ ] Windows where `EEG_STATUS` says the process was down do not count, as they did not live.
-- [ ] Reports `FRAME_HITCH` chunks per state (F4 §7; they are not in the database).
-- [ ] **Check:** a session recorded through X1 replays to the same decisions; z differences reported.
-- [ ] **Stop.**
+- [x] Adds XDF input: same filter-and-epoch path cut at the decision instants, S3 offset subtracted (D-F6-161, D-F6-173). Existing replay unchanged.
+- [x] Windows where `EEG_STATUS` says the process was down do not count, as they did not live.
+- [x] Reports `FRAME_HITCH` chunks per state (F4 §7; they are not in the database).
+- [~] **Check:** a session recorded through X1 replays to the same decisions; z differences reported.
+**Done Wed 11, 15:03: `0676fe8`.** Live cut vs offline on `07343b5d`/`742ec49a`: same counted windows and decisions 18/18, |dz| ≤ 0.13; plain replay 36/36 identical. The X1-recorded check moves to J4 (no multimodal session yet). X3 must write `EEG_STATUS` `payload.status` = `PROCESS_DOWN` etc.
+- [ ] **Stop** (note in the draft; Sebas at 16:00).
 
 ### [ ] X3 · fallback, emulated (S) · D-F6-174
 `live.py`, `state.py`, `scripts/synthetic_aura.py` (pause option), tests.
