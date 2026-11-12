@@ -336,13 +336,13 @@ During J2 and J3 the PC is off the network: this chat cannot be reached. Everyth
 - [ ] **Deadline 13:40:** one `docker compose restart backend` with everything committed, `/health` ok, P0 commands re-tried. What does not fit by 13:40 is parked uncommitted and goes after J4: J2 then ran with the rules before it, and J4 replays J2 with the new ones (declared).
 - [ ] **Stop** (Sebas) before the network goes off.
 
-### [ ] J2 · cap, S1 → S9 in the headset · **14:00, offline** (D-F6-191 (3), D-F6-193)
+### [x] J2 · cap, S1 → S9 in the headset · **14:00, offline** (D-F6-191 (3), D-F6-193)
 - [ ] Same list as M7 plus D-F6-179 and D-F6-193 (the P0 list). Condition `MULTIMODAL_ADAPTIVE`; T1 and T2/T3 lures on (X6b done), declared. New lure characters (incl. 26–30 if in the set) and card sizes seen in the headset. A4–A7 seen: no `ERROR`/queue lines in the console.
-- [ ] **Done when:** at least one decision with `EEG_CONFIRMED`, `EEG_VETO` or `EEG_LED`, applied and explained (F4 §5).
+- [x] *`a8e825e0`: `EEG_CONFIRMED` applied (S7-007), but its XDF has two `AURA` streams, so `fill_from_xdf` failed (exit 1). `bf5ceee3`: complete, 3 `EEG_VETO`. C1 holds in both. S3 offset None in both (1/5 taps). See draft 16:20.* **Done when:** at least one decision with `EEG_CONFIRMED`, `EEG_VETO` or `EEG_LED`, applied and explained (F4 §5).
 - [ ] None -> forced state in the Editor, real signal confirms or vetoes; **declared as such**.
 - [ ] **Stop:** Sebas writes it offline (P0); this chat reads it after reconnecting.
 
-### [ ] J3 · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it · **offline**
+### [ ] J3 · **not done Thu 12 (Sebas); Duda 3 for PM** · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it · **offline**
 For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2, `autorun` relaunched, its own XDF.
 - [ ] Reach S7 with **G**, but **S4 complete** (no G in S4). If S6 is short, the reference falls to S4 eyes open, marked (D-F6-73).
 - [ ] **Before cutting:** the EEG has counted in at least one S7 window (visible in `autorun`'s console).
@@ -353,7 +353,7 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2, `autoru
 
 ### [ ] J4 · replay of J2 · **after reconnecting**
 - [ ] First: read the J2/J3 notes and confirm the J3 checks from the database; `fill_from_xdf` for each session if `autorun` did not.
-- [ ] `replay` of J2: same decisions as live; every `EEG_LED` read one by one (F4 risk 8). If T4 landed after J2, a second replay with the new rules, declared.
+- [x] *`bf5ceee3`: 20/20 decisions equal; EEG block differs in 5/20 (arrival margin), no decision changed. `a8e825e0` not replayable (two `AURA`).* `replay` of J2: same decisions as live; every `EEG_LED` read one by one (F4 risk 8). If T4 landed after J2, a second replay with the new rules, declared.
 - [ ] **Stop** (together with the J2 and J3 Stops).
 
 ### [ ] J5 · freeze and close · **checklist: `docs_proyecto/Checklist_Congelamiento_Reglas_12nov.md`** (PM)
