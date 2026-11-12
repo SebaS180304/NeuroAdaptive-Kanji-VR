@@ -379,10 +379,10 @@ Folder `Claude outputs/eeg_export_12nov/`, sessions `a8e825e0` and `bf5ceee3`. N
 - [x] **Check:** row counts; `counted`/`effect` equal to block C of `p0_j3_fallback_check.sql`; table counts unchanged before and after; `git status` clean.
 - [ ] **Stop:** Sebas reads the README before it goes to the EEG chat.
 
-### [ ] V1 · verify_eeg.sql, multimodal lines (S) · **moved up to Thu 12** (D-F6-200 (2))
+### [x] V1 · verify_eeg.sql, multimodal lines (S) · **moved up to Thu 12** (D-F6-200 (2))
 - [x] *Blocks 8–10, and block 7 with two labelled A-7 lines: live engine (reported) and `eeg_epochs`.* Every S7 decision in `MULTIMODAL_ADAPTIVE` has its EEG effect and none in the other conditions; counts per effect; `EEG_LED` outcome vs behaviour (F4 §7).
 - [x] *`a8e825e0` 15/18 live = 15/18 epochs; `bf5ceee3` 8/18 (44 %) live, 11/18 (61 %) XDF; effects 80/80 MM, 0/300 behaviour.* Run on J2.
-- [ ] **Stop.**
+- [x] **Stop:** approved (Sebas, 12 Nov): A-7 live 83 % and 44 %, XDF beside it; 80/80 and 0/300.
 
 ### [ ] V2 · dry run
 - [ ] `MULTIMODAL_ADAPTIVE` (D-F6-175); lures active that day, declared (T1, and T2/T3 if X6b); set and participant as Sebas fixed them; the participant is not from the team and signs consent v1 (D-F6-76); lists as M7 plus the two D-F6-179 items of J2.
