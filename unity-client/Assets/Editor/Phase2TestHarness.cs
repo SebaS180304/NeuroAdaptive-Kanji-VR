@@ -1977,6 +1977,27 @@ namespace NeuroAdaptiveVR.EditorTools
             string seq = string.Join(", ", delays.Select(d => d.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
             Check("N2", "Reintentos de reconexion: 0.5, 1, 2, 4 s y luego cada 5 s, sin rendirse",
                   seq == "0.5, 1.0, 2.0, 4.0, 5.0, 5.0, 5.0", seq);
+
+            // N3 (D-F6-186 (5), 12 Nov): a queue left at quit is written to a JSON file, in order.
+            var p3 = new List<string>();
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "nvr_n3_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var q3 = new OutgoingQueue(2);
+                for (int i = 1; i <= 3; i++)
+                    q3.Enqueue(new OutgoingMessage { Type = "SESSION_EVENT", EventType = $"E{i}" });
+                string path = q3.DumpTo(dir, "s-n3");
+                var dump = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(path));
+                string saved = string.Join(",", dump["messages"].Select(m => (string)m["event_type"]));
+                if (saved != "E1,E2") p3.Add($"guardado {saved}, se esperaba E1,E2");
+                if ((int)dump["dropped"] != 1) p3.Add($"descartados {dump["dropped"]}, se esperaba 1");
+                if ((string)dump["session_id"] != "s-n3") p3.Add("falta el session_id");
+                if (q3.Count != 0) p3.Add("la cola no quedo vacia");
+            }
+            catch (Exception ex) { p3.Add(ex.Message); }
+            finally { if (System.IO.Directory.Exists(dir)) System.IO.Directory.Delete(dir, true); }
+            Check("N3", "Al salir con cola: se guarda en JSON, en orden, con lo descartado y la sesion",
+                  p3.Count == 0, p3.Count == 0 ? "E1,E2 · 1 descartado · cola vacia" : Join(p3));
         }
 
         /// <summary>

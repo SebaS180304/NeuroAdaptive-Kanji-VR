@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using NativeWebSocket;
 using Newtonsoft.Json;
@@ -32,6 +33,11 @@ namespace NeuroAdaptiveVR.Networking
     ///   backend in the first test (14 Oct) and never stored.
     /// PINGs are never queued. A message already on the wire when the
     /// socket died can still be lost: there is no per-event ACK tracking.
+    ///
+    /// 12 Nov (D-F6-186 (4)-(7), exception to the VR freeze): send only on a
+    /// socket that is Open (the close callback can lag behind the socket), a
+    /// queue left at quit goes to Logs/ as JSON, the queue is also flushed on
+    /// the first open, and a backend ERROR is a LogError.
     ///
     /// DEPENDENCIA: paquete UPM NativeWebSocket
     /// (https://github.com/endel/NativeWebSocket.git#upm).
@@ -126,6 +132,14 @@ namespace NeuroAdaptiveVR.Networking
                 Debug.Log("[SessionCommunicationClient] WS abierto.");
                 OnConnected?.Invoke();
                 if (reconnect) FlushAfterReconnect(attempts);
+                else if (_queue.Count > 0)
+                {
+                    int dropped = _queue.Dropped;
+                    var pending = _queue.DrainAll();
+                    foreach (var msg in pending) SendNow(msg);
+                    Debug.LogWarning($"[SessionCommunicationClient] First connection: {pending.Count} queued " +
+                                     $"events sent, {dropped} dropped.");
+                }
             };
 
             socket.OnError += (errMsg) =>
@@ -156,6 +170,8 @@ namespace NeuroAdaptiveVR.Networking
                 try
                 {
                     var msg = JsonConvert.DeserializeObject<IncomingMessage>(json);
+                    if (msg?.Type == "ERROR")
+                        Debug.LogError($"[SessionCommunicationClient] Backend ERROR: {msg.Detail}");
                     OnMessageReceived?.Invoke(msg);
                 }
                 catch (Exception ex)
@@ -215,7 +231,7 @@ namespace NeuroAdaptiveVR.Networking
 
         public void SendPing()
         {
-            if (!_isConnected) return;   // a ping is only meaningful now: never queued
+            if (!CanSend) return;   // a ping is only meaningful now: never queued
             SendNow(new OutgoingMessage
             {
                 Type = "PING",
@@ -249,7 +265,7 @@ namespace NeuroAdaptiveVR.Networking
 
         private void SendOrQueue(OutgoingMessage msg)
         {
-            if (_isConnected && _socket != null)
+            if (CanSend)
             {
                 SendNow(msg);
                 return;
@@ -261,6 +277,8 @@ namespace NeuroAdaptiveVR.Networking
             else if (_queue.Count == 1)
                 Debug.LogWarning("[SessionCommunicationClient] Sin conexion; events are queued until it is back.");
         }
+
+        private bool CanSend => _isConnected && _socket != null && _socket.State == WebSocketState.Open;
 
         private void SendNow(OutgoingMessage msg)
         {
@@ -299,6 +317,23 @@ namespace NeuroAdaptiveVR.Networking
         private async void OnApplicationQuit()
         {
             _closing = true;
+            if (_queue != null && _queue.Count > 0)
+            {
+                int count = _queue.Count, dropped = _queue.Dropped;
+                string dir = Path.Combine(Application.isEditor
+                    ? Path.GetDirectoryName(Application.dataPath) : Application.persistentDataPath, "Logs");
+                try
+                {
+                    string path = _queue.DumpTo(dir, sessionId);
+                    Debug.LogError($"[SessionCommunicationClient] Quit with {count} events not sent " +
+                                   $"({dropped} dropped): saved to {path}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[SessionCommunicationClient] Quit with {count} events not sent " +
+                                   $"({dropped} dropped) and they could not be saved: {ex.Message}");
+                }
+            }
             if (_socket != null)
             {
                 var socket = _socket;
@@ -346,6 +381,27 @@ namespace NeuroAdaptiveVR.Networking
             if (_items.Count >= Capacity) { Dropped++; return false; }
             _items.Enqueue(msg);
             return true;
+        }
+
+        /// <summary>
+        /// Writes everything queued, oldest first, to a JSON file in <paramref name="directory"/>
+        /// and drains the queue; returns the path. For a quit with events not sent (D-F6-186 (5)).
+        /// </summary>
+        public string DumpTo(string directory, string sessionId)
+        {
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory,
+                $"ws_queue_{(string.IsNullOrEmpty(sessionId) ? "nosession" : sessionId)}_{DateTime.UtcNow:yyyyMMddTHHmmssZ}.json");
+            int dropped = Dropped;
+            var messages = DrainAll();
+            File.WriteAllText(path, JsonConvert.SerializeObject(new Dictionary<string, object>
+            {
+                { "session_id", sessionId },
+                { "saved_at", DateTime.UtcNow.ToString("o") },
+                { "dropped", dropped },
+                { "messages", messages },
+            }, Formatting.Indented));
+            return path;
         }
 
         /// <summary>Everything queued, oldest first; the queue and the drop count start again.</summary>
