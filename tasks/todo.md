@@ -356,7 +356,7 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2, `autoru
 - [x] *`bf5ceee3`: 20/20 decisions equal; EEG block differs in 5/20 (arrival margin), no decision changed. `a8e825e0` not replayable (two `AURA`).* `replay` of J2: same decisions as live; every `EEG_LED` read one by one (F4 risk 8). If T4 landed after J2, a second replay with the new rules, declared.
 - [x] **Stop:** J2 and J4 approved (Sebas, 12 Nov 16:33).
 
-### [ ] J5 · freeze and close · **checklist: `docs_proyecto/Checklist_Congelamiento_Reglas_12nov.md`** (PM)
+### [x] J5 · freeze and close (tag `eeg-rules-freeze-2026-11-12` on `6d7567c`, D-F6-198) · **checklist: `docs_proyecto/Checklist_Congelamiento_Reglas_12nov.md`** (PM)
 - [x] *In the draft, J5 section (16:50).* **§2, conditions C1–C8**, each marked in the draft with its evidence: C1 = J1, C2 = J2 (or the forced state, declared), C3 = J4, **C4 = the four defaults of D-F6-174 and T1's (index with SD 0 → `UNAVAILABLE`) reviewed against J2**, C5 = `rules-v2` byte-identical, C6–C8 Sebas/PM (only noted).
 - [x] *36/36 identical at `053740e`.* **C5:** `replay --json` of the 18 adaptive sessions (own version and `--version behavior-v2`) against the reference kept in `Claude outputs/referencia_replay_rules_v2_10nov/` (36 files, captured before T2): 36/36 identical.
 - [x] *Read from the code at `053740e`, in the draft.* **§3, every parameter with its value** in the draft, read from the code at the commit to tag (not copied from the checklist): §3.1 epochs, quality, drop rules (F4 §6), P7 window, A-7, reference, offset; §3.2 confirm/veto, lead (D-F6-184/185), cap (`MAX_CHANGES`), defaults, **T1 default: the EEG counts but the index the state reads has no z (SD 0 in the reference) → `eeg_effect` = `UNAVAILABLE`, behavioural decision** (`concordance.py:49` theta for `OVERLOADED`, `:54` EI for the rest; test `test_the_index_the_state_reads_missing_is_unavailable`; duda 5, checklist row added by PM), `eeg_effect`, O4 of `EEG_LED`; §3.3 heartbeat, process down, **arrival margin (measured Wed)**, the > 60 s rule; §3.4 lures active on the dry run, seed, operation lists.
@@ -379,9 +379,9 @@ Folder `Claude outputs/eeg_export_12nov/`, sessions `a8e825e0` and `bf5ceee3`. N
 - [x] **Check:** row counts; `counted`/`effect` equal to block C of `p0_j3_fallback_check.sql`; table counts unchanged before and after; `git status` clean.
 - [ ] **Stop:** Sebas reads the README before it goes to the EEG chat.
 
-### [ ] V1 · verify_eeg.sql, multimodal lines (S)
-- [ ] Every S7 decision in `MULTIMODAL_ADAPTIVE` has its EEG effect and none in the other conditions; counts per effect; `EEG_LED` outcome vs behaviour (F4 §7).
-- [ ] Run on J2.
+### [ ] V1 · verify_eeg.sql, multimodal lines (S) · **moved up to Thu 12** (D-F6-200 (2))
+- [x] *Blocks 8–10, and block 7 with two labelled A-7 lines: live engine (reported) and `eeg_epochs`.* Every S7 decision in `MULTIMODAL_ADAPTIVE` has its EEG effect and none in the other conditions; counts per effect; `EEG_LED` outcome vs behaviour (F4 §7).
+- [x] *`a8e825e0` 15/18 live = 15/18 epochs; `bf5ceee3` 8/18 (44 %) live, 11/18 (61 %) XDF; effects 80/80 MM, 0/300 behaviour.* Run on J2.
 - [ ] **Stop.**
 
 ### [ ] V2 · dry run
