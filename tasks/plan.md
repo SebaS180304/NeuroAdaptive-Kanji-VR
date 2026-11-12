@@ -187,6 +187,26 @@ They protect session data, which cannot be repeated in the pilot. Detail in `tas
 
 If J2 gives no EEG decision: the forced test of F4 §5, declared as such.
 
+### Thu 12 · after the tag · E1 read-only export for the EEG chat (planned 12 Nov, ≈ 17:10; waits for Sebas's OK)
+
+**Goal:** `Claude outputs/eeg_export_12nov/`: one CSV per table for the two J2 sessions (`a8e825e0`, `bf5ceee3`), plus a one-page README of the columns. No change to the database or to the code (the tag `eeg-rules-freeze-2026-11-12` stays the frozen state).
+
+**How:** one SQL file, `Claude outputs/eeg_export_12nov/export.sql`, run inside `BEGIN READ ONLY` with `\copy (SELECT …) TO STDOUT WITH CSV HEADER` through `docker compose exec -T db psql`, one call per CSV. A read-only transaction refuses any write, so "no change to the database" is enforced, not only intended. Nothing goes to git (`Claude outputs/` is ignored).
+
+| File | Source | Rows (expected) | Columns |
+| --- | --- | --- | --- |
+| `eeg_sessions.csv` | `eeg_sessions` | 2 | session, `sync_offset_ms`, `sync_drift_ms`, `sync_detail` (JSON: taps with `valid`, `why`, `peak_uv`, `mad_uv`, `lag_ms`), `alpha_ratio`, `alpha_passed`, `not_counted_reason`, `reference` (JSON: source, n, mean/SD per index), `filter_params`, `montage`, `stream_info`, `xdf_path` |
+| `eeg_epochs.csv` | `eeg_epochs` | 282 + 237 | every column, plus `origin` (see open question 1) |
+| `adaptation_decisions.csv` | `adaptation_decisions` + `session_events.payload->'eeg'` | 40 | trial, elapsed, state, cause, confidence, action, reason, levels, latency, then the whole `eeg` block flattened: `counted`, `non_poor`, `clean_s`, `ei_z`, `theta_z`, `alpha_z`, `effect`, `fallback` |
+| `eeg_status.csv` | `session_events` where `event_type = 'EEG_STATUS'` | 2 (one `CONNECTED` each) | session, event id, `status`, `session_elapsed_ms`, `eeg_gap_ms`, `heartbeat_age_s`, `source` |
+| `README.md` | written by hand | one page | what each file and column is, units, how each was made, the caveats below |
+
+**Caveat found while planning (open question 1):** "the live epochs" exist only for `a8e825e0`. Its `fill_from_xdf` failed (two `AURA`), so its 282 rows are the ones `live.py` wrote during the session. For `bf5ceee3`, `autorun` ran `fill_from_xdf`, which deletes the live rows and re-cuts the whole XDF: its 237 rows are the offline cut (`live.py` had written 234). The live rows of `bf5ceee3` are gone from the database.
+
+**Checks:** row counts as in the table; each CSV opens with its header; `adaptation_decisions.csv` has the same `counted`/`effect` as block C of `p0_j3_fallback_check.sql`; `git status` clean; nothing in the database changed (the `count(*)` of the four tables is the same before and after).
+
+**Scope:** XS–S, no code, ≈ 30 min. No Stop in the Editor.
+
 ### Fri 13 · dry run (`MULTIMODAL_ADAPTIVE`)
 V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `verify_eeg.sql`, replay, one-by-one review of `EEG_LED` → V4 week close.
 
@@ -208,6 +228,7 @@ V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `v
 | `EEG_LED` fires on fatigue | Med | Reviewed one by one (F4 risk 8) |
 
 ## Open items
+- **E1, question 1 (Sebas):** `bf5ceee3` no longer has its live epochs. Export what the database has, with `origin = xdf` on those rows (recommended), or also re-cut them as `live.py` would (`live.Buffer` over the XDF, as `replay --xdf` does; computed, not what was stored live, so still not the live rows)?
 1. **Sebas:** set and participant of the dry run, by Thu 12 at night (D-F6-175).
 2. **Sebas:** T2 categories of §16.4, before Wed. A change is content.
 3. **Sebas:** A-20 needs someone at another lab PC to see whether the streams are visible.

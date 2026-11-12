@@ -368,6 +368,17 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2, `autoru
 
 ## Fri 13 · dry run with EEG
 
+### [x] E1 · read-only export for the EEG chat (XS–S) · after the tag · *done 12 Nov 17:40, Sebas chose both versions of `bf5ceee3`'s epochs*
+Folder `Claude outputs/eeg_export_12nov/`, sessions `a8e825e0` and `bf5ceee3`. No database or code change.
+- [x] `export.sql`: one `\copy (SELECT …) TO STDOUT WITH CSV HEADER` per file, all inside `BEGIN READ ONLY`.
+- [x] `eeg_sessions.csv` (2 rows): offset, drift, `sync_detail`, alpha ratio and pass, reference, filter, montage.
+- [x] *Plus `eeg_epochs_live_cut.csv` (237, `live_cut`, computed with `live.Buffer` over the XDF, `export_live_cut.py`).* `eeg_epochs.csv` (282 + 237): every column plus `origin` (`live` for `a8e825e0`; `xdf` for `bf5ceee3`, whose live rows `fill_from_xdf` replaced). Question 1 in the plan.
+- [x] `adaptation_decisions.csv` (40): decision columns plus the full `eeg` block: `counted`, `non_poor`, `clean_s`, `ei_z`, `theta_z`, `alpha_z`, `effect`, `fallback`.
+- [x] `eeg_status.csv` (2): every `EEG_STATUS` with its payload keys.
+- [x] `README.md`, one page: each file and column, units, origin, caveats (two `AURA` in `a8e825e0`, offset `None` in both, the `bf5ceee3` epochs).
+- [x] **Check:** row counts; `counted`/`effect` equal to block C of `p0_j3_fallback_check.sql`; table counts unchanged before and after; `git status` clean.
+- [ ] **Stop:** Sebas reads the README before it goes to the EEG chat.
+
 ### [ ] V1 · verify_eeg.sql, multimodal lines (S)
 - [ ] Every S7 decision in `MULTIMODAL_ADAPTIVE` has its EEG effect and none in the other conditions; counts per effect; `EEG_LED` outcome vs behaviour (F4 §7).
 - [ ] Run on J2.
