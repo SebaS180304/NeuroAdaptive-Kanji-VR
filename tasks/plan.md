@@ -1,6 +1,6 @@
 # Implementation Plan: week of 9 – 13 Nov 2026 (F4 S3 · multimodal → dry run with EEG)
 
-Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; updated on 10 Nov up to D-F6-187 (audit fixes waiting for Sebas's OK); Wed reordered 11 Nov up to D-F6-189 (waiting for Sebas's OK)** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
+Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; updated on 10 Nov up to D-F6-187 (audit fixes waiting for Sebas's OK); Wed reordered 11 Nov up to D-F6-189; Thu planned 12 Nov up to D-F6-193 (waiting for Sebas's OK)** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
 Last week's plan is archived in `tasks/archive/semana_2nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -162,8 +162,30 @@ They protect session data, which cannot be repeated in the pilot. Detail in `tas
 
 **Cut order unchanged:** X7, then X6b. A3, A9, A8-flows, X2, X3, X5, X6a are not cut.
 
-### Thu 12 · multimodal end to end; rules frozen at night
-J1 synthetic end to end in the Editor → J2 cap, `MULTIMODAL_ADAPTIVE` → J3 three real fallbacks, one S7 each (D-F6-174) → J4 replay of J2 → J5 freeze and close. If J2 gives no EEG decision: the forced test of F4 §5, declared as such.
+### Thu 12 · multimodal end to end; rules frozen at night (D-F6-191, D-F6-193)
+
+**Re-timed 12 Nov, 11:56** (A4–A7 and J1 no longer fit before 11:00; Sebas is in the staff session and the decisions until ≈ 12:30, so no Editor Stop before then). Code only after Sebas approves this plan.
+
+| When | Task | Stop | Hard limit | Network |
+| --- | --- | --- | --- | --- |
+| on approval → ≈ 12:20 | **A4–A7** code + harness N3, compiled in the Editor (no Play) | — | — | on |
+| ≈ 12:20 → Sebas free | **P0** offline kit in the draft (no code); tried on a session once J1 exists | read with T4's Stop | before 13:40 | on |
+| ≈ 12:30 → 12:55 | **A4–A7 Stop** in the Editor, `BEHAVIOR_ADAPTIVE`, backend stopped in S7 and again in S8 (G after S4 complete); then the commit (message shown first) | Sebas | **13:10**, else see question 1 | on |
+| ≈ 12:55 → 13:25 | **J1** synthetic, `MULTIMODAL_ADAPTIVE`, C1 latency (median, max, last S7 trial) | Sebas; **J2 does not start** if any > 1500 ms or after the next `TRIAL_STARTED` | **13:30** | on |
+| ≈ 12:30 → 13:40 | **T4** in parallel (backend code, no Editor): only what has a number in §4; tests, one commit each | Sebas, with J1's | **13:40 restart**; what does not fit stays uncommitted, J4 replays it, declared | on |
+| 13:40 → 13:50 | `docker compose restart backend` (one), `/health`, P0 commands re-tried, `git status` clean except what T4 parked | — | 13:50 | on |
+| **≈ 13:50** | **Network off** (Ethernet out, Wi-Fi off) before the cap (D-F6-193) | — | before the cap | **off** |
+| 14:00 | **J2** cap, `MULTIMODAL_ADAPTIVE`, Blender closed → **J3** three real fallbacks (a case that does not fit → Fri morning) | written offline by Sebas | — | **off** until *both streams recorded* of the last session |
+| after reconnecting | J2/J3 notes read and checked in the database → **J4** replay of J2 (and with T4's parked rules, declared) → J2/J3/J4 Stops together | Sebas | — | on |
+| afternoon / night | §3.4 angles; **J5** freeze; tag only with Sebas's OK | Sebas | — | on |
+
+**Order inside 12:30–13:40:** the Editor runs (A4–A7 Stop, J1) and T4 share the backend. A4–A7's Stop stops and starts it; J1 needs it up; T4 code is mounted but only goes live with the 13:40 restart (no `--reload`), so J1 runs with the rules before T4, which is fine for C1 (latency and the EEG block, not the rule values).
+
+**Why P0 exists:** with the PC offline (D-F6-193) this chat cannot be reached during J2 and J3. Whatever Sebas needs then (lists, commands, the SQL for each fallback case, where to note each Stop) must be in the draft and tried once on J1's session before 14:00. Local services (database, backend, LSL, Link) work offline (X5 (b)).
+
+**T4 vs J2:** J2 does not wait for T4. A numbered decision not committed and live by 13:40 is parked; J2 runs with the rules before it, and J4 replays J2 with the new rules too, declared. Rule changes recompute from the XDF (D-F6-156), so nothing is lost.
+
+If J2 gives no EEG decision: the forced test of F4 §5, declared as such.
 
 ### Fri 13 · dry run (`MULTIMODAL_ADAPTIVE`)
 V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `verify_eeg.sql`, replay, one-by-one review of `EEG_LED` → V4 week close.
@@ -172,6 +194,8 @@ V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `v
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
+| T4 brings a rule change that cannot be live by 13:40 | Med | Parked; J2 runs on the old rules and J4 replays J2 with both, declared |
+| Something breaks during J2/J3 and this chat is offline | Med | P0 kit tried on J1 before 14:00; Sebas notes it and it is fixed after reconnecting; a J3 case that does not fit goes to Fri morning |
 | P7 with finished epochs only falls below 60 % (D-F6-172) | High: A-7 and the frozen rules | M3/M6 give the figure tonight; EEG chat and the Tue session see it before the freeze |
 | Wednesday is overloaded (X1–X7) and X1 is the largest piece of the week | High | Never-cut items first, reserve and T2/T3 last; if X1 slips, Thu morning absorbs it and J1 shrinks |
 | Thursday is long: J2 plus three sessions with S4 complete | High | J3 only after J2; each cut needs one counted window, and if a case does not fit, it moves to Fri morning and PM is told |

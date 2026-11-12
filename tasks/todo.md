@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-189 (Wed reordered 11 Nov, waiting for Sebas's OK)** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-193 (Thu planned 12 Nov from D-F6-191 and D-F6-193, waiting for Sebas's OK)** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -131,7 +131,7 @@ Read `docs_proyecto/NeuroAdaptive_VR_Game_Flow_v1_4_Unity_Design_Specification.d
 - [x] All in the draft for PM; nothing written in `docs_proyecto/`.
 - [x] **Stop.** Sebas OK, 10 Nov.
 
-### [ ] T4 · from the EEG staff session · **staff at 15:00, decisions ≈ 16:30 (D-F6-189 (4)); applied before J1 on Thu, slotted between the 16:00 tasks**
+### [ ] T4 · from the EEG staff session · **moved to Thu 12 (D-F6-191): staff 11:00, decisions ≈ 12:30, T4 12:30–14:00; detail in the Thu section**
 - [ ] Only what has a number in §4. Rule changes recompute from XDF (D-F6-156). **Session confirmed Wed 11 at 12:00:** numbered items go after 14:30 and before J1 on Thu. Thursday's freeze does not move; if something does not fit, cut X7 first, then X6b.
 - [ ] **Stop.**
 
@@ -302,43 +302,65 @@ Migration `0017`, `project_event`, test.
 
 **Done Tue 10 (moved up):** `9ffc4c2`; reason `MAX_CHANGES`; rules-v2 replay byte-identical (36/36); D-F6-184 applied (`b1ccb46`): only eligible windows count for a lead. D-F6-185 (`3c8d9b7`): a low-confidence window cuts that count.
 
-### [ ] A4–A7 · Unity: no event lost on a disconnect (S) · D-F6-186 (4)–(7) · Thu before J2 · one Unity commit, exception to the VR freeze (D-F6-122)
-`unity-client/Assets/Scripts/Networking/SessionCommunicationClient.cs`. The commit body says it is the D-F6-186 exception.
-- [ ] A4: send only with `_isConnected && _socket.State == WebSocketState.Open`; otherwise queue.
-- [ ] A5: on quit with a non-empty queue, write it to `Logs/` as JSON and `Debug.LogError` with the count.
-- [ ] A6: on open, flush the queue whenever it is not empty (first connection too), in order.
-- [ ] A7: an `ERROR` from the backend -> `Debug.LogError` with its detail (backend half with A3).
-- [ ] **Check in the Editor:** stop the backend in S7 and again in S8, start it again: no trial missing in `trials`, the queue arrives in order, `RECONNECTED` after it; quit with the backend down -> the JSON in `Logs/` and the count. J2 confirms it in the headset.
-- [ ] **Stop.**
+### [x] A4–A7 · Unity: no event lost on a disconnect (S) · D-F6-186 (4)–(7) · **re-timed 12 Nov: code on approval → ≈ 12:20; Stop ≈ 12:30–12:55, limit 13:10** · one Unity commit, exception to the VR freeze (D-F6-122)
+`unity-client/Assets/Scripts/Networking/SessionCommunicationClient.cs` only; harness case N3 in `Assets/Editor/Phase2TestHarness.cs`. The commit body says it is the D-F6-186 exception (like D-F6-74).
+- [x] A4: `SendOrQueue` sends only with `_isConnected && _socket.State == WebSocketState.Open`; otherwise queue.
+- [x] A5: `OnApplicationQuit` with a non-empty queue writes it to `Logs/ws_queue_<session>_<utc>.json` and `Debug.LogError` with the count (and the dropped count).
+- [x] A6: `OnOpen` drains the queue whenever it is not empty, first connection too, in order; `RECONNECTED` only on a real reconnect, as today.
+- [x] A7: `OnMessage` with `type == "ERROR"` -> `Debug.LogError` with `Detail` (backend half done in A3, `45d1260`).
+- [x] Harness: N3 written (queue -> JSON, order kept, dropped count, session id). **114/114 PASS** in the Editor (12 Nov).
+- [x] **Check in the Editor (Sebas, Stop):** *Done 12 Nov on `567e730b`, which ran **`STATIC`** (flat): S7 and S8 cuts, 11 + 12 flushed, 0 dropped, 20 + 15 trials complete. Not exercised: the adaptive path and the quit dump (N3 only).* **`BEHAVIOR_ADAPTIVE`** (Sebas, 12 Nov), so the S7 cut also tests the queue with adaptation events; synthetic stream not needed. Note: `ADAPTATION_DECISION` is written by the backend, so while it is down no decision arrives; what Unity queues is the trial events plus `ADAPTATION_SKIPPED` (TIMEOUT) / `ADAPTATION_APPLIED`. Check those arrive in order after the flush and that decisions resume on the next trial. `docker compose stop backend` in S7 and again in S8, start it again: no trial missing in `trials`, events in order, `RECONNECTED` after the flush; quit with the backend down -> the JSON in `Logs/` and the count in the console. Session deleted afterwards if it is a test one.
+- [x] Commit `d2f1fc1` (message shown first), `graphify update .`. J2 confirms it in the headset.
+- [x] **Stop:** passed (Sebas, 12 Nov ≈ 12:30).
 
-### [ ] J1 · synthetic end to end
-- [ ] Editor, `MULTIMODAL_ADAPTIVE`, synthetic stream that varies between S6 and S7. Decisions with their EEG block; latency acceptable.
-- [ ] **Stop** before the cap.
+### [x] J1 · synthetic end to end (M) · after the A4–A7 Stop, **≈ 12:55–13:25, limit 13:30** (C1)
+- [x] `07fb239` `backend/scripts/synthetic_aura.py`: add seeded noise (and a slow amplitude drift) so S6 has SD > 0 and z exists (found #8). One small commit; the 10 Hz sine stays.
+- [x] *`be75faa0`, 12:56; S4 alpha failed with the synthetic stream, so no window counted (see draft).* Editor, `MULTIMODAL_ADAPTIVE`, synthetic stream, `autorun` as in the real session. S1 → S7 at least (G allowed after S4 complete).
+- [x] *Rerun `5d752e08` (13:15, `d66a0e1`: synthetic alpha up in S4): alpha passed, 12/20 windows counted (2 VETO), C1 median 17.6, max 26.4, last 15.9 ms. Arrival max 54.7 s noted.* **Done when:** every S7 decision has its EEG block in the `ADAPTATION_DECISION` payload (window, `eeg_effect`, `EEG_STATUS`); `verify_eeg.sql` runs on it.
+- [x] *C1 latency PASS: median 13.5, max 26.3, last 13.4 ms; 0 > 1500, 0 after next; EEG read measured apart, max 14.5 ms.* **Latency (Sebas, 12 Nov):** from `decision_latency_ms`, report in the draft the **median**, the **max** and the **last S7 trial's** latency. **Pass:** median ≤ 300 ms and max ≤ 1000 ms. **Stop and tell Sebas before J2** if any decision is > 1500 ms or arrives after the next `TRIAL_STARTED`.
+- [ ] Test session kept until J5 (C1 evidence), then deleted with Sebas's OK.
+- [x] **Stop:** passed (Sebas, 12 Nov ≈ 14:20): C1 PASS with `5d752e08`.
+- [x] *Late epoch (54.7 / 70.4 s), read from the DB at 14:30: it is epoch 0 (S1/S2). `live.py` cuts nothing until the S3 offset exists (S4 entered + 1 s), so every S1–S3 epoch is cut in one batch then; epoch 0's lag ≈ S4 entry − its end (47.7 s / 60.6 s) plus the batch's own time. No S7 window can touch it. Recorded, not fixed; checked again in J2 and J4.*
 
-### [ ] J2 · cap, S1 → S9 in the headset
-- [ ] Same list as M7 plus D-F6-179: `autorun` alive (log file growing) before S3; at the end of S3 the assistant says "eyes open, looking at the dot". Condition `MULTIMODAL_ADAPTIVE`; T1 lures on (T2/T3 if X6b), declared. New lure characters and card sizes seen in the headset.
+### [x] P0 · offline kit for J2/J3 (no code) · **while Sebas cannot do an Editor Stop (from ≈ 12:20); ready and re-tried by 13:50** · D-F6-193
+During J2 and J3 the PC is off the network: this chat cannot be reached. Everything Sebas needs goes in the draft, under "Jue 12 · sin red".
+- [x] Operator list for J2: D-F6-153 (Blender closed) + M7 + D-F6-179 (`autorun` log growing before S3; "eyes open" line) + **D-F6-193: Ethernet out and Wi-Fi off before the cap (Part B, step 4b); back on when `autorun` prints *both streams recorded*.**
+- [x] Operator list for J3: per case, its own session, `autorun` relaunched, S4 complete, G after, EEG counted in one S7 window before cutting (console line to look for), then the cut (cap off / AURA closed / Bluetooth off); what to note (time of the cut, case, session id).
+- [x] Copy-paste commands that work offline: session ids of the day, `autorun`, `verify_eeg.sql` via `docker compose exec db psql`, a short SQL per J3 case (`EEG_STATUS` lost, `BEHAVIOR_FALLBACK`, heartbeat fresh). Tried once against the J1 session.
+- [x] Where each Stop is written while offline (a line in the draft per session); this chat reads them after reconnecting.
+- [x] *Done 14:27 (late): backend restarted (nothing from T4), `/health` ok, `docker compose port db 5432` = 127.0.0.1:5432, both P0 SQL files re-run on `5d752e08`, same output; `git status` clean after the docs(tasks) commit.* **13:40–13:50:** `git status` clean (except what T4 parked), every commit of the day in, backend restarted once with T4, `/health` ok, `graphify update .` done. **Network off ≈ 13:50**, before the cap.
+
+### [ ] T4 · EEG staff decisions (**≈ 12:30–13:40, in parallel with the Editor runs**) · only what has a number in §4 (D-F6-191 (2))
+- [x] *14:26: the board mirror (12:02) ends at D-F6-194; nothing from the EEG staff numbered. J2 runs with the current rules; J4 replays J2 with what comes later, declared (Sebas, 12 Nov).* Waits for PM to record the decisions (≈ 12:30). Nothing from the meeting is applied without a number.
+- [ ] Each decision its own commit and test; rule changes recompute from the XDF (D-F6-156); `rules-v2` byte-identical (C5 rerun if `decide()` is touched).
+- [ ] **Deadline 13:40:** one `docker compose restart backend` with everything committed, `/health` ok, P0 commands re-tried. What does not fit by 13:40 is parked uncommitted and goes after J4: J2 then ran with the rules before it, and J4 replays J2 with the new ones (declared).
+- [ ] **Stop** (Sebas) before the network goes off.
+
+### [ ] J2 · cap, S1 → S9 in the headset · **14:00, offline** (D-F6-191 (3), D-F6-193)
+- [ ] Same list as M7 plus D-F6-179 and D-F6-193 (the P0 list). Condition `MULTIMODAL_ADAPTIVE`; T1 and T2/T3 lures on (X6b done), declared. New lure characters (incl. 26–30 if in the set) and card sizes seen in the headset. A4–A7 seen: no `ERROR`/queue lines in the console.
 - [ ] **Done when:** at least one decision with `EEG_CONFIRMED`, `EEG_VETO` or `EEG_LED`, applied and explained (F4 §5).
-- [ ] None → forced state in the Editor, real signal confirms or vetoes; **declared as such**.
-- [ ] **Stop.**
+- [ ] None -> forced state in the Editor, real signal confirms or vetoes; **declared as such**.
+- [ ] **Stop:** Sebas writes it offline (P0); this chat reads it after reconnecting.
 
-### [ ] J3 · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it
-For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2 (M7 plus D-F6-179), `autorun` relaunched, its own XDF.
+### [ ] J3 · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it · **offline**
+For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2, `autorun` relaunched, its own XDF.
 - [ ] Reach S7 with **G**, but **S4 complete** (no G in S4). If S6 is short, the reference falls to S4 eyes open, marked (D-F6-73).
 - [ ] **Before cutting:** the EEG has counted in at least one S7 window (visible in `autorun`'s console).
 - [ ] Case 1: cap off. Case 2: AURA software closed. Case 3: Bluetooth off.
-- [ ] **Check, each case:** the session goes on with behaviour; `EEG_STATUS` lost and `BEHAVIOR_FALLBACK` in the database; heartbeat still fresh (the process did not die).
-- [ ] A case that does not fit tonight moves to Fri morning, and PM is told.
-- [ ] **Stop.**
+- [ ] **Check, each case:** the session goes on with behaviour; `EEG_STATUS` lost and `BEHAVIOR_FALLBACK` in the database; heartbeat still fresh (the process did not die). Sebas runs the P0 SQL offline; this chat confirms after reconnecting.
+- [ ] A case that does not fit moves to Fri morning, and PM is told (D-F6-191 (3)).
+- [ ] **Stop:** written offline; read after reconnecting.
 
-### [ ] J4 · replay of J2
-- [ ] Same decisions as live; every `EEG_LED` read one by one (F4 risk 8).
-- [ ] **Stop.**
+### [ ] J4 · replay of J2 · **after reconnecting**
+- [ ] First: read the J2/J3 notes and confirm the J3 checks from the database; `fill_from_xdf` for each session if `autorun` did not.
+- [ ] `replay` of J2: same decisions as live; every `EEG_LED` read one by one (F4 risk 8). If T4 landed after J2, a second replay with the new rules, declared.
+- [ ] **Stop** (together with the J2 and J3 Stops).
 
 ### [ ] J5 · freeze and close · **checklist: `docs_proyecto/Checklist_Congelamiento_Reglas_12nov.md`** (PM)
 - [ ] **§2, conditions C1–C8**, each marked in the draft with its evidence: C1 = J1, C2 = J2 (or the forced state, declared), C3 = J4, **C4 = the four defaults of D-F6-174 and T1's (index with SD 0 → `UNAVAILABLE`) reviewed against J2**, C5 = `rules-v2` byte-identical, C6–C8 Sebas/PM (only noted).
 - [ ] **C5:** `replay --json` of the 18 adaptive sessions (own version and `--version behavior-v2`) against the reference kept in `Claude outputs/referencia_replay_rules_v2_10nov/` (36 files, captured before T2): 36/36 identical.
 - [ ] **§3, every parameter with its value** in the draft, read from the code at the commit to tag (not copied from the checklist): §3.1 epochs, quality, drop rules (F4 §6), P7 window, A-7, reference, offset; §3.2 confirm/veto, lead (D-F6-184/185), cap (`MAX_CHANGES`), defaults, **T1 default: the EEG counts but the index the state reads has no z (SD 0 in the reference) → `eeg_effect` = `UNAVAILABLE`, behavioural decision** (`concordance.py:49` theta for `OVERLOADED`, `:54` EI for the rest; test `test_the_index_the_state_reads_missing_is_unavailable`; duda 5, checklist row added by PM), `eeg_effect`, O4 of `EEG_LED`; §3.3 heartbeat, process down, **arrival margin (measured Wed)**, the > 60 s rule; §3.4 lures active on the dry run, seed, operation lists.
-- [ ] **C9:** audit fixes 1–7 done (commits), A4–A7 tested in J2; D-F6-187 applied or why not.
+- [ ] **C9:** audit fixes 1–7 done (commits), A4–A7 tested in J2; D-F6-187 applied or why not. **Note in C9: the A4–A7 Editor Stop (`567e730b`) ran in `STATIC`, not `BEHAVIOR_ADAPTIVE` (Sebas, 12 Nov).**
 - [ ] Tag proposed (name and commit), **created only with Sebas's OK**.
 - [ ] **Stop:** rules frozen.
 
