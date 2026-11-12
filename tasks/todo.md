@@ -342,7 +342,7 @@ During J2 and J3 the PC is off the network: this chat cannot be reached. Everyth
 - [ ] None -> forced state in the Editor, real signal confirms or vetoes; **declared as such**.
 - [ ] **Stop:** Sebas writes it offline (P0); this chat reads it after reconnecting.
 
-### [ ] J3 · **not done Thu 12 (Sebas); Duda 3 for PM** · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it · **offline**
+### [x] J3 · **out, D-F6-196 (not done, not moved to Fri; declared)** · three real fallbacks, one S7 each (D-F6-174), after J2 and not replacing it · **offline**
 For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2, `autorun` relaunched, its own XDF.
 - [ ] Reach S7 with **G**, but **S4 complete** (no G in S4). If S6 is short, the reference falls to S4 eyes open, marked (D-F6-73).
 - [ ] **Before cutting:** the EEG has counted in at least one S7 window (visible in `autorun`'s console).
@@ -351,17 +351,17 @@ For each case its own session in `MULTIMODAL_ADAPTIVE`: same list as J2, `autoru
 - [ ] A case that does not fit moves to Fri morning, and PM is told (D-F6-191 (3)).
 - [ ] **Stop:** written offline; read after reconnecting.
 
-### [ ] J4 · replay of J2 · **after reconnecting**
+### [x] J4 · replay of J2 · **after reconnecting**
 - [ ] First: read the J2/J3 notes and confirm the J3 checks from the database; `fill_from_xdf` for each session if `autorun` did not.
 - [x] *`bf5ceee3`: 20/20 decisions equal; EEG block differs in 5/20 (arrival margin), no decision changed. `a8e825e0` not replayable (two `AURA`).* `replay` of J2: same decisions as live; every `EEG_LED` read one by one (F4 risk 8). If T4 landed after J2, a second replay with the new rules, declared.
-- [ ] **Stop** (together with the J2 and J3 Stops).
+- [x] **Stop:** J2 and J4 approved (Sebas, 12 Nov 16:33).
 
 ### [ ] J5 · freeze and close · **checklist: `docs_proyecto/Checklist_Congelamiento_Reglas_12nov.md`** (PM)
-- [ ] **§2, conditions C1–C8**, each marked in the draft with its evidence: C1 = J1, C2 = J2 (or the forced state, declared), C3 = J4, **C4 = the four defaults of D-F6-174 and T1's (index with SD 0 → `UNAVAILABLE`) reviewed against J2**, C5 = `rules-v2` byte-identical, C6–C8 Sebas/PM (only noted).
-- [ ] **C5:** `replay --json` of the 18 adaptive sessions (own version and `--version behavior-v2`) against the reference kept in `Claude outputs/referencia_replay_rules_v2_10nov/` (36 files, captured before T2): 36/36 identical.
-- [ ] **§3, every parameter with its value** in the draft, read from the code at the commit to tag (not copied from the checklist): §3.1 epochs, quality, drop rules (F4 §6), P7 window, A-7, reference, offset; §3.2 confirm/veto, lead (D-F6-184/185), cap (`MAX_CHANGES`), defaults, **T1 default: the EEG counts but the index the state reads has no z (SD 0 in the reference) → `eeg_effect` = `UNAVAILABLE`, behavioural decision** (`concordance.py:49` theta for `OVERLOADED`, `:54` EI for the rest; test `test_the_index_the_state_reads_missing_is_unavailable`; duda 5, checklist row added by PM), `eeg_effect`, O4 of `EEG_LED`; §3.3 heartbeat, process down, **arrival margin (measured Wed)**, the > 60 s rule; §3.4 lures active on the dry run, seed, operation lists.
-- [ ] **C9:** audit fixes 1–7 done (commits), A4–A7 tested in J2; D-F6-187 applied or why not. **Note in C9: the A4–A7 Editor Stop (`567e730b`) ran in `STATIC`, not `BEHAVIOR_ADAPTIVE` (Sebas, 12 Nov).**
-- [ ] Tag proposed (name and commit), **created only with Sebas's OK**.
+- [x] *In the draft, J5 section (16:50).* **§2, conditions C1–C8**, each marked in the draft with its evidence: C1 = J1, C2 = J2 (or the forced state, declared), C3 = J4, **C4 = the four defaults of D-F6-174 and T1's (index with SD 0 → `UNAVAILABLE`) reviewed against J2**, C5 = `rules-v2` byte-identical, C6–C8 Sebas/PM (only noted).
+- [x] *36/36 identical at `053740e`.* **C5:** `replay --json` of the 18 adaptive sessions (own version and `--version behavior-v2`) against the reference kept in `Claude outputs/referencia_replay_rules_v2_10nov/` (36 files, captured before T2): 36/36 identical.
+- [x] *Read from the code at `053740e`, in the draft.* **§3, every parameter with its value** in the draft, read from the code at the commit to tag (not copied from the checklist): §3.1 epochs, quality, drop rules (F4 §6), P7 window, A-7, reference, offset; §3.2 confirm/veto, lead (D-F6-184/185), cap (`MAX_CHANGES`), defaults, **T1 default: the EEG counts but the index the state reads has no z (SD 0 in the reference) → `eeg_effect` = `UNAVAILABLE`, behavioural decision** (`concordance.py:49` theta for `OVERLOADED`, `:54` EI for the rest; test `test_the_index_the_state_reads_missing_is_unavailable`; duda 5, checklist row added by PM), `eeg_effect`, O4 of `EEG_LED`; §3.3 heartbeat, process down, **arrival margin (measured Wed)**, the > 60 s rule; §3.4 lures active on the dry run, seed, operation lists.
+- [x] **C9:** audit fixes 1–7 done (commits), A4–A7 tested in J2; D-F6-187 applied or why not. **Note in C9: the A4–A7 Editor Stop (`567e730b`) ran in `STATIC`, not `BEHAVIOR_ADAPTIVE` (Sebas, 12 Nov).**
+- [x] *Proposed: `eeg-rules-freeze-2026-11-12` on the J5 docs commit; waiting for Sebas's OK.* Tag proposed (name and commit), **created only with Sebas's OK**.
 - [ ] **Stop:** rules frozen.
 
 ---
