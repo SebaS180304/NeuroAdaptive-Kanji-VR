@@ -1,6 +1,6 @@
 # Todo: week of 9 – 13 Nov 2026 (F4 S3 · multimodal)
 
-Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-193 (Thu planned 12 Nov from D-F6-191 and D-F6-193, waiting for Sebas's OK)** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
+Plan in `tasks/plan.md`. **Approved by Sebas; aligned up to D-F6-193; Fri planned 13 Nov up to D-F6-202, approved (Thu planned 12 Nov from D-F6-191 and D-F6-193, waiting for Sebas's OK)** (audit fixes D-F6-186/187 added 10 Nov, waiting for Sebas's OK) (Tue updated 10 Nov: T0b sync anchor, D-F6-179; EEG staff moved, D-F6-180). Each task: tests, commit (message shown first), `graphify update .`, Stop.
 Backend tests: `pytest` (exact invocation confirmed at M1). Harness: Unity Editor.
 
 ---
@@ -384,19 +384,56 @@ Folder `Claude outputs/eeg_export_12nov/`, sessions `a8e825e0` and `bf5ceee3`. N
 - [x] *`a8e825e0` 15/18 live = 15/18 epochs; `bf5ceee3` 8/18 (44 %) live, 11/18 (61 %) XDF; effects 80/80 MM, 0/300 behaviour.* Run on J2.
 - [x] **Stop:** approved (Sebas, 12 Nov): A-7 live 83 % and 44 %, XDF beside it; 80/80 and 0/300.
 
-### [ ] V2 · dry run
-- [ ] `MULTIMODAL_ADAPTIVE` (D-F6-175); lures active that day, declared (T1, and T2/T3 if X6b); set and participant as Sebas fixed them; the participant is not from the team and signs consent v1 (D-F6-76); lists as M7 plus the two D-F6-179 items of J2.
-- [ ] **Done when:** full session with a participant, XDF with both streams.
+### [ ] R0 · operator kit, no code (13:30–14:00) · D-F6-197, D-F6-199, D-F6-193, D-F6-201
+In `Claude outputs/Borrador_Plan_Fase6_9_13nov.md` §R0. One list for rehearsal [S] and dry run [D].
+- [x] Steps in order, portal registration → `autorun` *both streams recorded*: Part B 1–10 with D-F6-197 (one `AURA`; peak seen per tap, < 3 clear → repeat) and D-F6-199 (peak ≫ blink; mains before S3; F3), step 4a offline, Inspector (`MULTIMODAL_ADAPTIVE`, set A, `devParticipantCode` = portal code, `eegStep`, `baselineTimeScale = 1`; reverted after).
+- [x] Additions (Sebas, 13 Nov): steps 11–12 and the observation sheet [D]; 2-page short consent v1.1, two copies; arrival, fitting A/B (≤ 35 min) and end columns in «Notas sin red».
+- [x] Offline commands (`autorun`, synthetic, port 5432 fix), the SQL after (`verify_eeg`, `verify_adaptation`, `verify_projection`, P0 check), deletion of `SIM_1311` (cascade checked in the DB; XDF folder and `autorun` log too).
+- [x] *13:38: all ok; `verify_projection` query 2 = the 25 known F3 rows. Found: with the network on, the lab PC `MSI` publishes 12 LSL streams incl. an `AURA`; R3's stream check now filters by host (kit fixed, no code).* **Check (on approval):** `/health`, `/health/db`, `docker compose port db 5432`, portal `/pretest` opens, the four SQL on `bf5ceee3`, read-only. Output noted in the draft.
+- [ ] **Stop:** Sebas reads the kit.
+
+### [ ] R1 · rehearsal (14:00–15:15) · D-F6-201 · Blender closed (D-F6-202)
+- [ ] Synthetic AURA on, headset, Sebas as participant `SIM_1311`; network off before the portal (Sebas, 13 Nov).
+- [ ] Portal → pre-test → S1–S10 in `MULTIMODAL_ADAPTIVE`, set A, following the kit line by line; gaps in the kit noted as they appear.
+- [ ] After reconnecting: the four SQL; A-7 live engine with `eeg_epochs` beside it; effect in every S7 decision; one `CONNECTED`; XDF under `sub-SIM1311/` with both streams.
+- [ ] Expected, not findings: `offset None` (synthetic has no tap peaks); A-7 says nothing about the cap.
+- [ ] **Done when:** session reaches S10, `autorun` exit 0, SQL clean. **Stop** at the end.
+
+### [ ] R2 · findings (15:15–16:00) · D-F6-198
+- [ ] Each finding in the draft (Registro) with: what, where, blocks the dry run yes/no.
+- [ ] A blocker → **stop and tell Sebas**; a fix after the tag only with a number in §4 (its own commit, test, `rules-v2` byte-identical if `decide()` is touched). Everything else recorded, not fixed.
+- [ ] Kit corrected (docs only) where the rehearsal showed a gap.
+- [ ] `SIM_1311` deleted **with Sebas's OK** (kit §9): look first, delete in a transaction, `left_over = 0`; XDF folder and log removed.
+- [ ] **Stop:** Sebas.
+
+### [ ] R3 · PC ready at 16:45 · D-F6-201
+- [ ] Synthetic AURA off; Unity restarted; streams of this PC only (host filter) → `LaptopSebas1803 []`; with the network on, the lab PC `MSI` shows its own `AURA`.
+- [ ] `/health`, `/health/db` ok; `docker compose port db 5432` = `127.0.0.1:5432`.
+- [ ] `git status` clean (today's docs(tasks) commit in, message shown first). Profiler, Blender, VS Code closed.
+- [ ] **Stop:** Sebas sees the list ticked.
+
+### [ ] V2 · dry run (17:30, offline from 17:15) · D-F6-201
+- [ ] External participant, > 18, never used the app; consent v1.1 in two copies; **only the portal code** in the draft and the database (name only on the signed sheet).
+- [ ] `MULTIMODAL_ADAPTIVE`, set A, T1–T3 lures (declared); kit [D] line by line.
+- [ ] **Done when:** full session S1–S10, XDF with both streams, `autorun` exit 0. Network back on at *both streams recorded*.
+- [ ] **Stop:** Sebas writes it offline (Notas sin red).
+
+### [ ] V3 · analysis (19:30)
+- [ ] `verify_eeg.sql` complete; A-7 from the live engine with the XDF figure beside it and the grid-phase cause declared (D-F6-200 (2)); replay matches; third sync measurement (A-23); every `EEG_LED` one by one.
+- [ ] Data for A-24 (S6 length, reference epochs) noted, not decided.
 - [ ] **Stop.**
 
-### [ ] V3 · analysis
-- [ ] `verify_eeg.sql` complete; replay matches; A-7 result; third sync measurement (A-23); `EEG_LED` one by one.
-- [ ] **Stop.**
-
-### [ ] V4 · week close
+### [ ] V4 · week close (≈ 20:30)
 - [ ] Criterion of F4 S3 met or not, with evidence; findings recorded, not fixed.
 - [ ] `tasks/` up to date; draft with Dudas or "Sin dudas · 13 nov".
 - [ ] **Stop:** Sebas's OK.
+
+### [ ] X8 · content 31–35 (after V4) · D-F6-202 · content commit (D-F6-62, D-F6-122); rules stay frozen (D-F6-198)
+- [ ] Read the Registro of `docs_proyecto/Tabla_Autoria_Kanji_Fase2.md` first: list each of 31 金 · 32 茶 · 33 馬 · 34 魚 · 35 鳥 with FBX yes/no and hints 4/4 yes/no.
+- [ ] Only the complete ones (FBX **and** four hints): integrated as X7 did 16–30 (same files, same pattern).
+- [ ] Harness in the Editor, like X7: all PASS (count before → after noted).
+- [ ] The incomplete ones listed in the draft → week of 16. Commit (message shown first), `graphify update .`.
+- [ ] **Stop:** Sebas.
 
 ---
 

@@ -1,6 +1,6 @@
 # Implementation Plan: week of 9 – 13 Nov 2026 (F4 S3 · multimodal → dry run with EEG)
 
-Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; updated on 10 Nov up to D-F6-187 (audit fixes waiting for Sebas's OK); Wed reordered 11 Nov up to D-F6-189; Thu planned 12 Nov up to D-F6-193 (waiting for Sebas's OK)** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
+Written Mon 9 Nov 2026. **Approved by Sebas, aligned up to D-F6-178; updated on 10 Nov up to D-F6-187 (audit fixes waiting for Sebas's OK); Wed reordered 11 Nov up to D-F6-189; Thu planned 12 Nov up to D-F6-193; Fri planned 13 Nov up to D-F6-202, approved** (the first version's questions are answered in D-F6-171 to D-F6-178; lure lists in `Metricas_Dificultad_Kanji_Fase2.md` §16).
 Last week's plan is archived in `tasks/archive/semana_2nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -207,8 +207,25 @@ If J2 gives no EEG decision: the forced test of F4 §5, declared as such.
 
 **Scope:** XS–S, no code, ≈ 30 min. No Stop in the Editor.
 
-### Fri 13 · dry run (`MULTIMODAL_ADAPTIVE`)
-V1 multimodal lines in `verify_eeg.sql` → V2 dry run with consent v1 → V3 `verify_eeg.sql`, replay, one-by-one review of `EEG_LED` → V4 week close.
+### Fri 13 · rehearsal, then the dry run (D-F6-201, D-F6-202) · approved by Sebas 13 Nov
+V1 done Thu (D-F6-200). No code today: rules frozen (D-F6-198); a fix after the tag only for a blocker, with a number. Operator kit and timings in `Claude outputs/Borrador_Plan_Fase6_9_13nov.md`.
+
+| When | Task | Stop | Network |
+| --- | --- | --- | --- |
+| 13:30 → 14:00 | **R0** one operator list for rehearsal and dry run (Part B + D-F6-197/199, step 4a, Inspector), offline commands, SQL after, test participant deletion. Commands tried once, read-only | Sebas reads the kit | on |
+| 14:00 → 15:15 | **R1** rehearsal: synthetic AURA + headset, Sebas as participant `SIM_1311`, portal → pre-test → S1–S10 → SQL, Blender closed | end of run | **off** before the portal (question 1) |
+| 15:15 → 16:00 | **R2** findings in the draft; a blocker → stop and tell Sebas; `SIM_1311` deleted with Sebas's OK | Sebas | on |
+| 16:45 | **R3** PC ready: synthetic off (0 streams), Unity restarted, `/health`, port 5432, `git status` clean | Sebas | on |
+| 17:30 | **V2** dry run, external participant, code only | written offline | off until *both streams recorded* |
+| 19:30 | **V3** analysis | Sebas | on |
+| ≈ 20:30 | **V4** week close | Sebas | on |
+| after V4 | **X8** content 31–35 (D-F6-202): only kanji with FBX and their four hints in the `Tabla_Autoria_Kanji_Fase2.md` Registro, integrated and harness-tested like X7; the rest to the week of 16 | Sebas | on |
+
+**Why the rehearsal goes offline:** the dry run does consent, portal and pre-test with the network already off (17:15). Only the rehearsal can show that the portal and the pre-test work offline; X5 (b) only checked Link, LabRecorder, `live.py` and the backend.
+
+**What the rehearsal cannot test:** the cap. With the synthetic stream there are no tap peaks (`offset None` expected), no mains check and no F3; those steps are read, not done. A-7 from the synthetic says nothing about the cap.
+
+**Fri questions, answered (Sebas, 13 Nov):** 1. rehearsal offline from before the portal, as the dry run; 2. test code `SIM_1311`. Kit additions: steps 11–12 and the observation sheet [D]; the 2-page short consent v1.1 in two copies; arrival, fitting A and B (≤ 35 min) and end times in «Notas sin red».
 
 ## Risks and mitigations
 
