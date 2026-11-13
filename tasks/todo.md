@@ -384,27 +384,27 @@ Folder `Claude outputs/eeg_export_12nov/`, sessions `a8e825e0` and `bf5ceee3`. N
 - [x] *`a8e825e0` 15/18 live = 15/18 epochs; `bf5ceee3` 8/18 (44 %) live, 11/18 (61 %) XDF; effects 80/80 MM, 0/300 behaviour.* Run on J2.
 - [x] **Stop:** approved (Sebas, 12 Nov): A-7 live 83 % and 44 %, XDF beside it; 80/80 and 0/300.
 
-### [ ] R0 · operator kit, no code (13:30–14:00) · D-F6-197, D-F6-199, D-F6-193, D-F6-201
+### [x] R0 · operator kit, no code (13:30–14:00) · D-F6-197, D-F6-199, D-F6-193, D-F6-201
 In `Claude outputs/Borrador_Plan_Fase6_9_13nov.md` §R0. One list for rehearsal [S] and dry run [D].
 - [x] Steps in order, portal registration → `autorun` *both streams recorded*: Part B 1–10 with D-F6-197 (one `AURA`; peak seen per tap, < 3 clear → repeat) and D-F6-199 (peak ≫ blink; mains before S3; F3), step 4a offline, Inspector (`MULTIMODAL_ADAPTIVE`, set A, `devParticipantCode` = portal code, `eegStep`, `baselineTimeScale = 1`; reverted after).
 - [x] Additions (Sebas, 13 Nov): steps 11–12 and the observation sheet [D]; 2-page short consent v1.1, two copies; arrival, fitting A/B (≤ 35 min) and end columns in «Notas sin red».
 - [x] Offline commands (`autorun`, synthetic, port 5432 fix), the SQL after (`verify_eeg`, `verify_adaptation`, `verify_projection`, P0 check), deletion of `SIM_1311` (cascade checked in the DB; XDF folder and `autorun` log too).
 - [x] *13:38: all ok; `verify_projection` query 2 = the 25 known F3 rows. Found: with the network on, the lab PC `MSI` publishes 12 LSL streams incl. an `AURA`; R3's stream check now filters by host (kit fixed, no code).* **Check (on approval):** `/health`, `/health/db`, `docker compose port db 5432`, portal `/pretest` opens, the four SQL on `bf5ceee3`, read-only. Output noted in the draft.
-- [ ] **Stop:** Sebas reads the kit.
+- [x] **Stop:** kit read and approved (Sebas, 13 Nov).
 
-### [ ] R1 · rehearsal (14:00–15:15) · D-F6-201 · Blender closed (D-F6-202)
-- [ ] Synthetic AURA on, headset, Sebas as participant `SIM_1311`; network off before the portal (Sebas, 13 Nov).
-- [ ] Portal → pre-test → S1–S10 in `MULTIMODAL_ADAPTIVE`, set A, following the kit line by line; gaps in the kit noted as they appear.
-- [ ] After reconnecting: the four SQL; A-7 live engine with `eeg_epochs` beside it; effect in every S7 decision; one `CONNECTED`; XDF under `sub-SIM1311/` with both streams.
-- [ ] Expected, not findings: `offset None` (synthetic has no tap peaks); A-7 says nothing about the cap.
-- [ ] **Done when:** session reaches S10, `autorun` exit 0, SQL clean. **Stop** at the end.
+### [x] R1 · rehearsal (14:00–15:15) · D-F6-201 · Blender closed (D-F6-202)
+- [x] Synthetic AURA on, headset, participant `SIM_1311` (one of Sebas's supervisors, not a pilot participant; Sebas operated); network off before the portal (Sebas, 13 Nov).
+- [x] Portal → pre-test → S1–S10 in `MULTIMODAL_ADAPTIVE`, set A, following the kit line by line; gaps in the kit noted as they appear.
+- [x] After reconnecting: the four SQL; A-7 live engine with `eeg_epochs` beside it; effect in every S7 decision; one `CONNECTED`; XDF under `sub-SIM1311/` with both streams.
+- [x] Expected, not findings: `offset None` (synthetic has no tap peaks); A-7 says nothing about the cap.
+- [x] *`9c38fdf3`: S9 reached, `autorun` exit 0, four SQL clean, A-7 16/18 live = XDF, 0 Unity errors; no blocker (draft 15:05).* **Done when:** session reaches S10, `autorun` exit 0, SQL clean. **Stop** at the end.
 
-### [ ] R2 · findings (15:15–16:00) · D-F6-198
-- [ ] Each finding in the draft (Registro) with: what, where, blocks the dry run yes/no.
-- [ ] A blocker → **stop and tell Sebas**; a fix after the tag only with a number in §4 (its own commit, test, `rules-v2` byte-identical if `decide()` is touched). Everything else recorded, not fixed.
-- [ ] Kit corrected (docs only) where the rehearsal showed a gap.
-- [ ] `SIM_1311` deleted **with Sebas's OK** (kit §9): look first, delete in a transaction, `left_over = 0`; XDF folder and log removed.
-- [ ] **Stop:** Sebas.
+### [x] R2 · findings (15:15–16:00) · D-F6-198
+- [x] *7 findings, none blocks (draft 15:05). Kanji Assembly UX → Duda 1 for PM; kit's alive command now filters autorun's own lines.* Each finding in the draft (Registro) with: what, where, blocks the dry run yes/no.
+- [x] *No blocker; no code touched.* A blocker → **stop and tell Sebas**; a fix after the tag only with a number in §4 (its own commit, test, `rules-v2` byte-identical if `decide()` is touched). Everything else recorded, not fixed.
+- [x] Kit corrected (docs only) where the rehearsal showed a gap.
+- [x] *15:15: participants 25 → 24, sessions 101 → 100, events −338, epochs −312; XDF folder and log removed.* `SIM_1311` deleted **with Sebas's OK** (kit §9): look first, delete in a transaction, `left_over = 0`; XDF folder and log removed.
+- [x] **Stop:** Sebas's OK (13 Nov).
 
 ### [ ] R3 · PC ready at 16:45 · D-F6-201
 - [ ] Synthetic AURA off; Unity restarted; streams of this PC only (host filter) → `LaptopSebas1803 []`; with the network on, the lab PC `MSI` shows its own `AURA`.
