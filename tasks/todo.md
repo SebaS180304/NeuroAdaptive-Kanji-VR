@@ -406,6 +406,8 @@ In `Claude outputs/Borrador_Plan_Fase6_9_13nov.md` §R0. One list for rehearsal 
 - [x] *15:15: participants 25 → 24, sessions 101 → 100, events −338, epochs −312; XDF folder and log removed.* `SIM_1311` deleted **with Sebas's OK** (kit §9): look first, delete in a transaction, `left_over = 0`; XDF folder and log removed.
 - [x] **Stop:** Sebas's OK (13 Nov).
 
+- [x] *15:21: **D-F6-203** applied in the kit, step 6 (Kanji Assembly sentence at the end of the S1–S2 instructions, as Part B step 7). PM question 1 closed.*
+
 ### [ ] R3 · PC ready at 16:45 · D-F6-201
 - [ ] Synthetic AURA off; Unity restarted; streams of this PC only (host filter) → `LaptopSebas1803 []`; with the network on, the lab PC `MSI` shows its own `AURA`.
 - [ ] `/health`, `/health/db` ok; `docker compose port db 5432` = `127.0.0.1:5432`.
