@@ -1,6 +1,6 @@
 # Todo: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Plan in `tasks/plan.md`. Aligned up to **D-F6-208**. **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
+Plan in `tasks/plan.md`. Aligned up to **D-F6-214**. **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
 Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
@@ -53,27 +53,30 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ### [ ] BR0 · block R design, read-only
 - [ ] D-F6-125, D-F6-131/181, D-F6-187/190, D-F6-207/208, consent Parts B/C read.
-- [ ] One page in the draft: states, events, tables, where each placeholder lives and how the real input replaces it. **Stop.**
+- [ ] Inputs checked in the mirror: `Contenido_UI_Bloque_R.md`, 5 new kanji per set (§16), V1.12 (validated or not); real vs placeholder listed.
+- [ ] End of free recall (D-F6-212): researcher key **`R`** in `SessionFlowRunner` (as D-F6-158), only in part 1, logs `BLOCK_R_RECALL_ENDED`; no clock anywhere.
+- [ ] One page in the draft: states, events, tables. **Stop:** Sebas approves the mechanism.
 
 ### [ ] BR1 · block R data (migration 0019)
-- [ ] Evaluated session stored (D-F6-190 (2)); visit 4 with visit 3's set (D-F6-190 (1)); answers as events, outside `decide()` and the window code.
+- [ ] Evaluated session stored (D-F6-190 (2)); visit 4 with visit 3's set (D-F6-190 (1)); answers and `BLOCK_R_RECALL_ENDED` as events, outside `decide()` and the window code.
 - [ ] Validation: same participant, earlier session. Tests. **Stop.**
 
 ### [ ] BR2 · block R in VR (between S2 and S3)
-- [ ] Yes/no with 10 kanji (5 seen, 5 new as declared placeholders); 15 MC trials T1–T3 with lures; no feedback, no hints; evaluated session's set; placeholder texts.
+- [ ] Part 1: instructions + waiting screen, **no timer**, ended by `R` (D-F6-212). Part 2: yes/no with 10 kanji (5 seen, 5 new from §16). Part 3: 15 MC trials T1–T3 with lures; no feedback, no hints; evaluated session's set. Texts from `Contenido_UI_Bloque_R.md`; placeholders only for what is missing.
+- [ ] EditMode test: `R` acts only in part 1.
 - [ ] Harness test; seen in the Editor with Sebas; commit body "block R, exception D-F6-125". **Stop.**
 
 ## Wed 18 · AI workshop · block R continues
 
 ### [ ] BR3 · free recall in the portal
-- [ ] Researcher marks recalled kanji; placeholder form until web design's arrives (D-F6-208). Playwright smoke. **Stop.**
+- [ ] Researcher marks recalled kanji; V1.12 if validated, else placeholder with the same states; no clock; the form does not advance the VR (D-F6-212). Playwright smoke. **Stop.**
 
 ### [ ] BR4 · short visit: S1–S2 → block R → close (no cap)
 - [ ] Creation with the evaluated session; Unity skips S3–S10 and closes cleanly; same path as visit 4.
 - [ ] End to end in the Editor with a test participant, deleted after with Sebas's OK. **Stop.**
 
 ### [ ] BR5 · Thu kit (docs)
-- [ ] PC list, network off (D-F6-193), Inspector for visit 2 (code, evaluated session = dry run, short visit), S1–S2 + D-F6-203 sentence, block R operator steps, **debriefing at the end** (Part B step 3, D-F6-192: no visit 4 for this participant), close, SQL after.
+- [ ] PC list, network off (D-F6-193), Inspector for visit 2 (code, evaluated session = dry run, short visit), S1–S2 + D-F6-203 sentence, block R operator steps ("Anything else you remember?" once; `R` when they say they are done; no clock, D-F6-212), **debriefing at the end** (Part B step 3, D-F6-192: no visit 4 for this participant), close, SQL after.
 - [ ] **Stop:** Sebas reads it.
 
 - [ ] End of day: inputs due from UI/UX, Content and web design (D-F6-208).
@@ -92,7 +95,10 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] `Tabla_Autoria_Kanji_Fase2.md` Registro read: each of 31–35 with FBX yes/no, hints 4/4 yes/no.
 - [ ] Only complete ones integrated as X7; harness all PASS (count before → after).
 - [ ] Incomplete ones listed in the draft. **Stop.**
-- [ ] A-23 / A-24: V3 figures supplied to Sebas; no code unless numbered.
+- [ ] Thu 19 decisions: A-23 (3rd measurement as is, D-F6-214), A-24, bad-channel rule (D-F6-213). V3 figures and `eeg_export_16nov/` supplied; no code unless numbered.
+
+### [ ] Q1 · bad-channel rule (D-F6-213) · **only if numbered on Thu 19**
+- [ ] Change in `epochs.py` / `features.py`, recomputed from the XDF, tested on `65af2fe4`; `rules-v2` byte-identical. Fri 20 or Mon 23. **Stop.**
 
 ## Fri 20 · go/no-go input
 - [ ] What is live, what is still placeholder, BR7 result, open findings; `tasks/` and draft up to date.

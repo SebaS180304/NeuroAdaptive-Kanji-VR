@@ -1,6 +1,6 @@
 # Implementation Plan: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Written Mon 16 Nov 2026; **updated 16 Nov after 13:15, aligned up to D-F6-208** (two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
+Written Mon 16 Nov 2026; **updated 16 Nov evening, aligned up to D-F6-214** (two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
 Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -14,7 +14,9 @@ Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its 
 - One change per commit, message shown first; nothing on main. `graphify update .` after code. Backend changes go live with `docker compose restart backend`, between sessions.
 - Each task ends with a **Stop** (Sebas's OK). Every day closes with `tasks/` up to date and the draft with "Dudas para PM" or "Sin dudas · <date>".
 - Participants appear **only by code** (D-F6-205), in the draft, the database and commits. **The dry-run participant's data is kept:** the dry run is visit 1 of the block R test (D-F6-207).
-- **Block R inputs (D-F6-208):** built on declared placeholders; the real texts, 5 new kanji per set and recall form arrive by **Wed 18, end of day**; what has not arrived is used as placeholder on Thu 19 and declared.
+- **Block R inputs (D-F6-208):** the board records them as delivered on Mon 16 (UI/UX `Contenido_UI_Bloque_R.md`, Content's 5 new kanji per set, web design's V1.12 recall form). BR0 checks each one in the mirror: what is there is used from the start; what is missing, or still pending Sebas's validation (V1.12 is marked *Pending* in `design-system.md`), is a declared placeholder until Wed 18, end of day.
+- **Free recall (D-F6-212):** the researcher ends part 1 when the participant says they are done; **≈ 2 min is only a guide, no clock** in the VR or the portal. The researcher says *"Anything else you remember?"* once, when the participant goes quiet; never repeats, corrects or hints.
+- **Rule values still frozen after U0 for the EEG quality:** a bad channel is handled by protocol (D-F6-213); any rule change for it waits for a number on Thu 19.
 
 ## Dependency graph
 
@@ -74,31 +76,36 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf`, are small, and A-24 (Thu)
 - Tests: one local + one foreign `AURA` → the local one; two local → no fill, live epochs untouched, log line; one `AURA` → today's behaviour.
 - Check: `a8e825e0` (two `AURA` on 12 Nov) run through the new pick; result noted (fill or not, and why). **Stop.**
 
-**BR0 · block R design, read-only (≈ 45 min).** Read D-F6-125, D-F6-131/181 (lure rules apply to block R), D-F6-187/190, D-F6-207/208, consent Parts B/C, spec v1.4 if it covers R. Output: one page in the draft: states, events, tables, where each placeholder lives and how the real input replaces it (content in `kanji_content.json`, texts, form). **Stop.**
+**BR0 · block R design, read-only (≈ 45 min).** Read D-F6-125, D-F6-131/181 (lure rules apply to block R), D-F6-187/190, D-F6-207/208/212, consent Part B step 8 and Part C, `Contenido_UI_Bloque_R.md`, `Metricas_…` §16 (5 new kanji per set), `design-system.md` V1.12, spec v1.4 if it covers R. Output: one page in the draft: states, events, tables, which inputs are real and which are placeholders.
+- **End of the free recall (D-F6-212), mechanism chosen here: a researcher key in Unity, `R`**, added to the five letter keys of D-F6-158 (`ResearcherKeys` and `ResearcherKeyActs` in `SessionFlowRunner`). It acts only during block R part 1, logs `BLOCK_R_RECALL_ENDED` with the elapsed time, and starts part 2; outside part 1 it is logged and ignored, like the others. **Why a key and not the portal:** it reuses the existing pattern (no new endpoint, no backend → Unity push), works offline like every other operator action, and the recall form stays independent (it can be saved during or after the visit). Before S4 the researcher may touch the PC, so moving from Edge to the Game view is allowed. **G** still force-advances any wait, as today.
+- No timer of any kind for part 1: no countdown in the VR, no clock in the portal.
+- **Stop:** Sebas approves the mechanism before BR1.
 
-**BR1 · data path.** Migration **0019**: the session row keeps **which session it evaluates** (D-F6-190 (2)); visit 4 gets visit 3's set (D-F6-190 (1)); block R answers stored as events with their trial kind, never read by `decide()` or the window code. Validation: the evaluated session belongs to the same participant and is earlier. Tests. **Stop.**
+**BR1 · data path.** Migration **0019**: the session row keeps **which session it evaluates** (D-F6-190 (2)); visit 4 gets visit 3's set (D-F6-190 (1)); block R answers stored as events with their trial kind (and `BLOCK_R_RECALL_ENDED`, D-F6-212, accepted by the event schema), never read by `decide()` or the window code. Validation: the evaluated session belongs to the same participant and is earlier. Tests. **Stop.**
 
-**BR2 · block R in VR, between S2 and S3.** Yes/no recognition with 10 kanji (5 seen, 5 new: **placeholder new kanji**, declared) and 15 multiple-choice trials T1–T3 with lures, no feedback, no hints, from the evaluated session's set; instruction texts placeholder. Harness test like X7; seen in the Editor with Sebas. Unity commit says "block R, exception D-F6-125". **Stop in the Editor** (Tue evening, or Wed around the workshop).
+**BR2 · block R in VR, between S2 and S3.** Part 1 free recall: instruction screen (UI/UX text) and a waiting screen with **no timer**, ended by the researcher's `R` (D-F6-212). Part 2 yes/no recognition with 10 kanji (5 seen, 5 new from §16, placeholder only if missing). Part 3: 15 multiple-choice trials T1–T3 with lures, no feedback, no hints, from the evaluated session's set. Texts from `Contenido_UI_Bloque_R.md` (placeholder only if missing). EditMode test for `ResearcherKeyActs(R)`. Harness test like X7; seen in the Editor with Sebas. Unity commit says "block R, exception D-F6-125". **Stop in the Editor** (Tue evening, or Wed around the workshop).
 
 ### Wed 18 · AI workshop (time to be confirmed) · block R continues
 
-**BR3 · free recall in the portal.** The researcher marks recalled kanji for the evaluated session; plain placeholder form until web design's arrives (D-F6-208). The write goes where the portal already writes (decided in BR0). Playwright smoke. **Stop.**
+**BR3 · free recall in the portal.** The researcher marks recalled kanji for the evaluated session. V1.12 (`marking`, `saved`, `nothingRecalled`, `saveError`; "Save: nothing recalled" distinct from not saved) if Sebas has validated it, else a plain placeholder form with the same states (D-F6-208). **No clock and nothing that paces the 2 minutes** (D-F6-212). The form does not advance the VR: that is the `R` key. The write goes where the portal already writes (decided in BR0). Playwright smoke. **Stop.**
 
 **BR4 · short visit: S1–S2 → block R → close (≈ 20 min, no cap).** The flow D-F6-207 asks for on Thu, and the same path visit 4 uses (D-F6-125). Session creation with the evaluated session; Unity skips S3–S10 and closes the session cleanly. Tested end to end in the Editor with a test participant (deleted after, as `SIM_1311`). **Stop.**
 
-**BR5 · Thu kit (docs).** In the draft: PC list, network off (D-F6-193 applies to every session with a participant), Inspector values for visit 2 (participant code from V3, evaluated session = the dry run, short visit), S1–S2 with the D-F6-203 sentence, block R steps for the operator (recall marked in the portal; no repeating or correcting what the participant says), **debriefing at the end** (consent Part B step 3, D-F6-192, ≈ 3 min: this participant has no visit 4, and whoever finishes early gets it when leaving), close, SQL after. **Stop:** Sebas reads it.
+**BR5 · Thu kit (docs).** In the draft: PC list, network off (D-F6-193 applies to every session with a participant), Inspector values for visit 2 (participant code from V3, evaluated session = the dry run, short visit), S1–S2 with the D-F6-203 sentence, block R steps for the operator (part 1: instructions, the participant recalls aloud, the researcher marks in the portal; when they go quiet, *"Anything else you remember?"* once; when they say they are done, Game view in front and **`R`**; no clock, ≈ 2 min only as a guide; never repeat, correct or hint, D-F6-212), **debriefing at the end** (consent Part B step 3, D-F6-192, ≈ 3 min: this participant has no visit 4, and whoever finishes early gets it when leaving), close, SQL after. **Stop:** Sebas reads it.
 
 **End of day:** inputs due from UI/UX (texts), Content (5 new kanji per set, `Metricas_…` §16) and web design (recall form) (D-F6-208).
 
 ### Thu 19 · visit 2 test, then X8
 
-**BR6 · swap in what arrived (morning).** Content and texts into `kanji_content.json` (no code); the form if it arrived and fits in the time. Harness re-run; each item marked real or placeholder in the draft. **Stop.**
+**BR6 · swap in what arrived late (morning, only if something was still a placeholder).** Content and texts into `kanji_content.json` (no code); V1.12 if Sebas validated it after BR3 and it fits. Harness re-run; each item marked real or placeholder in the draft. **Stop.**
 
 **BR7 · visit 2 test (D-F6-207).** Same participant as the dry run, code only; 3 days after visit 1. Short visit: S1–S2 → block R on set A → debriefing → close. **Done when:** recall, yes/no and 15 MC answers stored against the dry-run session; nothing from block R in `adaptation_decisions`; findings recorded. If the participant cannot come: **Fri 20 morning**, last resort **Mon 23** with the interval declared. **Stop.**
 
 **X8 · content 31–35** (D-F6-202, after BR7). Read the `Tabla_Autoria_Kanji_Fase2.md` Registro: each of 31 金 · 32 茶 · 33 馬 · 34 魚 · 35 鳥 with FBX yes/no and hints 4/4 yes/no. Only complete ones integrated as X7 did 16–30; harness all PASS (count before → after); the rest listed. Content commit (D-F6-62, D-F6-122). **Stop.**
 
-A-23 and A-24 are Sebas's decisions with V3's figures; this chat only supplies them (no code unless numbered).
+**Thu 19 decisions (Sebas, with numbers):** A-23 with the 3rd measurement recorded as is (offset 14.4 ms, drift 3.5 ms, spread 57.1 ms > 50 ms with 10/10 clear taps, D-F6-214); A-24; and the bad-channel rule of D-F6-213 after the EEG chat's review. This chat supplies V3's figures and `eeg_export_16nov/`; no code unless numbered.
+
+**Q1 · bad-channel rule, only if numbered on Thu 19 (D-F6-213).** If the decision excludes a persistently bad channel from quality and indices: one change in `epochs.py` / `features.py`, recomputed from the XDF (D-F6-156), tested on `65af2fe4` (F3 lost from 277 s); `rules-v2` byte-identical. Fri 20 or Mon 23, before the pilot. Not planned in detail until the number exists.
 
 ### Fri 20 · go/no-go (PM, Sebas)
 This chat hands in: what is live (G1, G2, block R, X8), what is still placeholder, BR7 result, open findings, `tasks/` and the draft up to date.
@@ -109,13 +116,14 @@ This chat hands in: what is live (G1, G2, block R, X8), what is still placeholde
 | --- | --- | --- |
 | The dry run brings a pilot blocker | High | Recorded in V3 with "blocks yes/no"; fixed only after U0 and with a number |
 | Block R does not fit Tue–Wed (largest piece, Wed has the workshop) | High | Nothing else enters Tue–Wed; slices in order BR1 → BR2 → BR4 are the minimum for Thu; BR3 can fall back to recall noted on paper and typed after (declared) |
-| Inputs arrive late or not at all (D-F6-208) | Med | Placeholders from Tue; BR6 swaps what arrived; the rest declared in BR7 |
+| Inputs delivered but not yet in the mirror, or V1.12 not validated | Med | BR0 lists what is real; placeholders only for the gaps; BR6 swaps late arrivals; the rest declared in BR7 |
+| A channel loses contact mid-session in the pilot (as F3 on 16 Nov) | High | Protocol of D-F6-213: fix any red channel before S4; a loss from S4 to S8 is accepted and declared; the behavioural fallback covers the session (proved in `65af2fe4`); a rule change only with a number on Thu 19 (Q1) |
 | Visit 2 participant cannot come Thu | Med | Fri 20 morning, then Mon 23 with the interval declared (D-F6-207) |
 | G1 changes the epochs A-24 is decided on | Med | Old sessions keep the null origin = today's cut; V3 figures labelled with their grid |
 | G2 drops a session's offline epochs | Low | Only with two local `AURA`; the live epochs stay and the log says why (D-F6-206) |
 
 ## Open items
-- None for PM today: the three questions of 16 Nov are closed by D-F6-206, D-F6-207 and D-F6-208.
+- None for PM: questions 1–3 of 16 Nov closed by D-F6-206 to D-F6-208; 4 and 5 (V3) by D-F6-213 and D-F6-214.
 
 ## Carried over from last week
 - Audit (D-F6-186, after the dry run): Unity dead code (5 Phase-1 stubs and `XRTrackingProbe`, 253 lines, with their `.meta`; unused events); own `ADAPTATION_SKIPPED` reason for a refused ESL change. Not before the pilot unless block R is done.
