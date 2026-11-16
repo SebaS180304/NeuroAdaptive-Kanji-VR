@@ -7,18 +7,18 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ## Mon 16 · dry run = visit 1 · no code
 
-### [ ] R3 · PC ready (14:30–14:50)
+### [x] R3 · PC ready (14:30–14:50) · redone 18:03 for the retry
 - [ ] Kit list «R3 · PC ready» in `Borrador_Plan_Fase6_9_13nov.md`: synthetic off (`LaptopSebas1803 []`), `/health`, port 5432, portal in Edge, Unity freshly opened, LabRecorder, `git status` clean, materials and batteries.
 - [ ] 14:45 Blender closed; 14:50 network off.
 - [ ] **Stop:** Sebas sees it ticked.
 
-### [ ] V2 · dry run (15:00, offline)
+### [x] V2 · dry run (15:00, offline) · first try aborted and deleted; retry 18:06, `65af2fe4`
 - [ ] Same external participant, **code only**; consent v1.1 in two copies; set A, `MULTIMODAL_ADAPTIVE`, T1–T3 lures (declared); kit line by line, D-F6-203 sentence in S1–S2.
 - [ ] At the end: Sebas asks them back on **Thu 19**, without mentioning memory questions (D-F6-207).
 - [ ] **Done when:** S1–S10, XDF with both streams, `autorun` exit 0; network back on at *both streams recorded*.
 - [ ] **Stop:** Sebas writes it offline (Notas sin red, observation sheet, step 12).
 
-### [ ] V3 · analysis (when `autorun` ends)
+### [x] V3 · analysis (when `autorun` ends) · done 16 Nov, `65af2fe4`
 - [ ] Notes, step 12, `autorun` log, Unity console read.
 - [ ] Four SQL (kit §8); A-7 live with the XDF figure beside it and the grid-phase cause (D-F6-200 (2)); replay matches; 3rd A-23 measurement (one-frame `SYNC_TAP` delay declared); every `EEG_LED`.
 - [ ] A-24 data noted (S6 length, reference epochs, source), not decided.
