@@ -2724,7 +2724,7 @@ namespace NeuroAdaptiveVR.EditorTools
             {
                 (UnityEngine.InputSystem.Key.G, S1, true, false, true),  (UnityEngine.InputSystem.Key.G, S9, false, false, false),
                 (UnityEngine.InputSystem.Key.E, S3, true, false, true),  (UnityEngine.InputSystem.Key.E, S5, true, false, false),
-                (UnityEngine.InputSystem.Key.T, S3, true, false, true),  (UnityEngine.InputSystem.Key.T, S9, true, false, true),
+                (UnityEngine.InputSystem.Key.T, S3, true, false, true),  (UnityEngine.InputSystem.Key.T, S9, true, false, false),
                 (UnityEngine.InputSystem.Key.T, S5, true, false, false),
                 (UnityEngine.InputSystem.Key.B, S9, false, false, true), (UnityEngine.InputSystem.Key.B, S9, true, false, false),
                 (UnityEngine.InputSystem.Key.B, S3, false, false, false),

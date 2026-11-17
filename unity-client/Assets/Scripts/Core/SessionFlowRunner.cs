@@ -312,7 +312,7 @@ namespace NeuroAdaptiveVR.Core
         {
             Key.G => chainRunning,                                   // every wait of the chain takes Force advance
             Key.E => chainRunning && state == GameFlowState.S3_SystemValidation,
-            Key.T => chainRunning && (state == GameFlowState.S3_SystemValidation || state == GameFlowState.S9_SessionSummary),
+            Key.T => chainRunning && state == GameFlowState.S3_SystemValidation,   // no S9 taps (D-F6-217)
             Key.B => !chainRunning && state == GameFlowState.S9_SessionSummary,
             Key.C => assemblyRunning,
             _ => false,
@@ -656,7 +656,7 @@ namespace NeuroAdaptiveVR.Core
         /// <summary>
         /// F4 §2.4, D-F6-150: the assistant strikes Cz's housing with a controller's ring and pulls its
         /// trigger in the same movement, SyncTapCount times (one person: two would add a reaction time); each pull is a SYNC_TAP marker and each tap a spike on Cz, so the EEG
-        /// and the markers line up at the start (S3) and the drift shows at the end (S9).
+        /// and the markers line up at the start (S3). Only in S3 since the pilot (D-F6-217).
         /// </summary>
         private IEnumerator RunSyncTest(string phase)
         {
@@ -906,12 +906,13 @@ namespace NeuroAdaptiveVR.Core
 
         private IEnumerator RunSummary()
         {
-            // F4 §2.4: the second sync test, with the headset still on, measures the drift.
-            if (eegStep) yield return RunSyncTest("S9");
+            // No sync test here since the pilot (D-F6-217): the drift stayed < 30 ms in 3 measurements; sync.py
+            // records the session as "no S9 taps", without drift (D-F6-176).
             // No score on the board. Spec asks for a neutral completion
             // message; showing performance would colour the S10 self-report
             // the participant fills in right after taking the headset off.
             Show("The session is complete.\n\nThank you. You can take off the headset.");
+            yield break;
         }
 
         // ------------------------------------------------------------------
