@@ -57,7 +57,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Unity: no S9 sync test (`SessionFlowRunner.cs:910`); kit and Part B without S9 taps.
 - [ ] Tests; `65af2fe4` recomputed ≈ 17.8 ms. **Stop** (Unity seen at BR2's Editor Stop).
 
-### [ ] S6 · S6 of 15 trials, one threshold of 15 (D-F6-218, D-F6-220) · configuration, no Unity code
+### [x] S6 · S6 of 15 trials, one threshold of 15 (D-F6-218, D-F6-220) · configuration, no Unity code · harness 114/114; no A-7 change on the three sessions
 - [ ] `s6Trials: 15` in `JapaneseLearningStudio.unity` (full cross 5 × 3); `reference.py` `MIN_EPOCHS` 6 → 15.
 - [ ] Tests: reference with 14 / 15 non-POOR; harness S6 plan of 15.
 - [ ] `verify_eeg.sql` block 4: threshold 15 and the reference used (S6 / S4 fallback, epochs), never `SHORT`. Block 7: A-7 = S4 alpha AND P7 ≥ 60 %; no S6 condition; reference shown as information (D-F6-220).

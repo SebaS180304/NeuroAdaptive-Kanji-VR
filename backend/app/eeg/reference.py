@@ -1,7 +1,8 @@
 """
 The person's own reference for the z of each index (Reevaluacion_EEG_Justificacion.md §4.4.1 step 7 and §5.4;
-D-F6-73): mean and SD of ln(index) over the non-POOR epochs of S6. With fewer than 6 of them, the epochs of S4
-with the eyes open, and the session says so. Stored in eeg_sessions.reference.
+D-F6-73): mean and SD of ln(index) over the non-POOR epochs of S6. With fewer than 15 of them (D-F6-218), the epochs
+of S4 with the eyes open, and the session says so. That only chooses the reference: it never fails A-7 (D-F6-220).
+verify_eeg.sql blocks 4 and 7 use the same 15. Stored in eeg_sessions.reference.
 """
 
 import json
@@ -15,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.eeg.epochs import EPOCH_S
 
 S6_STATE, S4_STATE = "S6_GUIDED_PRACTICE_CALIBRATION", "S4_EEG_BASELINE"
-MIN_EPOCHS = 6
+MIN_EPOCHS = 15  # D-F6-218, D-F6-220; S6 has 15 trials (s6Trials in the scene)
 INDICES = ("engagement_index", "theta_fz", "alpha_parietal", "theta_beta")
 MIN_SD = 1e-6  # in ln units; real spreads are near 0.2. Below this a z would only be noise over noise.
 NONE = {"source": None, "fallback": False, "n_epochs": 0, "indices": {}}

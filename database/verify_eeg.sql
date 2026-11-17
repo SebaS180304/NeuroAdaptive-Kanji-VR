@@ -44,12 +44,14 @@ FROM target t ORDER BY 1;
 SELECT left(t.id::text, 8) AS session, t.alpha_ratio, t.alpha_passed AS passed, t.not_counted_reason
 FROM target t ORDER BY 1;
 
-\echo '== 4 · S6 (A-7): expected >= 6 non-POOR epochs'
+\echo '== 4 · S6 -> reference (D-F6-218, D-F6-220): >= 15 non-POOR epochs (reference.MIN_EPOCHS) -> S6; fewer -> S4 eyes open, marked. Chooses the reference, never fails the session'
 SELECT left(t.id::text, 8) AS session,
        count(p.*) FILTER (WHERE p.quality <> 'POOR') AS s6_non_poor, count(p.*) AS s6_epochs,
-       CASE WHEN count(p.*) FILTER (WHERE p.quality <> 'POOR') >= 6 THEN 'ok' ELSE 'SHORT' END AS check
+       CASE WHEN count(p.*) FILTER (WHERE p.quality <> 'POOR') >= 15 THEN 'S6' ELSE 'S4 (fallback)' END AS check,
+       t.reference ->> 'source' AS reference_used, (t.reference ->> 'fallback')::boolean AS fallback,
+       (t.reference ->> 'n_epochs')::int AS reference_epochs
 FROM target t LEFT JOIN eeg_epochs p ON p.session_id = t.id AND p.game_state = 'S6_GUIDED_PRACTICE_CALIBRATION'
-GROUP BY t.id ORDER BY 1;
+GROUP BY t.id, t.reference ORDER BY 1;
 
 -- P7 (D-F6-127), the same as window.py and replay.py (D-F6-162, D-F6-172). The window ends at the answer, where the
 -- decision is taken, and reaches back over its 3 S7 trials or 15 s, whichever is longer (D-F6-151). An epoch is in it
@@ -98,16 +100,17 @@ SELECT left(t.id::text, 8) AS session, p.game_state, p.esl_level,
 FROM target t JOIN eeg_epochs p ON p.session_id = t.id
 GROUP BY t.id, p.game_state, p.esl_level ORDER BY 1, 2, 3;
 
-\echo '== 7 · A-7, multimodal session valid: S4 alpha passes AND S7 P7 >= 60 % AND S6 >= 6 non-POOR'
+\echo '== 7 · A-7, multimodal session valid (D-F6-220): S4 alpha passes AND S7 P7 >= 60 %. S6 and the reference used are information only'
 \echo '       Two lines per session (D-F6-200 (2)): what the engine saw live (adaptation_decisions.eeg_counted) is the'
 \echo '       A-7 to report; the eeg_epochs one beside it. live.py and the offline cut start the 2.5 s grid at different'
 \echo '       points (0.3-1.2 s apart, A-24), so they can differ by a few windows. Both over the same windows (from the 3rd S7 trial).'
 SELECT left(t.id::text, 8) AS session, src.source,
        CASE WHEN t.alpha_passed IS NULL OR src.windows = 0 THEN 'n/a'
-            WHEN t.alpha_passed AND src.counts >= 0.6 * src.windows AND s6.n >= 6 THEN 'VALID'
+            WHEN t.alpha_passed AND src.counts >= 0.6 * src.windows THEN 'VALID'
             ELSE 'NOT VALID' END AS a7,
        t.alpha_passed AS s4_alpha, src.counts || '/' || src.windows AS s7_p7,
-       round(100.0 * src.counts / nullif(src.windows, 0)) AS pct, s6.n AS s6_non_poor
+       round(100.0 * src.counts / nullif(src.windows, 0)) AS pct, s6.n AS s6_non_poor,
+       t.reference ->> 'source' AS reference_used
 FROM target t
 CROSS JOIN LATERAL (SELECT count(*) AS n FROM eeg_epochs p WHERE p.session_id = t.id
                     AND p.game_state = 'S6_GUIDED_PRACTICE_CALIBRATION' AND p.quality <> 'POOR') s6
