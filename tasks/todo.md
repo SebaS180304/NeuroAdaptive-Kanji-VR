@@ -29,11 +29,11 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ## Tue 17 · close, unfreeze, EEG fixes, block R
 
-### [ ] V4 · close of the dry run
+### [x] V4 · close of the dry run · Sebas's OK 17 Nov
 - [ ] F4 S3 criterion met or not, with evidence; findings with owner; draft with Dudas or "Sin dudas · 17 nov".
 - [ ] **Stop:** Sebas's OK.
 
-### [ ] U0 · lift the freeze (D-F6-204) · docs only
+### [x] U0 · lift the freeze (D-F6-204) · docs only · lifted 12:32, no code diff since the tag
 - [ ] `git diff eeg-rules-freeze-2026-11-12 -- backend unity-client` shows no code change; "freeze lifted at <time>" in the draft.
 - [ ] **Stop.**
 
@@ -111,9 +111,6 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ### [ ] X8b · what X8 left out on Tue (D-F6-222) · after BR7 · only if any
 - [ ] Same gate and path as X8; harness all PASS (count before → after). **Stop.**
-
-### [ ] Thu 19 decisions
-- [ ] Thu 19 decisions: A-23 (3rd measurement as is, D-F6-214), A-24, bad-channel rule (D-F6-213). V3 figures and `eeg_export_16nov/` supplied; no code unless numbered.
 
 ### [ ] CH1 · persistently bad channel (D-F6-216) · after BR7
 - [ ] One function: > 20 % of samples > 100 µV in 2 consecutive 30 s bins → channel out to the end; max 1 per session (2 → EEG not counted); Fz → theta `UNAVAILABLE`, EI with 6; Fp1 never; reference recomputed if after S6.
