@@ -73,7 +73,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Evaluated session stored (D-F6-190 (2)); visit 4 with visit 3's set (D-F6-190 (1)); answers and `BLOCK_R_RECALL_ENDED` as events, outside `decide()` and the window code.
 - [ ] Validation: same participant, earlier session. Tests. **Stop.**
 
-### [ ] BR2 · block R in VR (between S2 and S3)
+### [x] BR2 · block R in VR (between S2 and S3) · harness 117/117; Editor Stop with Sebas pending
 - [ ] Part 1: instructions + waiting screen, **no timer**, ended by `R` (D-F6-212). Part 2: yes/no with 10 kanji (5 seen, 5 new from §16). Part 3: 15 MC trials T1–T3 with lures; no feedback, no hints; evaluated session's set. Texts from `Contenido_UI_Bloque_R.md`; placeholders only for what is missing.
 - [ ] EditMode test: `R` acts only in part 1.
 - [ ] Harness test; seen in the Editor with Sebas; commit body "block R, exception D-F6-125". **Stop.**

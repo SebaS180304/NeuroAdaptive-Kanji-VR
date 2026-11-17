@@ -58,6 +58,11 @@ namespace NeuroAdaptiveVR.EditorTools
         public static void Run()
         {
             _cases = new List<Case>();
+            // D-F6-223 (5): sampling the peripheral animations moves each Model (and its wings and heads); the run
+            // puts them back, so saving the scene afterwards never carries a pose the harness left.
+            var poses = UnityEngine.Object.FindObjectsByType<PeripheralAnimation>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .SelectMany(a => a.GetComponentsInChildren<Transform>(true))
+                .Select(t => (t, pos: t.localPosition, rot: t.localRotation, scale: t.localScale)).ToList();
 
             var content = UnityEngine.Object.FindAnyObjectByType<KanjiContentController>();
             if (content == null)
@@ -127,6 +132,8 @@ namespace NeuroAdaptiveVR.EditorTools
             BaselineEyeCases();
             PrewarmCases();
 
+            foreach (var (t, pos, rot, scale) in poses)
+                if (t != null) { t.localPosition = pos; t.localRotation = rot; t.localScale = scale; }
             Report();
         }
 
