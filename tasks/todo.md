@@ -122,7 +122,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] V1.12 screen: the evaluated session's five kanji, Meaning/Reading toggles, order on first mark, "What they said", "Anything else", four states; *What counts* of D-F6-225 word for word; no clock (D-F6-212); never moves the VR.
 - [ ] Tests: backend (save, replace, nothing ≠ never, 409 without block R), Vitest, Playwright smoke; 5-tell audit. **Stop:** Sebas against the artboard.
 
-### [ ] BR4 · short visit end to end (path built in BR2)
+### [x] BR4 · short visit end to end (path built in BR2) · Tue 17 with Sebas (`840361fa`); order fix in V1.12; SIM_BR4 deletion waits for Sebas's OK
 - [ ] What the BR2 Stop found; short session closes `COMPLETED`; `learner_profile` ignores `SR-*` (test).
 - [ ] Editor, test participant: portal → visit 2 → Play → block R with the recall marked in V1.12 → S9; BR7's SQL on it; participant deleted with Sebas's OK. **Stop.**
 
