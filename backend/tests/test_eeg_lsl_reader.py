@@ -30,11 +30,34 @@ def test_a_session_without_the_marker_stream_is_not_multimodal() -> None:
     assert lsl_reader.missing_streams({"AURA": _stream("AURA", 1), "UnityMarkers": _stream("UnityMarkers", 1)}) == []
 
 
-def test_two_streams_with_one_name_are_refused(monkeypatch) -> None:
-    monkeypatch.setattr(lsl_reader.pyxdf, "load_xdf",
-                        lambda *a, **k: ([_stream("AURA", 1), _stream("AURA", 1, "OtherPC")], {}))
-    with pytest.raises(ValueError):
-        lsl_reader.load_xdf("x.xdf")
+def _xdf(monkeypatch, *streams) -> None:
+    monkeypatch.setattr(lsl_reader.pyxdf, "load_xdf", lambda *a, **k: (list(streams), {}))
+
+
+@pytest.mark.parametrize("order", [0, 1])
+def test_with_two_aura_the_one_from_this_pc_is_kept(monkeypatch, order) -> None:  # G2, D-F6-206
+    mine, other = _stream("AURA", 3, "ThisPC"), _stream("AURA", 9, "MSI")   # never by sample count
+    _xdf(monkeypatch, *([mine, other] if order == 0 else [other, mine]), _stream("UnityMarkers", 1, "ThisPC"))
+    streams = lsl_reader.load_xdf("x.xdf", host="ThisPC")
+    assert streams["AURA"] is mine and "UnityMarkers" in streams
+
+
+def test_two_aura_from_this_pc_are_not_filled(monkeypatch) -> None:  # D-F6-206
+    _xdf(monkeypatch, _stream("AURA", 3, "ThisPC"), _stream("AURA", 9, "ThisPC"))
+    with pytest.raises(lsl_reader.AmbiguousStream, match="not filled, live epochs kept"):
+        lsl_reader.load_xdf("x.xdf", host="ThisPC")
+
+
+def test_a_repeated_name_with_none_from_this_pc_is_refused(monkeypatch) -> None:
+    _xdf(monkeypatch, _stream("AURA", 1, "PC1"), _stream("AURA", 1, "PC2"))
+    with pytest.raises(lsl_reader.AmbiguousStream):
+        lsl_reader.load_xdf("x.xdf", host="ThisPC")
+
+
+def test_one_aura_from_another_host_is_read_as_before(monkeypatch) -> None:
+    only = _stream("AURA", 1, "LaptopSebas1803")       # e.g. read in the container, whose hostname differs
+    _xdf(monkeypatch, only)
+    assert lsl_reader.load_xdf("x.xdf", host="ThisPC")["AURA"] is only
 
 
 def test_the_xdf_is_read_on_the_corrected_clock(monkeypatch) -> None:

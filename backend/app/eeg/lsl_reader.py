@@ -23,17 +23,29 @@ EEG_STREAM = "AURA"
 MARKER_STREAM = "UnityMarkers"
 
 
-def load_xdf(path: str) -> dict[str, dict]:
-    """The streams of an XDF by name, on LSL's corrected clock."""
+class AmbiguousStream(ValueError):
+    """A repeated stream name without exactly one stream from this PC: the XDF is not used (D-F6-206)."""
+
+
+def load_xdf(path: str, host: str | None = None) -> dict[str, dict]:
+    """The streams of an XDF by name, on LSL's corrected clock.
+    A repeated name (e.g. the lab PC's AURA on the network) keeps the stream whose hostname is this PC, the rule of
+    open_local_inlet; never chosen by sample count. None or two from this PC → AmbiguousStream, and the callers write
+    nothing: the session keeps its live epochs (D-F6-206)."""
+    host = host or socket.gethostname()
     streams, _ = pyxdf.load_xdf(path, synchronize_clocks=True, dejitter_timestamps=True)
-    by_name: dict[str, dict] = {}
+    by_name: dict[str, list[dict]] = {}
     for s in streams:
-        name = s["info"]["name"][0]
-        if name in by_name:
-            # Two streams with one name (e.g. a second PC's AURA) cannot be told apart later.
-            raise ValueError(f"{path}: more than one stream named {name!r}")
-        by_name[name] = s
-    return by_name
+        by_name.setdefault(s["info"]["name"][0], []).append(s)
+    out = {}
+    for name, found in by_name.items():
+        if len(found) > 1:
+            found = [s for s in found if s["info"]["hostname"][0] == host]
+            if len(found) != 1:
+                raise AmbiguousStream(f"{path}: {len(found)} streams named {name!r} from {host} (expected 1); "
+                                      "not filled, live epochs kept (D-F6-206)")
+        out[name] = found[0]
+    return out
 
 
 def stream_info(stream: dict) -> dict:

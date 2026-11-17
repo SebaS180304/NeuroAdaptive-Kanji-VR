@@ -134,7 +134,11 @@ async def main() -> int:
         live.terminate()
     await wait_xdf_closed(path)
 
-    missing = await lsl_reader.fill_from_xdf(sid)
+    try:
+        missing = await lsl_reader.fill_from_xdf(sid)
+    except lsl_reader.AmbiguousStream as e:  # nothing written: the live epochs and reference stay (D-F6-206)
+        print(e)
+        return 1
     print("both streams recorded" if not missing else f"NOT multimodal, missing: {', '.join(missing)}")
     if missing:
         return 1

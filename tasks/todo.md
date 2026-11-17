@@ -44,7 +44,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Restart between sessions, `/health`; `fill_from_xdf` on the dry-run session unchanged (null origin).
 - [ ] **Stop.**
 
-### [ ] G2 · two `AURA` in the XDF (D-F6-206)
+### [x] G2 · two `AURA` in the XDF (D-F6-206) · 432 tests; `a8e825e0`: two local → not filled
 - [ ] `lsl_reader.load_xdf`: repeated name → keep the stream whose hostname is this PC; two from this PC → raise with its own message (never choose by sample count).
 - [ ] Callers log that raise as "not filled, live epochs kept"; live epochs untouched.
 - [ ] Tests: local + foreign → local; two local → no fill; one → today's behaviour.

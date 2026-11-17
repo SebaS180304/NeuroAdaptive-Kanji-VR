@@ -117,3 +117,27 @@ async def test_live_runs_next_to_baseline_and_stops_when_the_session_completes(m
 
 async def _async(value):
     return value
+
+
+@pytest.mark.asyncio
+async def test_two_local_aura_keep_the_live_epochs_and_say_so(monkeypatch, capsys) -> None:  # G2, D-F6-206
+    from app.eeg import epochs, lsl_reader, sync
+
+    async def new_session(_after):
+        return "sid", "x.xdf"
+
+    async def ambiguous(_sid):
+        raise lsl_reader.AmbiguousStream("x.xdf: 2 streams named 'AURA' from ThisPC; not filled, live epochs kept")
+
+    async def must_not_run(_sid):
+        raise AssertionError("nothing is filled")
+
+    monkeypatch.setattr(autorun, "wait_new_session", new_session)
+    monkeypatch.setattr(autorun, "wait_completed", _nothing)
+    monkeypatch.setattr(autorun, "wait_xdf_closed", _nothing)
+    monkeypatch.setattr(autorun, "start_child", lambda *_a, **_k: (None, None))
+    monkeypatch.setattr(lsl_reader, "fill_from_xdf", ambiguous)
+    monkeypatch.setattr(sync, "fill_from_xdf", must_not_run)
+    monkeypatch.setattr(epochs, "fill_from_xdf", must_not_run)
+    assert await autorun.main() == 1
+    assert "not filled, live epochs kept" in capsys.readouterr().out
