@@ -1,6 +1,6 @@
 # Todo: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Plan in `tasks/plan.md`. Aligned up to **D-F6-227**; Tue 17 14:55: test with the cap at 17:00, T01 (D-F6-228); D-F6-229, D-F6-230. **Sebas's OK for `/build`.** **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
+Plan in `tasks/plan.md`. Aligned up to **D-F6-233** (Tue 17 17:05): T01 moves to Wed 18 11:00–12:00; BR3 (and BR4) this afternoon; AU1 Wed; AU4, AU0, M0 and the M1 plan Fri (D-F6-232). **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
 Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
@@ -78,7 +78,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] EditMode test: `R` acts only in part 1.
 - [ ] Harness test; seen in the Editor with Sebas; commit body "block R, exception D-F6-125". **Stop.**
 
-### Tue 17 timetable (D-F6-228): 15:15 BR2 Stop · 15:30 X8 (cut-off 16:15) · 16:15 code closed · 16:30 R3 · 16:50 network off · 17:00 T1 · then T2
+### Tue 17 timetable: 15:15 BR2 Stop ✔ · 15:30 X8 ✔ · 16:15 code closed ✔ (16:33) · 17:00 T1 cancelled → Wed 18 11:00 (D-F6-232) · afternoon BR3, BR4 if time
 
 ### [x] BR2 Editor Stop · with Sebas, 15:15 · both passes OK (`7a74e704`, `42c7f2ff`); SIM_BR2 deleted with Sebas's OK
 - [ ] Test participant; visit 2 (evaluated session deduced or by hand): S1 → SR (R0, R1 + `R`, yes/no 10, 15 `SR-*`, R9) → S3; `R` outside R1 ignored.
@@ -94,16 +94,19 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Commit with the five and the count. **16:15 not done → `git stash -u -m "X8 wip"`, resume after T2.**
 - [ ] After T2: 32 茶 fps in the headset against 31 (`FrameRateLog`, 60 s each, Play only); the five seen with Sebas.
 
-### [ ] C0 · code closed, 16:15
+### [x] C0 · code closed, 16:15 · done 16:33 (backend restarted, `/health`, 0019; Unity reopened by Sebas)
 - [ ] `git status` clean; backend restarted, `/health`; `alembic current` 0019; Unity closed and reopened. Nothing changes until T2 ends.
 
-### [ ] T1 · test with the cap, 17:00 · T01, MULTIMODAL_ADAPTIVE, set A, visit 1 (D-F6-228)
-- [ ] 16:30 R3; 16:50 network off; consent and pre-test in the portal; kit line by line; 5 taps in S3, none in S9.
+### [ ] C0b · code closed, Wed 18 10:15
+- [ ] Commits done, `git status` clean; backend restarted, `/health`; `alembic current` at head; Unity closed and reopened.
+
+### [ ] T1 · test with the cap, Wed 18 11:00–12:00 · T01, MULTIMODAL_ADAPTIVE, set A, visit 1 (D-F6-228, D-F6-232)
+- [ ] Wed 10:30 R3; 10:50 network off; consent and pre-test in the portal; kit line by line; 5 taps in S3, none in S9.
 - [ ] At S9, before LabRecorder's Stop: live `eeg_epochs` to `Claude outputs/eeg_export_17nov/live_epochs.csv` (read-only).
 - [ ] Consent v1.3 on its own sheet; move head and cough before S3 (D-F6-216); red channel fixed before S4 (D-F6-213).
 - [ ] **Done when:** S1 → S9, `autorun` exit 0, both streams. **Stop:** Sebas writes it offline.
 
-### [ ] T2 · after the test · read-only; the recording stays on this PC
+### [ ] T2 · Wed 18 afternoon, after the test · read-only; the recording stays on this PC
 - [ ] `autorun` log; the four SQL; `replay --xdf` on this PC matches the decisions.
 - [ ] G1: `grid_origin_lsl` set; live CSV = `fill_from_xdf` rows (`epoch_index`, `lsl_start`, `chunk_clean`).
 - [ ] S1: robust spread ≤ 50 ms, 0 S9 taps, drift empty "no S9 taps (D-F6-217)".
@@ -111,7 +114,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] `eeg_export_17nov/` as on 16 Nov (+ `live_epochs.csv`), no XDF.
 - [ ] T01 kept as a test (code `T##`), out of the pilot analysis; deleted only if T01 asks (D-F6-230 (2)). **Stop:** Sebas.
 
-## Wed 18 · AI workshop · block R continues
+## Tue 17 afternoon · BR3, BR4 if time (D-F6-232) · BR5 drafted
 
 ### [ ] BR3 · free recall in the portal, V1.12 (D-F6-226)
 - [ ] Read the `research-dashboard-conventions` skill and V1.12 (`design-handoff/design-system.md`, `design-handoff/block-r/`).
@@ -126,6 +129,9 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 ### [ ] BR5 · Thu kit (docs) · drafted Tue 17 15:35 in `Borrador_Plan_Fase6_9_17nov.md`; waits for Sebas to read it (and BR3/BR4)
 - [ ] S1 → block R → close, no S2 (D-F6-229); PC list, network off (D-F6-193), visit 2 creation (P01, evaluated `65af2fe4`, `shortVisit`), S1 + D-F6-203 sentence, block R steps (V1.12 with D-F6-225; "Anything else you remember?" once; `R` when they are done; no clock, D-F6-212), **debriefing at the end** (Part B step 3, D-F6-192), close, SQL after.
 - [ ] **Stop:** Sebas reads it.
+
+## Wed 18 · 10:15 C0b · 10:30 R3 · 10:50 network off · 11:00 T1 · afternoon T2, BR4 if missing, AU1
+- [ ] AI workshop: if its time clashes with 11:00–12:00, Sebas says so and the test moves.
 
 ## Thu 19 · visit 2 test at 12:00, then CH1
 
@@ -150,10 +156,10 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 **Part 1 · Fri 20 morning (leftovers → Tue 24 morning):** AU1 → AU4 → kit lines → AU0 only if time is left.
 **Part 2 · a pilot day without a participant, with Sebas:** AU2, AU3, AU5, AU6.
 
-### [ ] AU0 · spike `LabRecorderCLI` + synthetic AURA (≈ 1 h) · only if time is left on Fri 20
+### [ ] AU0 · spike `LabRecorderCLI` + synthetic AURA (≈ 1 h) · Fri 20
 - [ ] Two queries by name and host; network on (`MSI`'s `AURA` visible); XDF has only the two local streams; query syntax written down. No host filter works → stop, manual kit stays. **Stop.**
 
-### [ ] AU1 · `python -m app.eeg.preflight` (≈ 2 h) · Fri 20, first; manual path (GUI running = OK)
+### [ ] AU1 · `python -m app.eeg.preflight` (≈ 2 h) · Wed 18 afternoon, after T2; manual path (GUI running = OK)
 - [ ] Services, port, portal, `git status`, processes (`tasklist`), one local `AURA`, synthetic off, network reported (WARN), `LabRecorderCLI`, disk. Same verdicts as manual R3. Tests.
 
 ### [ ] AU2 · `autorun` records with `LabRecorderCLI` (≈ 3 h) · part 2
@@ -163,7 +169,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 ### [ ] AU3 · S3 warnings (≈ 2–3 h) · part 2
 - [ ] Per tap clear / not clear; < 3 clear → "repeat taps before S4"; channel > 20 % over 100 µV in the last 30 s → "fix before S4". Nothing printed from S4 but errors. Checked on the dry-run XDF fed as live.
 
-### [ ] AU4 · end of session (≈ 2 h) · Fri 20, after AU1; tested on `65af2fe4` (SQL + summary read-only; processing re-run only with Sebas's OK)
+### [ ] AU4 · end of session (≈ 2 h) · Fri 20; tested on `65af2fe4` and on T01's session (SQL + summary read-only; processing re-run only with Sebas's OK)
 - [ ] Processing, the four SQL to `backend/logs/<session>-*.txt`, summary printed and saved; exit 0 only if all ran. Tests.
 
 ### [ ] AU5 · kit: Fri 20, AU1 and AU4 lines in the manual kit; part 2, the automated path
@@ -172,9 +178,11 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Synthetic AURA + headset, S1–S9, only Play, network and S3 keys by hand; session deleted after with Sebas's OK.
 - [ ] Pass → automated recording from the next session, each session labelled by recording path; fail or no day → whole pilot manual. **Stop.**
 
-## Fri 20 · AU1 and AU4 in the morning, then go/no-go · no presentation, no video (D-F6-227)
-- [ ] Morning: AU1 → AU4 → kit lines → AU0 only if time is left.
-- [ ] Go/no-go input: what is live (G1, G2, S1, S6, block R with V1.12, CH1, X8), BR7 result, open findings; `tasks/` and draft up to date.
+## Fri 20 · AU4, AU0, M0, the M1 plan, then go/no-go · no presentation, no video (D-F6-227)
+- [ ] AU4 (dry run and T01) → AU0.
+- [ ] M0 (afternoon): `dashboard` service in compose, nginx on `127.0.0.1` serving `dashboard/dist`, proxy to the backend; from scratch `docker compose up -d`, nothing on `0.0.0.0`, Playwright smoke. **Stop.**
+- [ ] `/plan` of M1, no code (V1.13 validated, D-F6-233); M1 itself in the pilot, a day without a participant. **Stop.**
+- [ ] Go/no-go input: what is live, BR7 and T01 results, open findings; `tasks/` and draft up to date.
 
 ---
 

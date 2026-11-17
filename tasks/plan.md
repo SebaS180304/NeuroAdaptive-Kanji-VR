@@ -1,6 +1,6 @@
 # Implementation Plan: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Written Mon 16 Nov 2026; **updated Tue 17 Nov 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
+Written Mon 16 Nov 2026; **updated Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
 Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -29,14 +29,13 @@ Tue 17                                      ▼
                                                                           ▼
                      ──► S1 sync: S3 taps only, robust spread (D-F6-217) ──► S6 15 trials + reference min 15 (D-F6-218)
                      ──► BR0 design ──► BR1 data ──► BR2 block R in VR (Editor Stop)
-        15:15 BR2 Editor Stop with Sebas ──► 15:30 X8, the five (cut-off 16:15) ──► 16:15 code closed ──► 16:30 R3 ──► 16:50 network off
-        17:00 T1 test with the cap, T01 (MULTIMODAL_ADAPTIVE, set A, not in the study) ──► T2 analysis: G1, S1, S6 first real check, export
-Wed 18                                                  │
-                     BR3 portal recall, V1.12 (D-F6-226) ──► BR4 short visit end to end ──► BR5 Thu kit
+        15:15 BR2 Editor Stop ✔ ──► 15:30 X8 ✔ ──► C0 ✔ ──► (17:00 test cancelled, D-F6-232) ──► BR3 portal recall, V1.12 ──► BR4 if time
+Wed 18  until 10:15 what is left ──► 10:15 code closed ──► 10:30 R3 ──► 10:50 network off ──► 11:00–12:00 T1 test with the cap, T01
+                     ──► afternoon: T2 analysis (G1, S1, S6 first real check, export) ──► BR4 if missing ──► AU1
 Thu 19               BR6 last check of the inputs ──► 12:00 BR7 visit 2 test, dry-run participant (D-F6-207)
                      ──► CH1 bad-channel rule (D-F6-216, D-F6-224), proved on the dry-run XDF on this PC
-Fri 20 morning       AU1 pre-session check + AU4 end-of-session (D-F6-221), tested on the dry-run XDF on this PC ──► AU0 only if time is left
-Fri 20               go/no-go (PM / Sebas) ◄── everything above · no presentation, no video (D-F6-227)
+Fri 20               AU4 end-of-session, tested on the dry run and on T01 ──► AU0 ──► afternoon M0 (portal served by nginx) ──► /plan of M1, no code
+                     go/no-go (PM / Sebas) ◄── everything above · no presentation, no video (D-F6-227)
 Sat 21 – Mon 23      Sebas away: no rehearsal, no buffer
 Tue 24 morning       what did not finish on Fri 20 ──► afternoon: first participant, **manual recording** (today's kit) + AU1 and AU4
 later in the pilot   AU2 + AU3 + AU6 rehearsal with Sebas on a day without a participant; pass → automated recording from then on (sessions labelled by recording path)
@@ -122,8 +121,8 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 | 16:15 | **C0 · code closed** | `git status` clean; `docker compose restart backend` and `/health`; Unity closed and opened again; nothing changes until T2 ends |
 | 16:30 | **R3** of the kit (as on 16 Nov) | Sebas sees it ticked |
 | 16:50 | Network off | — |
-| 17:00 | **T1 · the test session** | written offline by Sebas |
-| after | **T2 · analysis** (below) | Sebas |
+| 17:00 | ~~T1 · the test session~~ **cancelled at 16:54; moves to Wed 18, 11:00–12:00 (D-F6-232)** | — |
+| after | **BR3**, and **BR4** if time (D-F6-232 (1)); the backend may be restarted again today | each with its Stop |
 
 **X8 · content 31–35, the five kanji (D-F6-222, D-F6-202), 15:30 → 16:15.** Content, exception to the VR freeze (D-F6-62, D-F6-122); no rule touched. Same path as X7 (`e8d784a`, `cb64881`). ≈ 1 h.
 - **Sebas's OK, recorded:** the 20 hints of 31 金, 32 茶, 33 馬, 34 魚 and 35 鳥 approved by Sebas, Registro of `Tabla_Autoria_Kanji_Fase2.md`, 17 Nov 14:40 (`docs_proyecto/`). The five FBX are in `KanjiLessonAssets/NN_*/export/`, approved (D-F6-222).
@@ -144,9 +143,9 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 - The Unity parts of S1 (no S9 taps) and S6 (15 trials) are seen in the same sitting.
 - **Stop:** Sebas's OK. Anything to change is written down and fixed in BR4, not before the test (code closes at 16:15).
 
-**C0 · code closed, 16:15.** `git status` clean (X8 committed or stashed); `docker compose restart backend`, `/health`; `alembic current` = 0019; Unity closed and opened again (scene from disk, nothing dirty). From here nothing is changed or restarted until T2 has finished (D-F6-153).
+**C0 · code closed, 16:15 (done 16:33; again on Wed 18 at 10:15, as C0b below).** `git status` clean (X8 committed or stashed); `docker compose restart backend`, `/health`; `alembic current` = 0019; Unity closed and opened again (scene from disk, nothing dirty). From here nothing is changed or restarted until T2 has finished (D-F6-153).
 
-**T1 · test session with the cap, 17:00 (D-F6-228).** T01: consent v1.3 on its own sheet (not the group sheet), pre-test in the portal (a session needs it); before S3 move the head and cough (D-F6-216), a red channel before S4 is fixed (D-F6-213); R3 with Blender, ChatGPT, Firefox and VS Code closed (D-F6-153); set A, `MULTIMODAL_ADAPTIVE`, visit 1, kit of 16 Nov line by line (R3 at 16:30, network off at 16:50, `autorun` before S3, 5 taps in S3 and **none in S9**, D-F6-217). **At S9, before LabRecorder's Stop:** the live epochs are copied, read-only, to `Claude outputs/eeg_export_17nov/live_epochs.csv` (`\copy (SELECT * FROM eeg_epochs WHERE session_id = …) TO …`), because `autorun`'s `fill_from_xdf` replaces them with the recording's (D-F6-156). **Done when:** S1 → S9, `autorun` exit 0, *both streams recorded*. **Stop:** Sebas writes it offline.
+**T1 · test session with the cap, Wed 18 11:00–12:00 (D-F6-228, D-F6-232).** T01: consent v1.3 on its own sheet (not the group sheet), pre-test in the portal (a session needs it); before S3 move the head and cough (D-F6-216), a red channel before S4 is fixed (D-F6-213); R3 with Blender, ChatGPT, Firefox and VS Code closed (D-F6-153); set A, `MULTIMODAL_ADAPTIVE`, visit 1, kit of 16 Nov line by line (R3 at 16:30, network off at 16:50, `autorun` before S3, 5 taps in S3 and **none in S9**, D-F6-217). **At S9, before LabRecorder's Stop:** the live epochs are copied, read-only, to `Claude outputs/eeg_export_17nov/live_epochs.csv` (`\copy (SELECT * FROM eeg_epochs WHERE session_id = …) TO …`), because `autorun`'s `fill_from_xdf` replaces them with the recording's (D-F6-156). **Done when:** S1 → S9, `autorun` exit 0, *both streams recorded*. **Stop:** Sebas writes it offline.
 
 **T2 · after the test, the first real check of G1, S1 and S6.** Read-only on the database; the recording never leaves this PC.
 - `autorun` log, the **four SQL** of the kit; `replay --xdf` matches the stored decisions (run on this PC: the container does not see the PC's hostname, G2).
@@ -159,7 +158,7 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 - **Done when:** each check has a line in the draft with its figure; findings say "blocks the pilot yes/no". **Stop:** Sebas.
 
 
-### Wed 18 · AI workshop (time to be confirmed) · block R continues
+### Tue 17 afternoon · BR3, then BR4 if time (D-F6-232 (1)); BR5 drafted
 
 **BR3 · free recall in the portal, V1.12 (D-F6-226).** Before building: the `research-dashboard-conventions` skill and V1.12 in `Claude outputs/design-handoff/design-system.md` (validated 17 Nov 14:37), with its artboards in `design-handoff/block-r/`.
 - **What changes:** backend `POST /sessions/{id}/block-r/recall` (per kanji of the evaluated session: meaning yes/no, reading yes/no, order of first mark, "What they said"; the "Anything else" text; saved time) stored as a `BLOCK_R_FREE_RECALL` event, a new save replacing the old for reading; `GET` of the same path returns the last save or `null` (never saved = not recorded; saved with no marks = nothing recalled, D9). Writes go in `sessions`, not in `/research`, which stays read-only: the portal's second and last write (D-F6-230 (1), rule 1 of the skill). Frontend: the V1.12 screen (focus mode, opened from a session with block R), states `marking`, `saved`, `nothingRecalled`, `saveError`; the five kanji of the **evaluated** session with *Taught as*; Meaning and Reading toggles with `aria-pressed`; *Order* set on the first mark.
@@ -173,7 +172,20 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 - **How it is tested:** in the Editor with a test participant (deleted after with Sebas's OK): portal → create visit 2 with the evaluated session → Play → block R with the recall marked in the BR3 form while it runs → S9; then the SQL of BR7 on that session.
 - **Stop.**
 
-**BR5 · Thu kit (docs).** In the draft: PC list, network off (D-F6-193), **S1 → block R → close, no S2 (D-F6-229)**; how to create visit 2 (participant code from V3; evaluated session = the dry run `65af2fe4`, deduced or given by hand, D-F6-223; `shortVisit` ticked), S1 with the D-F6-203 sentence, block R steps for the operator (R1: the participant recalls aloud, the researcher marks in V1.12 with the *What counts* of D-F6-225; when they go quiet, *"Anything else you remember?"* once; when they say they are done, Game view in front and **`R`**; no clock, ≈ 2 min only as a guide; never repeat, correct or hint, D-F6-212), **debriefing at the end** (consent Part B step 3, D-F6-192: no visit 4 for this participant), close, the SQL after. **Stop:** Sebas reads it.
+**BR5 · Thu kit (docs) · drafted Tue 17 15:35 in the 17 Nov draft; Sebas reads it.** In the draft: PC list, network off (D-F6-193), **S1 → block R → close, no S2 (D-F6-229)**; how to create visit 2 (participant code from V3; evaluated session = the dry run `65af2fe4`, deduced or given by hand, D-F6-223; `shortVisit` ticked), S1 with the D-F6-203 sentence, block R steps for the operator (R1: the participant recalls aloud, the researcher marks in V1.12 with the *What counts* of D-F6-225; when they go quiet, *"Anything else you remember?"* once; when they say they are done, Game view in front and **`R`**; no clock, ≈ 2 min only as a guide; never repeat, correct or hint, D-F6-212), **debriefing at the end** (consent Part B step 3, D-F6-192: no visit 4 for this participant), close, the SQL after. **Stop:** Sebas reads it.
+
+### Wed 18 · T01 at 11:00, then T01's analysis and AU1 (D-F6-232 (2)) · AI workshop: if its time clashes with 11:00–12:00, Sebas says so and the test moves
+
+| When | What | Stop / condition |
+| --- | --- | --- |
+| until 10:15 | What is left of Tue (BR3 or BR4) | each with its Stop |
+| 10:15 | **C0b · code closed:** commits done, `git status` clean, `docker compose restart backend` and `/health`, `alembic current` at head, Unity closed and opened again | nothing changes until T2 ends |
+| 10:30 | **R3** of the kit | Sebas sees it ticked |
+| 10:50 | Network off (D-F6-193) | — |
+| 11:00–12:00 | **T1** with T01 (above, D-F6-228 otherwise unchanged) | Sebas writes it offline |
+| afternoon | **T2** (above) → **BR4** if it did not finish on Tue → **AU1** | each with its Stop |
+
+**AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
 
 ### Thu 19 · visit 2 test at 12:00, then CH1
 
@@ -191,8 +203,12 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 
 **Session automation (D-F6-219): separate section below.** Waits for Sebas's OK; never during a session.
 
-### Fri 20 · AU1 and AU4 in the morning, then go/no-go · no presentation, no video (D-F6-227)
-Morning: AU1 → AU4 → their kit lines → AU0 only if time is left (section below). Then the go/no-go of the pilot (PM, Sebas); the M4 note is PM's. This chat hands in: what is live (G1, G2, S1, S6, block R with V1.12, CH1, X8), BR7's result, open findings, `tasks/` and the draft up to date.
+### Fri 20 · AU4, AU0, M0 and the plan of M1, then go/no-go · no presentation, no video (D-F6-227)
+- **AU4 · end of session**, as in the automation section, **tested on the dry run `65af2fe4` and on T01's session** (SQL and summary read-only; processing re-run only with Sebas's OK). **Stop.**
+- **AU0 · `LabRecorderCLI` spike**, as in the automation section. **Stop.**
+- **M0 · the portal served by `docker compose up` (D-F6-231 (5)), afternoon, after AU4.** What changes: a `dashboard` service in `docker-compose.yml`, nginx serving `dashboard/dist` on `127.0.0.1` only (no outbound traffic, skill rule 7), proxying `/sessions`, `/participants` and `/research` to the backend. How it is tested: `docker compose up -d` from scratch → the portal and the pre-test answer on `127.0.0.1`, nothing listens on `0.0.0.0` (`docker compose port`), the Playwright smoke passes against it. **Stop.**
+- **`/plan` of M1, no code (D-F6-231, D-F6-233):** the live monitor V1.13 (per-channel figures in `live.py`, a read-only endpoint, the page), to build during the pilot on a day without a participant, with AU2, AU3 and AU6. **Stop:** Sebas's OK on the plan.
+- **Go/no-go** of the pilot (PM, Sebas); the M4 note is PM's. This chat hands in: what is live (G1, G2, S1, S6, block R with V1.12, CH1, X8, AU1, AU4), BR7's and T01's results, open findings, `tasks/` and the draft up to date.
 
 ## Session automation (D-F6-219) · approved in two parts (D-F6-221)
 
@@ -222,7 +238,7 @@ LabRecorder's GUI stays installed as the **fallback**: if `LabRecorderCLI` canno
 
 **AU0 · spike: `LabRecorderCLI` with the synthetic AURA (≈ 1 h; no participant, no session) · only if time is left on Fri 20 (D-F6-221).** Synthetic AURA and a test `UnityMarkers` outlet on this PC, network on so the lab PC's `AURA` is visible. Launch with the two queries into a test folder; Enter after 60 s. **Done when:** the XDF has exactly the two local streams (not `MSI`'s `AURA`, not `AURA_Markers`), `load_xdf` reads it, the file is closed; the query syntax that works is written down. If `hostname` is not accepted, try `source_id`; if nothing selects by host, **stop and tell Sebas**: the fallback is the manual GUI kit. **Stop.**
 
-**AU1 · pre-session check, `python -m app.eeg.preflight` (≈ 2 h) · Fri 20 morning, first.** On the manual path: LabRecorder's GUI running is expected (OK), not a WARN; `LabRecorderCLI` is not checked until AU2. One command, one line per check (OK / WARN / FAIL), exit 0 only with no FAIL:
+**AU1 · pre-session check, `python -m app.eeg.preflight` (≈ 2 h) · Wed 18 afternoon, after T2 (D-F6-232).** On the manual path: LabRecorder's GUI running is expected (OK), not a WARN; `LabRecorderCLI` is not checked until AU2. One command, one line per check (OK / WARN / FAIL), exit 0 only with no FAIL:
 - backend `/health` and `/health/db`; db port `127.0.0.1:5432`; portal `/pretest` 200.
 - `git status` clean.
 - processes: one Unity Editor and its start time (restarted?), AURA software and Edge running; Blender, Firefox, VS Code, ChatGPT/Codex closed; LabRecorder's GUI running = WARN "manual path".
@@ -238,7 +254,7 @@ Done when it gives the same verdicts as today's manual R3 on this PC, in both st
 - from S2 to the end of S3, every 10 s: D-F6-216's measure per channel over the last 30 s; a channel over 20 % → `WARNING: <ch> looks bad (x % > 100 µV), fix before S4` (protocol of D-F6-213/216). It only warns; the rule acts in CH1's code.
 Done when, on the dry-run XDF fed as live (as `replay --xdf` does), the tap lines match V3's 10/10, and a version with F3 broken before S4 raises the warning. Tests on synthetic signals.
 
-**AU4 · end of session (≈ 2 h) · Fri 20 morning, after AU1.** On the manual path the operator still presses Stop; `autorun` keeps waiting for the file to close (as today). After the file closes: `lsl_reader` → `sync` → `epochs` (today); then the **four SQL** of kit §8 (`verify_eeg`, `verify_adaptation`, `verify_projection`, `p0_j3_fallback_check`) through `docker compose exec`, each saved to `backend/logs/<session>-<name>.txt`; then a **summary** printed and saved (`<session>-summary.txt`): Play → S9 duration, accuracy per state, A-7 live and from the XDF, sync (offset, robust spread), S4 alpha, S6 source and epochs, bad channel if any, decisions and changes, any FAIL/OUT/SHORT line from the SQL. On the manual path the summary ends by reminding to close LabRecorder's GUI; with `LabRecorderCLI` (later) it has already exited. Exit 0 only if every step ran. Tests: the summary from fixed rows. **Proof on the dry run, on this PC:** the four SQL and the summary on `65af2fe4` (read-only); the processing step re-run on it only with Sebas's OK, because it rewrites the dry run's epochs (after G1, S1, CH1 they differ from Monday's).
+**AU4 · end of session (≈ 2 h) · Fri 20, tested on the dry run and on T01 (D-F6-232).** On the manual path the operator still presses Stop; `autorun` keeps waiting for the file to close (as today). After the file closes: `lsl_reader` → `sync` → `epochs` (today); then the **four SQL** of kit §8 (`verify_eeg`, `verify_adaptation`, `verify_projection`, `p0_j3_fallback_check`) through `docker compose exec`, each saved to `backend/logs/<session>-<name>.txt`; then a **summary** printed and saved (`<session>-summary.txt`): Play → S9 duration, accuracy per state, A-7 live and from the XDF, sync (offset, robust spread), S4 alpha, S6 source and epochs, bad channel if any, decisions and changes, any FAIL/OUT/SHORT line from the SQL. On the manual path the summary ends by reminding to close LabRecorder's GUI; with `LabRecorderCLI` (later) it has already exited. Exit 0 only if every step ran. Tests: the summary from fixed rows. **Proof on the dry run, on this PC:** the four SQL and the summary on `65af2fe4` (read-only); the processing step re-run on it only with Sebas's OK, because it rewrites the dry run's epochs (after G1, S1, CH1 they differ from Monday's).
 
 **AU5 · kit (docs, ≈ 1 h).** The operator kit for the automated path: `preflight` → network off → `autorun` → Play → S3 (read the warnings) → S9 → summary. The manual GUI steps stay as a boxed fallback.
 
