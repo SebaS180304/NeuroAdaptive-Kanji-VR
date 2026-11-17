@@ -30,7 +30,7 @@ function learned(iso: string | null | undefined): string {
 
 type Mark = { meaning: boolean; reading: boolean; first: number | null; said: string }
 
-/** The order shown and sent: each marked kanji's rank by its first mark (kept if switched off and on again). */
+/** The order shown and sent: each marked kanji's rank by its first mark, 1..k without gaps. */
 function orders(marks: Record<string, Mark>): Record<string, number> {
   const marked = Object.entries(marks).filter(([, m]) => m.meaning || m.reading).sort(([, a], [, b]) => a.first! - b.first!)
   return Object.fromEntries(marked.map(([id], i) => [id, i + 1]))
@@ -82,10 +82,12 @@ function Recall({ form }: { form: Form }) {
 
   const toggle = (id: string, field: 'meaning' | 'reading') => {
     const cur = marks[id]!
-    const turnedOn = !cur[field]
-    let first = cur.first
-    if (first === null && turnedOn) { first = next; setNext(next + 1) }   // the first mark fixes its place for good
-    setMarks({ ...marks, [id]: { ...cur, [field]: turnedOn, first } })
+    const updated = { ...cur, [field]: !cur[field] }
+    // A kanji takes its place with its first mark and keeps it while either mark is on; with no mark left it
+    // loses it, and marked again it goes last (Sebas, 17 Nov; V1.12 said "kept if switched off and on").
+    if (!updated.meaning && !updated.reading) updated.first = null
+    else if (updated.first === null) { updated.first = next; setNext(next + 1) }
+    setMarks({ ...marks, [id]: updated })
     setDirty(true)
   }
 

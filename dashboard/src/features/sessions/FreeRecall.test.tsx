@@ -42,7 +42,7 @@ describe('block R free recall (V1.12, D-F6-226)', () => {
     expect(document.body.textContent).not.toMatch(/\d{1,2}:\d\d/)                 // no clock (D-F6-212)
   })
 
-  it('orders the kanji by their first mark, keeps that order when a mark goes off and on, and saves it', async () => {
+  it('orders the kanji by their first mark; a kanji with no mark left loses its place (Sebas, 17 Nov)', async () => {
     const calls = mockApi({
       [`GET ${PATH}`]: () => json(form()),
       [`POST ${PATH}`]: (body) => json(form({ saved_at: savedAt, recalled: 2, items: (body as { items: unknown[] }).items, anything_else: null })),
@@ -55,19 +55,20 @@ describe('block R free recall (V1.12, D-F6-226)', () => {
     expect(within(row('車')).getByRole('button', { name: /Meaning/ })).toHaveAttribute('aria-pressed', 'true')
     expect(within(row('車')).getByText('1st')).toBeInTheDocument()
     expect(within(row('月')).getByText('2nd')).toBeInTheDocument()
-    await user.click(within(row('車')).getByRole('button', { name: /Meaning/ }))      // off: no order shown
+    await user.click(within(row('車')).getByRole('button', { name: /Meaning/ }))      // no mark left: no place
     expect(within(row('車')).getByText('—')).toBeInTheDocument()
     expect(within(row('月')).getByText('1st')).toBeInTheDocument()
-    await user.click(within(row('車')).getByRole('button', { name: /Meaning/ }))      // on again: its first place
-    expect(within(row('車')).getByText('1st')).toBeInTheDocument()
+    await user.click(within(row('車')).getByRole('button', { name: /Meaning/ }))      // marked again: goes last
+    expect(within(row('車')).getByText('2nd')).toBeInTheDocument()
+    expect(within(row('月')).getByText('1st')).toBeInTheDocument()
     await user.type(within(row('竹')).getByRole('textbox'), 'tree?')
     expect(screen.getByRole('status')).toHaveTextContent('2 of 5 kanji recalled. Not saved yet.')
     await user.click(screen.getByRole('button', { name: 'Save free recall' }))
     expect(await screen.findByRole('button', { name: 'Save changes' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/^Saved at \d\d:\d\d\. 2 of 5 kanji recalled\./)
     const body = calls.at(-1)!.body as { items: { kanji_id: string; meaning: boolean; reading: boolean; order: number | null; said: string | null }[] }
-    expect(body.items.find((i) => i.kanji_id === 'KANJI_KURUMA')).toMatchObject({ meaning: true, reading: false, order: 1 })
-    expect(body.items.find((i) => i.kanji_id === 'KANJI_TSUKI')).toMatchObject({ meaning: false, reading: true, order: 2 })
+    expect(body.items.find((i) => i.kanji_id === 'KANJI_KURUMA')).toMatchObject({ meaning: true, reading: false, order: 2 })
+    expect(body.items.find((i) => i.kanji_id === 'KANJI_TSUKI')).toMatchObject({ meaning: false, reading: true, order: 1 })
     expect(body.items.find((i) => i.kanji_id === 'KANJI_TAKE')).toMatchObject({ meaning: false, reading: false, order: null, said: 'tree?' })
   })
 
@@ -94,6 +95,24 @@ describe('block R free recall (V1.12, D-F6-226)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('500')
     expect(within(row('火')).getByRole('button', { name: /Meaning/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('status')).toHaveTextContent('1 of 5 kanji recalled. Not saved.')
+  })
+
+  it('one of two marks off keeps the place; after a save, unmarking all frees every place', async () => {
+    const order = (i: number) => (i < 3 ? i + 1 : null)                                // 月 1, 車 2, 火 3 saved
+    const items = kanji.map((k, i) => ({ kanji_id: k.kanji_id, meaning: i < 3, reading: i === 0, order: order(i), said: null }))
+    mockApi({ [`GET ${PATH}`]: () => json(form({ saved_at: savedAt, recalled: 3, items, anything_else: null })) })
+    const user = userEvent.setup()
+    renderApp(`/sessions/${SID}/recall`)
+    await screen.findByRole('button', { name: 'Save changes' })
+    await user.click(within(row('月')).getByRole('button', { name: /Meaning/ }))      // Reading still on: keeps 1st
+    expect(within(row('月')).getByText('1st')).toBeInTheDocument()
+    await user.click(within(row('月')).getByRole('button', { name: /Reading/ }))
+    await user.click(within(row('車')).getByRole('button', { name: /Meaning/ }))
+    await user.click(within(row('火')).getByRole('button', { name: /Meaning/ }))      // nothing marked now
+    await user.click(within(row('火')).getByRole('button', { name: /Meaning/ }))
+    await user.click(within(row('車')).getByRole('button', { name: /Meaning/ }))
+    expect(within(row('火')).getByText('1st')).toBeInTheDocument()                    // the case Sebas found
+    expect(within(row('車')).getByText('2nd')).toBeInTheDocument()
   })
 
   it('opens with the last save', async () => {
