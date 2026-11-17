@@ -194,6 +194,38 @@ RESERVE = ["日", "木", "川", "田", "口", "土", "子", "水", "目", "米",
 # participante ya conoce no es un problema que haya que resolver, es el punto.
 TUTORIAL = ["一", "二", "三", "四", "五"]
 
+# ── BLOQUE R (D-F6-125, D-F6-208, D-F6-223) ─────────────────────────────────
+# Los 5 kanji nuevos del reconocimiento sí/no, por set evaluado: oficiales de
+# Metricas_Dificultad_Kanji_Fase2.md §16.7 (Contenido, 16 nov). Nunca vistos en la
+# VR: ni en el pool, ni en el tutorial, ni como opción de T1 (regla 1; la comprueba
+# export_content). Solo se muestran como glifo: no tienen fila en "kanji".
+RETENTION_NEW: dict[str, list[str]] = {
+    "A": ["才", "近", "広", "行", "北"],
+    "B": ["方", "角", "少", "心", "弟"],
+    "C": ["丸", "作", "市", "外", "当"],
+}
+
+# Los textos del bloque R, de Contenido_UI_Bloque_R.md §1 (UI/UX, 16 nov), con sus
+# claves sugeridas. En inglés, como el resto del juego; "ui.continue" ya existe en Unity.
+RETENTION_TEXTS: dict[str, str] = {
+    "retention.stage_title": "Memory questions",
+    "retention.intro.main": "A few questions about your last session.",
+    "retention.intro.sub": "There are no hints and no feedback. If you are not sure, give your best guess.",
+    "retention.free_recall.main": ("Last time you learned some kanji. Tell the researcher everything you "
+                                   "remember about them: what they mean or how they are read."),
+    "retention.free_recall.sub": "Say it out loud and take your time. When you have finished, tell the researcher.",
+    "retention.yes_no.intro.main": "Now you will see some kanji, one at a time.",
+    "retention.yes_no.intro.sub": "For each one, answer whether it was in your last session.",
+    "retention.yes_no.question": "Was this kanji in your last session?",
+    "retention.yes_no.yes": "Yes",
+    "retention.yes_no.no": "No",
+    "retention.mc.intro.main": "Now some questions about the kanji from your last session.",
+    "retention.mc.intro.sub": "Choose the answer you think is right.",
+    "retention.end.continue.main": "Thank you. Now we continue with today's session.",
+    "retention.end.final.main": "Thank you. That is all for today.",
+    "retention.end.final.sub": "The researcher will help you take off the headset.",
+}
+
 # ── TRAMPAS (D-F6-71, D-F6-129, D-F6-130, D-F6-131) ─────────────────────────
 # En la mitad de los trials de cada tipo, las 3 incorrectas son una trampa fuerte
 # externa, una del set y una sin relación externa (Propuesta_Trampas_T2_T3.md §2.1).
@@ -642,6 +674,13 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
     table = substitution_table(g)
     lures = lure_table(g)
 
+    # §16.7 regla 1: un kanji nuevo del bloque R nunca se vio en la VR; los 15, distintos.
+    seen = set(KANJI) | set(TUTORIAL) | {v["T1"][k] for v in lures.values() if v and v.get("T1")
+                                         for k in ("lureStrong", "unrelated")}
+    new = [c for v in RETENTION_NEW.values() for c in v]
+    assert len(new) == len(set(new)) == 15, "RETENTION_NEW: 15 kanji distintos (§16.7 regla 4)"
+    assert not seen & set(new), f"RETENTION_NEW: vistos en la VR {sorted(seen & set(new))} (§16.7 regla 1)"
+
     def record(ch: str, role: str, set_name: str | None,
                discovery: str = "Pictographic") -> dict:
         k = KANJI[ch]
@@ -710,6 +749,9 @@ def export_content(g: "Glyphs", path: str, stream=None) -> dict:
                        for a, b in itertools.combinations(
                            [c for v in SETS.values() for c in v] + list(RESERVE), 2)},
         "tutorial": list(TUTORIAL),
+        # Bloque R (D-F6-125, D-F6-223): kanji nuevos del sí/no por set evaluado y los textos de UI/UX.
+        "retention": {"newKanji": {n: list(v) for n, v in RETENTION_NEW.items()},
+                      "texts": dict(RETENTION_TEXTS)},
         "kanji": ([record(c, "Experimental", n)
                    for n, v in SETS.items() for c in v]
                   + [record(c, "Reserve", None) for c in RESERVE]
