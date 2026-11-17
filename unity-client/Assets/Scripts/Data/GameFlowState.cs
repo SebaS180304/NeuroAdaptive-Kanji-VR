@@ -59,6 +59,11 @@ namespace NeuroAdaptiveVR.Data
 
         [EnumMember(Value = "S10_HCI_SELF_REPORT")]
         S10_HCISelfReport,
+
+        // Block R, delayed retention (D-F6-125): between S2 and S3 on visits 2-4. Appended, not inserted:
+        // the order of the session is GameFlowController.StateOrder. ShortCode "SR" gives trial ids SR-001.
+        [EnumMember(Value = "SR_DELAYED_RETENTION")]
+        SR_DelayedRetention,
     }
 
     public static class GameFlowStateExtensions

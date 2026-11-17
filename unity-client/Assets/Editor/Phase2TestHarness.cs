@@ -95,6 +95,7 @@ namespace NeuroAdaptiveVR.EditorTools
             DemoShotCases();
             SubstitutionCases(content);
             EffectiveSetCases(content);
+            BlockRCases(content);
             SequenceCases(content);
             AssociationCases(content);
             AssemblyCases(content);
@@ -540,6 +541,64 @@ namespace NeuroAdaptiveVR.EditorTools
             SessionContext.Reset();
             Check("K5", "Reset borra el set efectivo (no pasa de un Play al siguiente)",
                   SessionContext.KanjiItems == null, "KanjiItems == null");
+        }
+
+        /// <summary>
+        /// BR (D-F6-125, D-F6-190, D-F6-223): block R. BR1 its content (Metricas §16.7 and
+        /// Contenido_UI_Bloque_R.md), BR2 the plan of part 3 (15 trials, the full cross, lures, SR- ids),
+        /// BR3 where it runs: between S1/S2 and S3 only with an evaluated set; the short visit is S1 → SR → S9.
+        /// </summary>
+        private static void BlockRCases(KanjiContentController c)
+        {
+            var p = new List<string>();
+            var fresh = c.SetNames.ToDictionary(s => s, s => c.RetentionNew(s));
+            var all = fresh.Values.SelectMany(v => v).ToList();
+            if (fresh.Count != 3 || fresh.Values.Any(v => v.Count != 5)) p.Add("no hay 5 kanji nuevos por set");
+            if (all.Distinct().Count() != all.Count) p.Add("kanji nuevos repetidos entre sets");
+            var seen = all.Where(ch => c.All.Concat(c.Tutorial).Any(i => i.Character == ch)).ToList();
+            if (seen.Count > 0) p.Add($"nuevos que estan en el contenido: {Join(seen)}");
+            string[] keys = { "retention.stage_title", "retention.intro.main", "retention.intro.sub", "retention.free_recall.main",
+                              "retention.free_recall.sub", "retention.yes_no.intro.main", "retention.yes_no.intro.sub",
+                              "retention.yes_no.question", "retention.yes_no.yes", "retention.yes_no.no", "retention.mc.intro.main",
+                              "retention.mc.intro.sub", "retention.end.continue.main", "retention.end.final.main", "retention.end.final.sub" };
+            var missing = keys.Where(k => c.RetentionText(k) == k).ToList();
+            if (missing.Count > 0) p.Add($"textos que faltan: {Join(missing)}");
+            Check("BR1", "Bloque R: 5 kanji nuevos por set, distintos y nunca vistos en la VR (§16.7), y los 15 textos de UI/UX",
+                  p.Count == 0, p.Count == 0 ? $"A {string.Concat(fresh["A"])} · B {string.Concat(fresh["B"])} · C {string.Concat(fresh["C"])} · {keys.Length} textos" : Join(p));
+
+            var SR = GameFlowState.SR_DelayedRetention;
+            var set = c.Set("A");
+            var plan = TrialSequenceGenerator.Build(SR, set, 15, 2, TrialSequenceGenerator.BlockSeed(777, SR));
+            bool cross = plan.Count == 15 && plan.DistinctPairs == 15;
+            int lures = plan.Trials.Count(t => t.Options.Any(o => o.Kind == OptionKind.LureStrong));
+            var ids = plan.Trials.Select(t => $"{SR.ShortCode()}-{t.Sequence:D3}").ToList();
+            var lvl = (StateLevelMatrix.ExpectedEsl(SR), StateLevelMatrix.ExpectedLal(SR));
+            Check("BR2", "Parte 3: 15 trials, cruce completo, trampas como en S6-S8, ids SR-001..; niveles de S8 (sin pistas)",
+                  cross && TrialSequenceGenerator.HasLures(SR) && lures >= 6 && lures <= 9 && ids[0] == "SR-001" &&
+                  lvl == (StimulationOrAssistanceLevel.Focus, StimulationOrAssistanceLevel.Off),
+                  $"{plan.Count} trials, {plan.DistinctPairs} pares, {lures} con trampa, {ids[0]}..{ids[^1]}, ESL {lvl.Item1} LAL {lvl.Item2}");
+
+            var flow = UnityEngine.Object.FindAnyObjectByType<GameFlowController>();
+            var q = new List<string>();
+            if (flow == null) q.Add("no hay GameFlowController en la escena");
+            else
+            {
+                string Run() => Join(flow.SessionStates().Select(s => s.ShortCode()));
+                var evaluated = set.Select(i => i.Character).ToList();
+                SessionContext.Reset();
+                SessionContext.Install("s1", "A", "777", "STATIC", "1");
+                string v1 = Run();
+                SessionContext.Install("s2", "B", "777", "STATIC", "2", null, "A", evaluated);
+                string v2 = Run();
+                SessionContext.Install("s4", "C", "777", "STATIC", "4", null, "B", evaluated);
+                string v4 = Run();
+                SessionContext.Reset();
+                if (v1.Contains("SR") || !v1.StartsWith("S1, S2, S3")) q.Add($"visita 1: {v1}");
+                if (v2 != "S1, SR, S3, S4, S5, S6, S7, S8, S9") q.Add($"visita 2: {v2}");
+                if (v4 != "S1, SR, S9") q.Add($"visita 4: {v4}");
+            }
+            Check("BR3", "El bloque R va entre S1-S2 y S3 solo con sesion evaluada; la visita 4 (corta) es S1 → SR → S9",
+                  q.Count == 0, q.Count == 0 ? "visita 1 sin SR · visita 2 con SR · visita 4 corta" : Join(q));
         }
 
         private static void SequenceCases(KanjiContentController c)
@@ -2736,7 +2795,12 @@ namespace NeuroAdaptiveVR.EditorTools
             foreach (var (k, s, run, asm, want) in table)
                 if (SessionFlowRunner.ResearcherKeyActs(k, s, run, asm) != want)
                     p.Add($"{k} en {s.ShortCode()} (cadena {run}, ensamblaje {asm}) deberia {(want ? "actuar" : "ignorarse")}");
-            if (SessionFlowRunner.ResearcherKeys.Length != 5) p.Add($"{SessionFlowRunner.ResearcherKeys.Length} teclas, se esperan 5");
+            // R (D-F6-212, D-F6-223): only in block R and only while part 1 (free recall) is on screen.
+            var SR = GameFlowState.SR_DelayedRetention;
+            if (!SessionFlowRunner.ResearcherKeyActs(UnityEngine.InputSystem.Key.R, SR, true, false, true)) p.Add("R no actua en la parte 1 del bloque R");
+            if (SessionFlowRunner.ResearcherKeyActs(UnityEngine.InputSystem.Key.R, SR, true, false, false)) p.Add("R actua fuera de la parte 1");
+            if (SessionFlowRunner.ResearcherKeyActs(UnityEngine.InputSystem.Key.R, S3, true, false, true)) p.Add("R actua en S3");
+            if (SessionFlowRunner.ResearcherKeys.Length != 6) p.Add($"{SessionFlowRunner.ResearcherKeys.Length} teclas, se esperan 6");
             var menus = new[] { (typeof(SessionFlowRunner), "ForceAdvance"), (typeof(SessionFlowRunner), "ConfirmEegReady"),
                                 (typeof(SessionFlowRunner), "RequestSyncTap"), (typeof(SessionFlowRunner), "RunBlackBlock"),
                                 (typeof(KanjiAssemblyController), "ForceComplete") };

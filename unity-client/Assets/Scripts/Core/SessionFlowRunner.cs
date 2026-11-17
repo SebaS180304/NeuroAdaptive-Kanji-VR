@@ -133,6 +133,8 @@ namespace NeuroAdaptiveVR.Core
         private bool _forceAdvance;
         private bool _eegReady;
         private bool _syncTapRequested;
+        private bool _recallOpen;     // block R part 1 is on screen: only then R acts (D-F6-223)
+        private bool _recallEnded;
         private string _lastChoice;
         private TrialResult _lastResult;
         private bool _trialClosed;
@@ -178,7 +180,8 @@ namespace NeuroAdaptiveVR.Core
             if (board != null) board.PrepareBaselineEye();
             Debug.Log($"{Log} S0 prewarm: {added} glyphs added, controls lectern and S4 eye ready");
             Debug.Log($"{Log} Researcher keys, Game view in front (D-F6-158): G force advance · E EEG ready (S3) · " +
-                      "T sync tap without controller (S3/S9) · B black block 3 (after S9) · C complete assembly (S5)");
+                      "T sync tap without controller (S3) · B black block 3 (after S9) · C complete assembly (S5) · " +
+                      "R end of the free recall (block R part 1)");
         }
 
         /// <summary>
@@ -267,7 +270,9 @@ namespace NeuroAdaptiveVR.Core
             for (int i = 0; i < states.Count; i++)
                 if (states[i] == state) { step = i + 1; break; }
 
-            string name = StageTitles.TryGetValue(state, out var t) ? t : string.Empty;
+            string name = state == GameFlowState.SR_DelayedRetention && content != null
+                ? content.RetentionText("retention.stage_title")
+                : StageTitles.TryGetValue(state, out var t) ? t : string.Empty;
             board.SetStageTitle(step > 0 ? $"Step {step} of {states.Count} · {name}" : name);
         }
 
@@ -305,11 +310,14 @@ namespace NeuroAdaptiveVR.Core
 
         /// <summary>K1 (D-F6-158): the researcher's actions are letter keys, read with the Game view in front.
         /// A component's menu froze the headset 1.6-3.9 s (A-22). No F-keys.</summary>
-        public static readonly Key[] ResearcherKeys = { Key.G, Key.E, Key.T, Key.B, Key.C };
+        public static readonly Key[] ResearcherKeys = { Key.G, Key.E, Key.T, Key.B, Key.C, Key.R };
 
-        /// <summary>Whether a researcher key acts now; outside its state it is logged and ignored.</summary>
-        public static bool ResearcherKeyActs(Key key, GameFlowState state, bool chainRunning, bool assemblyRunning) => key switch
+        /// <summary>Whether a researcher key acts now; outside its state it is logged and ignored.
+        /// R (D-F6-212, D-F6-223): ends block R's free recall, and only while part 1 is on screen.</summary>
+        public static bool ResearcherKeyActs(Key key, GameFlowState state, bool chainRunning, bool assemblyRunning,
+                                             bool recallOpen = false) => key switch
         {
+            Key.R => chainRunning && state == GameFlowState.SR_DelayedRetention && recallOpen,
             Key.G => chainRunning,                                   // every wait of the chain takes Force advance
             Key.E => chainRunning && state == GameFlowState.S3_SystemValidation,
             Key.T => chainRunning && state == GameFlowState.S3_SystemValidation,   // no S9 taps (D-F6-217)
@@ -330,7 +338,7 @@ namespace NeuroAdaptiveVR.Core
         {
             if (assembly == null) assembly = FindAnyObjectByType<KanjiAssemblyController>();
             var state = flow.CurrentState;
-            if (!ResearcherKeyActs(key, state, _running, assembly != null && assembly.Running))
+            if (!ResearcherKeyActs(key, state, _running, assembly != null && assembly.Running, _recallOpen))
             {
                 Debug.Log($"{Log} Key {key} ignored in {state.ShortCode()}{(_running ? "" : ", chain not running")}.");
                 return;
@@ -343,6 +351,7 @@ namespace NeuroAdaptiveVR.Core
                 case Key.T: RequestSyncTap(); break;
                 case Key.B: RunBlackBlock(); break;
                 case Key.C: assembly.ForceComplete(); break;
+                case Key.R: _recallEnded = true; break;
             }
         }
 
@@ -463,6 +472,7 @@ namespace NeuroAdaptiveVR.Core
             {
                 case GameFlowState.S1_WelcomeOrientation:        yield return RunWelcome(); break;
                 case GameFlowState.S2_VRTutorial:                yield return RunTutorial(done); yield break;
+                case GameFlowState.SR_DelayedRetention:          yield return RunRetention(done); yield break;
                 case GameFlowState.S3_SystemValidation:          yield return RunSystemCheck(); break;
                 case GameFlowState.S4_EEGBaseline:               yield return RunBaseline(); break;
                 case GameFlowState.S5_StandardizedLearning:      yield return RunLearning(); break;
@@ -770,11 +780,116 @@ namespace NeuroAdaptiveVR.Core
         }
 
         // ------------------------------------------------------------------
+        // SR -- block R, delayed retention (D-F6-125, D-F6-212, D-F6-223; Contenido_UI_Bloque_R.md)
+        // ------------------------------------------------------------------
+
+        private const string YesOptionId = "R_YES";
+        private const string NoOptionId = "R_NO";
+        private const int RetentionTrials = 15;   // T1-T3, the full 5 x 3 cross (D-F6-125)
+
+        private static string TwoLines(string main, string sub) => $"{main}\n\n<size=90%>{sub}</size>";
+
+        /// <summary>
+        /// On the evaluated session's set, never this session's (D-F6-190). R0 entry → R1 free recall, no cards
+        /// and no clock, ended by the researcher's R → R2 yes/no on 10 kanji (5 studied, 5 new of Metricas §16.7)
+        /// → R3 15 trials as S8: no feedback, no hints → R9 (visits 2-3; the short visit closes in S9).
+        /// Nothing of it reaches the engine: it decides on S7 only.
+        /// </summary>
+        private IEnumerator RunRetention(System.Action<bool> done)
+        {
+            var items = SessionContext.EvaluatedKanjiItems != null ? content.Items(SessionContext.EvaluatedKanjiItems) : null;
+            string set = SessionContext.EvaluatedKanjiSet;
+            var fresh = content.RetentionNew(set);
+            if (items == null || items.Count < 4 || fresh.Count != 5)
+            {
+                Debug.LogError($"{Log} SR needs the evaluated set (got {items?.Count ?? 0} kanji, set '{set}') " +
+                               $"and its 5 new kanji (got {fresh.Count}).");
+                done(false);
+                yield break;
+            }
+
+            // R0
+            yield return WaitForContinue(TwoLines(content.RetentionText("retention.intro.main"),
+                                                  content.RetentionText("retention.intro.sub")));
+
+            // R1 · free recall: the participant speaks, the researcher marks the portal and presses R (no clock)
+            Show(TwoLines(content.RetentionText("retention.free_recall.main"), content.RetentionText("retention.free_recall.sub")));
+            _recallEnded = false;
+            _forceAdvance = false;
+            _recallOpen = true;
+            float recallFrom = Time.realtimeSinceStartup;
+            Debug.Log($"{Log} SR · free recall: when the participant says they have finished, press R. " +
+                      "Say \"Anything else you remember?\" once if they go quiet (D-F6-212). G forces.");
+            yield return new WaitUntil(() => _recallEnded || _forceAdvance);
+            _recallOpen = false;
+            bool recallForced = !_recallEnded;
+            _forceAdvance = false;
+            long recallMs = (long)((Time.realtimeSinceStartup - recallFrom) * 1000f);
+            telemetry.Emit(TelemetryEvents.BlockRRecallEnded, new Dictionary<string, object>
+            {
+                { "elapsed_ms", recallMs },
+                { "forced_by_researcher", recallForced },
+            });
+            Debug.Log($"{Log} SR · free recall ended after {recallMs} ms{(recallForced ? " (FORCED with G)" : "")}");
+
+            // R2 · yes/no: 5 studied (with the pre-test substitutes) and 5 new, in an order fixed by the seed
+            yield return WaitForContinue(TwoLines(content.RetentionText("retention.yes_no.intro.main"),
+                                                  content.RetentionText("retention.yes_no.intro.sub")));
+            var rng = new System.Random(TrialSequenceGenerator.BlockSeed(_sessionSeed, GameFlowState.SR_DelayedRetention));
+            var probes = items.Select(i => (glyph: i.Character, id: i.KanjiId, seen: true))
+                              .Concat(fresh.Select(c => (glyph: c, id: (string)null, seen: false))).ToList();
+            for (int i = probes.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (probes[i], probes[j]) = (probes[j], probes[i]);
+            }
+            for (int k = 0; k < probes.Count; k++)
+            {
+                var probe = probes[k];
+                board?.SetProgress(k, probes.Count);
+                _lastChoice = null;
+                _forceAdvance = false;
+                board?.ShowYesNo(probe.glyph, content.RetentionText("retention.yes_no.question"),
+                                 YesOptionId, content.RetentionText("retention.yes_no.yes"),
+                                 NoOptionId, content.RetentionText("retention.yes_no.no"));
+                float shownAt = Time.realtimeSinceStartup;
+                yield return new WaitUntil(() => _lastChoice == YesOptionId || _lastChoice == NoOptionId || _forceAdvance);
+                bool? yes = _lastChoice == YesOptionId ? true : _lastChoice == NoOptionId ? false : (bool?)null;
+                _forceAdvance = false;
+                if (yes.HasValue && sfx != null) sfx.Play(ProceduralSfx.Clip.Select);
+                telemetry.Emit(TelemetryEvents.BlockRRecognitionAnswered, new Dictionary<string, object>
+                {
+                    { "item_sequence", k + 1 },
+                    { "kanji_char", probe.glyph },
+                    { "kanji_id", probe.id },             // null for a new kanji: it has no row in the contract
+                    { "seen", probe.seen },
+                    { "answer", yes },
+                    { "is_correct", yes.HasValue ? yes.Value == probe.seen : (bool?)null },
+                    { "rt_ms", (long)((Time.realtimeSinceStartup - shownAt) * 1000f) },
+                    { "forced_by_researcher", !yes.HasValue },
+                });
+            }
+            board?.SetProgress(0, 0);
+
+            // R3 · 15 trials T1-T3 with lures, as S8 (no feedback, no hints), on the evaluated set
+            yield return WaitForContinue(TwoLines(content.RetentionText("retention.mc.intro.main"),
+                                                  content.RetentionText("retention.mc.intro.sub")));
+            bool ok = true;
+            yield return RunBlock(GameFlowState.SR_DelayedRetention, items, RetentionTrials, false, r => ok = r, set);
+            if (!ok) { done(false); yield break; }
+
+            // R9 · visits 2 and 3 continue with today's session; the short visit closes in S9 (R9')
+            if (!flow.IsShortVisit) yield return WaitForContinue(content.RetentionText("retention.end.continue.main"));
+            done(true);
+        }
+
+        // ------------------------------------------------------------------
         // S6 / S7 / S8 (and the S2 tutorial) -- trial blocks
         // ------------------------------------------------------------------
 
         private IEnumerator RunBlock(GameFlowState state, IReadOnlyList<KanjiItem> items,
-                                     int count, bool immediateFeedback, System.Action<bool> done)
+                                     int count, bool immediateFeedback, System.Action<bool> done,
+                                     string setName = null)
         {
             if (items == null || items.Count < 4)
             {
@@ -788,7 +903,7 @@ namespace NeuroAdaptiveVR.Core
             var plan = TrialSequenceGenerator.Build(state, items, count, minLag, blockSeed);
             if (plan.Count == 0) { done(false); yield break; }
 
-            TrialSequenceTelemetry.Emit(telemetry, plan, _setName, _sessionSeed);
+            TrialSequenceTelemetry.Emit(telemetry, plan, setName ?? _setName, _sessionSeed);
             adaptation?.Clear();
 
             int correct = 0;
@@ -911,7 +1026,10 @@ namespace NeuroAdaptiveVR.Core
             // No score on the board. Spec asks for a neutral completion
             // message; showing performance would colour the S10 self-report
             // the participant fills in right after taking the headset off.
-            Show("The session is complete.\n\nThank you. You can take off the headset.");
+            if (flow.IsShortVisit && content != null)   // S1 → block R → here (Contenido_UI_Bloque_R.md §4, R9')
+                Show(TwoLines(content.RetentionText("retention.end.final.main"), content.RetentionText("retention.end.final.sub")));
+            else
+                Show("The session is complete.\n\nThank you. You can take off the headset.");
             yield break;
         }
 
@@ -964,7 +1082,8 @@ namespace NeuroAdaptiveVR.Core
         private void FitAnswerCards()
         {
             if (board == null || content == null) return;
-            var texts = new HashSet<string> { StartLabel, ContinueLabel };
+            var texts = new HashSet<string> { StartLabel, ContinueLabel,
+                                              content.RetentionText("retention.yes_no.yes"), content.RetentionText("retention.yes_no.no") };
             var types = (RetrievalTrialType[])System.Enum.GetValues(typeof(RetrievalTrialType));
             foreach (var item in content.All.Concat(content.Tutorial))
             {

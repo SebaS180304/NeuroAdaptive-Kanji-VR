@@ -178,6 +178,10 @@ namespace NeuroAdaptiveVR.Data
         // BASELINE_STARTED / BASELINE_COMPLETED wrap S4. COMPLETED carries the
         // time scale, so a shortened debug baseline can never pass for a real one.
         public const string StartSelected = "START_SELECTED";
+        // Block R (D-F6-125, D-F6-223): the researcher's R ends the free recall (elapsed, no clock shown);
+        // one event per yes/no answer. Neither reaches the engine (it decides on S7 only).
+        public const string BlockRRecallEnded = "BLOCK_R_RECALL_ENDED";
+        public const string BlockRRecognitionAnswered = "BLOCK_R_RECOGNITION_ANSWERED";
         public const string TutorialStarted = "TUTORIAL_STARTED";
         public const string TutorialCompleted = "TUTORIAL_COMPLETED";
         public const string SystemCheckCompleted = "SYSTEM_CHECK_COMPLETED";

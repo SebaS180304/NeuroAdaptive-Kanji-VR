@@ -69,6 +69,7 @@ namespace NeuroAdaptiveVR.Core
             GameFlowState.S0_SessionInitialization,
             GameFlowState.S1_WelcomeOrientation,
             GameFlowState.S2_VRTutorial,
+            GameFlowState.SR_DelayedRetention,
             GameFlowState.S3_SystemValidation,
             GameFlowState.S4_EEGBaseline,
             GameFlowState.S5_StandardizedLearning,
@@ -207,19 +208,18 @@ namespace NeuroAdaptiveVR.Core
                 return;
             }
 
-            var next = StateOrder[currentIndex + 1];
-
-            // S2 solo en la primera visita (spec 7.3). El tutorial ensena los
-            // controles; repetirlo en la segunda visita gasta tiempo de sesion y
-            // mete practica extra con la mecanica justo antes de medirla.
-            if (WillSkip(next))
+            // S2 solo en la primera visita (spec 7.3): repetirlo gasta tiempo y mete practica
+            // extra con la mecanica justo antes de medirla. SR solo con sesion evaluada
+            // (visitas 2-4, D-F6-125). La visita corta salta de SR a S9 (D-F6-207).
+            int nextIndex = currentIndex + 1;
+            while (nextIndex < StateOrder.Length - 1 && WillSkip(StateOrder[nextIndex]))
             {
-                Debug.Log($"[GameFlowController] S2 se salta: visita {SessionContext.VisitNumber} " +
-                          "(spec 7.3, tutorial solo en la primera).");
-                next = StateOrder[currentIndex + 2];
+                Debug.Log($"[GameFlowController] {StateOrder[nextIndex].ShortCode()} se salta " +
+                          $"(visita {SessionContext.VisitNumber}{(IsShortVisit ? ", corta" : "")}).");
+                nextIndex++;
             }
 
-            EnterState(next);
+            EnterState(StateOrder[nextIndex]);
         }
 
         /// <summary>
@@ -231,9 +231,26 @@ namespace NeuroAdaptiveVR.Core
         /// a counter that recomputed it could say "Step 3 of 9" in a session
         /// that runs eight states.
         /// </summary>
-        public bool WillSkip(GameFlowState state)
-            => state == GameFlowState.S2_VRTutorial && SessionContext.IsInstalled &&
-               !SessionContext.IsFirstVisit;
+        public bool WillSkip(GameFlowState state) => state switch
+        {
+            GameFlowState.S2_VRTutorial => SessionContext.IsInstalled && !SessionContext.IsFirstVisit,
+            // Block R needs the evaluated session's set (D-F6-190); visit 1 has none.
+            GameFlowState.SR_DelayedRetention => SessionContext.EvaluatedKanjiItems == null,
+            GameFlowState.S3_SystemValidation or GameFlowState.S4_EEGBaseline or GameFlowState.S5_StandardizedLearning or
+            GameFlowState.S6_GuidedPracticeCalibration or GameFlowState.S7_ExperimentalRetrieval or
+            GameFlowState.S8_ImmediateAssessment => IsShortVisit,
+            _ => false,
+        };
+
+        /// <summary>
+        /// The short visit: S1 (S2) → block R → S9, no cap (D-F6-125: visit 4; D-F6-207: the visit 2 test).
+        /// Visit 4 is always short; the Inspector field is for the visit 2 test of Thu 19.
+        /// </summary>
+        public bool IsShortVisit => SessionContext.EvaluatedKanjiItems != null &&
+                                    (shortVisit || SessionContext.VisitNumber >= 4);
+
+        [Tooltip("Visita corta: S1 → bloque R → cierre, sin gorro (D-F6-207, prueba del jue 19). La visita 4 lo es siempre.")]
+        [SerializeField] private bool shortVisit;
 
         /// <summary>The states this session will actually run, S1 to S9, in order.</summary>
         public IReadOnlyList<GameFlowState> SessionStates()

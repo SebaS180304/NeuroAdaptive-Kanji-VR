@@ -228,6 +228,7 @@ namespace NeuroAdaptiveVR.Controllers
                 case GameFlowState.S6_GuidedPracticeCalibration:
                 case GameFlowState.S7_ExperimentalRetrieval:
                 case GameFlowState.S8_ImmediateAssessment:
+                case GameFlowState.SR_DelayedRetention:   // block R part 3 (D-F6-125)
                     return;
                 default:
                     Debug.LogWarning($"[ResponseSystem] Trial abierto en {state}, que no es un estado " +

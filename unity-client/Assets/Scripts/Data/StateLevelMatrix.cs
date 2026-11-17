@@ -109,6 +109,11 @@ namespace NeuroAdaptiveVR.Data
                 StimulationOrAssistanceLevel.Focus, StimulationOrAssistanceLevel.Off,
                 "sin asistencia: es la medida primaria de aprendizaje inmediato"),
 
+            [GameFlowState.SR_DelayedRetention] = new Allowed(
+                new[] { StimulationOrAssistanceLevel.Focus, StimulationOrAssistanceLevel.Low }, Off,
+                StimulationOrAssistanceLevel.Focus, StimulationOrAssistanceLevel.Off,
+                "bloque R: como S8, sin pistas ni feedback (D-F6-125)"),
+
             [GameFlowState.S9_SessionSummary] = new Allowed(
                 new[] { StimulationOrAssistanceLevel.Low }, Off,
                 StimulationOrAssistanceLevel.Low, StimulationOrAssistanceLevel.Off),

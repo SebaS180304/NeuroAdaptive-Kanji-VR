@@ -220,6 +220,19 @@ namespace NeuroAdaptiveVR.Controllers
                 ? System.Array.Empty<KanjiItem>()
                 : _contract.Tutorial.Select(ByCharacter).Where(i => i != null).ToList();
 
+        /// <summary>Block R: the 5 new kanji of the yes/no for an evaluated set (Metricas §16.7).</summary>
+        public IReadOnlyList<string> RetentionNew(string set) =>
+            _contract?.Retention?.NewKanji != null && set != null && _contract.Retention.NewKanji.TryGetValue(set, out var v)
+                ? v : (IReadOnlyList<string>)System.Array.Empty<string>();
+
+        /// <summary>A block R text by key (Contenido_UI_Bloque_R.md §1). A missing key is loud and shows the key.</summary>
+        public string RetentionText(string key)
+        {
+            if (_contract?.Retention?.Texts != null && _contract.Retention.Texts.TryGetValue(key, out var t)) return t;
+            Debug.LogError($"{Log} No block R text '{key}' in kanji_content.json.");
+            return key;
+        }
+
         public IReadOnlyList<KanjiItem> Reserve =>
             _contract == null
                 ? System.Array.Empty<KanjiItem>()

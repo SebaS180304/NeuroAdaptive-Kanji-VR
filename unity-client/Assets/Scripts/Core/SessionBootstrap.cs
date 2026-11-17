@@ -242,7 +242,9 @@ namespace NeuroAdaptiveVR.Core
                 randomSeedRaw:     ReadField(jsonBody, "random_seed"),
                 conditionWire:     ReadField(jsonBody, "condition"),
                 visitNumberRaw:    ReadField(jsonBody, "visit_number"),
-                kanjiItems:        ReadKanjiItems(jsonBody));
+                kanjiItems:        ReadKanjiItems(jsonBody),
+                evaluatedKanjiSet: ReadField(jsonBody, "evaluated_kanji_set"),
+                evaluatedKanjiItems: ReadKanjiItems(jsonBody, "evaluated_kanji_items"));
         }
 
         private void OnEnable()
@@ -426,18 +428,18 @@ namespace NeuroAdaptiveVR.Core
         /// kanji_items of a SessionRead: the effective set, substitutes in place.
         /// Null when the field is missing or null (a session with no set).
         /// </summary>
-        public static IReadOnlyList<string> ReadKanjiItems(string jsonBody)
+        public static IReadOnlyList<string> ReadKanjiItems(string jsonBody, string field = "kanji_items")
         {
             try
             {
-                var token = Newtonsoft.Json.Linq.JObject.Parse(jsonBody)["kanji_items"];
+                var token = Newtonsoft.Json.Linq.JObject.Parse(jsonBody)[field];
                 return token == null || token.Type == Newtonsoft.Json.Linq.JTokenType.Null
                     ? null
                     : token.ToObject<List<string>>();
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SessionBootstrap] Could not read kanji_items: {ex.Message}");
+                Debug.LogError($"[SessionBootstrap] Could not read {field}: {ex.Message}");
                 return null;
             }
         }

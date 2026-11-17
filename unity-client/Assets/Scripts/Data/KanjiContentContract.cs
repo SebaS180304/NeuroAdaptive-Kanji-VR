@@ -42,6 +42,18 @@ namespace NeuroAdaptiveVR.Data
         public Dictionary<string, Dictionary<string, List<string>>> SubstitutionTable = new();
 
         [JsonProperty("kanji")] public List<KanjiContentRecord> Kanji = new();
+
+        /// <summary>Block R (D-F6-125, D-F6-223): new kanji of the yes/no per evaluated set, and UI/UX's texts.</summary>
+        [JsonProperty("retention")] public RetentionContent Retention;
+    }
+
+    [Serializable]
+    public class RetentionContent
+    {
+        /// <summary>Set -> the 5 new kanji (Metricas §16.7). Shown as glyphs only: never seen in the VR.</summary>
+        [JsonProperty("newKanji")] public Dictionary<string, List<string>> NewKanji = new();
+        /// <summary>Key (retention.*) -> text, from Contenido_UI_Bloque_R.md §1.</summary>
+        [JsonProperty("texts")] public Dictionary<string, string> Texts = new();
     }
 
     /// <summary>The lure options of one kanji for one trial type (Propuesta_Trampas_T2_T3.md §2.1).</summary>

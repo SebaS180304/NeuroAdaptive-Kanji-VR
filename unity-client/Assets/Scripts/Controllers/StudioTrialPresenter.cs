@@ -740,6 +740,35 @@ namespace NeuroAdaptiveVR.Controllers
         }
 
         /// <summary>
+        /// Block R yes/no (Contenido_UI_Bloque_R.md §2, R2): the kanji where the trials put it, the question
+        /// where theirs goes, and two cards, Yes left and No right, centred with the row's spacing and width.
+        /// No hint button, no feedback: the chosen card keeps its pressed look until the next Bind.
+        /// </summary>
+        public void ShowYesNo(string glyph, string question, string yesId, string yesLabel, string noId, string noLabel)
+        {
+            Clear();
+            SetQuestion(question);
+            if (promptLabel != null)
+            {
+                promptLabel.text = glyph;
+                promptLabel.fontSize = PromptSizeFor(glyph);
+            }
+            if (cards == null || cards.Length < 2 || cards[0] == null || cards[1] == null) return;
+            RestoreCardPositions();
+            float size = Mathf.Min(OptionSizeFor(yesLabel), OptionSizeFor(noLabel));
+            cards[0].Bind(yesId, yesLabel, size);
+            cards[1].Bind(noId, noLabel, size);
+            for (int i = 2; i < cards.Length; i++)
+                if (cards[i] != null) cards[i].Hide();
+            if (_cardHome != null && _cardHome.Length > 1)
+            {
+                float half = (_cardHome[1].x - _cardHome[0].x) / 2f;
+                ((RectTransform)cards[0].transform).anchoredPosition = new Vector2(-half, _cardHome[0].y);
+                ((RectTransform)cards[1].transform).anchoredPosition = new Vector2(half, _cardHome[1].y);
+            }
+        }
+
+        /// <summary>
         /// Sizes every card of the row ONCE, from the widest text any card can
         /// show. P2: "fits" means at optionMinSize, on one line or on two lines
         /// broken between words; Present then picks the largest size that fits. Called

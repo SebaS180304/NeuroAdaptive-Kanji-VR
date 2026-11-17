@@ -67,10 +67,16 @@ namespace NeuroAdaptiveVR.Data
         /// </summary>
         public static IReadOnlyList<string> KanjiItems { get; private set; }
 
+        /// <summary>Block R (D-F6-190): the evaluated session's set name and effective set. Null on visit 1.</summary>
+        public static string EvaluatedKanjiSet { get; private set; }
+        public static IReadOnlyList<string> EvaluatedKanjiItems { get; private set; }
+
         public static void Reset()
         {
             SessionId = null;
             KanjiItems = null;
+            EvaluatedKanjiSet = null;
+            EvaluatedKanjiItems = null;
             AssignedKanjiSet = null;
             RandomSeedRaw = null;
             Seed = 0;
@@ -82,10 +88,13 @@ namespace NeuroAdaptiveVR.Data
 
         public static void Install(string sessionId, string assignedKanjiSet, string randomSeedRaw,
                                    string conditionWire, string visitNumberRaw,
-                                   IReadOnlyList<string> kanjiItems = null)
+                                   IReadOnlyList<string> kanjiItems = null,
+                                   string evaluatedKanjiSet = null, IReadOnlyList<string> evaluatedKanjiItems = null)
         {
             SessionId = sessionId;
             KanjiItems = kanjiItems;
+            EvaluatedKanjiSet = string.IsNullOrWhiteSpace(evaluatedKanjiSet) ? null : evaluatedKanjiSet.Trim();
+            EvaluatedKanjiItems = evaluatedKanjiItems;
             AssignedKanjiSet = string.IsNullOrWhiteSpace(assignedKanjiSet) ? null : assignedKanjiSet.Trim();
             RandomSeedRaw = string.IsNullOrWhiteSpace(randomSeedRaw) ? null : randomSeedRaw.Trim();
             Seed = RandomSeedRaw == null ? 0 : StableHash.Of(RandomSeedRaw);
@@ -103,7 +112,9 @@ namespace NeuroAdaptiveVR.Data
                       $"seed \"{RandomSeedRaw ?? "(sin seed)"}\" -> {Seed} · " +
                       $"{Condition.ToWireValue()} · visita {VisitNumber} · " +
                       $"kanji {(KanjiItems == null ? "(sin kanji_items)" : string.Join(" ", KanjiItems))}" +
-                      (IsFirstVisit ? " (primera: S2 corre)" : " (S2 se salta)"));
+                      (IsFirstVisit ? " (primera: S2 corre)" : " (S2 se salta)") +
+                      (EvaluatedKanjiItems == null ? "" : $" · bloque R sobre el set {EvaluatedKanjiSet}: " +
+                                                          string.Join(" ", EvaluatedKanjiItems)));
         }
 
         /// <summary>

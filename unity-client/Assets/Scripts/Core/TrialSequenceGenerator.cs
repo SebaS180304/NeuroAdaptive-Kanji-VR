@@ -54,11 +54,12 @@ namespace NeuroAdaptiveVR.Core
             new[] { RetrievalTrialType.MeaningToKanji, RetrievalTrialType.KanjiToMeaning,
                     RetrievalTrialType.KanjiToReading };
 
-        /// <summary>Lures go in S6, S7 and S8, the same rule in the three (D-F6-129, D-F6-132).</summary>
+        /// <summary>Lures go in S6, S7, S8 and block R, the same rule in all (D-F6-129, D-F6-131, D-F6-132).</summary>
         public static bool HasLures(GameFlowState state) =>
             state == GameFlowState.S6_GuidedPracticeCalibration ||
             state == GameFlowState.S7_ExperimentalRetrieval ||
-            state == GameFlowState.S8_ImmediateAssessment;
+            state == GameFlowState.S8_ImmediateAssessment ||
+            state == GameFlowState.SR_DelayedRetention;
 
         /// <summary>
         /// Construye el plan de un bloque.
