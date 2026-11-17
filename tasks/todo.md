@@ -123,7 +123,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] What the BR2 Stop found; short session closes `COMPLETED`; `learner_profile` ignores `SR-*` (test).
 - [ ] Editor, test participant: portal → visit 2 → Play → block R with the recall marked in V1.12 → S9; BR7's SQL on it; participant deleted with Sebas's OK. **Stop.**
 
-### [ ] BR5 · Thu kit (docs)
+### [ ] BR5 · Thu kit (docs) · drafted Tue 17 15:35 in `Borrador_Plan_Fase6_9_17nov.md`; waits for Sebas to read it (and BR3/BR4)
 - [ ] S1 → block R → close, no S2 (D-F6-229); PC list, network off (D-F6-193), visit 2 creation (P01, evaluated `65af2fe4`, `shortVisit`), S1 + D-F6-203 sentence, block R steps (V1.12 with D-F6-225; "Anything else you remember?" once; `R` when they are done; no clock, D-F6-212), **debriefing at the end** (Part B step 3, D-F6-192), close, SQL after.
 - [ ] **Stop:** Sebas reads it.
 
