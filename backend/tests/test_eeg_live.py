@@ -89,3 +89,21 @@ def test_the_epochs_before_a_moment_are_all_cut_only_after_the_filter_wait() -> 
     buf.add(x[int(40 * SR):int(45 * SR)].tolist(), ts[int(40 * SR):int(45 * SR)].tolist())
     cut += buf.new_epochs()
     assert buf.cut_past(s7) and max(e["lsl_start"] + 2.5 for e in cut) >= s7 - 2.5
+
+
+def test_a_live_tail_and_the_whole_xdf_cut_on_the_stored_origin_give_the_same_epochs() -> None:  # G1, D-F6-200 (1)
+    x, ts = _signal(60.0)
+    markers = [_state(100.0, S3, 0), _state(110.0, S4, 10_000), _state(125.0, S6, 25_000)]
+    k = int(3.7 * SR)                                      # LabRecorder started 3.7 s before the live inlet
+    live_buf = live.Buffer(SR, DEFAULT_MONTAGE)
+    got = _feed(live_buf, x[k:], ts[k:], markers)
+    xdf_buf = live.Buffer(SR, DEFAULT_MONTAGE)
+    xdf_buf.t0 = live_buf.t0                              # what xdf_source does with eeg_sessions.grid_origin_lsl
+    again = {e["epoch_index"]: e for e in _feed(xdf_buf, x, ts, markers)}
+    offline = {e["epoch_index"]: e for e in epochs.make_epochs(preprocess.filter_eeg(x, SR), ts, SR, DEFAULT_MONTAGE,
+                                                                markers, t0=live_buf.t0)}
+    assert live_buf.t0 == pytest.approx(ts[k]) and len(got) >= 20
+    for e in got:
+        for other in (again, offline):
+            assert e["lsl_start"] == pytest.approx(other[e["epoch_index"]]["lsl_start"])
+            assert e["chunk_clean"] == other[e["epoch_index"]]["chunk_clean"]

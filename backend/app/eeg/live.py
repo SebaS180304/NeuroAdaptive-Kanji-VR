@@ -7,7 +7,8 @@ After the session fill_from_xdf replaces these rows (D-F6-156); what the engine 
 The cut is the offline one (epochs.make_epochs) on the tail of the buffer:
   - nothing is cut until S3 has ended (the first STATE_ENTERED of S4): then sync.compute gives the S3 offset, which
     is subtracted from the EEG stamps from there on (D-F6-173); under 3 clear taps there is no correction (D-F6-176);
-  - the grid starts at the first corrected stamp, so each epoch keeps its index on the session's grid;
+  - the grid starts at the first corrected stamp, so each epoch keeps its index on the session's grid; that origin is
+    stored once (eeg_sessions.grid_origin_lsl) and fill_from_xdf and replay --xdf cut on it (D-F6-200 (1));
   - the zero-phase filter runs over the epoch plus PAD_S before it, and an epoch is cut only EDGE_S after its end,
     so the filter has signal on both sides. That wait is part of the arrival margin measured on Wed 11.
 """
@@ -94,6 +95,14 @@ async def save_epochs(db, session_id: str, eps: list[dict]) -> None:
         [{"s": str(session_id), **{c: e[c] for c in _COLUMNS}} for e in eps])
 
 
+async def save_origin(db, session_id: str, t0: float) -> None:
+    """The grid origin, once: offline cuts on it so its epochs keep the live index and start (D-F6-200 (1))."""
+    from sqlalchemy import text
+
+    await db.execute(text("UPDATE eeg_sessions SET grid_origin_lsl = :t WHERE session_id = :s AND grid_origin_lsl IS NULL"),
+                     {"s": str(session_id), "t": t0})
+
+
 async def heartbeat(db, session_id: str, gap_ms: int | None) -> None:
     from sqlalchemy import text
 
@@ -125,7 +134,7 @@ async def run(session_id: str) -> list[float]:
     async with AsyncSessionLocal() as db:
         montage = (await db.execute(text("SELECT montage FROM eeg_sessions WHERE session_id = :s"),
                                     {"s": session_id})).scalar_one_or_none() or baseline.DEFAULT_MONTAGE
-    buf, cut, lags, ref_done, last_beat = Buffer(srate, montage), [], [], False, 0.0
+    buf, cut, lags, ref_done, last_beat, origin_done = Buffer(srate, montage), [], [], False, 0.0, False
     print(f"live: {lsl_reader.EEG_STREAM} at {srate} Hz and {lsl_reader.MARKER_STREAM}; cutting from the end of S3")
     while True:
         samples, stamps = eeg_in.pull_chunk(timeout=0.2)
@@ -139,12 +148,16 @@ async def run(session_id: str) -> list[float]:
         # the reference waits for the last S6 epochs (cut EDGE_S after their end), as fill_from_xdf has them all
         write_ref = not ref_done and S7_STATE in entered and buf.cut_past(entered[S7_STATE])
         beat = time.monotonic() - last_beat >= HEARTBEAT_S
-        if just_synced or eps or write_ref or beat:
+        write_origin = not origin_done and buf.t0 is not None
+        if just_synced or eps or write_ref or beat or write_origin:
             async with AsyncSessionLocal() as db:
                 if just_synced:
                     from app.eeg import sync
                     await sync.save(db, session_id, *buf.sync_result)
                     print(f"live: S3 offset {buf.offset_ms} ms" + ("" if buf.offset_ms is not None else " (no correction)"))
+                if write_origin:
+                    await save_origin(db, session_id, buf.t0)
+                    origin_done = True
                 if eps:
                     await save_epochs(db, session_id, eps)
                     cut += eps

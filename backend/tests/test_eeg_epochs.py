@@ -244,6 +244,26 @@ async def test_fill_from_xdf_subtracts_the_s3_offset_when_there_is_one(client, p
     assert fp["sync_offset_ms"] == offset_ms
 
 
+@pytest.mark.asyncio
+async def test_fill_from_xdf_cuts_on_the_grid_origin_live_stored(client, pretested, monkeypatch) -> None:  # G1
+    from app.eeg import live, lsl_reader
+
+    x, ts = _eeg(20)                                       # the XDF starts at 100.0, before the live inlet
+    streams = {"AURA": {"time_series": x, "time_stamps": ts, "info": {"nominal_srate": ["250"]}}}
+    monkeypatch.setattr(lsl_reader, "load_xdf", lambda _path: streams)
+    pid = await pretested("TEST_EEG")
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path) VALUES (:s, 'x.xdf') "
+                              "ON CONFLICT (session_id) DO UPDATE SET xdf_path = 'x.xdf'"), {"s": sid})
+        await live.save_origin(db, sid, 101.3)
+        await live.save_origin(db, sid, 105.0)             # written once: a second call does not move it
+        await db.commit()
+    eps = await epochs.fill_from_xdf(sid)
+    assert eps[0]["epoch_index"] == 0 and eps[0]["lsl_start"] == pytest.approx(101.3)
+    assert eps[1]["lsl_start"] == pytest.approx(101.3 + epochs.STEP_S)
+
+
 # ---------- the 29 Oct recordings (on Sebas's PC only) ----------
 
 _XDF_2 = os.environ.get("EEG_XDF_29OCT_2")

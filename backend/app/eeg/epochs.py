@@ -178,14 +178,16 @@ async def fill_from_xdf(session_id: str) -> list[dict]:
     from app.eeg import baseline, lsl_reader, preprocess, reference
 
     async with AsyncSessionLocal() as db:
-        path, montage, offset = (await db.execute(text("SELECT xdf_path, montage, sync_offset_ms FROM eeg_sessions "
-                                                       "WHERE session_id = :s"), {"s": session_id})).one()
+        path, montage, offset, origin = (await db.execute(text(
+            "SELECT xdf_path, montage, sync_offset_ms, grid_origin_lsl FROM eeg_sessions WHERE session_id = :s"),
+            {"s": session_id})).one()
         streams = lsl_reader.load_xdf(path)
         aura = streams[lsl_reader.EEG_STREAM]
         sr = float(aura["info"]["nominal_srate"][0])
         stamps = np.asarray(aura["time_stamps"], dtype=float) - (offset or 0.0) / 1000  # D-F6-176: no offset, no correction
         markers = markers_of(streams.get(lsl_reader.MARKER_STREAM))
-        eps = make_epochs(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers)
+        # the live grid when live.py stored it (D-F6-200 (1)); null = older sessions, the XDF's first stamp as before
+        eps = make_epochs(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers, t0=origin)
         await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset})
         await reference.save(db, session_id, reference.compute(eps, baseline.spans(markers)))
         await db.commit()

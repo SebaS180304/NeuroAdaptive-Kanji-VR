@@ -116,8 +116,9 @@ def hitches_per_state(markers: Iterable[tuple[float, Mapping[str, Any]]]) -> dic
     return out
 
 
-def xdf_source(path: str, montage: dict):
-    """eeg_source for replay() from an XDF: epochs as live.py cuts them, the reference as live writes it."""
+def xdf_source(path: str, montage: dict, grid_origin: float | None = None):
+    """eeg_source for replay() from an XDF: epochs as live.py cuts them, the reference as live writes it.
+    grid_origin: eeg_sessions.grid_origin_lsl, the live grid (D-F6-200 (1)); None = the XDF's first stamp."""
     import numpy as np
 
     from app.eeg import baseline, epochs, live, lsl_reader, reference, window
@@ -126,6 +127,7 @@ def xdf_source(path: str, montage: dict):
     aura, markers = streams[lsl_reader.EEG_STREAM], epochs.markers_of(streams.get(lsl_reader.MARKER_STREAM))
     x, ts = np.asarray(aura["time_series"], dtype=float), np.asarray(aura["time_stamps"], dtype=float)
     buf = live.Buffer(float(aura["info"]["nominal_srate"][0]), montage)
+    buf.t0 = grid_origin
     step, mk, cut = max(1, int(buf.srate * CHUNK_S)), 0, []
     for i in range(0, len(ts), step):
         hi = ts[min(i + step, len(ts)) - 1]
@@ -221,17 +223,17 @@ def _fmt_decision(d) -> str:
     return f"- {d.reason_code}" + eeg
 
 
-def xdf_of(session_prefix: str) -> tuple[str, dict]:
-    """The session's XDF path and montage, from eeg_sessions."""
+def xdf_of(session_prefix: str) -> tuple[str, dict, float | None]:
+    """The session's XDF path, montage and grid origin, from eeg_sessions."""
     from sqlalchemy import create_engine, text
 
     from app.config import get_settings
     from app.eeg.baseline import DEFAULT_MONTAGE
 
     with create_engine(get_settings().sync_database_url).connect() as conn:
-        row = conn.execute(text("SELECT xdf_path, montage FROM eeg_sessions WHERE session_id::text LIKE :p"),
+        row = conn.execute(text("SELECT xdf_path, montage, grid_origin_lsl FROM eeg_sessions WHERE session_id::text LIKE :p"),
                            {"p": session_prefix + "%"}).one()
-    return row[0], row[1] or DEFAULT_MONTAGE
+    return row[0], row[1] or DEFAULT_MONTAGE, row[2]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -248,8 +250,8 @@ def main(argv: list[str] | None = None) -> int:
     events = load_from_file(args.file, args.session) if args.file else load_from_db(args.session)
     source = None
     if args.xdf is not None:
-        path, montage = xdf_of(args.session)
-        source, info = xdf_source(args.xdf or path, montage)
+        path, montage, origin = xdf_of(args.session)
+        source, info = xdf_source(args.xdf or path, montage, origin)
         hitches = ", ".join(f"{k} {n} ({ms:.0f} ms)" for k, (n, ms) in info["hitches"].items()) or "none"
         print(f"EEG from {args.xdf or path}: {info['epochs']} epochs cut as live.py, S3 offset {info['offset_ms']} ms, "
               f"reference {info['reference']}; FRAME_HITCH > {HITCH_MS} ms per state: {hitches}", file=sys.stderr)

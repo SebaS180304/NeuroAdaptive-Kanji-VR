@@ -37,7 +37,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] `git diff eeg-rules-freeze-2026-11-12 -- backend unity-client` shows no code change; "freeze lifted at <time>" in the draft.
 - [ ] **Stop.**
 
-### [ ] G1 · grid origin live = offline (D-F6-200 (1)) · no rule values change
+### [x] G1 · grid origin live = offline (D-F6-200 (1)) · no rule values change · 427 tests; `65af2fe4` 410/410 identical
 - [ ] Migration 0018: `eeg_sessions.grid_origin_lsl` (null allowed), up and down.
 - [ ] `live.py` writes `t0` once; `epochs.fill_from_xdf` and `replay.xdf_source` pass it as `t0` when not null.
 - [ ] Tests: offline epochs = live epochs (index and start) when the XDF starts before `t0`; null origin = today's output; `rules-v2` replay byte-identical.
