@@ -1,6 +1,6 @@
 # Todo: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Plan in `tasks/plan.md`. Aligned up to **D-F6-222** (X8 on Tue 17, end of day). **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
+Plan in `tasks/plan.md`. Aligned up to **D-F6-227** (updated Tue 17, 16:00). **X8, the BR2 Stop and Wed–Fri wait for Sebas's OK.** **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
 Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
@@ -78,48 +78,53 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] EditMode test: `R` acts only in part 1.
 - [ ] Harness test; seen in the Editor with Sebas; commit body "block R, exception D-F6-125". **Stop.**
 
-### [ ] X8 · content 31–35, end of day, after BR2 (D-F6-222, D-F6-202) · content commit (D-F6-62, D-F6-122)
-- [ ] Gate per kanji: FBX in `NN_*/export/` and the 4 `R_NN_*_{P,F1,F2,M}.png` in `NN_*/pistas/` validated by Sebas (Registro or his OK in the draft). Incomplete → X8b Thu 19; none complete → no X8 today.
-- [ ] `Reserve4` + menu "reserva 31-35" in `SetAObjectsIntegration.cs` (only complete kanji; root turn per FICHA); run the menu.
-- [ ] Harness: `X18r4` (FICHA envelopes, 1 cm), X20 = 30 + n AUTHORED; PLACEHOLDER examples off `KANJI_KIN` if 金 entered. All PASS, count before → after.
-- [ ] Commit lists what entered and what moved to Thu 19; `tasks/` and draft. **Stop.**
+### [ ] X8 · content 31–35, the five (D-F6-222, D-F6-202) · content commit (D-F6-62, D-F6-122)
+- [ ] Sebas's OK recorded: the 20 hints approved, Registro of `Tabla_Autoria_Kanji_Fase2.md`, 17 Nov 14:40.
+- [ ] Only `R_NN_CODE_{P,F1,F2,M}.png`; ChatGPT-named PNGs in `pistas/` (e.g. 32's "Taburete…") and `_originales/` not copied.
+- [ ] `Reserve4` (KIN/31_KANE, CHA/32_CHA, UMA/33_UMA, SAKANA/34_SAKANA, TORI/35_TORI) + menu "reserva 31-35"; 31–32 facing, 33–35 side-on as in the FBX; no root turn on any.
+- [ ] Harness: `X18r4` with the five FICHA envelopes; X20 35/35 AUTHORED; X18b/X20 PLACEHOLDER example on an in-memory item. **All PASS, 117/117 → 118/118.**
+- [ ] 32 茶 fps in the headset against 31 (`FrameRateLog`, 60 s each, Play only); result in the draft.
+- [ ] Commit with the five and the count; `tasks/` and the draft. **Stop** at the Editor Stop.
+
+### [ ] BR2 Editor Stop · with Sebas, after X8
+- [ ] Test participant; visit 2 (evaluated session deduced or by hand): S1 → SR (R0, R1 + `R`, yes/no 10, 15 `SR-*`, R9) → S3; `R` outside R1 ignored.
+- [ ] `shortVisit`: S1 → SR → S9 with R9'; session `COMPLETED`.
+- [ ] Read-only SQL: 1 `BLOCK_R_RECALL_ENDED`, 10 yes/no, 15 `SR-*` trials, nothing in `adaptation_decisions`. S1 (no S9 taps) and S6 (15 trials) seen too.
+- [ ] Test participant deleted with Sebas's OK. **Stop:** Sebas's OK; changes noted for BR4.
 
 ## Wed 18 · AI workshop · block R continues
 
-### [ ] BR3 · free recall in the portal
-- [ ] *What counts* text of D-F6-225 as V1.12 words it (plan, BR3); Meaning and Reading toggles only, doubtful answers in "What they said", no partial mark.
-- [ ] V1.12 instead of the placeholder once D-F6-226 is on the board (the mirror stops at D-F6-225).
-- [ ] Researcher marks recalled kanji; V1.12 if validated, else placeholder with the same states; no clock; the form does not advance the VR (D-F6-212). Playwright smoke. **Stop.**
+### [ ] BR3 · free recall in the portal, V1.12 (D-F6-226)
+- [ ] Read the `research-dashboard-conventions` skill and V1.12 (`design-handoff/design-system.md`, `design-handoff/block-r/`).
+- [ ] Backend `POST`/`GET /sessions/{id}/block-r/recall` (event `BLOCK_R_FREE_RECALL`; last save wins; never saved = null, saved with no marks = nothing recalled). `/research` stays read-only.
+- [ ] V1.12 screen: the evaluated session's five kanji, Meaning/Reading toggles, order on first mark, "What they said", "Anything else", four states; *What counts* of D-F6-225 word for word; no clock (D-F6-212); never moves the VR.
+- [ ] Tests: backend (save, replace, nothing ≠ never, 409 without block R), Vitest, Playwright smoke; 5-tell audit. **Stop:** Sebas against the artboard.
 
-### [ ] BR4 · short visit: S1–S2 → block R → close (no cap)
-- [ ] Creation with the evaluated session; Unity skips S3–S10 and closes cleanly; same path as visit 4.
-- [ ] End to end in the Editor with a test participant, deleted after with Sebas's OK. **Stop.**
+### [ ] BR4 · short visit end to end (path built in BR2)
+- [ ] What the BR2 Stop found; short session closes `COMPLETED`; `learner_profile` ignores `SR-*` (test).
+- [ ] Editor, test participant: portal → visit 2 → Play → block R with the recall marked in V1.12 → S9; BR7's SQL on it; participant deleted with Sebas's OK. **Stop.**
 
 ### [ ] BR5 · Thu kit (docs)
-- [ ] PC list, network off (D-F6-193), Inspector for visit 2 (code, evaluated session = dry run, short visit), S1–S2 + D-F6-203 sentence, block R operator steps ("Anything else you remember?" once; `R` when they say they are done; no clock, D-F6-212), **debriefing at the end** (Part B step 3, D-F6-192: no visit 4 for this participant), close, SQL after.
+- [ ] PC list, network off (D-F6-193), visit 2 creation (P01, evaluated `65af2fe4`, `shortVisit`), S1 + D-F6-203 sentence, block R steps (V1.12 with D-F6-225; "Anything else you remember?" once; `R` when they are done; no clock, D-F6-212), **debriefing at the end** (Part B step 3, D-F6-192), close, SQL after.
 - [ ] **Stop:** Sebas reads it.
 
-- [ ] End of day: inputs due from UI/UX, Content and web design (D-F6-208).
+## Thu 19 · visit 2 test at 12:00, then CH1
 
-## Thu 19 · visit 2 test, then X8b
+### [ ] BR6 · last check of the inputs (morning)
+- [ ] Nothing changed in `docs_proyecto/` since Tue (else the export again); harness all PASS; inputs marked real. **Stop.**
 
-### [ ] BR6 · swap in what arrived (morning)
-- [ ] Content and texts into `kanji_content.json`; form if it arrived and fits. Harness re-run; each input marked real or placeholder. **Stop.**
-
-### [ ] BR7 · visit 2 test (D-F6-207)
-- [ ] Dry-run participant, code only; S1–S2 → block R on set A → debriefing → close.
-- [ ] **Done when:** recall, yes/no and 15 MC stored against the dry-run session; nothing from block R in `adaptation_decisions`; findings recorded.
+### [ ] BR7 · visit 2 test, 12:00 (D-F6-207)
+- [ ] P01, code only; short visit: S1 → block R on set A → R9' → debriefing → close.
+- [ ] **Done when:** visit 2 points at `65af2fe4`; 1 recall end, 10 yes/no, 15 `SR-*`, recall saved in V1.12; nothing in `adaptation_decisions`; findings recorded.
 - [ ] Cannot come → Fri 20 morning; last resort Mon 23, interval declared. **Stop.**
 
-### [ ] X8b · what X8 left out on Tue (D-F6-222) · after BR7 · only if any
-- [ ] Same gate and path as X8; harness all PASS (count before → after). **Stop.**
-
-### [ ] CH1 · persistently bad channel (D-F6-216) · after BR7
+### [ ] CH1 · persistently bad channel (D-F6-216, D-F6-224) · after BR7
+- [ ] D-F6-224: ±1 s around every `SYNC_TAP` left out of the count; 30 s bins from `grid_origin_lsl` (null origin: the XDF's first stamp, as the grid); tests for both (Cz with taps not excluded; bins at the stored origin).
 - [ ] One function: > 20 % of samples > 100 µV in 2 consecutive 30 s bins → channel out to the end; max 1 per session (2 → EEG not counted); Fz → theta `UNAVAILABLE`, EI with 6; Fp1 never; reference recomputed if after S6.
 - [ ] Same in `live.Buffer`, `fill_from_xdf` and replay; migration 0020 (`bad_channel`, `bad_channel_from_ms`); `bad_channel` in the decision's `eeg` block.
 - [ ] Tests (one bin / two bins / two channels / Fz / Fp1 / live = offline); `rules-v2` byte-identical.
 - [ ] Dry-run XDF in the container's `/tmp` (same PC), deleted after: P7 and A-7 with F3 excluded beside 0/18. `fill_from_xdf` on `65af2fe4` only with Sebas's OK.
-- [ ] If it runs late, X8b moves to Fri. **Stop.**
+- [ ] If it runs late, first thing on Fri 20, before AU1/AU4. **Stop.**
 
 ## Session automation (D-F6-219, D-F6-221) · never during a session · pilot starts with **manual recording**
 
@@ -148,8 +153,9 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Synthetic AURA + headset, S1–S9, only Play, network and S3 keys by hand; session deleted after with Sebas's OK.
 - [ ] Pass → automated recording from the next session, each session labelled by recording path; fail or no day → whole pilot manual. **Stop.**
 
-## Fri 20 · go/no-go input
-- [ ] What is live, what is still placeholder, BR7 result, open findings; `tasks/` and draft up to date.
+## Fri 20 · AU1 and AU4 in the morning, then go/no-go · no presentation, no video (D-F6-227)
+- [ ] Morning: AU1 → AU4 → kit lines → AU0 only if time is left.
+- [ ] Go/no-go input: what is live (G1, G2, S1, S6, block R with V1.12, CH1, X8), BR7 result, open findings; `tasks/` and draft up to date.
 
 ---
 
