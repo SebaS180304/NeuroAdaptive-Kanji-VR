@@ -121,6 +121,7 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 ### Wed 18 · AI workshop (time to be confirmed) · block R continues
 
 **BR3 · free recall in the portal.** The researcher marks recalled kanji for the evaluated session. V1.12 (`marking`, `saved`, `nothingRecalled`, `saveError`; "Save: nothing recalled" distinct from not saved) if Sebas has validated it, else a plain placeholder form with the same states (D-F6-208). **No clock and nothing that paces the 2 minutes** (D-F6-212). The form does not advance the VR: that is the `R` key. The write goes where the portal already writes (decided in BR0). Playwright smoke. **Stop.**
+- **What counts (D-F6-225), the same text in the placeholder form and in V1.12:** *"Meaning: the meaning or a clear synonym, in any language. Reading: the Japanese reading, said close enough to recognise. If you are not sure, write it in "What they said" and leave it unmarked. There is no partial mark."* Per kanji only two toggles (Meaning, Reading) and the "What they said" text; no partial mark and no third state. V1.12's own wording is Diseño web's to update in `design-system.md` (D-F6-225: the form does not change, only this text).
 
 **BR4 · short visit: S1–S2 → block R → close (≈ 20 min, no cap).** The flow D-F6-207 asks for on Thu, and the same path visit 4 uses (D-F6-125). Session creation with the evaluated session; Unity skips S3–S10 and closes the session cleanly. Tested end to end in the Editor with a test participant (deleted after, as `SIM_1311`). **Stop.**
 

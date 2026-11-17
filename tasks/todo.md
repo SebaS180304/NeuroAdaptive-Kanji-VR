@@ -87,6 +87,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 ## Wed 18 · AI workshop · block R continues
 
 ### [ ] BR3 · free recall in the portal
+- [ ] *What counts* text of D-F6-225 (plan, BR3), word for word in the placeholder form; Meaning and Reading toggles only, doubtful answers in "What they said", no partial mark.
 - [ ] Researcher marks recalled kanji; V1.12 if validated, else placeholder with the same states; no clock; the form does not advance the VR (D-F6-212). Playwright smoke. **Stop.**
 
 ### [ ] BR4 · short visit: S1–S2 → block R → close (no cap)
