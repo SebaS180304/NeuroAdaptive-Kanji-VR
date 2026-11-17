@@ -59,6 +59,20 @@ namespace NeuroAdaptiveVR.EditorTools
             ("KANJI_GAKU", "29_GAKU"), ("KANJI_MONO", "30_MONO"),
         };
 
+        // 4th batch (D-F6-194, D-F6-222; X8): 31-32 face the player, 33-35 side-on as their FBX come; no root turn.
+        private static readonly (string kanjiId, string code)[] Reserve4 =
+        {
+            ("KANJI_KIN", "31_KANE"), ("KANJI_CHA", "32_CHA"), ("KANJI_UMA", "33_UMA"),
+            ("KANJI_SAKANA", "34_SAKANA"), ("KANJI_TORI", "35_TORI"),
+        };
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 31-35", priority = 309)]
+        public static void RunReserve4()
+        {
+            Integrate("R", Reserve4);
+            IntegrateHints("R", Reserve4);
+        }
+
         [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 26-30", priority = 308)]
         public static void RunReserve3()
         {

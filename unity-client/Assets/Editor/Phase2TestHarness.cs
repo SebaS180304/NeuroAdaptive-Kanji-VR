@@ -213,10 +213,11 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (got != (cell.a, cell.b, cell.audio)) p.Add($"{cell.t} {cell.l}: {got}, se esperaba ({cell.a}, {cell.b}, {cell.audio})");
             }
 
-            // The 15 experimental kanji, sets A, B and C (D-F6-66: B and C on 29 Oct), and the reserve 16-30 (X7).
+            // The 15 experimental kanji, sets A, B and C (D-F6-66: B and C on 29 Oct), and the reserve 16-35 (X7, X8).
             var reserve = new[] { "KANJI_NICHI", "KANJI_KI", "KANJI_KAWA", "KANJI_TA", "KANJI_KUCHI",
                                   "KANJI_TSUCHI", "KANJI_KO", "KANJI_MIZU", "KANJI_ME", "KANJI_KOME",
-                                  "KANJI_ITO", "KANJI_MIMI", "KANJI_KAI", "KANJI_GAKU", "KANJI_MONO" };
+                                  "KANJI_ITO", "KANJI_MIMI", "KANJI_KAI", "KANJI_GAKU", "KANJI_MONO",
+                                  "KANJI_KIN", "KANJI_CHA", "KANJI_UMA", "KANJI_SAKANA", "KANJI_TORI" };
             var experimental = new[] { "A", "B", "C" }.SelectMany(s => c.Set(s)).Select(i => i.KanjiId).Concat(reserve).ToArray();
             var items = c.All.ToDictionary(i => i.KanjiId);
             foreach (var id in experimental)
@@ -229,9 +230,11 @@ namespace NeuroAdaptiveVR.EditorTools
                     if (visual ? src != HintCells.Authored : src != null) p.Add($"{id} {cell.t} {cell.l}: asset_source {src ?? "null"}");
                 }
             }
-            if (items.TryGetValue("KANJI_KIN", out var kin) &&
-                HintCells.AssetSource(T3, LearningAssistanceController.AvailableCues(T3, StimulationOrAssistanceLevel.Medium), kin) != HintCells.Placeholder)
-                p.Add("KANJI_KIN (reserva, 4.ª tanda, sin imagenes) no da PLACEHOLDER");
+            // Since X8 every experimental and reserve kanji has its images: the PLACEHOLDER example is a tutorial kanji,
+            // which never has hint images.
+            var ichi = c.Tutorial.FirstOrDefault(i => i.KanjiId == "KANJI_ICHI");
+            if (ichi == null || HintCells.AssetSource(T3, LearningAssistanceController.AvailableCues(T3, StimulationOrAssistanceLevel.Medium), ichi) != HintCells.Placeholder)
+                p.Add("KANJI_ICHI (tutorial, sin imagenes) no da PLACEHOLDER");
 
             // §9.2: board 1600 x 900 u centred; Hint button from x 470.
             foreach (var (name, centre, size) in StudioTrialPresenter.HintZones)
@@ -258,8 +261,8 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (glyphBottom - stripTop < 10f) p.Add($"el kanji de {em:F0} u baja hasta y {glyphBottom:F0}, a {glyphBottom - stripTop:F0} u de la tira");
             }
 
-            Check("X20", "Pistas de §9.1: celdas, imagenes de los sets A, B, C y la reserva 16-30 AUTHORED, sin imagen PLACEHOLDER, zonas del board de D-F6-108 (D-F6-63, D-F6-91)",
-                  p.Count == 0, p.Count == 0 ? $"6 celdas · sets A, B, C y reserva 16-30 {experimental.Length}/30 AUTHORED · KANJI_KIN PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
+            Check("X20", "Pistas de §9.1: celdas, imagenes de los sets A, B, C y la reserva 16-35 AUTHORED, sin imagen PLACEHOLDER, zonas del board de D-F6-108 (D-F6-63, D-F6-91)",
+                  p.Count == 0, p.Count == 0 ? $"6 celdas · sets A, B, C y reserva 16-35 {experimental.Length}/35 AUTHORED · KANJI_ICHI PLACEHOLDER · tira hasta x {stripRight:F0}" : Join(p.Take(6)) + (p.Count > 6 ? $" (+{p.Count - 6})" : ""));
         }
 
         /// <summary>
@@ -2261,10 +2264,17 @@ namespace NeuroAdaptiveVR.EditorTools
                 ("KANJI_KAI", "28_KAI", new Vector3(0.26f, 0.22f, 0.10f)), ("KANJI_GAKU", "29_GAKU", new Vector3(0.26f, 0.26f, 0.16f)),
                 ("KANJI_MONO", "30_MONO", new Vector3(0.28f, 0.20f, 0.14f)),
             });
-            // The 4th batch (金 茶 馬 魚 鳥, week of 16 Nov) has no objects yet: a kanji without one records PLACEHOLDER.
-            var noObject = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>("Assets/Resources/kanji/KANJI_KIN.asset");
-            Check("X18b", "Un kanji sin objeto (reserva, 4.ª tanda, KANJI_KIN) registra PLACEHOLDER",
-                  noObject != null && KanjiDiscoveryController.ObjectSourceOf(noObject.anchorObjectPrefab) == "PLACEHOLDER", "KANJI_KIN");
+            // 4th batch (X8, D-F6-222; FICHA envelopes in Unity axes): 31-32 face the player, 33-35 side-on, no root turn.
+            ObjectSetCase("X18r4", "R 31-35", "D-F6-222, 17 nov 14:40", new (string, string, Vector3)[]
+            {
+                ("KANJI_KIN", "31_KANE", new Vector3(0.24f, 0.22f, 0.14f)), ("KANJI_CHA", "32_CHA", new Vector3(0.24f, 0.20f, 0.18f)),
+                ("KANJI_UMA", "33_UMA", new Vector3(0.279f, 0.254f, 0.090f)), ("KANJI_SAKANA", "34_SAKANA", new Vector3(0.28f, 0.14f, 0.08f)),
+                ("KANJI_TORI", "35_TORI", new Vector3(0.24f, 0.18f, 0.08f)),
+            });
+            // Every experimental and reserve kanji has its object since X8: the example without one is a tutorial kanji.
+            var noObject = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>("Assets/Resources/kanji/KANJI_ICHI.asset");
+            Check("X18b", "Un kanji sin objeto (tutorial, KANJI_ICHI) registra PLACEHOLDER",
+                  noObject != null && KanjiDiscoveryController.ObjectSourceOf(noObject.anchorObjectPrefab) == "PLACEHOLDER", "KANJI_ICHI");
         }
 
         private static void ObjectSetCase(string id, string set, string source, (string kanji, string code, Vector3 size)[] rows)
