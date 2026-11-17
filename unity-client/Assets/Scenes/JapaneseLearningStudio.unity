@@ -5272,7 +5272,7 @@ MonoBehaviour:
   controlsIntro: {fileID: 1851539491}
   tutorialAssemblyKanjiId: KANJI_YON
   assembly: {fileID: 1019401308}
-  s6Trials: 9
+  s6Trials: 15
   s7Trials: 20
   s8Trials: 15
   minLag: 2
@@ -5284,6 +5284,8 @@ MonoBehaviour:
   baselineEyesClosedSeconds: 45
   baselineTimeScale: 1
   s5PlaceholderSeconds: 3
+  eegStep: 1
+  blackBlockSeconds: 120
   fallbackSet: A
   fallbackSeed: 20260909
 --- !u!114 &1019401297

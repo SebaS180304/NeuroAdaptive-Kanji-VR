@@ -604,13 +604,15 @@ namespace NeuroAdaptiveVR.EditorTools
                   s8.Count == 15 && s8.DistinctPairs == 15 && cadaParUnaVez,
                   $"{s8.Count} trials · {s8.DistinctPairs} pares · sin repetir: {cadaParUnaVez}");
 
-            // S6: 9 trials, tres por tipo (decision del 16 de septiembre, pendiente
-            // de justificar con investigacion).
-            var s6 = TrialSequenceGenerator.Build(GameFlowState.S6_GuidedPracticeCalibration, set, 9, minLag, seedA);
+            // S6: 15 trials, el cruce completo 5 kanji x 3 tipos (D-F6-218, D-F6-220): >= 75 s para la referencia.
+            // El numero es el campo s6Trials de la escena, que es lo que corre en la sesion.
+            var runner = UnityEngine.Object.FindAnyObjectByType<SessionFlowRunner>();
+            int s6n = runner == null ? -1 : new SerializedObject(runner).FindProperty("s6Trials").intValue;
+            var s6 = TrialSequenceGenerator.Build(GameFlowState.S6_GuidedPracticeCalibration, set, 15, minLag, seedA);
             var porTipo = s6.Trials.GroupBy(t => t.TrialType).ToDictionary(g => g.Key, g => g.Count());
-            Check("Q8", "El plan de S6 son 9 trials repartidos tres por tipo",
-                  s6.Count == 9 && porTipo.Count == 3 && porTipo.Values.All(v => v == 3),
-                  Join(porTipo.Select(kv => $"{kv.Key}:{kv.Value}")));
+            Check("Q8", "S6 tiene 15 trials en la escena y su plan es el cruce completo, cada par una vez (D-F6-218)",
+                  s6n == 15 && s6.Count == 15 && s6.DistinctPairs == 15 && porTipo.Count == 3 && porTipo.Values.All(v => v == 5),
+                  $"escena s6Trials {s6n} · " + Join(porTipo.Select(kv => $"{kv.Key}:{kv.Value}")));
 
             // El hash tiene que ser estable: si no lo fuera, dos corridas de la
             // misma sesion darian secuencias distintas y la seed no serviria de nada.
@@ -2758,7 +2760,7 @@ namespace NeuroAdaptiveVR.EditorTools
         {
             var p = new List<string>();
             var resumen = new List<string>();
-            foreach (var (state, n) in new[] { (GameFlowState.S6_GuidedPracticeCalibration, 9),
+            foreach (var (state, n) in new[] { (GameFlowState.S6_GuidedPracticeCalibration, 15),
                                                (GameFlowState.S7_ExperimentalRetrieval, 20),
                                                (GameFlowState.S8_ImmediateAssessment, 15) })
             {
@@ -2803,11 +2805,11 @@ namespace NeuroAdaptiveVR.EditorTools
                 if (TrialSequenceGenerator.HasLures(state)) p.Add($"{state.ShortCode()} lleva trampas");
 
             // D-F6-145: a block with an odd number of T1 rounds up or down by its own seed; an even one
-            // takes the exact half. Over 40 sessions S6 (3 T1) shows both roundings, and S7 always has
+            // takes the exact half. Over 40 sessions S6 (5 T1 since D-F6-218) shows both roundings, and S7 always has
             // floor or ceil of its own T1 count.
             var s6Counts = new HashSet<int>();
             for (int sesion = 1; sesion <= 40; sesion++)
-                foreach (var (state, n) in new[] { (GameFlowState.S6_GuidedPracticeCalibration, 9), (GameFlowState.S7_ExperimentalRetrieval, 20) })
+                foreach (var (state, n) in new[] { (GameFlowState.S6_GuidedPracticeCalibration, 15), (GameFlowState.S7_ExperimentalRetrieval, 20) })
                 {
                     var plan = TrialSequenceGenerator.Build(state, set, n, minLag, TrialSequenceGenerator.BlockSeed(sesion, state));
                     int t1 = plan.Trials.Count(t => t.TrialType == RetrievalTrialType.MeaningToKanji);
@@ -2817,7 +2819,7 @@ namespace NeuroAdaptiveVR.EditorTools
                     if (!ok) { p.Add($"sesion {sesion} {state.ShortCode()}: {lures} de {t1} T1"); break; }
                     if (state == GameFlowState.S6_GuidedPracticeCalibration) s6Counts.Add(lures);
                 }
-            if (!s6Counts.SetEquals(new[] { 1, 2 })) p.Add($"S6 en 40 sesiones: {Join(s6Counts.Select(c => c.ToString()))} trampas (se esperan 1 y 2)");
+            if (!s6Counts.SetEquals(new[] { 2, 3 })) p.Add($"S6 en 40 sesiones: {Join(s6Counts.Select(c => c.ToString()))} trampas (se esperan 2 y 3)");
             resumen.Add($"S6 en 40 sesiones: {Join(s6Counts.OrderBy(c => c).Select(c => c.ToString()))}");
             Check("X27", "Trampas: la mitad de los T1, T2 y T3 de S6-S8 (impar: la semilla redondea, D-F6-145) con CORRECT, LURE_STRONG, IN_SET y UNRELATED, una sola correcta; nada en S2/S5",
                   p.Count == 0, p.Count == 0 ? Join(resumen) : Join(p));
