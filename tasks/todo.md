@@ -63,13 +63,13 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] `verify_eeg.sql` block 4: threshold 15 and the reference used (S6 / S4 fallback, epochs), never `SHORT`. Block 7: A-7 = S4 alpha AND P7 ≥ 60 %; no S6 condition; reference shown as information (D-F6-220).
 - [ ] Run on `65af2fe4`, `742ec49a`, `07343b5d`; changes against the old rule noted. **Stop.**
 
-### [ ] BR0 · block R design, read-only
+### [x] BR0 · block R design, read-only · approved (D-F6-223)
 - [ ] D-F6-125, D-F6-131/181, D-F6-187/190, D-F6-207/208, consent Parts B/C read.
 - [ ] Inputs checked in the mirror: `Contenido_UI_Bloque_R.md`, 5 new kanji per set (§16), V1.12 (validated or not); real vs placeholder listed.
 - [ ] End of free recall (D-F6-212): researcher key **`R`** in `SessionFlowRunner` (as D-F6-158), only in part 1, logs `BLOCK_R_RECALL_ENDED`; no clock anywhere.
 - [ ] One page in the draft: states, events, tables. **Stop:** Sebas approves the mechanism.
 
-### [ ] BR1 · block R data (migration 0019)
+### [x] BR1 · block R data (migration 0019) · 439 tests; trials SR-001..
 - [ ] Evaluated session stored (D-F6-190 (2)); visit 4 with visit 3's set (D-F6-190 (1)); answers and `BLOCK_R_RECALL_ENDED` as events, outside `decide()` and the window code.
 - [ ] Validation: same participant, earlier session. Tests. **Stop.**
 

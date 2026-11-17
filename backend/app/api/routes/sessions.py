@@ -35,18 +35,50 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 PRETEST_URL = "http://127.0.0.1:5300/pretest"
 
 
-async def _read(db: AsyncSession, session: ExperimentSession) -> SessionRead:
-    """SessionRead plus kanji_items: the assigned set with the participant's substitutes."""
+async def _items(db: AsyncSession, participant_id, kanji_set: str | None) -> list[str] | None:
+    """The set's characters with the participant's pre-test substitutes in their originals' places."""
     sets = contract()["sets"]
-    items = None
-    if session.assigned_kanji_set in sets:
-        char_of = {k["id"]: k["kanji"] for k in contract()["kanji"]}
-        rows = (await db.execute(select(KanjiSubstitution).where(
-            KanjiSubstitution.participant_id == session.participant_id,
-            KanjiSubstitution.substitute_kanji_id.is_not(None)))).scalars()
-        swap = {char_of[r.original_kanji_id]: char_of[r.substitute_kanji_id] for r in rows}
-        items = [swap.get(c, c) for c in sets[session.assigned_kanji_set]]
-    return SessionRead.model_validate(session).model_copy(update={"kanji_items": items})
+    if kanji_set not in sets:
+        return None
+    char_of = {k["id"]: k["kanji"] for k in contract()["kanji"]}
+    rows = (await db.execute(select(KanjiSubstitution).where(
+        KanjiSubstitution.participant_id == participant_id,
+        KanjiSubstitution.substitute_kanji_id.is_not(None)))).scalars()
+    swap = {char_of[r.original_kanji_id]: char_of[r.substitute_kanji_id] for r in rows}
+    return [swap.get(c, c) for c in sets[kanji_set]]
+
+
+async def _read(db: AsyncSession, session: ExperimentSession) -> SessionRead:
+    """SessionRead plus kanji_items, and for block R the evaluated session's set (D-F6-190)."""
+    update = {"kanji_items": await _items(db, session.participant_id, session.assigned_kanji_set)}
+    if session.evaluated_session_id is not None:
+        evaluated = await db.get(ExperimentSession, session.evaluated_session_id)
+        update |= {"evaluated_kanji_set": evaluated.assigned_kanji_set,
+                   "evaluated_kanji_items": await _items(db, evaluated.participant_id, evaluated.assigned_kanji_set)}
+    return SessionRead.model_validate(session).model_copy(update=update)
+
+
+async def _evaluated(db: AsyncSession, payload: SessionCreate) -> uuid.UUID | None:
+    """The session block R evaluates (D-F6-223): given, or the participant's last COMPLETED session of the
+    previous visit. Visit 1 evaluates nothing. Always an earlier session of the same participant: it is looked up
+    before the new row exists."""
+    if payload.evaluated_session_id is not None:
+        given = await db.get(ExperimentSession, payload.evaluated_session_id)
+        if given is None or given.participant_id != payload.participant_id:
+            raise HTTPException(status_code=422, detail="evaluated_session_id must be an earlier session "
+                                                        "of the same participant")
+        return given.id
+    if payload.visit_number < 2:
+        return None
+    found = (await db.execute(select(ExperimentSession.id).where(
+        ExperimentSession.participant_id == payload.participant_id,
+        ExperimentSession.visit_number == payload.visit_number - 1,
+        ExperimentSession.status == SessionStatus.COMPLETED,
+    ).order_by(ExperimentSession.created_at.desc()).limit(1))).scalar_one_or_none()
+    if found is None:
+        raise HTTPException(status_code=422, detail=f"no COMPLETED visit {payload.visit_number - 1} for this "
+                                                    "participant: give evaluated_session_id (D-F6-223)")
+    return found
 
 
 @router.post("", response_model=SessionRead, status_code=201)
@@ -61,8 +93,10 @@ async def create_session(
         raise HTTPException(status_code=409,
                             detail=f"participant must complete the kanji pre-test at {PRETEST_URL} first")
 
+    evaluated = await _evaluated(db, payload)
     session = ExperimentSession(
         participant_id=payload.participant_id,
+        evaluated_session_id=evaluated,
         condition=payload.condition,
         assigned_kanji_set=payload.assigned_kanji_set,
         visit_number=payload.visit_number,

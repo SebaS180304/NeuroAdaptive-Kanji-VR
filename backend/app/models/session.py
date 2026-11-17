@@ -47,6 +47,7 @@ class GameFlowState(str, enum.Enum):
     S0_SESSION_INITIALIZATION = "S0_SESSION_INITIALIZATION"
     S1_WELCOME_ORIENTATION = "S1_WELCOME_ORIENTATION"
     S2_VR_TUTORIAL = "S2_VR_TUTORIAL"
+    SR_DELAYED_RETENTION = "SR_DELAYED_RETENTION"  # block R, visits 2-4 (D-F6-125)
     S3_SYSTEM_VALIDATION = "S3_SYSTEM_VALIDATION"
     S4_EEG_BASELINE = "S4_EEG_BASELINE"
     S5_STANDARDIZED_LEARNING = "S5_STANDARDIZED_LEARNING"
@@ -81,6 +82,10 @@ class ExperimentSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     assigned_kanji_set: Mapped[str | None] = mapped_column(String(8), nullable=True)
     visit_number: Mapped[int] = mapped_column(default=1, nullable=False)
     random_seed: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # The session block R evaluates (D-F6-190 (2), D-F6-223); its set is the set of block R.
+    evaluated_session_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("experiment_sessions.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Versionado para reproducibilidad exacta (spec 7.1)
     software_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
