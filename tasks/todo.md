@@ -116,7 +116,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ## Tue 17 afternoon · BR3, BR4 if time (D-F6-232) · BR5 drafted
 
-### [ ] BR3 · free recall in the portal, V1.12 (D-F6-226)
+### [x] BR3 · free recall in the portal, V1.12 (D-F6-226) · `2752994` backend, `31e9585` dashboard · Stop: Sebas against the artboard
 - [ ] Read the `research-dashboard-conventions` skill and V1.12 (`design-handoff/design-system.md`, `design-handoff/block-r/`).
 - [ ] Backend `POST`/`GET /sessions/{id}/block-r/recall` (event `BLOCK_R_FREE_RECALL`; last save wins; never saved = null, saved with no marks = nothing recalled). `/research` stays read-only.
 - [ ] V1.12 screen: the evaluated session's five kanji, Meaning/Reading toggles, order on first mark, "What they said", "Anything else", four states; *What counts* of D-F6-225 word for word; no clock (D-F6-212); never moves the VR.
