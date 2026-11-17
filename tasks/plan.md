@@ -133,8 +133,11 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 - **32 茶 fps (6 706 tris, 3–5× the reserve), after T2 (Play only, no code):** with the headset over Link, in Play (nothing saved), 32's prefab where S5 shows the object, 60 s, then 31's (278 tris) in the same place; `FrameRateLog` gives mean fps and frames > 20 ms for each. Result in the draft. If 32 drops frames that 31 does not, Sebas decides (decimate in Modelado, or keep it: 32 is reserve and only shows through a pre-test substitution).
 - **How it is tested:** harness **all PASS, count before → after (117/117 → 118/118)**; the five seen on the board in the Editor with the fps check, after T2.
 - **Commit:** `content(unity): reserve 31-35 objects and hints (X8, D-F6-222)`, with the count and the five; then `tasks/` and the draft. **Stop:** the 16:15 cut-off; Sebas sees the five after T2.
+- **Done, Tue 17 15:30 · `f4ca615`:** the five entered (31 金, 32 茶, 33 馬, 34 魚, 35 鳥): 5 FBX, 5 prefabs, 20 `R_` hints, the 5 `KANJI_*.asset` links; no ChatGPT-named PNG, no scene change. Harness **117/117 → 118/118** (RED first: X18r4 and X20 failed before the menu ran). The PLACEHOLDER example of X18b and X20 is the tutorial's `KANJI_ICHI` (simpler than an in-memory item; same code path). Left for after T2: 32 茶's fps and the five in the headset.
 
-**BR2 Editor Stop, with Sebas, 15:15 (before X8).** In Play, Editor with the headset over Link, network off, a test participant (deleted after with Sebas's OK, as `SIM_1311`):
+**BR2 Editor Stop, with Sebas, 15:15 (before X8) · done:** both passes OK in the headset and in the data (`7a74e704` visit 2, `42c7f2ff` short visit `COMPLETED`); `SIM_BR2` deleted with Sebas's OK.
+
+**BR2 Editor Stop, as planned.** In Play, Editor with the headset over Link, network off, a test participant (deleted after with Sebas's OK, as `SIM_1311`):
 - **Visit 2:** a visit 2 session for that participant, evaluated session deduced from its completed visit 1 (or given by hand, D-F6-223). Unity runs S1 → SR → S3: R0 → R1 free recall with no cards and no clock → **`R`** ends it (and `R` pressed before R1 or in R2 is logged and ignored) → yes/no 10 → 15 trials `SR-*` without feedback or hints → R9 → S3.
 - **Short visit:** `shortVisit` ticked (the Thu 19 path): S1 → SR → S9 with the closing text R9'; the session ends `COMPLETED`.
 - **Checked after, read-only:** `BLOCK_R_RECALL_ENDED` once with its `elapsed_ms`, 10 `BLOCK_R_RECOGNITION_ANSWERED`, 15 `trials` rows `SR-001`…`SR-015`, nothing in `adaptation_decisions`.

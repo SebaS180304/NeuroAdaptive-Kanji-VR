@@ -80,13 +80,13 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ### Tue 17 timetable (D-F6-228): 15:15 BR2 Stop · 15:30 X8 (cut-off 16:15) · 16:15 code closed · 16:30 R3 · 16:50 network off · 17:00 T1 · then T2
 
-### [ ] BR2 Editor Stop · with Sebas, 15:15
+### [x] BR2 Editor Stop · with Sebas, 15:15 · both passes OK (`7a74e704`, `42c7f2ff`); SIM_BR2 deleted with Sebas's OK
 - [ ] Test participant; visit 2 (evaluated session deduced or by hand): S1 → SR (R0, R1 + `R`, yes/no 10, 15 `SR-*`, R9) → S3; `R` outside R1 ignored.
 - [ ] `shortVisit`: S1 → SR → S9 with R9'; session `COMPLETED`.
 - [ ] Read-only SQL: 1 `BLOCK_R_RECALL_ENDED`, 10 yes/no, 15 `SR-*` trials, nothing in `adaptation_decisions`. S1 (no S9 taps) and S6 (15 trials) seen too.
 - [ ] Test participant deleted with Sebas's OK. **Stop:** Sebas's OK; changes go to BR4.
 
-### [ ] X8 · content 31–35, the five (D-F6-222, D-F6-202) · 15:30 → 16:15 · content commit (D-F6-62, D-F6-122)
+### [x] X8 · content 31–35, the five (D-F6-222, D-F6-202) · `f4ca615` · harness 117/117 → 118/118 · fps of 32 and the headset look after T2
 - [ ] Sebas's OK recorded: the 20 hints approved, Registro of `Tabla_Autoria_Kanji_Fase2.md`, 17 Nov 14:40.
 - [ ] Only `R_NN_CODE_{P,F1,F2,M}.png`; ChatGPT-named PNGs in `pistas/` (e.g. 32's "Taburete…") and `_originales/` not copied.
 - [ ] `Reserve4` (KIN/31_KANE, CHA/32_CHA, UMA/33_UMA, SAKANA/34_SAKANA, TORI/35_TORI) + menu "reserva 31-35"; 31–32 facing, 33–35 side-on as in the FBX; no root turn on any.
