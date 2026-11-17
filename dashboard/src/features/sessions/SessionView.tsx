@@ -80,6 +80,15 @@ function Facts({ s }: { s: Detail }) {
           {CONDITION_LABEL[s.condition]}
         </span>
         <ExportMenu sessionId={s.session_id} condition={s.condition} />
+        {/* V1.12: block R runs on visits 2-4 (a visit >= 2 always has its evaluated session, D-F6-223). */}
+        {s.visit_number >= 2 && (
+          <Link
+            to={`/sessions/${s.session_id}/recall`}
+            className="type-body inline-flex h-8 items-center rounded-(--radius-pill) border border-(--color-border-strong) px-4 text-(--color-text) no-underline"
+          >
+            Free recall
+          </Link>
+        )}
       </div>
     </aside>
   )

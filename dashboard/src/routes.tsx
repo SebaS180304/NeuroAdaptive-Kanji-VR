@@ -7,6 +7,7 @@ import { PretestPick } from '@/features/pretest/PretestPick'
 import { PretestRun } from '@/features/pretest/PretestRun'
 import { RegisterParticipant } from '@/features/pretest/RegisterParticipant'
 import { SessionList } from '@/features/sessions/SessionList'
+import { FreeRecall } from '@/features/sessions/FreeRecall'
 import { SessionView } from '@/features/sessions/SessionView'
 import { TokensPage } from '@/features/tokens/TokensPage'
 
@@ -29,6 +30,8 @@ export const routes: RouteObject[] = [
   { path: 'pretest/register', element: <RegisterParticipant /> },
   // V1.10 One kanji and Complete: focus mode, no rail (the participant looks at it).
   { path: 'pretest/:participantId', element: <PretestRun /> },
+  // V1.12 Block R free recall: focus mode, no rail (D-F6-226).
+  { path: 'sessions/:sessionId/recall', element: <FreeRecall /> },
   // Development reference, outside the rail: the tokens in both themes.
   { path: 'tokens', element: <TokensPage /> },
 ]

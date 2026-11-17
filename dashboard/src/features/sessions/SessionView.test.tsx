@@ -43,6 +43,17 @@ function show(detail: Detail | null) {
 }
 
 describe('Session View header and summary (V1.2)', () => {
+  it('links to the free recall form only on visits with block R (V1.12)', async () => {
+    show({ ...ADAPTIVE, visit_number: 2 })
+    expect(await screen.findByRole('link', { name: 'Free recall' })).toHaveAttribute('href', `/sessions/${ID}/recall`)
+  })
+
+  it('has no free recall link on visit 1', async () => {
+    show(ADAPTIVE)
+    await screen.findByRole('complementary', { name: 'Session facts' })
+    expect(screen.queryByRole('link', { name: 'Free recall' })).toBeNull()
+  })
+
   it('builds the lead sentence and the facts from the data', async () => {
     show(ADAPTIVE)
     expect(await screen.findByRole('heading', { level: 1, name: 'Session a5748886' })).toBeInTheDocument()

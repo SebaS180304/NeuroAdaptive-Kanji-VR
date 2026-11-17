@@ -381,6 +381,24 @@ export interface paths {
         patch: operations["update_session_state_sessions__session_id__state_patch"];
         trace?: never;
     };
+    "/sessions/{session_id}/block-r/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recall */
+        get: operations["get_recall_sessions__session_id__block_r_recall_get"];
+        put?: never;
+        /** Save Recall */
+        post: operations["save_recall_sessions__session_id__block_r_recall_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -450,7 +468,7 @@ export interface components {
          * @description Estados S0-S10 formales (spec seccion 7).
          * @enum {string}
          */
-        GameFlowState: "S0_SESSION_INITIALIZATION" | "S1_WELCOME_ORIENTATION" | "S2_VR_TUTORIAL" | "S3_SYSTEM_VALIDATION" | "S4_EEG_BASELINE" | "S5_STANDARDIZED_LEARNING" | "S6_GUIDED_PRACTICE_CALIBRATION" | "S7_EXPERIMENTAL_RETRIEVAL" | "S8_IMMEDIATE_ASSESSMENT" | "S9_SESSION_SUMMARY" | "S10_HCI_SELF_REPORT";
+        GameFlowState: "S0_SESSION_INITIALIZATION" | "S1_WELCOME_ORIENTATION" | "S2_VR_TUTORIAL" | "SR_DELAYED_RETENTION" | "S3_SYSTEM_VALIDATION" | "S4_EEG_BASELINE" | "S5_STANDARDIZED_LEARNING" | "S6_GUIDED_PRACTICE_CALIBRATION" | "S7_EXPERIMENTAL_RETRIEVAL" | "S8_IMMEDIATE_ASSESSMENT" | "S9_SESSION_SUMMARY" | "S10_HCI_SELF_REPORT";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -851,6 +869,52 @@ export interface components {
             /** Session Elapsed Ms */
             session_elapsed_ms: number | null;
         };
+        /** RecallForm */
+        RecallForm: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Participant Code */
+            participant_code: string;
+            /** Visit Number */
+            visit_number: number;
+            /**
+             * Evaluated Session Id
+             * Format: uuid
+             */
+            evaluated_session_id: string;
+            /** Evaluated Kanji Set */
+            evaluated_kanji_set: string | null;
+            /** Learned At */
+            learned_at: string | null;
+            /** Kanji */
+            kanji: components["schemas"]["TaughtKanji"][];
+            /** Board Text */
+            board_text: string[];
+            saved: components["schemas"]["SavedRecall"] | null;
+        };
+        /** RecallItem */
+        RecallItem: {
+            /** Kanji Id */
+            kanji_id: string;
+            /** Meaning */
+            meaning: boolean;
+            /** Reading */
+            reading: boolean;
+            /** Order */
+            order?: number | null;
+            /** Said */
+            said?: string | null;
+        };
+        /** RecallSave */
+        RecallSave: {
+            /** Items */
+            items: components["schemas"]["RecallItem"][];
+            /** Anything Else */
+            anything_else?: string | null;
+        };
         /**
          * ResearchAdaptation
          * @description One decision of the Adaptations tab (V1.5): v_adaptations plus adaptation_decisions.
@@ -1208,6 +1272,20 @@ export interface components {
             /** Thresholds */
             thresholds: Record<string, unknown> | null;
         };
+        /** SavedRecall */
+        SavedRecall: {
+            /**
+             * Saved At
+             * Format: date-time
+             */
+            saved_at: string;
+            /** Recalled */
+            recalled: number;
+            /** Items */
+            items: components["schemas"]["RecallItem"][];
+            /** Anything Else */
+            anything_else: string | null;
+        };
         /** SessionCreate */
         SessionCreate: {
             /**
@@ -1216,15 +1294,20 @@ export interface components {
              */
             participant_id: string;
             condition: components["schemas"]["ExperimentalCondition"];
-            /** Assigned Kanji Set */
-            assigned_kanji_set?: string | null;
+            /**
+             * Assigned Kanji Set
+             * @enum {string}
+             */
+            assigned_kanji_set: "A" | "B" | "C";
             /**
              * Visit Number
              * @default 1
              */
             visit_number: number;
             /** Random Seed */
-            random_seed?: string | null;
+            random_seed: string;
+            /** Evaluated Session Id */
+            evaluated_session_id?: string | null;
             /** Software Version */
             software_version?: string | null;
             /** Experiment Config Version */
@@ -1279,6 +1362,12 @@ export interface components {
             created_at: string;
             /** Kanji Items */
             kanji_items?: string[] | null;
+            /** Evaluated Session Id */
+            evaluated_session_id?: string | null;
+            /** Evaluated Kanji Set */
+            evaluated_kanji_set?: string | null;
+            /** Evaluated Kanji Items */
+            evaluated_kanji_items?: string[] | null;
         };
         /**
          * SessionStateUpdate
@@ -1343,6 +1432,17 @@ export interface components {
             original: string;
             /** Substitute */
             substitute: string;
+        };
+        /** TaughtKanji */
+        TaughtKanji: {
+            /** Kanji Id */
+            kanji_id: string;
+            /** Kanji */
+            kanji: string;
+            /** Meaning */
+            meaning: string;
+            /** Reading */
+            reading: string;
         };
         /**
          * TimelineAdaptation
@@ -2152,6 +2252,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_recall_sessions__session_id__block_r_recall_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallForm"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_recall_sessions__session_id__block_r_recall_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecallSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallForm"];
                 };
             };
             /** @description Validation Error */
