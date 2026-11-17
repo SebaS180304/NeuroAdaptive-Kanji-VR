@@ -1,6 +1,6 @@
 # Todo: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Plan in `tasks/plan.md`. Aligned up to **D-F6-227**; Tue 17 14:55: test with the cap at 17:00, T01 (D-F6-228 per Sebas, not yet on the board). **Waiting for Sebas's OK.** **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
+Plan in `tasks/plan.md`. Aligned up to **D-F6-227**; Tue 17 14:55: test with the cap at 17:00, T01 (D-F6-228); D-F6-229, D-F6-230. **Sebas's OK for `/build`.** **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
 Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
@@ -100,6 +100,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 ### [ ] T1 · test with the cap, 17:00 · T01, MULTIMODAL_ADAPTIVE, set A, visit 1 (D-F6-228)
 - [ ] 16:30 R3; 16:50 network off; consent and pre-test in the portal; kit line by line; 5 taps in S3, none in S9.
 - [ ] At S9, before LabRecorder's Stop: live `eeg_epochs` to `Claude outputs/eeg_export_17nov/live_epochs.csv` (read-only).
+- [ ] Consent v1.3 on its own sheet; move head and cough before S3 (D-F6-216); red channel fixed before S4 (D-F6-213).
 - [ ] **Done when:** S1 → S9, `autorun` exit 0, both streams. **Stop:** Sebas writes it offline.
 
 ### [ ] T2 · after the test · read-only; the recording stays on this PC
@@ -107,7 +108,8 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] G1: `grid_origin_lsl` set; live CSV = `fill_from_xdf` rows (`epoch_index`, `lsl_start`, `chunk_clean`).
 - [ ] S1: robust spread ≤ 50 ms, 0 S9 taps, drift empty "no S9 taps (D-F6-217)".
 - [ ] S6: 15 S6 trials; block 4 reference chosen; block 7 A-7.
-- [ ] `eeg_export_17nov/` as on 16 Nov (+ `live_epochs.csv`), no XDF. **Stop:** Sebas.
+- [ ] `eeg_export_17nov/` as on 16 Nov (+ `live_epochs.csv`), no XDF.
+- [ ] T01 kept as a test (code `T##`), out of the pilot analysis; deleted only if T01 asks (D-F6-230 (2)). **Stop:** Sebas.
 
 ## Wed 18 · AI workshop · block R continues
 
@@ -122,7 +124,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Editor, test participant: portal → visit 2 → Play → block R with the recall marked in V1.12 → S9; BR7's SQL on it; participant deleted with Sebas's OK. **Stop.**
 
 ### [ ] BR5 · Thu kit (docs)
-- [ ] PC list, network off (D-F6-193), visit 2 creation (P01, evaluated `65af2fe4`, `shortVisit`), S1 + D-F6-203 sentence, block R steps (V1.12 with D-F6-225; "Anything else you remember?" once; `R` when they are done; no clock, D-F6-212), **debriefing at the end** (Part B step 3, D-F6-192), close, SQL after.
+- [ ] S1 → block R → close, no S2 (D-F6-229); PC list, network off (D-F6-193), visit 2 creation (P01, evaluated `65af2fe4`, `shortVisit`), S1 + D-F6-203 sentence, block R steps (V1.12 with D-F6-225; "Anything else you remember?" once; `R` when they are done; no clock, D-F6-212), **debriefing at the end** (Part B step 3, D-F6-192), close, SQL after.
 - [ ] **Stop:** Sebas reads it.
 
 ## Thu 19 · visit 2 test at 12:00, then CH1
@@ -131,7 +133,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Nothing changed in `docs_proyecto/` since Tue (else the export again); harness all PASS; inputs marked real. **Stop.**
 
 ### [ ] BR7 · visit 2 test, 12:00 (D-F6-207)
-- [ ] P01, code only; short visit: S1 → block R on set A → R9' → debriefing → close.
+- [ ] P01, code only; short visit: S1 → block R on set A → R9' → debriefing → close, no S2 (D-F6-229).
 - [ ] **Done when:** visit 2 points at `65af2fe4`; 1 recall end, 10 yes/no, 15 `SR-*`, recall saved in V1.12; nothing in `adaptation_decisions`; findings recorded.
 - [ ] Cannot come → Fri 20 morning; last resort Mon 23, interval declared. **Stop.**
 
