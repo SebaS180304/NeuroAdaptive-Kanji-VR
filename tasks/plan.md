@@ -1,6 +1,6 @@
 # Implementation Plan: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Written Mon 16 Nov 2026; **updated Tue 17 Nov 16:00, aligned up to D-F6-227 · rest of the week waiting for Sebas's OK** (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
+Written Mon 16 Nov 2026; **updated Tue 17 Nov 14:55: test with the cap at 17:00, participant T01 (D-F6-228 per Sebas; not yet on the mirror's board, which stops at D-F6-227) · waiting for Sebas's OK**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
 Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -29,7 +29,8 @@ Tue 17                                      ▼
                                                                           ▼
                      ──► S1 sync: S3 taps only, robust spread (D-F6-217) ──► S6 15 trials + reference min 15 (D-F6-218)
                      ──► BR0 design ──► BR1 data ──► BR2 block R in VR (Editor Stop)
-                     ──► X8 content 31–35, the five (hints approved 14:40) ──► BR2 Editor Stop with Sebas (visit 2, R, short visit)
+        15:15 BR2 Editor Stop with Sebas ──► 15:30 X8, the five (cut-off 16:15) ──► 16:15 code closed ──► 16:30 R3 ──► 16:50 network off
+        17:00 T1 test with the cap, T01 (MULTIMODAL_ADAPTIVE, set A, not in the study) ──► T2 analysis: G1, S1, S6 first real check, export
 Wed 18                                                  │
                      BR3 portal recall, V1.12 (D-F6-226) ──► BR4 short visit end to end ──► BR5 Thu kit
 Thu 19               BR6 last check of the inputs ──► 12:00 BR7 visit 2 test, dry-run participant (D-F6-207)
@@ -111,21 +112,48 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 
 **Done by 16:00 (board, "Estado mar 17, 16:00"):** V4 (OK), U0 (12:32), G1 `676e3d9`, G2 `c34f596`, S1 `f7fe91c`/`1639b3a`, S6 `0196bbf`/`6932465`, BR0 (D-F6-223), BR1 `68adc7f`, BR2 `9adf8a0`/`3fd8870`, harness poses `2aaa81f`; 439 backend tests, harness 117/117.
 
-**X8 · content 31–35, the five kanji (D-F6-222, D-F6-202).** Content, exception to the VR freeze (D-F6-62, D-F6-122); no rule touched. Same path as X7 (`e8d784a`, `cb64881`). ≈ 1 h.
+**Tue 17 from 14:55 · test with the cap at 17:00 (D-F6-228, per Sebas).** External participant **T01**, not in the study: `MULTIMODAL_ADAPTIVE`, set A, visit 1 (no block R). Times:
+
+| When | What | Stop / condition |
+| --- | --- | --- |
+| until 15:15 | This plan | Sebas's OK |
+| 15:15 | **BR2 Editor Stop** with Sebas (below) | Sebas's OK |
+| 15:30 → 16:15 | **X8**, the five kanji (below) | **Cut-off 16:15:** if X8 is not committed with the harness all PASS, it is set aside without a commit (`git stash -u -m "X8 wip"`) and resumes after the test |
+| 16:15 | **C0 · code closed** | `git status` clean; `docker compose restart backend` and `/health`; Unity closed and opened again; nothing changes until T2 ends |
+| 16:30 | **R3** of the kit (as on 16 Nov) | Sebas sees it ticked |
+| 16:50 | Network off | — |
+| 17:00 | **T1 · the test session** | written offline by Sebas |
+| after | **T2 · analysis** (below) | Sebas |
+
+**X8 · content 31–35, the five kanji (D-F6-222, D-F6-202), 15:30 → 16:15.** Content, exception to the VR freeze (D-F6-62, D-F6-122); no rule touched. Same path as X7 (`e8d784a`, `cb64881`). ≈ 1 h.
 - **Sebas's OK, recorded:** the 20 hints of 31 金, 32 茶, 33 馬, 34 魚 and 35 鳥 approved by Sebas, Registro of `Tabla_Autoria_Kanji_Fase2.md`, 17 Nov 14:40 (`docs_proyecto/`). The five FBX are in `KanjiLessonAssets/NN_*/export/`, approved (D-F6-222).
 - **What counts as a hint:** only `NN_*/pistas/R_NN_CODE_{P,F1,F2,M}.png` (the menu copies those exact names). The PNGs named by ChatGPT that are still in `pistas/` (today: `32_CHA/pistas/Taburete de madera con cojín azul grisáceo.png`) and `_originales/` are not copied.
 - **What changes:** `SetAObjectsIntegration.cs` gets `Reserve4` = (`KANJI_KIN`, `31_KANE`), (`KANJI_CHA`, `32_CHA`), (`KANJI_UMA`, `33_UMA`), (`KANJI_SAKANA`, `34_SAKANA`), (`KANJI_TORI`, `35_TORI`) and the menu "Integrar objetos y pistas de la reserva 31-35" (priority 309): `Integrate("R", Reserve4)` + `IntegrateHints("R", Reserve4)`, all or none like a set (D-F6-26). **Orientation:** 31 and 32 face the player; 33, 34 and 35 are side-on, already oriented in their FBX; **none gets the root turn** (the −90° X of 02, 14, 18 and 19 stays only for those). FBX, `.meta`, prefabs, hints and the `KANJI_*.asset` links come from the menu, never by hand.
 - **Harness:** `X18r4` checks the five against their FICHA envelopes in Unity axes, within 1 cm, centred pivot, no collider, no animation, `BLENDER_FBX`: 31 (0.24, 0.22, 0.14) · 32 (0.24, 0.20, 0.18) · 33 (0.279, 0.254, 0.090) · 34 (0.28, 0.14, 0.08) · 35 (0.24, 0.18, 0.08). X20 counts **35/35** AUTHORED. X18b and X20 lose their PLACEHOLDER example (`KANJI_KIN`): no content kanji is left without object and images, so both use an in-memory `KanjiLearningItem` without them, which tests the same code path.
-- **32 茶 fps (6 706 tris, 3–5× the reserve):** with the headset over Link, in Play (nothing saved), 32's prefab where S5 shows the object, 60 s, then 31's (278 tris) in the same place; `FrameRateLog` gives mean fps and frames > 20 ms for each. Result in the draft. If 32 drops frames that 31 does not, Sebas decides (decimate in Modelado, or keep it: 32 is reserve and only shows through a pre-test substitution).
-- **How it is tested:** harness **all PASS, count before → after (117/117 → 118/118)**; the five seen on the board in the Editor at BR2's Stop.
-- **Commit:** `content(unity): reserve 31-35 objects and hints (X8, D-F6-222)`, with the count and the five; then `tasks/` and the draft. **Stop:** Sebas's OK at the Editor Stop below.
+- **32 茶 fps (6 706 tris, 3–5× the reserve), after T2 (Play only, no code):** with the headset over Link, in Play (nothing saved), 32's prefab where S5 shows the object, 60 s, then 31's (278 tris) in the same place; `FrameRateLog` gives mean fps and frames > 20 ms for each. Result in the draft. If 32 drops frames that 31 does not, Sebas decides (decimate in Modelado, or keep it: 32 is reserve and only shows through a pre-test substitution).
+- **How it is tested:** harness **all PASS, count before → after (117/117 → 118/118)**; the five seen on the board in the Editor with the fps check, after T2.
+- **Commit:** `content(unity): reserve 31-35 objects and hints (X8, D-F6-222)`, with the count and the five; then `tasks/` and the draft. **Stop:** the 16:15 cut-off; Sebas sees the five after T2.
 
-**BR2 Editor Stop, with Sebas (after X8).** In Play, Editor with the headset over Link, network off, a test participant (deleted after with Sebas's OK, as `SIM_1311`):
+**BR2 Editor Stop, with Sebas, 15:15 (before X8).** In Play, Editor with the headset over Link, network off, a test participant (deleted after with Sebas's OK, as `SIM_1311`):
 - **Visit 2:** a visit 2 session for that participant, evaluated session deduced from its completed visit 1 (or given by hand, D-F6-223). Unity runs S1 → SR → S3: R0 → R1 free recall with no cards and no clock → **`R`** ends it (and `R` pressed before R1 or in R2 is logged and ignored) → yes/no 10 → 15 trials `SR-*` without feedback or hints → R9 → S3.
 - **Short visit:** `shortVisit` ticked (the Thu 19 path): S1 → SR → S9 with the closing text R9'; the session ends `COMPLETED`.
 - **Checked after, read-only:** `BLOCK_R_RECALL_ENDED` once with its `elapsed_ms`, 10 `BLOCK_R_RECOGNITION_ANSWERED`, 15 `trials` rows `SR-001`…`SR-015`, nothing in `adaptation_decisions`.
 - The Unity parts of S1 (no S9 taps) and S6 (15 trials) are seen in the same sitting.
-- **Stop:** Sebas's OK. Anything to change is written down and fixed before BR4.
+- **Stop:** Sebas's OK. Anything to change is written down and fixed in BR4, not before the test (code closes at 16:15).
+
+**C0 · code closed, 16:15.** `git status` clean (X8 committed or stashed); `docker compose restart backend`, `/health`; `alembic current` = 0019; Unity closed and opened again (scene from disk, nothing dirty). From here nothing is changed or restarted until T2 has finished (D-F6-153).
+
+**T1 · test session with the cap, 17:00 (D-F6-228).** T01: consent and pre-test in the portal (a session needs it), set A, `MULTIMODAL_ADAPTIVE`, visit 1, kit of 16 Nov line by line (R3 at 16:30, network off at 16:50, `autorun` before S3, 5 taps in S3 and **none in S9**, D-F6-217). **At S9, before LabRecorder's Stop:** the live epochs are copied, read-only, to `Claude outputs/eeg_export_17nov/live_epochs.csv` (`\copy (SELECT * FROM eeg_epochs WHERE session_id = …) TO …`), because `autorun`'s `fill_from_xdf` replaces them with the recording's (D-F6-156). **Done when:** S1 → S9, `autorun` exit 0, *both streams recorded*. **Stop:** Sebas writes it offline.
+
+**T2 · after the test, the first real check of G1, S1 and S6.** Read-only on the database; the recording never leaves this PC.
+- `autorun` log, the **four SQL** of the kit; `replay --xdf` matches the stored decisions (run on this PC: the container does not see the PC's hostname, G2).
+- **G1:** `eeg_sessions.grid_origin_lsl` is not null; for every epoch in both, the live CSV and the rows `fill_from_xdf` wrote have the **same `epoch_index` and `lsl_start`** (and the same `chunk_clean`). The count of epochs only in one of the two is noted.
+- **S1:** `sync_detail.spread_rule` = "MAD x 1.4826, every clear tap", robust spread ≤ 50 ms, 0 S9 taps, drift empty with the reason "no S9 taps (D-F6-217)"; `verify_eeg.sql` block 2 says "corrected, no drift measured".
+- **S6:** 15 S6 trials in `trials` (full cross 5 × 3); `verify_eeg.sql` block 4 says which reference was chosen (S6 with ≥ 15 non-POOR, or S4 fallback, marked) and block 7 gives A-7 (S4 alpha and P7 ≥ 60 %).
+- **Export for the EEG chat**, as on 16 Nov: `Claude outputs/eeg_export_17nov/` with `eeg_sessions`, `eeg_epochs`, `adaptation_decisions`, `eeg_status`, `channels_30s.csv`, `live_epochs.csv` and a README; **the XDF is not copied** (it stays in `Pruebas_EEG\sub-T01\`).
+- Then the 32 茶 fps check of X8 (and X8 itself if it was stashed).
+- **Done when:** each check has a line in the draft with its figure; findings say "blocks the pilot yes/no". **Stop:** Sebas.
+
 
 ### Wed 18 · AI workshop (time to be confirmed) · block R continues
 

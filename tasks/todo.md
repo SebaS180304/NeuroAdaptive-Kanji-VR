@@ -1,6 +1,6 @@
 # Todo: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Plan in `tasks/plan.md`. Aligned up to **D-F6-227** (updated Tue 17, 16:00). **X8, the BR2 Stop and Wed–Fri wait for Sebas's OK.** **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
+Plan in `tasks/plan.md`. Aligned up to **D-F6-227**; Tue 17 14:55: test with the cap at 17:00, T01 (D-F6-228 per Sebas, not yet on the board). **Waiting for Sebas's OK.** **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
 Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
@@ -78,19 +78,36 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] EditMode test: `R` acts only in part 1.
 - [ ] Harness test; seen in the Editor with Sebas; commit body "block R, exception D-F6-125". **Stop.**
 
-### [ ] X8 · content 31–35, the five (D-F6-222, D-F6-202) · content commit (D-F6-62, D-F6-122)
+### Tue 17 timetable (D-F6-228): 15:15 BR2 Stop · 15:30 X8 (cut-off 16:15) · 16:15 code closed · 16:30 R3 · 16:50 network off · 17:00 T1 · then T2
+
+### [ ] BR2 Editor Stop · with Sebas, 15:15
+- [ ] Test participant; visit 2 (evaluated session deduced or by hand): S1 → SR (R0, R1 + `R`, yes/no 10, 15 `SR-*`, R9) → S3; `R` outside R1 ignored.
+- [ ] `shortVisit`: S1 → SR → S9 with R9'; session `COMPLETED`.
+- [ ] Read-only SQL: 1 `BLOCK_R_RECALL_ENDED`, 10 yes/no, 15 `SR-*` trials, nothing in `adaptation_decisions`. S1 (no S9 taps) and S6 (15 trials) seen too.
+- [ ] Test participant deleted with Sebas's OK. **Stop:** Sebas's OK; changes go to BR4.
+
+### [ ] X8 · content 31–35, the five (D-F6-222, D-F6-202) · 15:30 → 16:15 · content commit (D-F6-62, D-F6-122)
 - [ ] Sebas's OK recorded: the 20 hints approved, Registro of `Tabla_Autoria_Kanji_Fase2.md`, 17 Nov 14:40.
 - [ ] Only `R_NN_CODE_{P,F1,F2,M}.png`; ChatGPT-named PNGs in `pistas/` (e.g. 32's "Taburete…") and `_originales/` not copied.
 - [ ] `Reserve4` (KIN/31_KANE, CHA/32_CHA, UMA/33_UMA, SAKANA/34_SAKANA, TORI/35_TORI) + menu "reserva 31-35"; 31–32 facing, 33–35 side-on as in the FBX; no root turn on any.
 - [ ] Harness: `X18r4` with the five FICHA envelopes; X20 35/35 AUTHORED; X18b/X20 PLACEHOLDER example on an in-memory item. **All PASS, 117/117 → 118/118.**
-- [ ] 32 茶 fps in the headset against 31 (`FrameRateLog`, 60 s each, Play only); result in the draft.
-- [ ] Commit with the five and the count; `tasks/` and the draft. **Stop** at the Editor Stop.
+- [ ] Commit with the five and the count. **16:15 not done → `git stash -u -m "X8 wip"`, resume after T2.**
+- [ ] After T2: 32 茶 fps in the headset against 31 (`FrameRateLog`, 60 s each, Play only); the five seen with Sebas.
 
-### [ ] BR2 Editor Stop · with Sebas, after X8
-- [ ] Test participant; visit 2 (evaluated session deduced or by hand): S1 → SR (R0, R1 + `R`, yes/no 10, 15 `SR-*`, R9) → S3; `R` outside R1 ignored.
-- [ ] `shortVisit`: S1 → SR → S9 with R9'; session `COMPLETED`.
-- [ ] Read-only SQL: 1 `BLOCK_R_RECALL_ENDED`, 10 yes/no, 15 `SR-*` trials, nothing in `adaptation_decisions`. S1 (no S9 taps) and S6 (15 trials) seen too.
-- [ ] Test participant deleted with Sebas's OK. **Stop:** Sebas's OK; changes noted for BR4.
+### [ ] C0 · code closed, 16:15
+- [ ] `git status` clean; backend restarted, `/health`; `alembic current` 0019; Unity closed and reopened. Nothing changes until T2 ends.
+
+### [ ] T1 · test with the cap, 17:00 · T01, MULTIMODAL_ADAPTIVE, set A, visit 1 (D-F6-228)
+- [ ] 16:30 R3; 16:50 network off; consent and pre-test in the portal; kit line by line; 5 taps in S3, none in S9.
+- [ ] At S9, before LabRecorder's Stop: live `eeg_epochs` to `Claude outputs/eeg_export_17nov/live_epochs.csv` (read-only).
+- [ ] **Done when:** S1 → S9, `autorun` exit 0, both streams. **Stop:** Sebas writes it offline.
+
+### [ ] T2 · after the test · read-only; the recording stays on this PC
+- [ ] `autorun` log; the four SQL; `replay --xdf` on this PC matches the decisions.
+- [ ] G1: `grid_origin_lsl` set; live CSV = `fill_from_xdf` rows (`epoch_index`, `lsl_start`, `chunk_clean`).
+- [ ] S1: robust spread ≤ 50 ms, 0 S9 taps, drift empty "no S9 taps (D-F6-217)".
+- [ ] S6: 15 S6 trials; block 4 reference chosen; block 7 A-7.
+- [ ] `eeg_export_17nov/` as on 16 Nov (+ `live_epochs.csv`), no XDF. **Stop:** Sebas.
 
 ## Wed 18 · AI workshop · block R continues
 
