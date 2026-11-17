@@ -111,3 +111,78 @@ def test_block_r_never_reaches_the_engine() -> None:
     state = SessionAdaptationState("BEHAVIOR_ADAPTIVE")
     assert all(state.feed(ev["event_type"], ev["payload"]) is None for ev in BLOCK_R)
     assert state.decisions == {}
+
+
+# ---------- BR3: the free recall form (V1.12, D-F6-226; D-F6-225; D-F6-230 (1)) ----------
+
+async def _visit2(client, pretested, code: str):
+    pid = await pretested(code)
+    v1 = (await _session(client, pid, 1, "A")).json()["id"]
+    await _status(v1, "COMPLETED")
+    v2 = (await _session(client, pid, 2, "B")).json()["id"]
+    return v1, v2
+
+
+def _marks(form: dict, marked: dict[str, tuple[bool, bool, int]]) -> dict:
+    """marked: kanji_id -> (meaning, reading, order); the rest unmarked."""
+    items = [{"kanji_id": k["kanji_id"], "meaning": marked.get(k["kanji_id"], (False, False, None))[0],
+              "reading": marked.get(k["kanji_id"], (False, False, None))[1],
+              "order": marked.get(k["kanji_id"], (False, False, None))[2], "said": None} for k in form["kanji"]]
+    return {"items": items, "anything_else": None}
+
+
+@pytest.mark.asyncio
+async def test_the_form_shows_the_evaluated_sessions_five_kanji_and_nothing_saved_yet(client, pretested) -> None:
+    v1, v2 = await _visit2(client, pretested, "TEST_BR_G")
+    form = (await client.get(f"/sessions/{v2}/block-r/recall")).json()
+    assert form["evaluated_session_id"] == v1 and form["evaluated_kanji_set"] == "A" and form["visit_number"] == 2
+    assert [k["kanji"] for k in form["kanji"]] == ["月", "車", "火", "竹", "石"]
+    assert form["kanji"][0]["meaning"] and form["kanji"][0]["reading"]        # "Taught as"
+    assert form["participant_code"] == "TEST_BR_G" and form["saved"] is None  # never saved = not recorded (D9)
+    assert form["board_text"][0].startswith("Last time you learned some kanji.")  # R1 as the VR shows it
+
+
+@pytest.mark.asyncio
+async def test_saving_stores_the_marks_and_a_second_save_replaces_them(client, pretested) -> None:
+    _, v2 = await _visit2(client, pretested, "TEST_BR_H")
+    form = (await client.get(f"/sessions/{v2}/block-r/recall")).json()
+    first, second = form["kanji"][0]["kanji_id"], form["kanji"][3]["kanji_id"]
+    body = _marks(form, {first: (True, False, 1), second: (True, True, 2)})
+    body["items"][3]["said"] = "bamboo? or tree"
+    saved = (await client.post(f"/sessions/{v2}/block-r/recall", json=body)).json()["saved"]
+    assert saved["recalled"] == 2 and saved["saved_at"]
+    again = (await client.post(f"/sessions/{v2}/block-r/recall", json=_marks(form, {second: (False, True, 1)}))).json()
+    assert again["saved"]["recalled"] == 1
+    read = (await client.get(f"/sessions/{v2}/block-r/recall")).json()["saved"]
+    assert [(i["meaning"], i["reading"], i["order"]) for i in read["items"] if i["kanji_id"] == second] == [(False, True, 1)]
+    async with AsyncSessionLocal() as db:
+        n = (await db.execute(text("SELECT count(*) FROM session_events WHERE session_id = :s AND event_type = 'BLOCK_R_FREE_RECALL'"),
+                              {"s": v2})).scalar_one()
+    assert n == 2                                                            # every save kept, the last one wins
+
+
+@pytest.mark.asyncio
+async def test_saved_with_no_marks_is_nothing_recalled_not_never_saved(client, pretested) -> None:
+    _, v2 = await _visit2(client, pretested, "TEST_BR_I")
+    form = (await client.get(f"/sessions/{v2}/block-r/recall")).json()
+    saved = (await client.post(f"/sessions/{v2}/block-r/recall", json=_marks(form, {}))).json()["saved"]
+    assert saved is not None and saved["recalled"] == 0
+
+
+@pytest.mark.asyncio
+async def test_the_marks_must_be_the_evaluated_kanji_once_with_a_coherent_order(client, pretested) -> None:
+    _, v2 = await _visit2(client, pretested, "TEST_BR_J")
+    form = (await client.get(f"/sessions/{v2}/block-r/recall")).json()
+    ok = _marks(form, {})
+    wrong_kanji = {**ok, "items": ok["items"][:4] + [{**ok["items"][4], "kanji_id": "KANJI_YAMA"}]}
+    order_without_mark = _marks(form, {form["kanji"][0]["kanji_id"]: (False, False, 1)})
+    mark_without_order = _marks(form, {form["kanji"][0]["kanji_id"]: (True, False, None)})
+    for bad in (wrong_kanji, order_without_mark, mark_without_order):
+        assert (await client.post(f"/sessions/{v2}/block-r/recall", json=bad)).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_a_session_without_block_r_has_no_recall_form(client, pretested) -> None:
+    pid = await pretested("TEST_BR_K")
+    v1 = (await _session(client, pid, 1)).json()["id"]
+    assert (await client.get(f"/sessions/{v1}/block-r/recall")).status_code == 409
