@@ -38,8 +38,11 @@ values come from the *Design System* artifact that Sebas validates.
 ## Rules that do not bend
 
 1. **Read-only.** The `/research` router has `GET` endpoints only. The frontend
-   never connects to PostgreSQL directly. One exception: the kanji pre-test
-   screen (V1.10) posts to the existing `/participants/{id}/pretest` routes.
+   never connects to PostgreSQL directly. The portal writes in exactly two
+   places, never through `/research` (D-F6-230 (1)): the kanji pre-test screen
+   (V1.10) posts to the existing `/participants/{id}/pretest` routes, and block
+   R's free recall form (V1.12) posts to `/sessions/{id}/block-r/recall`. A live
+   monitor, if approved, is read-only and does not change this.
 2. **The frontend never reads `session_events.payload`.** It reads projected
    tables, views (`v_adaptations`, `v_environment_intervals`,
    `v_trial_behavior`) and `trial_timeline()`. Missing data is added in the
