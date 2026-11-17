@@ -14,6 +14,9 @@ the same movement, 5 times: each pull is a SYNC_TAP marker, each strike a spike 
     kept in sync_detail and corrects nothing (it carries the ≈ 110 ms the strike takes to rise).
 Offset = median lag of the clear S3 taps; drift = median of S9 − median of S3. With fewer than 3 clear taps
 in S3 there is no offset; in S9 the offset stays and the session is marked by the reason, without drift.
+Spread = MAD × 1.4826 of every clear lag around their median (D-F6-217: one wild tap does not move it as np.std
+did; the dry run gives 17.8 ms). From the pilot on there are no S9 taps (D-F6-217), so it is the S3 taps' spread,
+and there is no drift, with the reason "no S9 taps", as D-F6-176 allows.
 F4 §2.4 asks spread ≤ 50 ms, drift < 50 ms and |offset| ≤ 250 ms; that check is verify_eeg.sql's, not this file's.
 """
 
@@ -74,16 +77,19 @@ def compute(cz: np.ndarray, ts: np.ndarray, markers: list[tuple[float, dict]]):
 
     reasons = [] if taps else ["no SYNC_TAP markers in the recording"]
     for p in PHASES:
-        if taps and med[p] is None:
+        if taps and p == "S9" and not any(d["phase"] == p for d in taps):
+            reasons.append("no S9 taps (D-F6-217)")
+        elif taps and med[p] is None:
             n = sum(d["phase"] == p for d in taps)
             reasons.append(f"{p}: {len(lags[p])} of {n} taps with a clear peak (< {MIN_TAPS})")
     offset = med["S3"]
     drift = round(med["S9"] - med["S3"], 1) if offset is not None and med["S9"] is not None else None
-    spread = round(float(np.std(lags["S3"] + lags["S9"], ddof=1)), 1) if offset is not None else None
+    clear = np.asarray(lags["S3"] + lags["S9"])
+    spread = round(MAD_TO_SD * float(np.median(np.abs(clear - np.median(clear)))), 1) if offset is not None else None
     detail = {"window_ms": int(WINDOW_S * 1000), "pre_s": PRE_S, "k_mad": K_MAD, "onset_fraction": ONSET_FRACTION,
               "anchor_fraction": ANCHOR_FRACTION,
               "onset_noise_window_ms": [int(NOISE_FROM_S * 1000), int(NOISE_TO_S * 1000)],
-              "min_taps": MIN_TAPS, "median_lag_ms": med, "spread_ms": spread, "taps": taps,
+              "min_taps": MIN_TAPS, "median_lag_ms": med, "spread_ms": spread, "spread_rule": "MAD x 1.4826, every clear tap", "taps": taps,
               "reason": "; ".join(reasons) or None}
     return offset, drift, detail
 

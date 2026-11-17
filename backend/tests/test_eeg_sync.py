@@ -41,7 +41,9 @@ def test_offset_is_the_median_s3_lag_and_drift_the_s9_median_minus_it() -> None:
     offset, drift, detail = sync.compute(x, ts, _taps("S3", S3) + _taps("S9", S9))
     assert offset == pytest.approx(48.0, abs=ONSET_TOL)  # the 200 ms outlier does not move the median
     assert drift == pytest.approx(68.0 - 48.0, abs=8.1)
-    assert detail["spread_ms"] == pytest.approx(46.4, abs=6)  # over every clear tap, S3 and S9
+    # D-F6-217: MAD x 1.4826 of every clear lag; the 200 ms outlier barely moves it (np.std gave 46 ms)
+    assert detail["spread_ms"] == pytest.approx(1.4826 * 12.0, abs=6)
+    assert detail["spread_rule"] == "MAD x 1.4826, every clear tap"
     assert detail["reason"] is None and len(detail["taps"]) == 10 and all(t["valid"] for t in detail["taps"])
     assert detail["window_ms"] == 500 and detail["k_mad"] == 5.0 and detail["pre_s"] == 2.0  # the rule travels
 
@@ -90,6 +92,13 @@ def test_s9_short_keeps_the_offset_but_not_the_drift() -> None:
     offset, drift, detail = sync.compute(x, ts, _taps("S3", S3) + _taps("S9", S9))
     assert offset == pytest.approx(50.0, abs=ONSET_TOL) and drift is None
     assert "S9" in detail["reason"]
+
+
+def test_without_s9_taps_there_is_no_drift_and_the_reason_says_why() -> None:  # D-F6-217
+    x, ts = _cz([t + 0.05 for t in S3])
+    offset, drift, detail = sync.compute(x, ts, _taps("S3", S3))
+    assert offset == pytest.approx(50.0, abs=ONSET_TOL) and drift is None
+    assert detail["reason"] == "no S9 taps (D-F6-217)"
 
 
 def test_no_sync_taps_at_all() -> None:

@@ -24,8 +24,8 @@ SELECT left(t.id::text, 8) AS session, t.condition, t.status,
        (SELECT count(*) FROM eeg_epochs p WHERE p.session_id = t.id) AS epochs
 FROM target t ORDER BY 1;
 
-\echo '== 2 · Sync (F4 §2.4, D-F6-161): spread <= 50 ms, |drift| < 50 ms, |offset| <= 250 ms. No offset: session not corrected; S9 short: corrected and marked (D-F6-176)'
-SELECT left(t.id::text, 8) AS session, t.sync_offset_ms AS offset_ms, (t.sync_detail ->> 'spread_ms')::numeric AS spread_ms,
+\echo '== 2 · Sync (F4 §2.4, D-F6-161, D-F6-217): robust spread (MAD x 1.4826 of the clear lags) <= 50 ms, |drift| < 50 ms, |offset| <= 250 ms. No offset: session not corrected; no S9 taps (pilot): no drift measured (D-F6-176). Sessions before 17 Nov: spread_ms is the old np.std until sync.py is re-run'
+SELECT left(t.id::text, 8) AS session, t.sync_offset_ms AS offset_ms, (t.sync_detail ->> 'spread_ms')::numeric AS robust_spread_ms,
        t.sync_drift_ms AS drift_ms,
        CASE WHEN t.sync_offset_ms IS NULL THEN 'n/a'
             WHEN abs(t.sync_offset_ms) <= 250 THEN 'ok' ELSE 'OUT' END AS offset_check,
@@ -34,7 +34,7 @@ SELECT left(t.id::text, 8) AS session, t.sync_offset_ms AS offset_ms, (t.sync_de
        CASE WHEN t.sync_drift_ms IS NULL THEN 'n/a'
             WHEN abs(t.sync_drift_ms) < 50 THEN 'ok' ELSE 'OUT' END AS drift_check,
        CASE WHEN t.sync_offset_ms IS NULL THEN 'NOT CORRECTED'
-            WHEN t.sync_drift_ms IS NULL THEN 'corrected, MARKED (S9)' ELSE 'corrected' END AS correction,
+            WHEN t.sync_drift_ms IS NULL THEN 'corrected, no drift measured' ELSE 'corrected' END AS correction,
        (SELECT count(*) FROM jsonb_array_elements(t.sync_detail -> 'taps') x WHERE (x ->> 'valid')::boolean) AS clear_taps,
        jsonb_array_length(coalesce(t.sync_detail -> 'taps', '[]')) AS taps,
        coalesce(t.sync_detail ->> 'reason', CASE WHEN t.sync_detail IS NULL THEN 'sync.py not run' END) AS reason

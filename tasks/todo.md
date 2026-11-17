@@ -51,7 +51,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] `a8e825e0` run through the new pick; result noted.
 - [ ] **Stop.**
 
-### [ ] S1 · sync for the pilot (D-F6-217)
+### [x] S1 · sync for the pilot (D-F6-217) · robust spread over every clear tap (board's 17.8 ms); harness 114/114; Unity seen at BR2's Stop
 - [ ] `sync.py`: robust spread (MAD × 1.4826 of the clear S3 lags); no S9 taps → drift empty with reason "no S9 taps (D-F6-217)".
 - [ ] `verify_eeg.sql` block 2 reads the robust spread.
 - [ ] Unity: no S9 sync test (`SessionFlowRunner.cs:910`); kit and Part B without S9 taps.
