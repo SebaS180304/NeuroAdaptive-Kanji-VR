@@ -57,3 +57,14 @@ def test_s4_closes_with_the_tally_and_then_silence() -> None:
     lines = w.lines(list(x), list(ts), markers, SR)
     assert lines[0].startswith("S3 taps: 0/5 clear") and "D-F6-176" in lines[0]
     assert w.lines(list(x), list(ts), markers, SR) == []
+
+
+def test_the_taps_on_cz_do_not_make_cz_bad() -> None:  # T02, 18 Nov: 5 taps of 5 000-11 000 uV flagged Cz
+    x, ts = _signal(40)
+    taps = []
+    for i, s in enumerate((8, 14, 20, 26, 32), start=1):
+        x[int(s * SR):int((s + 0.9) * SR), 4] += 8000   # the controller rests on Cz's housing
+        taps.append(_tap(ts[0] + s, i))
+    markers = [_entered(ts[0], "S2_VR_TUTORIAL")] + taps
+    lines = S3Watch(baseline.DEFAULT_MONTAGE).lines(list(x), list(ts), markers, SR)
+    assert not any("Cz looks bad" in line for line in lines)

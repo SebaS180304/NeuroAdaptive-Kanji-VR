@@ -5,7 +5,7 @@ it changes nothing in the rule or the session.
     (D-F6-197: not the next tap without the peak; under 3 clear taps the session has no offset, D-F6-176);
     a tap outside S3 → warning (D-F6-217: none in S9);
   - from S2 to the end of S3, every 10 s: a channel with > 20 % of its last 30 s over 100 µV (D-F6-216's
-    measure, on the filtered signal as epochs.py) → fix it before S4 (D-F6-213); Fp1 gets D-F6-240 (2)'s line.
+    measure, on the filtered signal as epochs.py, leaving out ±1 s around each SYNC_TAP) → fix it before S4 (D-F6-213); Fp1 gets D-F6-240 (2)'s line.
 From S4 on it prints nothing: nothing is touched from S4 to S8 (D-F6-153).
 """
 
@@ -15,6 +15,7 @@ from app.eeg import preprocess, sync
 
 S2, S3, S4 = "S2_VR_TUTORIAL", "S3_SYSTEM_VALIDATION", "S4_EEG_BASELINE"
 BAD_UV, BAD_SHARE, SPAN_S, EVERY_S, PAD_S = 100.0, 0.20, 30.0, 10.0, 5.0
+TAP_GUARD_S = 1.0  # the taps on Cz's housing are thousands of uV: not a bad channel (T02, 18 Nov)
 TAPS = 5
 
 
@@ -61,15 +62,22 @@ class S3Watch:
             return out
         if S2 in entered and (self.next_check is None or now >= self.next_check):
             self.next_check = now + EVERY_S
-            out += self._channels(x, ts, srate)
+            taps = [t for t, m in markers if m.get("event") == "SYNC_TAP"]
+            out += self._channels(x, ts, srate, taps)
         return out
 
-    def _channels(self, x: list, ts: list, srate: float) -> list[str]:
+    def _channels(self, x: list, ts: list, srate: float, taps: list[float] = ()) -> list[str]:
         if ts[-1] - ts[0] < SPAN_S + PAD_S:
             return []
         n = int((SPAN_S + PAD_S) * srate)
         y = preprocess.filter_eeg(np.asarray(x[-n:], dtype=float), srate)[-int(SPAN_S * srate):]
-        share = (np.abs(y) > BAD_UV).mean(axis=0)
+        t = np.asarray(ts[-len(y):], dtype=float)
+        keep = np.ones(len(y), bool)
+        for tap in taps:
+            keep &= np.abs(t - tap) > TAP_GUARD_S
+        if not keep.any():
+            return []
+        share = (np.abs(y[keep]) > BAD_UV).mean(axis=0)
         out = []
         for name, s in zip(self.names, share):
             if s > BAD_SHARE and name not in self.bad:
