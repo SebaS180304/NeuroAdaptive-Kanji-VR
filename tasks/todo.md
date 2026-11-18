@@ -182,6 +182,13 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] AU4 (dry run and T01) → AU0.
 - [ ] M0 moved to Wed 18 (D-F6-235): see below.
 
+## Wed 18 evening · AU0 → AU2 → AU4 → AU3 before T02 (D-F6-244) · plan written, **waits for Sebas's OK** · cut-off 45 min before T02
+- [ ] AU0 · CLI with a `hostname` filter: synthetic AURA + Unity Play (no cap); exactly 2 streams; `hostname='MSI'` matches nothing. Fails → AU2 out.
+- [ ] AU2 · `recorder.py` + `autorun`: one local AURA → CLI on the session's path; MANUAL line otherwise; Enter in `finally`. Tests + a Play test without cap.
+- [ ] AU4 · `live_epochs.csv` at COMPLETED, the 4 SQL to logs, `summary.py`. Checked on T01, read-only.
+- [ ] AU3 · S3 lines in `live.py`: taps k/5, bad channel, Fp1 (D-F6-240 (2)). Checked on T01's XDF fed as live.
+- [ ] pytest green, harness 119/119, one commit each, `graphify update .`, code closed, `preflight`, T02 kit. Draft: how each session was recorded.
+
 ## Wed 18 evening · D-F6-239 and D-F6-240 · plan written, **waits for Sebas's OK** · M0 after if time, else Fri 20
 - [x] U1 · `7a5c145` · `_assemblyComplete` guard in `PaintSlot` (set in `ShowAssemblyComplete`, cleared in `HideAssemblySlots` and `ShowAssembly`). Harness all PASS.
 - [x] U2a · Content validated 17:10 · group proposal for 日 田 子 目 学 物 茶 馬 魚 鳥 to Content (plan table). **Stop until Content answers.**

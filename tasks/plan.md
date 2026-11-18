@@ -284,6 +284,47 @@ Order: U1 → U2a (Content validates) → U2b → one Editor Stop for both → c
 - **`/plan` of M1, no code (D-F6-231, D-F6-233):** the live monitor V1.13 (per-channel figures in `live.py`, a read-only endpoint, the page), to build during the pilot on a day without a participant, with AU2, AU3 and AU6. **Stop:** Sebas's OK on the plan.
 - **Go/no-go** of the pilot (PM, Sebas); the M4 note is PM's. This chat hands in: what is live (G1, G2, S1, S6, block R with V1.12, CH1, X8, AU1, AU4), BR7's and T01's results, open findings, `tasks/` and the draft up to date.
 
+### Wed 18 evening · AU0, AU2, AU3, AU4 before T02 (D-F6-244) · plan, waits for Sebas's OK
+
+**D-F6-244 changes D-F6-221 (2)–(3) for today:** the four pieces go in now, before T02, and **T02 is the first capped rehearsal (AU6)**; Thu 19 and Fri 20 sessions too. The pilot starts automated on Tue 24 only if this week's sessions go well; otherwise manual (D-F6-221 (1)). M0 stays Fri 20. The task text in "Session automation" below still holds; this section says what changes in it, how each piece is tested without a cap, the order and the cut-off.
+
+**Order and time (≈ 5–6 h of work):** AU0 (≈ 45 min) → **gate** → AU2 (≈ 2 h) → AU4 (≈ 1.5 h) → AU3 (≈ 1.5 h) → backend tests, Unity harness, commits, code closed, T02 kit (≈ 30 min). After an OK at ≈ 18:30 that ends near midnight. **Cut-off, set by Sebas with T02's time:** what is not committed with all tests green 45 min before T02 stays out of T02 (`git stash`), and T02 runs with what is in. After AU0 the pieces are independent: AU4 and AU3 do not need AU2.
+
+**Kept, and checked by the script (D-F6-244):**
+- **D-F6-146:** the file name carries the session id: the recorder starts only after Play created the session, with `xdf_path` from `eeg_sessions` (the same BIDS path as today). `autorun` prints the path and, at the end, checks the XDF it reads is that one.
+- **D-F6-193:** the network is never touched. `autorun` warns if a physical adapter is up at Play and again at the end of S2; the host filter keeps other PCs' streams out of the file either way.
+- **D-F6-197:** exactly one `AURA` of this PC before recording; two → no automatic recording, manual path. Taps: AU3 says `k/5 clear` after S3 and asks to repeat below 3.
+- **D-F6-217:** 5 taps in S3, none in S9: AU3 counts S3's taps and warns on a tap after S3; `sync.py` keeps the robust spread.
+- **D-F6-240:** (2) Fp1 gets its own line in AU3's S3 check (continuously over ≈ 100 µV with eyes open → "re-seat Fp1 and the foam before S4"); (3) the summary gives the % of POOR per state and per rule now, and blinks per minute once `ocul.py`'s count is folded in; (4) **`live_epochs.csv` is exported by `autorun` itself when the session turns COMPLETED, before the recording stops** (AU4), on both paths.
+
+**Manual fallback (D-F6-244 (2)), the same for every failure:** LabRecorder's GUI stays open on every session, not started. If `autorun` does not print `RECORDING (automatic): AURA + UnityMarkers of LaptopSebas1803 → <path>` within 15 s of Play, it prints `MANUAL: Update, tick the one AURA and UnityMarkers, check ses-<8> in the name, Start` with the reason, Sebas does today's steps and the session goes on; `autorun` then waits for the GUI's file as today. Each session's recording path (automatic / manual and why) goes into the summary, the log and the draft.
+
+**If AU0 fails (D-F6-244 (3)):** AU2 is not built and recording stays manual (today's kit); AU3 and AU4 are built and enter T02.
+
+**AU0 · `LabRecorderCLI` with a host filter (≈ 45 min, no cap).** On this PC: `backend/scripts/synthetic_aura.py` (`AURA`), Unity in Play in the Editor without the headset (`UnityMarkers`, as in the 17:26 check) and a dummy `AURA_Markers` outlet; network on.
+- The CLI with `name='AURA' and hostname='LaptopSebas1803'` and `name='UnityMarkers' and hostname='LaptopSebas1803'` into a scratch folder, Enter after 60 s. **Pass:** `pyxdf.load_xdf` reads exactly those two streams (no `AURA_Markers`), both with samples, file closed.
+- **Negative test**, because the other PC may not be streaming: the same query with `hostname='MSI'` matches nothing and the CLI exits without a file (proves the filter acts). If MSI is on, its `AURA` must be absent from the pass file.
+- `hostname` refused → try `source_id`. Nothing works → **stop and tell Sebas: AU2 out.** The test `DEV_UNITY` session and the scratch file are deleted after, with Sebas's OK.
+
+**AU2 · `autorun` records (≈ 2 h).** A new `app/eeg/recorder.py` (CLI command line, start, stop) and changes in `autorun.py`:
+- after `wait_new_session`: resolve on this PC, retrying up to 15 s, one `AURA` and one `UnityMarkers`; synthetic or two `AURA` → manual path with the reason (the check is `preflight.check_lsl`, reused); network up → WARN.
+- launch `LabRecorderCLI` with the session's path and the two queries, stdin open; print the RECORDING line; every 10 s check the process is alive and the file grows. If it exits early → `RECORDING STOPPED at mm:ss` and the manual steps; Sebas starts the GUI on a `run-2` path that `autorun` prints, and `fill_from_xdf` reads that one (the CLI's partial file is kept).
+- at COMPLETED: AU4's live export first, then Enter to the CLI, wait for it to exit and `wait_xdf_closed` as today. In `finally`, Enter is sent if the CLI still runs, so the file is never left open.
+- **Tests (pytest):** the command line for a session; the one-local-AURA decision; the stop and `finally` paths with a fake recorder process. **Without a cap:** synthetic AURA + Unity Play in the Editor: Play → RECORDING line → 2 min → exit Play → Ctrl+C on `autorun` → file closed, `load_xdf` shows the two streams. A second run with two synthetic `AURA` → MANUAL line, nothing recorded.
+
+**AU4 · end of session (≈ 1.5 h).** In `autorun.py`, plus `app/eeg/summary.py`:
+- at COMPLETED: `live_epochs.csv` from `eeg_epochs` (read-only) into `backend/logs/<session>-live_epochs.csv` (D-F6-240 (4)); then the stop; then today's `lsl_reader` → `sync` → `epochs`.
+- the four SQL through `docker compose exec -T db psql`: `database/verify_eeg.sql`, `verify_adaptation.sql`, `verify_projection.sql`, and `p0_j3_fallback_check.sql` (copied into `database/` from `Claude outputs/`), each to `backend/logs/<session>-<name>.txt`.
+- a summary, printed and saved (`<session>-summary.txt`): recording path, Play → S9, accuracy per state, A-7 live and from the XDF, sync (offset, robust spread, k/5 taps), S4 alpha, S6 source and epochs, Fp1 and POOR % per state, decisions and changes, any FAIL/OUT/SHORT line of the SQL. Exit 0 only if every step ran.
+- **Tests:** the summary from fixed rows; the export query. **Without a cap:** the SQL and the summary on T01 `0077f47d`, read-only, no re-processing; they must match the 18 Nov analysis (5/5 taps, 35.7 ms, A-7 0/18, 243/292 POOR).
+
+**AU3 · warnings in S3 (≈ 1.5 h).** In `live.py`, which already reads both streams from Play and computes S3's offset:
+- per `SYNC_TAP` in S3: `tap n/5: clear (peak µV)` or `NOT clear` (`sync._tap`); after S3: `S3 taps k/5`, and with `k < 3` → `WARNING: repeat taps before S4`; a tap after S3 → `WARNING: tap outside S3 (D-F6-217)`.
+- from S2 to the end of S3, every 10 s, the share of the last 30 s over 100 µV per channel; over 20 % → `WARNING: <ch> looks bad, fix before S4`; Fp1 continuously high → the D-F6-240 (2) line. From S4 on, only errors are printed (D-F6-153).
+- **Tests:** synthetic signals (clear and unclear tap, a flat channel, a noisy one). **Without a cap:** T01's XDF fed as live, as `replay --xdf` does: 5/5 clear, as measured; the same with F3 replaced by noise → the warning.
+
+**After the build:** backend pytest all green (count before → after), Unity harness PASS (no Unity change expected: 119/119), one commit per piece, `graphify update .`, `git status` clean, backend restarted, Unity reopened, `preflight`, and the T02 kit with the automated steps and the manual fallback boxed.
+
 ## Session automation (D-F6-219) · approved in two parts (D-F6-221)
 
 **D-F6-221:** Sebas is away Sat 21 – Mon 23, so there is no rehearsal before the pilot. (1) The pilot **starts on Tue 24 with manual recording** (today's kit). (2) **AU1 and AU4 on Fri 20 morning**, tested on the dry-run XDF on this PC; they enter from Tue 24 because they do not change how a session is recorded. **AU0 only if time is left** on Fri 20; if the host filter does not work, recording stays manual. (3) **AU2 and AU3 wait** for a pilot day without a participant, with a full rehearsal (AU6) with Sebas; if it passes, recording switches from then on and the sessions are labelled by how they were recorded; with no such day, the whole pilot is manual. (4) What does not finish on Fri 20 goes to **Tue 24 morning**; the first participant is Tue 24 afternoon. AU5 (kit) follows the part that is live: on Fri 20 only AU1 and AU4 enter the manual kit.
