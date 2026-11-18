@@ -1065,6 +1065,7 @@ namespace NeuroAdaptiveVR.Controllers
         private int _slotNext = -1;
         private Coroutine _slotFlash;
         private bool _assemblyActive;
+        private bool _assemblyComplete;   // the green holds: hover and pulse must not repaint it (D-F6-239)
         private string _segmentInHand, _segmentHint;
 
         /// <summary>
@@ -1097,6 +1098,7 @@ namespace NeuroAdaptiveVR.Controllers
             for (int i = n; i < (cards?.Length ?? 0); i++) cards[i].Hide();
 
             _assemblyActive = true;
+            _assemblyComplete = false;
             _segmentInHand = _segmentHint = null;
             RepaintSegments();
         }
@@ -1185,6 +1187,7 @@ namespace NeuroAdaptiveVR.Controllers
 
         private void PaintSlot(int i)
         {
+            if (_assemblyComplete) return;
             if (_imageMode) { PaintSegmentSlot(i); return; }
             bool next = i == _slotNext && !_slotFilled[i];
             _slots[i].interactable = next;
@@ -1263,6 +1266,7 @@ namespace NeuroAdaptiveVR.Controllers
             _imageMode = false;
             _slotNext = -1;
             _assemblyActive = false;
+            _assemblyComplete = false;
             _segmentInHand = _segmentHint = null;
         }
 
@@ -1429,6 +1433,7 @@ namespace NeuroAdaptiveVR.Controllers
         /// </summary>
         public void ShowAssemblyComplete()
         {
+            _assemblyComplete = true;
             if (_imageMode)
             {
                 StopAllCoroutines();   // a pending per-piece flash must not repaint over the green
