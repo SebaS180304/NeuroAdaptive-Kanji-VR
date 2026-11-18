@@ -15,7 +15,7 @@ The cut is the offline one (epochs.make_epochs) on the tail of the buffer:
 
 import numpy as np
 
-from app.eeg import epochs, preprocess, sync
+from app.eeg import epochs, preprocess, s3watch, sync
 
 S4_STATE = "S4_EEG_BASELINE"
 PAD_S = 10.0   # filter warm-up before the first pending epoch
@@ -135,12 +135,15 @@ async def run(session_id: str) -> list[float]:
         montage = (await db.execute(text("SELECT montage FROM eeg_sessions WHERE session_id = :s"),
                                     {"s": session_id})).scalar_one_or_none() or baseline.DEFAULT_MONTAGE
     buf, cut, lags, ref_done, last_beat, origin_done = Buffer(srate, montage), [], [], False, 0.0, False
+    watch = s3watch.S3Watch(montage)
     print(f"live: {lsl_reader.EEG_STREAM} at {srate} Hz and {lsl_reader.MARKER_STREAM}; cutting from the end of S3")
     while True:
         samples, stamps = eeg_in.pull_chunk(timeout=0.2)
         values, mstamps = mk_in.pull_chunk(timeout=0.0)
         new_markers = [(t, json.loads(v[0])) for v, t in zip(values, mstamps)]
         buf.add(samples, stamps, new_markers)
+        for line in watch.lines(buf.x, buf.ts, buf.markers, srate):  # S2–S3 warnings for the operator (AU3)
+            print(f"live: {line}")
         just_synced = not buf.synced and buf.sync_if_ready()
         eps = buf.new_epochs()
         entered = {m.get("state"): t for t, m in buf.markers if m.get("event") == "STATE_ENTERED"}
