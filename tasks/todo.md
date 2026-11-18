@@ -97,16 +97,16 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 ### [x] C0 · code closed, 16:15 · done 16:33 (backend restarted, `/health`, 0019; Unity reopened by Sebas)
 - [ ] `git status` clean; backend restarted, `/health`; `alembic current` 0019; Unity closed and reopened. Nothing changes until T2 ends.
 
-### [ ] C0b · code closed, Wed 18 10:15
+### [x] C0b · code closed, Wed 18 10:15 · done 12:16 (`707ec34`, backend restarted, 0019), T01 moved to 12:15 (D-F6-238)
 - [ ] Commits done, `git status` clean; backend restarted, `/health`; `alembic current` at head; Unity closed and reopened.
 
-### [ ] T1 · test with the cap, Wed 18 11:00–12:00 · T01, MULTIMODAL_ADAPTIVE, set A, visit 1 (D-F6-228, D-F6-232)
+### [x] T1 · test with the cap, Wed 18 (13:02–13:15, D-F6-238) · `0077f47d` · T01, MULTIMODAL_ADAPTIVE, set A, visit 1 (D-F6-228, D-F6-232)
 - [ ] Wed 10:30 R3; 10:50 network off; consent and pre-test in the portal; kit line by line; 5 taps in S3, none in S9.
 - [ ] At S9, before LabRecorder's Stop: live `eeg_epochs` to `Claude outputs/eeg_export_17nov/live_epochs.csv` (read-only).
 - [ ] Consent v1.3 on its own sheet; move head and cough before S3 (D-F6-216); red channel fixed before S4 (D-F6-213).
 - [ ] **Done when:** S1 → S9, `autorun` exit 0, both streams. **Stop:** Sebas writes it offline.
 
-### [ ] T2 · Wed 18 afternoon, after the test · read-only; the recording stays on this PC
+### [x] T2 · Wed 18 afternoon · done 13:40; live_epochs.csv not exported before Stop (G1 live compare lost); 243/292 POOR, Fp1 suspect; see 18 Nov draft
 - [ ] `autorun` log; the four SQL; `replay --xdf` on this PC matches the decisions.
 - [ ] G1: `grid_origin_lsl` set; live CSV = `fill_from_xdf` rows (`epoch_index`, `lsl_start`, `chunk_clean`).
 - [ ] S1: robust spread ≤ 50 ms, 0 S9 taps, drift empty "no S9 taps (D-F6-217)".
@@ -159,7 +159,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 ### [ ] AU0 · spike `LabRecorderCLI` + synthetic AURA (≈ 1 h) · Fri 20
 - [ ] Two queries by name and host; network on (`MSI`'s `AURA` visible); XDF has only the two local streams; query syntax written down. No host filter works → stop, manual kit stays. **Stop.**
 
-### [ ] AU1 · `python -m app.eeg.preflight` (≈ 2 h) · Wed 18 afternoon, after T2; manual path (GUI running = OK)
+### [x] AU1 · `python -m app.eeg.preflight` · `c9c38df`, 450 tests; real run 6 FAIL 3 WARN, all true; kit line with AU5
 - [ ] Services, port, portal, `git status`, processes (`tasklist`), one local `AURA`, synthetic off, network reported (WARN), `LabRecorderCLI`, disk. Same verdicts as manual R3. Tests.
 
 ### [ ] AU2 · `autorun` records with `LabRecorderCLI` (≈ 3 h) · part 2
