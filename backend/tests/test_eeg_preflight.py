@@ -60,3 +60,9 @@ def test_network_and_disk() -> None:
     assert preflight.check_network(["Wi-Fi"])[0] == WARN
     assert preflight.check_disk(50 * 10**9)[0] == OK
     assert preflight.check_disk(10**8)[0] == FAIL
+
+
+def test_unity_markers_before_play_is_an_earlier_plays_outlet() -> None:
+    real = {"name": "AURA", "hostname": HOST, "source_id": "aura-123"}
+    stale = {"name": "UnityMarkers", "hostname": HOST, "source_id": "neuroadaptive-unity"}
+    assert _levels(preflight.check_lsl([real, stale], HOST)) == [OK, FAIL]

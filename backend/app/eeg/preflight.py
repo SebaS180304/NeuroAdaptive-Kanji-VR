@@ -74,6 +74,9 @@ def check_lsl(streams: list[dict], host: str) -> list[tuple[str, str]]:
         out.append((OK, "one AURA on this PC"))
     else:
         out.append((WARN, "no AURA on this PC yet: LSL Stream Out on before Play"))
+    if any(s["hostname"] == host and s["name"] == "UnityMarkers" for s in streams):
+        # Unity keeps its outlet after leaving Play (AU0, 18 Nov): the next Play would show two
+        out.append((FAIL, "UnityMarkers already on before Play: an earlier Play's outlet, reopen Unity"))
     if others:
         out.append((WARN, f"LSL streams of other PCs ({', '.join(others)}): network is on"))
     return out
@@ -105,6 +108,10 @@ def _http(url: str) -> tuple[str, str]:
         return FAIL, f"{url} not reached ({e})"
 
 
+def adapters_up() -> list[str]:
+    return _ps("Get-NetAdapter -Physical | Where-Object Status -eq Up | ForEach-Object Name").split()
+
+
 def gather() -> list[tuple[str, str]]:
     out = [_http(f"{BACKEND}/health"), _http(f"{BACKEND}/health/db"), _http(PORTAL)]
 
@@ -127,8 +134,7 @@ def gather() -> list[tuple[str, str]]:
                for s in pylsl.resolve_streams(2.0)]
     out += check_lsl(streams, socket.gethostname())
 
-    up = _ps("Get-NetAdapter -Physical | Where-Object Status -eq Up | ForEach-Object Name").split()
-    out.append(check_network(up))
+    out.append(check_network(adapters_up()))
 
     out.append((OK, f"LabRecorderCLI found ({LABRECORDER_CLI.name})") if LABRECORDER_CLI.is_file()
                else (WARN, f"LabRecorderCLI not at {LABRECORDER_CLI} (needed only from AU2)"))

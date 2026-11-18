@@ -1,13 +1,15 @@
 """
-The operator's EEG steps, run by themselves (D-F6-152). The assistant only presses Play, ticks AURA and
-UnityMarkers and presses Start in LabRecorder, and watches the signal in AURA's software.
+The operator's EEG steps, run by themselves (D-F6-152). The assistant presses Play and watches the signal in
+AURA's software. Since AU2 (D-F6-244) the recording starts and stops by itself (recorder.py); when it cannot,
+autorun prints MANUAL with the reason and the operator ticks AURA and UnityMarkers and presses Start as before.
 
 On the PC (outside Docker, D-F6-132), started before Play:
     POSTGRES_HOST=127.0.0.1 python -m app.eeg.autorun
 1. waits for a new session: its eeg_sessions row, written by POST /sessions with the XDF path;
 2. starts baseline.py for it at once (it buffers until S4 ends, so it is running before S4), and live.py (the live
    EEG path, D-F6-171: epochs, reference and heartbeat while the session runs; stopped when it is COMPLETED);
-3. waits for the session to be COMPLETED (S9) and for the XDF to stop growing (Stop in LabRecorder);
+3. waits for the session to be COMPLETED (S9), stops the recording (or waits for Stop in LabRecorder) and waits
+   for the XDF to stop growing;
 4. runs lsl_reader, sync (offset and drift, D-F6-157) and epochs on the XDF: epochs needs the offset (D-F6-176).
 Everything it and baseline.py print, tracebacks and Python's fatal errors also go to logs/autorun-<time>.log; its
 last line says it ended, so a log without that line is a process that died silently (D-F6-179 (2)).
@@ -25,6 +27,8 @@ from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy import text
+
+from app.eeg import recorder
 
 POLL_S = 2.0
 QUIET_S = 15.0  # LabRecorder flushes far more often than this while it records
@@ -98,11 +102,28 @@ async def wait_new_session(after) -> tuple[str, str]:
         await asyncio.sleep(POLL_S)
 
 
-async def wait_completed(session_id: str, baseline: subprocess.Popen) -> None:
+def recording_lost(rec, path: str) -> None:
+    """The automatic recording ended before S9: its part is set aside and the operator goes to the GUI, same path."""
+    mm, ss = divmod(int(time.monotonic() - rec.started), 60)
+    print(f"RECORDING STOPPED at {mm:02d}:{ss:02d} (LabRecorderCLI exit {rec.proc.returncode}, see {rec.log_path})")
+    if os.path.exists(path):
+        part = path[:-4] + "_partial.xdf"
+        os.replace(path, part)
+        print(f"  its part is kept as {part}")
+    print("  " + recorder.MANUAL_STEPS.format(ses=Path(path).name.split("_ses-")[-1][:8]) + ", now")
+
+
+async def wait_completed(session_id: str, baseline: subprocess.Popen, rec=None, path: str = "") -> None:
+    last_check = time.monotonic()
     while not (await _scalar("SELECT 1 FROM experiment_sessions WHERE id = :s AND completed_at IS NOT NULL",
                              s=session_id)):
+        if rec is not None and time.monotonic() - last_check >= 10:
+            last_check = time.monotonic()
+            if not rec.alive():
+                recording_lost(rec, path)
+                rec = None
         await asyncio.sleep(POLL_S)
-    print("session COMPLETED (S9). Now Stop in LabRecorder.")
+    print("session COMPLETED (S9)." + ("" if rec is not None else " Now Stop in LabRecorder."))
     if baseline.poll() is None:  # S4 never ended inside this session
         baseline.terminate()
         print("WARNING: baseline.py had no S4 result; stopped. The alpha ratio is missing.")
@@ -120,6 +141,16 @@ async def wait_xdf_closed(path: str) -> None:
     print("XDF closed.")
 
 
+def start_recording(sid: str, path: str):
+    return recorder.start_for(sid, path, LOG_DIR)
+
+
+def network_up() -> list[str]:
+    from app.eeg.preflight import adapters_up
+
+    return adapters_up()
+
+
 async def main() -> int:
     from datetime import datetime, timezone
 
@@ -127,11 +158,23 @@ async def main() -> int:
 
     sid, path = await wait_new_session(datetime.now(timezone.utc))
     print(f"session {sid}\n  LabRecorder file must contain ses-{sid[:8]}: {path}")
-    baseline, _ = start_child([sys.executable, "-m", "app.eeg.baseline", sid])
-    live, _ = start_child([sys.executable, "-m", "app.eeg.live", sid])
-    await wait_completed(sid, baseline)
-    if live is not None and live.poll() is None:  # its rows are replaced by fill_from_xdf below (D-F6-156)
-        live.terminate()
+    up = network_up()
+    if up:
+        print(f"WARNING: network up ({', '.join(up)}): turn it off before the cap (D-F6-193)")
+    rec, line = start_recording(sid, path)
+    print(line)
+    print(f"recording: {'automatic' if rec else 'manual'}")
+    try:
+        baseline, _ = start_child([sys.executable, "-m", "app.eeg.baseline", sid])
+        live, _ = start_child([sys.executable, "-m", "app.eeg.live", sid])
+        await wait_completed(sid, baseline, rec, path)
+        if live is not None and live.poll() is None:  # its rows are replaced by fill_from_xdf below (D-F6-156)
+            live.terminate()
+        if rec is not None and rec.alive():
+            print(f"recording stopped (LabRecorderCLI exit {rec.stop()})")
+    finally:  # autorun dying must not leave the file open
+        if rec is not None and rec.alive():
+            rec.stop()
     await wait_xdf_closed(path)
 
     try:
