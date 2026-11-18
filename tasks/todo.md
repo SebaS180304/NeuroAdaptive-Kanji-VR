@@ -180,7 +180,19 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ## Fri 20 · AU4, AU0, M0, the M1 plan, then go/no-go · no presentation, no video (D-F6-227)
 - [ ] AU4 (dry run and T01) → AU0.
-- [ ] M0 (afternoon): `dashboard` service in compose, nginx on `127.0.0.1` serving `dashboard/dist`, proxy to the backend; from scratch `docker compose up -d`, nothing on `0.0.0.0`, Playwright smoke. **Stop.**
+- [ ] M0 moved to Wed 18 (D-F6-235): see below.
+
+## Wed 18 evening · D-F6-239 and D-F6-240 · plan written, **waits for Sebas's OK** · M0 after if time, else Fri 20
+- [x] U1 · `7a5c145` · `_assemblyComplete` guard in `PaintSlot` (set in `ShowAssemblyComplete`, cleared in `HideAssemblySlots` and `ShowAssembly`). Harness all PASS.
+- [x] U2a · Content validated 17:10 · group proposal for 日 田 子 目 学 物 茶 馬 魚 鳥 to Content (plan table). **Stop until Content answers.**
+- [x] U2b · `d96a61b`, harness 119/119 · `G`, `IDS`, `OVR` in `tools/assembly_segments.py`; preview clean; old 26 byte-identical; new harness check 35/35 authored.
+- [x] Editor Stop with Sebas (OK): 学 and 月 in S5, green held under the ray. Two commits ("exception D-F6-239"), `graphify update .`.
+- [ ] E1 · read `ocul.py` whole → run on T01's XDF in place (scratchpad venv if it needs `mne`) → only aggregates to the draft.
+
+## Wed 18 afternoon · M0 (D-F6-235) · plan written, **waits for Sebas's OK** (port: 5300 recommended)
+- [ ] M0.1 · `npm run build` (dist is from 22 Oct) → `dashboard/nginx.conf` + `dashboard` service (`nginx:alpine`, `127.0.0.1:5300:80`, `/api/` → `backend:8000/`, SPA fallback). `/pretest` 200, deep link 200, `/api/health` ok.
+- [ ] M0.2 · `docker compose down` (never `-v`) → `up -d`: all ports on 127.0.0.1; Playwright against nginx; `preflight` portal OK. **Stop:** Sebas opens the portal in Edge.
+- [ ] M0.3 · compose comment, `stack-and-structure.md` line, kit line in the draft for AU5.
 - [ ] `/plan` of M1, no code (V1.13 validated, D-F6-233); M1 itself in the pilot, a day without a participant. **Stop.**
 - [ ] Go/no-go input: what is live, BR7 and T01 results, open findings; `tasks/` and draft up to date.
 

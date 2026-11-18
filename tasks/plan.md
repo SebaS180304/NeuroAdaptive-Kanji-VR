@@ -206,7 +206,81 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 ### Fri 20 · AU4, AU0, M0 and the plan of M1, then go/no-go · no presentation, no video (D-F6-227)
 - **AU4 · end of session**, as in the automation section, **tested on the dry run `65af2fe4` and on T01's session** (SQL and summary read-only; processing re-run only with Sebas's OK). **Stop.**
 - **AU0 · `LabRecorderCLI` spike**, as in the automation section. **Stop.**
-- **M0 · the portal served by `docker compose up` (D-F6-231 (5)), afternoon, after AU4.** What changes: a `dashboard` service in `docker-compose.yml`, nginx serving `dashboard/dist` on `127.0.0.1` only (no outbound traffic, skill rule 7), proxying `/sessions`, `/participants` and `/research` to the backend. How it is tested: `docker compose up -d` from scratch → the portal and the pre-test answer on `127.0.0.1`, nothing listens on `0.0.0.0` (`docker compose port`), the Playwright smoke passes against it. **Stop.**
+- **M0 moved to Wed 18 afternoon (D-F6-235); planned below, waits for Sebas's OK before `//build`.**
+
+### Wed 18 evening · D-F6-239 Unity fixes (exception to the freeze) and D-F6-240 `ocul.py` · plan, waits for Sebas's OK
+
+Order: U1 → U2a (Content validates) → U2b → one Editor Stop for both → commit each → E1 whenever Sebas passes the script (no Unity, can run while Content reviews). **M0 after this if time is left; otherwise Fri 20 (D-F6-239).** Tutorial kanji (一 二 三 五) stay out.
+
+**U1 · the green of a completed KA stays green (≈ 20 min, one file).** `StudioTrialPresenter.cs` only.
+- A `bool _assemblyComplete`: set in `ShowAssemblyComplete` (`:1430`); cleared in `HideAssemblySlots` (`:1258`) and in `ShowAssembly` next to `_assemblyActive = true` (`:1099`, both modes pass there), so the next trial starts clean.
+- `PaintSlot` (`:1186`) returns first thing when `_assemblyComplete`. That one guard covers both modes, because `PaintSegmentSlot` is reached only through `PaintSlot` (`:1188`), and covers every caller: hover relays (`:1237`, `:1352`), the flash end (`:1182`), the pulse (`:1414`, `:1423`).
+- Tested: harness all PASS, count unchanged; Editor with 学 (placeholder mode, until U2b lands) and 月 (image mode): place the last piece, sweep the ray over every slot during the 1.6 s green → it stays green; the next trial's slots paint normally.
+
+**U2a · groups of the 10 reserve kanji: proposal for Content (no script run).** Count per kanji is fixed by `assemblyGroups` in `kanji_content.json`; the script refuses a mismatch. Groups follow stroke order, like the 10 reserve kanji of 19 Oct.
+
+| Kanji | `id` | Strokes | Groups | Proposed groups (slot order) |
+| --- | --- | --- | --- | --- |
+| 日 sun | `KANJI_NICHI` | 4 | 2 | **frame** (left, top-right fold, bottom) · **middle bar** |
+| 田 rice field | `KANJI_TA` | 5 | 2 | **frame** (口 outer box) · **十 cross** inside |
+| 子 child | `KANJI_KO` | 3 | 2 | **了** (fold and hooked vertical, strokes 1–2) · **一** (bar, stroke 3) |
+| 目 eye | `KANJI_ME` | 5 | 2 | **frame** (left, top-right fold, bottom) · **two inner bars** |
+| 学 study | `KANJI_GAKU` | 8 | 3 | **⺍ three dots** · **冖 cover** · **子** |
+| 物 thing | `KANJI_MONO` | 8 | 3 | **牜 cow radical** · **勹 hook** · **two inner sweeps** (rest of 勿) |
+| 茶 tea | `KANJI_CHA` | 9 | 3 | **艹 grass** · **人 roof and bar** · **朩 bottom** |
+| 馬 horse | `KANJI_UMA` | 10 | 3 | **vertical and three bars** · **hooked frame** (bottom bar and hook) · **灬 four dots** |
+| 魚 fish | `KANJI_SAKANA` | 11 | 3 | **ク head** · **田 body** · **灬 four dots** |
+| 鳥 bird | `KANJI_TORI` | 11 | 3 | **ノ and the box** (top, eye bar) · **bar and hooked frame** · **灬 four dots** |
+
+- Asked of Content: per kanji, OK or a different split (same group count, or say if `assemblyGroups` must change, which is a contract change and needs a number). Open points I'd flag: 日 and 目 could also split "left side · the rest"; in 鳥 the eye bar could go with the body.
+- Stop: no script run until Content's answer is in the draft.
+
+**U2b · cut and write (≈ 1–1.5 h).** `tools/assembly_segments.py`: the 10 entries in `G` (centre lines placed by hand on the 512 px glyph), the 10 ids in `IDS`, `OVR` boxes where a stroke must stay whole (田's cross, 馬's vertical, 物's 牜 vertical). Iterate on `tools/assembly_preview.png` until every group is whole and no stray pixels; then the run writes `Resources/assembly/{ID}_FULL/SEG{n}/SEG{n}_CARD.png` and lists the segments in the 10 `.asset` files. The 26 kanji already cut are re-written by the same run: their PNGs must come out byte-identical (`git status` shows only the 10 new kanji's files + preview + script).
+- Harness: a new check, **every non-tutorial kanji (35) has authored segments with as many as `assemblyGroups`**, so a placeholder in S5 cannot come back silently. Count before → +1, all PASS.
+- Editor: an S5 where 学 appears (pre-test substitute, as in T01): console says authored, board shows the pieces, cards read; U1's green holds on 学 too.
+
+**Editor Stop (Sebas, ≈ 10 min):** 学 and 月 in S5, green held while sweeping the ray. Then two commits, Unity body says "exception D-F6-239": `fix(unity): completed assembly stays green (D-F6-239)` and `feat(content): assembly segments for the 10 reserve kanji (D-F6-239)`. `graphify update .`.
+
+**E1 · `ocul.py` on T01's XDF (D-F6-240 (1), ≈ 20 min once the script is here).**
+- Sebas passes the script from the EEG chat. I read it whole before running it (what it reads, what it writes, any network or file output).
+- Input: `C:\Users\drdom\Documents\Pruebas_EEG\sub-t01\ses-0077f47d\eeg\sub-t01_ses-0077f47d_task-multimodaladaptive_run-1_eeg.xdf`, read in place, never copied into the repo or `Claude outputs/`.
+- Dependencies: `mne` is not in the backend venv nor in the container. If the script needs it, a throwaway venv in the session scratchpad (`pip install mne pyxdf`), not `backend/requirements.txt`. Run with `python -I` from outside the script's folder.
+- Output: only the aggregate figures (blinks per minute, % of the task each rule covers, the ICA recovery in S4–S5, whatever the script prints as summary) go into the 18 Nov draft and the chat. No per-sample or per-epoch output leaves the PC; any file the script writes stays in the scratchpad.
+- D-F6-240 (2)–(4) are protocol and kit lines (Fp1 check in S3, per-session report, `live_epochs.csv` before Stop): kit text for AU5, no code today.
+
+### Wed 18 · M0 · the portal served by `docker compose up` (D-F6-231 (5), D-F6-235) · plan, waits for Sebas's OK
+
+**Found while planning (read-only, 18 Nov 14:30):**
+- The portal calls the API as `/api/...` and Vite strips `/api` (`dashboard/src/api/client.ts`, `vite.config.ts`). So nginx proxies **`/api/` → `http://backend:8000/`** with the prefix stripped, not `/sessions`, `/participants` and `/research` as the line above said.
+- **`dashboard/dist` dates from 22 Oct**: it lacks V1.10 changes, V1.12 (BR3) and everything since. Serving it as it is would show an old portal. M0 builds it first (`npm run build`, which also runs `tsc -b`). `dist` stays gitignored; compose serves what was last built.
+- `nginx:alpine` is already on this PC (no pull, works offline). Today the portal is the Vite dev server on `127.0.0.1:5300` (strict port).
+- The pages use client-side routes (`/pretest`, `/sessions/<id>`…): nginx must fall back to `index.html`.
+
+**Decision for Sebas (recommendation first):**
+1. **nginx on `127.0.0.1:5300` (recommended).** The kit, `preflight` (AU1), the Playwright `baseURL` and Edge's bookmarks stay the same. `npm run dev` only for portal development, after `docker compose stop dashboard` (both want 5300).
+2. Another port (e.g. `127.0.0.1:5310`). Dev server and nginx can run together, but the kit, `preflight` and Playwright change.
+
+**Dependency graph:** `npm run build` → `dist/` ──► nginx config + compose service ──► from-scratch check (compose, ports, Playwright) ──► kit/doc lines.
+
+**M0.1 · nginx serves the built portal, `/api` to the backend (one vertical slice, ≈ 30 min).**
+- Files: `dashboard/nginx.conf` (new), `docker-compose.yml` (service `dashboard`).
+- Service: `image: nginx:alpine`; `ports: "127.0.0.1:5300:80"` (127.0.0.1 only, like db, backend and pgadmin: no auth, participant data, D-F6-186); volumes `./dashboard/dist:/usr/share/nginx/html:ro` and `./dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro`; `depends_on: backend`; `restart: unless-stopped`.
+- Config: `location /api/ { proxy_pass http://backend:8000/; }`; `location / { try_files $uri $uri/ /index.html; }`; `index.html` with `Cache-Control: no-cache` (a rebuild shows at once); hashed assets cached. No outside hosts (fonts are already bundled, rule 7). No WebSocket proxy: the portal uses none today (M1 adds it if it needs it).
+- **Acceptance:** `npm run build` exit 0; `docker compose up -d dashboard` → `curl.exe -s -o NUL -w "%{http_code}" http://127.0.0.1:5300/pretest` = 200, `/sessions/0077f47d-…` = 200 (fallback), `/api/health` = `{"status":"ok"}`, `/api/research/...` returns data; `docker compose port dashboard 80` = `127.0.0.1:5300`.
+
+**M0.2 · from scratch and the smoke (≈ 20 min, only between sessions: it restarts the backend).**
+- `docker compose down` (**never `-v`**: it deletes the database volume) → `docker compose up -d` → `db`, `backend`, `pgadmin`, `dashboard` up; `docker compose ps` shows every published port on `127.0.0.1`, none on `0.0.0.0`.
+- With `npm run dev` stopped: `npx playwright test` from `dashboard/` (Playwright reuses whatever answers on 5300 = nginx). All specs pass, or each failure is explained.
+- `python -m app.eeg.preflight`: the portal line is still OK.
+- **Acceptance:** all of the above; Edge opens `http://127.0.0.1:5300/pretest` with the current portal (V1.12 recall form present).
+
+**M0.3 · docs (≈ 10 min, no code).** A comment in `docker-compose.yml` (rebuild `dist` after a dashboard change; dev server needs `docker compose stop dashboard`). One line in the skill's `stack-and-structure.md` (how the portal is served). The kit line (R3: "portal from `docker compose up`, no `npm run dev`") goes into the draft for AU5, not into the kit itself.
+
+**Checkpoint:** after M0.2, **Stop**: Sebas opens the portal in Edge from nginx. Commits: one for M0.1 (feat), one for M0.3 (docs), each message shown first.
+
+**Risks:** (1) BR7 is tomorrow at 12:00 and uses V1.12. If anything is wrong, `docker compose stop dashboard` + `npm run dev` puts back today's way in 1 min. (2) A stale `dist` serves an old portal without saying so: the build is a kit step after any portal change. (3) M0.2 restarts the backend: never during a session (skill rule 9).
+
+**Out of M0:** building `dist` inside Docker (Node image, network), HTTPS, auth, the WebSocket proxy for M1.
 - **`/plan` of M1, no code (D-F6-231, D-F6-233):** the live monitor V1.13 (per-channel figures in `live.py`, a read-only endpoint, the page), to build during the pilot on a day without a participant, with AU2, AU3 and AU6. **Stop:** Sebas's OK on the plan.
 - **Go/no-go** of the pilot (PM, Sebas); the M4 note is PM's. This chat hands in: what is live (G1, G2, S1, S6, block R with V1.12, CH1, X8, AU1, AU4), BR7's and T01's results, open findings, `tasks/` and the draft up to date.
 
