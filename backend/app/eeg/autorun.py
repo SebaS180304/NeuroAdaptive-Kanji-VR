@@ -28,7 +28,7 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from app.eeg import recorder
+from app.eeg import recorder, summary
 
 POLL_S = 2.0
 QUIET_S = 15.0  # LabRecorder flushes far more often than this while it records
@@ -113,7 +113,8 @@ def recording_lost(rec, path: str) -> None:
     print("  " + recorder.MANUAL_STEPS.format(ses=Path(path).name.split("_ses-")[-1][:8]) + ", now")
 
 
-async def wait_completed(session_id: str, baseline: subprocess.Popen, rec=None, path: str = "") -> None:
+async def wait_completed(session_id: str, baseline: subprocess.Popen, rec=None, path: str = ""):
+    """Returns the recorder still recording, or None if there was none or it was lost (manual from then on)."""
     last_check = time.monotonic()
     while not (await _scalar("SELECT 1 FROM experiment_sessions WHERE id = :s AND completed_at IS NOT NULL",
                              s=session_id)):
@@ -127,6 +128,7 @@ async def wait_completed(session_id: str, baseline: subprocess.Popen, rec=None, 
     if baseline.poll() is None:  # S4 never ended inside this session
         baseline.terminate()
         print("WARNING: baseline.py had no S4 result; stopped. The alpha ratio is missing.")
+    return rec
 
 
 async def wait_xdf_closed(path: str) -> None:
@@ -163,11 +165,18 @@ async def main() -> int:
         print(f"WARNING: network up ({', '.join(up)}): turn it off before the cap (D-F6-193)")
     rec, line = start_recording(sid, path)
     print(line)
-    print(f"recording: {'automatic' if rec else 'manual'}")
+    how = "automatic (LabRecorderCLI)" if rec else "manual (LabRecorder GUI) - " + line.split("reason: ")[-1]
+    print(f"recording: {how}")
     try:
         baseline, _ = start_child([sys.executable, "-m", "app.eeg.baseline", sid])
         live, _ = start_child([sys.executable, "-m", "app.eeg.live", sid])
-        await wait_completed(sid, baseline, rec, path)
+        still = await wait_completed(sid, baseline, rec, path)
+        if rec is not None and still is None:
+            how = "automatic, lost mid-session, then manual (LabRecorder GUI)"
+        try:  # before the stop: fill_from_xdf replaces these rows with the XDF cut (D-F6-240 (4))
+            await summary.export_live_epochs(sid, LOG_DIR)
+        except Exception as e:  # the session's recording matters more than this file
+            print(f"WARNING: live epochs not saved ({e})")
         if live is not None and live.poll() is None:  # its rows are replaced by fill_from_xdf below (D-F6-156)
             live.terminate()
         if rec is not None and rec.alive():
@@ -190,7 +199,7 @@ async def main() -> int:
     eps = await epochs.fill_from_xdf(sid)
     counts = {q: sum(e["quality"] == q for e in eps) for q in ("GOOD", "ACCEPTABLE", "POOR")}
     print(f"{len(eps)} epochs: {counts}")
-    return 0
+    return await summary.write(sid, how, LOG_DIR)
 
 
 if __name__ == "__main__":

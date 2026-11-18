@@ -148,6 +148,8 @@ def _no_pc(monkeypatch):
     """No LSL, no network query and no LabRecorderCLI in these tests: manual path unless a test says otherwise."""
     monkeypatch.setattr(autorun, "start_recording", lambda sid, path: (None, "MANUAL: (test)"))
     monkeypatch.setattr(autorun, "network_up", lambda: [])
+    monkeypatch.setattr(autorun.summary, "export_live_epochs", lambda sid, d: _async(None))
+    monkeypatch.setattr(autorun.summary, "write", lambda sid, how, d: _async(0))
 
 
 class FakeRec:
