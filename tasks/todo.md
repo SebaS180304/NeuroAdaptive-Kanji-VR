@@ -131,7 +131,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] **Stop:** Sebas reads it.
 
 ## Wed 18 · 10:15 C0b · 10:30 R3 · 10:50 network off · 11:00 T1 · afternoon T2, BR4 if missing, AU1
-- [ ] AI workshop: if its time clashes with 11:00–12:00, Sebas says so and the test moves.
+- [x] AI workshop clash: T01 moved to 12:15 (D-F6-238) and ran.
 
 ## Thu 19 · visit 2 test at 12:00, then CH1
 
@@ -187,16 +187,18 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [x] AU2 · `2585c98` · `recorder.py` + `autorun`: one local AURA → CLI on the session's path; MANUAL line otherwise; Enter in `finally`. Tests + a Play test without cap.
 - [x] AU4 · `b121e85` · `live_epochs.csv` at COMPLETED, the 4 SQL to logs, `summary.py`. Checked on T01, read-only.
 - [x] AU3 · `e118ccd` · S3 lines in `live.py`: taps k/5, bad channel, Fp1 (D-F6-240 (2)). Checked on T01's XDF fed as live.
-- [ ] pytest green, harness 119/119, one commit each, `graphify update .`, code closed, `preflight`, T02 kit. Draft: how each session was recorded.
+- [x] pytest 467, harness 119/119, one commit each, graphify by hook, code closed at `10f2fc0`, `preflight`, T02 kit. Draft: how each session was recorded.
+- [x] **T02 `fffc578f` ran automated (AU6):** recording by `LabRecorderCLI`, stopped at COMPLETED, 4 SQL and summary, exit 0; G1 live = XDF on 268 epochs. EEG all POOR from an open HEAD_AWAY (visor moved over Fp1, 649 s); what-if without it: A-7 14/18. Draft and `eeg_export_18nov_T02/`.
+- [x] AU3 fix `b2860e9`: the S3 taps on Cz no longer flag Cz (±1 s around each `SYNC_TAP`); pytest 468.
 
 ## Wed 18 evening · D-F6-239 and D-F6-240 · plan written, **waits for Sebas's OK** · M0 after if time, else Fri 20
 - [x] U1 · `7a5c145` · `_assemblyComplete` guard in `PaintSlot` (set in `ShowAssemblyComplete`, cleared in `HideAssemblySlots` and `ShowAssembly`). Harness all PASS.
 - [x] U2a · Content validated 17:10 · group proposal for 日 田 子 目 学 物 茶 馬 魚 鳥 to Content (plan table). **Stop until Content answers.**
 - [x] U2b · `d96a61b`, harness 119/119 · `G`, `IDS`, `OVR` in `tools/assembly_segments.py`; preview clean; old 26 byte-identical; new harness check 35/35 authored.
 - [x] Editor Stop with Sebas (OK): 学 and 月 in S5, green held under the ray. Two commits ("exception D-F6-239"), `graphify update .`.
-- [ ] E1 · read `ocul.py` whole → run on T01's XDF in place (scratchpad venv if it needs `mne`) → only aggregates to the draft.
+- [x] E1 · on T01 and T02, plus T02 without HEAD_AWAY (scratchpad venv with scikit-learn) · read `ocul.py` whole → run on T01's XDF in place (scratchpad venv if it needs `mne`) → only aggregates to the draft.
 
-## Wed 18 afternoon · M0 (D-F6-235) · plan written, **waits for Sebas's OK** (port: 5300 recommended)
+## M0 (D-F6-235) · **moved to Fri 20** (D-F6-239; board 18 Nov 17:20) · plan written, waits for Sebas's OK (port: 5300 recommended)
 - [ ] M0.1 · `npm run build` (dist is from 22 Oct) → `dashboard/nginx.conf` + `dashboard` service (`nginx:alpine`, `127.0.0.1:5300:80`, `/api/` → `backend:8000/`, SPA fallback). `/pretest` 200, deep link 200, `/api/health` ok.
 - [ ] M0.2 · `docker compose down` (never `-v`) → `up -d`: all ports on 127.0.0.1; Playwright against nginx; `preflight` portal OK. **Stop:** Sebas opens the portal in Edge.
 - [ ] M0.3 · compose comment, `stack-and-structure.md` line, kit line in the draft for AU5.
