@@ -776,6 +776,17 @@ namespace NeuroAdaptiveVR.EditorTools
                   conProblema.Count == 0,
                   conProblema.Count == 0 ? $"{enS5.Count} kanji (sin los {tutorial.Count} del tutorial)" : string.Join(" · ", conProblema.Take(5)));
 
+            // D-F6-239 (2): T01's 学 showed "part 1…N". Every kanji that can reach S5 has its real pieces,
+            // as many as assemblyGroups, so a placeholder cannot come back unnoticed.
+            var sinPiezas = enS5.Where(x => !x.p.Authored || x.p.Count != x.k.AssemblyGroups
+                                            || Resources.Load<Texture2D>($"assembly/{x.k.KanjiId}_FULL") == null
+                                            || Enumerable.Range(1, x.p.Count).Any(n =>
+                                                   Resources.Load<Texture2D>($"assembly/{x.k.KanjiId}_SEG{n}") == null))
+                                .Select(x => x.k.Character).ToList();
+            Check("G7", "Todo kanji que puede llegar a S5 tiene sus piezas autoradas, tantas como assemblyGroups (D-F6-239)",
+                  sinPiezas.Count == 0,
+                  sinPiezas.Count == 0 ? $"{enS5.Count} kanji" : string.Join(" ", sinPiezas));
+
             bool mismoOrden = all.All(k => string.Join(",", AssemblyPlan.For(k, seed).RowOrder) ==
                                            string.Join(",", AssemblyPlan.For(k, seed).RowOrder));
             Check("G3", "Misma seed produce el mismo orden de la fila de segmentos",
