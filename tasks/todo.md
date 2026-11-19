@@ -157,6 +157,8 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] **O3** · `scikit-learn==1.9.1`; `ica.py` as `ocul.py` v2 (k = argmax corr × Fp1 share, `max_iter=1000`, S4 start–S5 end); identified if corr ≥ 0.7 and top weight Fp1, else option (2) with reason + corr in `eeg_sessions`; no blink rule after ICA (D-F6-252, D-F6-253, D-F6-255 (3)). *Slot C, after OV of (2).*
 - [ ] **OV** · replay each rule on T01, T02, T03, T04 vs `ocul.py` **v2**; pass = same component, corr ±0.02, A-7 ±1 window, S6 ±1 epoch; on a threshold the backend's figure counts (D-F6-255 (2)); (A-7, S6 non-POOR, ICA corr); differences in the draft; aggregates only; D-F6-250 column (≥ 50 % of S6–S8 rule-independent → not evaluable: T02 out, T01 in). **Stop:** table for D-F6-242.
 - [ ] **CH1 proof** on the dry run (P7, A-7 with F3 out vs 0/18), read-only.
+- [x] **D-F6-258 (1)** · 15:03 · BR7's `eeg_sessions` row deleted (1 row; session `338c6948` COMPLETED, 80 events, 15 trials kept).
+- [ ] **E0** · `eeg_sessions` row only if the session reaches S3 (D-F6-258 (2)), with its test · slot C before M0 · **how waits for PM (question 6)**: recommended, delete the row at COMPLETED/ABORTED without S3 (recording untouched).
 - [ ] **M0** · as the M0 section below (port 5300). Never 16:30–18:40.
 - [ ] **M1-plan** · `/plan` of M1 from the validated EEG formulas, no code. **Stop.** Then page + endpoint in the background; `live.py` not in T04.
 - [ ] Draft 19 Nov: H1 in T03 or not; kit line (re-seat, repeat taps); Dudas 1–4 (evening slot, scikit-learn, blinks after ICA, component not found), recording path of T03/T04, CH1 status.

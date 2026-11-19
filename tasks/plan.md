@@ -261,6 +261,13 @@ Rule and tests as in the CH1 paragraph below (unchanged). Split into three commi
 - **Pass (D-F6-255 (2)):** same component; corr within **0.02**; A-7 within **±1 window**; S6 within **±1 epoch**. Expected causes of a difference: filter (`filtfilt` with notch first vs `sosfiltfilt`), grid (`grid_origin_lsl` vs first stamp), the S3 offset, `FLAT_UV`. **A session right on a threshold** (S6 = 15 or A-7 = 11/18) is noted, and the backend's figure on the `grid_origin_lsl` grid is the one that counts.
 - **`ocul.py` v2 so far (13:05, this PC, scikit-learn 1.9.1; `Claude outputs/eeg_export_19nov/`):** T01: (1) 0/18 · 0; (2) 0/18 · S6 **0** (v1: 1) · 9/18 dense; (3) 18/18 · 38 · component 4, corr 0.97 (Fp1). T02: unchanged from v1 (not evaluable, D-F6-250). T03 and T04: v2 after each session (15:40, 18:15). Only aggregates leave the PC (D-F6-192). **D-F6-250:** per session, the share of S6–S8 covered by causes that do not depend on the rule (open `HEAD_AWAY`, recording gaps / equipment), the same for the three options; **≥ 50 % → "not evaluable"**, declared, out of the minimum of 3 and the "2 of 3" (T02 out, 100 %; T01 in, 0 %; T02 without HEAD_AWAY only descriptive). Pytest and the harness in PASS. **Stop:** the table to Sebas and the EEG chat for D-F6-242 on Fri 20.
 
+#### E0 · `eeg_sessions` row only for sessions that reach S3 (D-F6-258 (2)) · slot C, before M0 · **how: waits for PM (draft 19 Nov, question 6)**
+
+- **Found while planning (15:05):** `autorun` finds a new session *by its `eeg_sessions` row* (`autorun.py:97`) and starts the recording from it (AU2, `xdf_path`); `s3watch` checks channels from S2. Creating the row at S3 would start the recording at S3 and lose S1–S2: a change in how sessions are recorded (D-F6-221, D-F6-244).
+- **Recommended (no recording change):** the row is still written by `POST /sessions`; when a session turns `COMPLETED` (or `ABORTED`) without a `STATE_ENTERED` of S3, the backend deletes its `eeg_sessions` row (no XDF, no epochs). End result as D-F6-258 asks: only sessions that reached S3 keep a row; the visit 4 of the pilot leaves none. Test: a short visit (S1 → SR → S9) ends with no row; a full session keeps it; an aborted session in S2 loses it.
+- **Alternative:** Unity sends `shortVisit` in `POST /sessions` and the backend skips the row (and the LabRecorder name) for it. Touches Unity and the API contract.
+- Done today: BR7's row deleted by hand (D-F6-258 (1), 15:03; session, 80 events and 15 trials kept).
+
 #### M0 · as planned above (Wed 18 section) · slot C or Fri 20 morning
 
 Port **5300** (recommended there; confirm). M0.2 restarts the backend: never inside 16:30–18:40.
