@@ -167,8 +167,9 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [x] **M1-plan** · written in `tasks/plan.md` (M1a endpoint → M1c page → M1b per-channel figures, gate D-F6-247 (5)). **Stop: Sebas's OK before M1 code.**
 - [x] **M1a** · `0ba74b4` · endpoint `/research/sessions/{id}/live` + `/research/live/current`; checked on T03; pytest 508.
 - [x] **`ocul.py` v3 (D-F6-266)** · 18:25, in `Claude outputs/ocul_v3/`; T01/T03/T03b outputs in their folders; T03b and T01 match the backend, T03 (1) 5 vs 2 (likely the 84 ms S3 offset, to the EEG chat). From T04: v3. Was: when the EEG chat leaves `ocul_19nov_v3.zip`: read its diff, run on T01, T03 and T03b with each `grid_origin_lsl` (from `eeg_sessions`), before T04 and outside the sessions; outputs in each export folder. From T04, v3. Not in Downloads at 18:22.
-- [ ] **M1c** (page `/monitor`) **→ Fri 20 morning**, outside the cap sessions; System's LabRecorder/autorun lines `—` until PM answers question 8.
-- [ ] **M1b** (per-channel figures, migration 0021, gate D-F6-247 (5)) **→ Fri 20 morning**.
+- [x] **M1c** · `0a5e6ed` · Was: (page `/monitor`) **→ Fri 20 morning**, outside the cap sessions; System's LabRecorder/autorun lines `—` until PM answers question 8.
+- [ ] **autorun / LabRecorder status in the monitor** (D-F6-265 (1), question 8 yes) · not done: its gate needs a full synthetic S1–S9 session operated in the Editor (with Sebas); plan in the 19 Nov draft. Tomorrow: today's autorun.
+- [x] **M1b** · `3187555` · gate met (T02/T03 byte-identical) · EEG_MONITOR_LIVE off · Was: (per-channel figures, migration 0021, gate D-F6-247 (5)) **→ Fri 20 morning**.
 - [ ] Was: `/plan` of M1 from the validated EEG formulas, no code. **Stop.** Then page + endpoint in the background; `live.py` not in T04.
 - [ ] Draft 19 Nov: H1 in T03 or not; kit line (re-seat, repeat taps); Dudas 1–4 (evening slot, scikit-learn, blinks after ICA, component not found), recording path of T03/T04, CH1 status.
 
