@@ -17,3 +17,4 @@ numpy==2.5.4
 pylsl==1.18.6
 pyxdf==1.18.0
 scipy==1.18.1
+scikit-learn==1.9.1  # FastICA of option (3), the version ocul.py runs with on the lab PC (D-F6-252, D-F6-255 (3))

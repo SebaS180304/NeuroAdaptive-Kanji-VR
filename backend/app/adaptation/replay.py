@@ -127,6 +127,16 @@ def xdf_source(path: str, montage: dict, grid_origin: float | None = None, rule:
     aura, markers = streams[lsl_reader.EEG_STREAM], epochs.markers_of(streams.get(lsl_reader.MARKER_STREAM))
     x, ts = np.asarray(aura["time_series"], dtype=float), np.asarray(aura["time_stamps"], dtype=float)
     buf = live.Buffer(float(aura["info"]["nominal_srate"][0]), montage)
+    model = None
+    if rule == "ica":  # option (3), offline only (D-F6-263 (2)): fitted on the filtered S4–S5 of the whole XDF
+        from app.eeg import ica, preprocess
+
+        labels = [montage[f"CH{i + 1}"] for i in range(x.shape[1])]
+        model = ica.fit(preprocess.filter_eeg(x, buf.srate), ts, labels, markers)
+        if model["identified"]:
+            x = ica.apply(x, model)  # linear: the same on the raw signal as on the filtered one, up to DC
+        else:
+            rule = "nosound"  # D-F6-253 (2)
     buf.rule = rule
     buf.t0 = grid_origin
     step, mk, cut = max(1, int(buf.srate * CHUNK_S)), 0, []
@@ -142,8 +152,10 @@ def xdf_source(path: str, montage: dict, grid_origin: float | None = None, rule:
     ref = buf.reference(cut)
     info = {"epochs": len(cut), "offset_ms": buf.offset_ms, "reference": ref.get("source"), "bad_channel": buf.bad,
             "hitches": hitches_per_state(markers)}
-    sounds = epochs.sound_density(markers) if rule == "nosound" else None  # D-F6-147 (2), option (2) only
+    sounds = epochs.sound_density(markers) if rule != "current" else None  # D-F6-147 (2), options (2) and (3)
     info["rule"] = rule
+    if model is not None:
+        info["ica"] = {k: model.get(k) for k in ("identified", "reason", "component", "corr", "top_channel")}
     return (lambda first_start_ms, decision_ms: window.evaluate(cut, first_start_ms, decision_ms, ref, sounds)), info
 
 
@@ -246,8 +258,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="one JSON object per S7 trial")
     parser.add_argument("--version", choices=ESTIMATOR_VERSIONS,
                         help="estimator version (default: the session's own, else the current one)")
-    parser.add_argument("--rule", choices=("current", "nosound"), default="current",
-                        help="with --xdf: the EEG rule (D-F6-246; option (2) = nosound, never live)")
+    parser.add_argument("--rule", choices=("current", "nosound", "ica"), default="current",
+                        help="with --xdf: the EEG rule (D-F6-246): option (2) = nosound, (3) = ica (offline only)")
     parser.add_argument("--xdf", nargs="?", const="", metavar="PATH",
                         help="replay as MULTIMODAL_ADAPTIVE with the EEG of this XDF (default: the session's own)")
     args = parser.parse_args(argv)
@@ -259,7 +271,8 @@ def main(argv: list[str] | None = None) -> int:
         source, info = xdf_source(args.xdf or path, montage, origin, args.rule)
         hitches = ", ".join(f"{k} {n} ({ms:.0f} ms)" for k, (n, ms) in info["hitches"].items()) or "none"
         print(f"EEG from {args.xdf or path}: {info['epochs']} epochs cut as live.py, S3 offset {info['offset_ms']} ms, "
-              f"reference {info['reference']}; FRAME_HITCH > {HITCH_MS} ms per state: {hitches}", file=sys.stderr)
+              f"reference {info['reference']}; FRAME_HITCH > {HITCH_MS} ms per state: {hitches}; rule {info['rule']}"
+              + (f"; ICA {info['ica']}" if "ica" in info else ""), file=sys.stderr)
     profile, rows = replay(events, args.version, eeg_source=source)
     if args.json:
         for row in rows:

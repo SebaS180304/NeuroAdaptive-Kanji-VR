@@ -65,7 +65,7 @@ def markers_of(stream: dict | None) -> list[tuple[float, dict]]:
     return [(float(t), json.loads(v[0])) for t, v in zip(stream["time_stamps"], stream["time_series"])]
 
 
-RULES = ("current", "nosound")  # D-F6-246: option (1) live; (2) only offline (fill_from_xdf, replay --rule) until the go/no-go
+RULES = ("current", "nosound", "ica")  # options (1), (2) and (3) of D-F6-242; "ica" is never live (D-F6-263 (3))
 TASK_SOUND_STATES = ("S6_GUIDED_PRACTICE_CALIBRATION", "S7_EXPERIMENTAL_RETRIEVAL", "S8_IMMEDIATE_ASSESSMENT")
 
 
@@ -187,7 +187,7 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
     index_ch = [i for i, l in enumerate(labels) if l != "Fp1"]
 
     bad_t = bad
-    bad = (np.abs(x[:, blink_ch]) > BLINK_UV).any(axis=1)
+    bad = (np.abs(x[:, blink_ch]) > BLINK_UV).any(axis=1) if rule != "ica" else np.zeros(len(x), bool)  # D-F6-252 (2)
     pad = int(round(BLINK_PAD_S * srate))
     if pad and bad.any():
         bad = np.convolve(bad, np.ones(2 * pad + 1), mode="same") > 0
@@ -246,6 +246,19 @@ def cut_session(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict, mark
     recut = (make_epochs(x, ts, srate, montage, markers, t0=t0, bad=[(bad[0][0], -math.inf)], rule=rule)
              if bad and bad[0][1] > s6 else eps)
     return eps, bad, reference.compute(recut, baseline.spans(markers))
+
+
+def cut_session_ica(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict, markers: list[tuple[float, dict]],
+                    t0: float | None = None) -> tuple[list[dict], list[tuple[str, float]], dict, dict]:
+    """Option (3), offline only (D-F6-263 (2)): (epochs, bad, reference, ICA model). Identified → x without the ocular
+    component, task sounds of S6–S8 kept, no blink rule; not identified → the session as option (2) (D-F6-253 (2))."""
+    from app.eeg import ica
+
+    labels = [montage[f"CH{i + 1}"] for i in range(x.shape[1])]
+    model = ica.fit(x, ts, labels, markers)
+    if model["identified"]:
+        return (*cut_session(ica.apply(x, model), ts, srate, montage, markers, t0, rule="ica"), model)
+    return (*cut_session(x, ts, srate, montage, markers, t0, rule="nosound"), model)
 
 
 def bad_summary(bad: list[tuple[str, float]], markers: list[tuple[float, dict]]) -> dict:
