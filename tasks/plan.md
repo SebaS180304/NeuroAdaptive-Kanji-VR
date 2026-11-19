@@ -1,6 +1,6 @@
 # Implementation Plan: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Written Mon 16 Nov 2026; **updated Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
+Written Mon 16 Nov 2026; **updated Thu 19 Nov 12:40, aligned up to D-F6-250: today's plan is the section "Thu 19 · day plan (D-F6-246 to D-F6-250)"; waits for Sebas's OK before `/build`**. Before: Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
 Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -187,7 +187,99 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 
 **AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
 
-### Thu 19 · visit 2 test at 12:00, then CH1
+### Thu 19 · day plan (D-F6-246 to D-F6-250) · waits for Sebas's OK before `/build`
+
+**Board:** D-F6-249 (2) (HEAD_AWAY warning, before 13:40), D-F6-216 and D-F6-224 (CH1), D-F6-246 (options (2) and (3), off live), D-F6-247 (M0, M1 plan, M1 in the background), D-F6-248 and §1 "Jue 19 (agenda)", D-F6-250 (non-evaluable session, for OV). **Priority:** H1 (HEAD_AWAY) → CH1 → D-F6-246 → M0 → M1 plan → M1. BR7 is now 14:00 (D-F6-248); BR6 and BR7 stay as below.
+
+**Time I actually have on the PC today (no work during T03 / T04, D-F6-153, D-F6-248):**
+
+| Slot | Window | Ends with |
+| --- | --- | --- |
+| A | ≈ 12:30 (OK) – **13:40** | code closed: commit, `git status` clean, backend restarted, Unity reopened |
+| B | **15:45 – 16:30** (after T03's `autorun`, export, `ocul.py`) | **16:15** cut of `live.py` for T04; **16:30** code closed |
+| C | after **18:40** (T04's processing and `ocul.py` done) | the board says leftovers go to Fri 20 morning; evening only if Sebas says so (question 1) |
+
+A + B ≈ 2 h. The work asked is ≈ 10 h (H1 ≈ 30 min, CH1 ≈ 4 h, D-F6-246 ≈ 4 h, M0 ≈ 1 h, M1 plan ≈ 30 min). So, being honest about it: **H1 takes the first half of slot A; CH1 most likely does not enter T03, and enters T04 only if it is whole by 16:30**; D-F6-246 and M0 happen in slot C or Fri 20 morning; M1's `live.py` does not make T04 (D-F6-247 (5) gate: EEG validation by 16:00, T03's XDF only from 15:40, replay on T02 and T03 before 16:15). Nothing is lost by that: the test sessions run the current rule live (D-F6-241 (2)) and CH1 and the options are re-computed from every XDF afterwards.
+
+**How the gates stay safe:** every slice below is a commit that is inert until its wiring commit. Only the wiring commits (CH1c, and later M1's `live.py`) change what runs live. At each code close, whatever is not whole stays as inert commits (tests green) or in `git stash`; never half-wired.
+
+#### Dependency graph
+
+```
+H1 s3watch HEAD_AWAY warning (13:40, for T03)
+
+CH1a bad_channel() pure ──► CH1b offline (make_epochs, features, window, reference, fill_from_xdf, replay, mig. 0020)
+                                   │
+                                   └──► CH1c live.Buffer wiring (live = offline) ──► T04 only if whole by 16:30
+                                   │
+                                   ▼
+O2 option (2): no task-sound trim S6–S8 + density (epochs, window, concordance) ─┐
+O3 option (3): ICA S4–S5 (+ O2), matrix in eeg_sessions  ◄── questions 2–4      ├─► OV validation on T01, T02, T03, T04 vs ocul.py
+                                                                                 ┘
+M0 nginx serves dashboard/dist (plan above, port 5300)  ──► M1 plan (no code) ──► M1 page + endpoint (background) ──► M1 live.py (later)
+                                                                ▲
+                                           EEG chat validates the live formulas (D-F6-247 (3))
+```
+
+#### H1 · HEAD_AWAY warning in `s3watch.py` (D-F6-249 (2)) · slot A, first, ≈ 30 min
+
+- **What:** in `S3Watch.lines`, between S3 entered and S4 entered, an open `HEAD_AWAY` episode (no `HEAD_RETURNED` with its `episode`) whose start (`t + onset_offset_ms`, as `epochs.excluded_intervals`) is more than **10 s** before the newest EEG stamp → once per episode: `WARNING: HEAD_AWAY open since <state> — re-seat the headset before S4 (D-F6-249)`, `<state>` = the marker's `state` (an episode opened in S2 and still open counts). Reads only the markers already in the buffer; no rule, threshold or recording change (as D-F6-245). Silent from S4 on, as today. Module docstring gets the line.
+- **Tests** (`tests/test_eeg_s3watch.py`, the existing synthetic helpers): open 11 s in S3 → one line, said once; open 9 s → nothing; returned at 8 s → nothing; opened in S2, still open in S3 → the line with S2; open after S4 → nothing. Full pytest (468 → 473).
+- **Done when:** pytest green, Unity harness PASS (no Unity change; D-F6-249 asks for it), one commit `feat(eeg): HEAD_AWAY warning in S3 (D-F6-249)`, `graphify update .`. **If it is not committed by 13:40, T03 runs with the protocol only** (D-F6-249 (2)); it then goes in slot B for T04.
+- Kit line for the operator (draft, not the kit): if the line shows, re-seat the headset and repeat the S3 taps before S4.
+
+#### CH1 · persistently bad channel (D-F6-216, D-F6-224) · slots A and B
+
+Rule and tests as in the CH1 paragraph below (unchanged). Split into three commits:
+
+- **CH1a · the detector, pure (slot A after H1, ≈ 45 min; else slot B).** `epochs.bad_channel(x, ts, labels, markers, t0) -> (label, from_t) | None` and `bad_count`: 30 s bins from `t0` (`grid_origin_lsl`; null → `ts[0]`, as the grid), share of samples > `MAX_UV` per index channel with **±1 s around each `SYNC_TAP` left out** (reuse `s3watch.TAP_GUARD_S`, move the constant to `epochs.py` so both read one value), first channel over 20 % in two consecutive bins → out from the end of the 2nd bin; Fp1 never; 2nd channel → `too_many=True`. **Tests:** one bin / two bins / Cz with 5 taps / bins at the stored origin / two channels / Fp1. Inert: nothing calls it.
+- **CH1b · offline path (slot A if time, else B, ≈ 1.5 h).** `make_epochs(..., bad=None)`: the channel leaves the amplitude and flat checks from `from_t`; `features.compute` drops it from `EI_CHANNELS`, theta `None` if Fz; `window.evaluate`: `too_many` → `counted=False` with fallback `BAD_CHANNELS`; `reference.compute`: out after S6 → the S6 (or S4) epochs re-cut with the channel out, then recomputed; migration **0020** `eeg_sessions.bad_channel`, `bad_channel_from_ms`; `concordance.block` carries `bad_channel`. `fill_from_xdf` and `replay.xdf_source` compute it on the whole filtered XDF. Bump `EPOCHS_VERSION`. **Tests:** above + `rules-v2` byte-identical; full pytest (468 now).
+- **CH1c · live (slot B, ≈ 1 h).** `live.Buffer` filters each 30 s bin once it closes (with `PAD_S` and `EDGE_S` as for epochs), keeps the counts, passes `bad` to `make_epochs`, writes 0020's columns once, and re-writes the reference if the channel goes out after S6. **Test:** live = offline on the same synthetic signal; `replay --xdf` on T02 with CH1 = `fill_from_xdf`.
+- **Gate (D-F6-248):** CH1 enters T03 only if CH1a–c are committed with pytest and the harness in PASS at 13:40 (not expected); else T04 if whole at 16:30; else Fri 20 first thing. **Dry-run proof** (P7 and A-7 with F3 out, beside 0/18) in slot C, read-only; `fill_from_xdf` on `65af2fe4` only with Sebas's OK.
+
+#### O2 · option (2), off live (D-F6-246, D-F6-242 (2), D-F6-147 (2)) · slot C
+
+- **Switch:** `epochs.RULE` ∈ `current` | `nosound` | `nosound_ica`, from `EEG_RULE` (default `current`); `fill_from_xdf` reads it, `replay` gets `--rule`; **`live.Buffer` passes `current` explicitly**, so the env var cannot reach the live path until the go/no-go. `EPOCHS_VERSION` carries the rule.
+- **Epochs:** with `nosound`, `excluded_intervals` stops trimming `ANSWER_SELECTED` and the result sound **in S6–S8**; the stage sound and S5's `AUDIO_ONSET` stay trimmed.
+- **Density:** `window.evaluate` adds `sounds_per_s` of the window and of S6 (same sound events the rule no longer trims); `dense = window ≥ 1.5 × S6`. `concordance.effect`: with `dense`, UNDERCHALLENGED never `CONFIRMED` and STABLE never `LED` (→ `UNAVAILABLE`, as D-F6-147 (2)). The key is absent with `current`, so today's blocks and decisions stay byte-identical.
+- **Tests:** a task sound in S7 trimmed with `current`, kept with `nosound`; S5 and stage sounds kept trimmed; dense window → no confirm, no lead; `current` byte-identical on `rules-v2` and on a stored mm session.
+
+#### O3 · option (3), off live · slot C, after questions 2–4
+
+- `app/eeg/ica.py`: FastICA, 8 components, fitted on the filtered S4–S5 span (as `ocul.py`: `whiten='unit-variance'`, `random_state=0`); ocular component = max |corr| with Fp1; **identified only if corr ≥ 0.7 and its largest weight is on Fp1** (D-F6-242 (3)); applied to the whole session; matrix, mean, component, corr in `eeg_sessions.ica` (jsonb, migration 0021, or inside 0020 if CH1b is not committed yet). Then O2's epochs.
+- **Waits on:** the dependency (question 2), blink rejection after ICA (question 3), and what happens in a session where the component is not identified (question 4).
+- **Tests:** synthetic blink source mixed into 8 channels → found, corr ≥ 0.7, removed; no blink source → not identified, behaviour per question 4.
+
+#### OV · validation (D-F6-246) · slot C or Fri 20 morning
+
+`replay --xdf --rule <r>` on **T01, T02, T03, T04**, XDFs read in place on the PC (copied to the container's `/tmp` and deleted after, as V3). Per session and rule: A-7, non-POOR S6 epochs and, for (3), the component's corr with Fp1, beside `ocul.py`'s figure; differences explained in the draft (expected: `ocul.py`'s "sin recortar sonidos" also stops trimming the S5 and stage sounds, and its epochs use no flat check). Only aggregates leave the PC (D-F6-192). **D-F6-250:** per session, the share of S6–S8 covered by causes that do not depend on the rule (open `HEAD_AWAY`, recording gaps / equipment), the same for the three options; **≥ 50 % → "not evaluable"**, declared, out of the minimum of 3 and the "2 of 3" (T02 out, 100 %; T01 in, 0 %; T02 without HEAD_AWAY only descriptive). Pytest and the harness in PASS. **Stop:** the table to Sebas and the EEG chat for D-F6-242 on Fri 20.
+
+#### M0 · as planned above (Wed 18 section) · slot C or Fri 20 morning
+
+Port **5300** (recommended there; confirm). M0.2 restarts the backend: never inside 16:30–18:40.
+
+#### M1 · plan, then page and endpoint in the background (D-F6-247 (2)–(5))
+
+- **M1-plan (≈ 30 min, docs only, slot C):** read `Dashboard_Feature_Monitor_En_Vivo.md`, V1.13 handoff, D-F6-231/233/234 and the EEG chat's validated formulas; write the `/plan` (endpoint shape, page sections, what `live.py` must add per channel). **Stop:** Sebas's OK.
+- **M1 code** only after the plan's OK and the EEG validation; page and endpoint first (read-only, no recording change, D-F6-128, D-F6-198). **`live.py` for T04: not expected** (gate above); it goes in a later session with replay on T02 and T03 unchanged.
+
+#### Done in slot A (12:41–12:51)
+- **H1** `66a93c2`: live in T03 (s3watch runs inside `live.py`, started by `autorun` per session).
+- **CH1a** `3a591a3` and **CH1b1** `9ef14d8`: inert (nobody passes `bad`). CH1b split: **CH1b2** = migration 0020 (`eeg_sessions.bad_channel`, `bad_channel_from_ms`, `eeg_epochs.excluded_channels`), storage in `epochs.save` / `live.save_epochs` / websocket's `_EPOCH_COLUMNS`, `concordance.block` with `bad_channel`, reference re-cut if out after S6, `fill_from_xdf` and replay; not started before T03 to keep the schema unchanged before a cap session.
+- pytest 468 → 483; harness 119/119 at each commit.
+
+#### Checkpoints
+- **13:40:** H1 in (or T03 on protocol only, said to Sebas); commits green, `git status` clean, backend restarted, Unity reopened; Sebas told what entered (expected: H1, maybe CH1a; nothing else live).
+- **16:15 / 16:30:** CH1c in or out of T04, said out loud; code closed.
+- **End of day:** `tasks/` and the 19 Nov draft (how T03 and T04 were recorded, CH1 status, Dudas or "Sin dudas · 19 nov").
+
+#### Questions (also in the 19 Nov draft, "Dudas para PM")
+1. **Evening slot today after 19:00?** Without it, O2, O3, OV and M0 all fall to Fri 20 morning, around two cap sessions, before the go/no-go. Recommend yes, for O2 + OV at least.
+2. **Option (3) needs FastICA.** Recommend adding `scikit-learn` (pinned) to `backend/requirements.txt`, the same library `ocul.py` uses, so the figures reproduce; the backend image rebuild needs the network, so it happens in slot C, not during a session. The alternative (FastICA in numpy) avoids the dependency but will not reproduce `ocul.py`'s numbers.
+3. **Blink rejection after the ICA.** `ocul.py`'s "ICA S4–S5 + sin recortar sonidos" turns the Fp1 > 75 µV blink drop off; D-F6-242 (3) does not say. Follow `ocul.py`?
+4. **A session where the ocular component is not identified** (corr < 0.7 or not on Fp1): option (3) falls back to (2) in that session, or the session counts as "(3) fails"? (Matters for D-F6-242's "in all sessions".)
+
+### Thu 19 · BR6, BR7 and the CH1 rule (detail, still valid; BR7 now 14:00, D-F6-248)
 
 **BR6 · last check of the inputs (morning, ≈ 15 min).** The three are real since Tue (D-F6-223, D-F6-226): texts and new kanji in `kanji_content.json` (`retention`), V1.12 in the portal. What changes: nothing, unless something changed in `docs_proyecto/` since Tue (then the export again, no code). How it is tested: harness all PASS; each input marked real in the draft. **Stop.**
 
