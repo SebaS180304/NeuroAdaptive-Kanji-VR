@@ -91,6 +91,22 @@ services:
       - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
       - pgadmin_data:/var/lib/pgadmin
 
+  # M0 (D-F6-231 (5), D-F6-247 (1)): the research portal, already built, served by nginx on 127.0.0.1 only (no auth,
+  # participant data, D-F6-186), with /api/ proxied to the backend. After a change in dashboard/: `npm run build`
+  # (dist is not built inside Docker). For portal development: `docker compose stop dashboard`, then `npm run dev`
+  # (both want port 5300).
+  dashboard:
+    image: nginx:alpine
+    container_name: neuroadaptive_dashboard
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:5300:80"
+    volumes:
+      - ./dashboard/dist:/usr/share/nginx/html:ro
+      - ./dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
   # Herramientas de contenido kanji. Perfil "tools": `docker compose up` NO la
   # levanta, es un contenedor de un solo disparo.
   #
