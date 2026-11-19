@@ -19,6 +19,7 @@ MIN_NON_POOR = 2
 MIN_CLEAN_S = 5.0
 CENTRE_MS = int(EPOCH_S * 500)
 CHUNK_MS = 1000
+DENSE = 1.5  # D-F6-147 (2)
 BAD_CHANNELS = "BAD_CHANNELS"  # the BEHAVIOR_FALLBACK reason (concordance.block keeps it)
 ARRIVAL_MARGIN_MS = 1500  # D-F6-188; measured 1.1–1.35 s from an epoch's end to its row (X1b)
 
@@ -41,8 +42,11 @@ def _z(eps: list[dict], name: str, ref: dict) -> float | None:
     return statistics.fmean((math.log(v) - stats["mean"]) / stats["sd"] for v in values)
 
 
-def evaluate(eps: list[dict], first_start_ms: int, decision_ms: int, ref: dict) -> dict:
-    """eps: the session's epochs; first_start_ms: start of the window's 1st trial; decision_ms: answer of its 3rd."""
+def evaluate(eps: list[dict], first_start_ms: int, decision_ms: int, ref: dict,
+             sounds: tuple[list[int], float | None] | None = None) -> dict:
+    """eps: the session's epochs; first_start_ms: start of the window's 1st trial; decision_ms: answer of its 3rd.
+    sounds: epochs.sound_density() for option (2) (D-F6-147 (2)): the window's onsets per second and whether that is
+    >= DENSE x S6's; None (the current rule) adds nothing."""
     lo = min(first_start_ms, decision_ms - MIN_SPAN_MS)
     inside = [e for e in eps if e["start_ms"] is not None and lo <= e["start_ms"] + CENTRE_MS <= decision_ms
               and e["end_ms"] <= decision_ms - ARRIVAL_MARGIN_MS]
@@ -55,4 +59,8 @@ def evaluate(eps: list[dict], first_start_ms: int, decision_ms: int, ref: dict) 
         out["bad_channel"] = out_now[-1]
     if any("," in (e.get("excluded_channels") or "") for e in inside):  # D-F6-216: two channels out, the EEG does not count
         out.update(counted=False, fallback=BAD_CHANNELS)
+    if sounds is not None:
+        onsets, d6 = sounds
+        per_s = sum(lo <= t < decision_ms for t in onsets) / ((decision_ms - lo) / 1000)
+        out.update(sounds_per_s=per_s, dense=d6 is not None and per_s >= DENSE * d6)
     return out

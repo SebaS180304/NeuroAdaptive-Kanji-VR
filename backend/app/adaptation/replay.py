@@ -116,7 +116,7 @@ def hitches_per_state(markers: Iterable[tuple[float, Mapping[str, Any]]]) -> dic
     return out
 
 
-def xdf_source(path: str, montage: dict, grid_origin: float | None = None):
+def xdf_source(path: str, montage: dict, grid_origin: float | None = None, rule: str = "current"):
     """eeg_source for replay() from an XDF: epochs as live.py cuts them, the reference as live writes it.
     grid_origin: eeg_sessions.grid_origin_lsl, the live grid (D-F6-200 (1)); None = the XDF's first stamp."""
     import numpy as np
@@ -127,6 +127,7 @@ def xdf_source(path: str, montage: dict, grid_origin: float | None = None):
     aura, markers = streams[lsl_reader.EEG_STREAM], epochs.markers_of(streams.get(lsl_reader.MARKER_STREAM))
     x, ts = np.asarray(aura["time_series"], dtype=float), np.asarray(aura["time_stamps"], dtype=float)
     buf = live.Buffer(float(aura["info"]["nominal_srate"][0]), montage)
+    buf.rule = rule
     buf.t0 = grid_origin
     step, mk, cut = max(1, int(buf.srate * CHUNK_S)), 0, []
     for i in range(0, len(ts), step):
@@ -141,7 +142,9 @@ def xdf_source(path: str, montage: dict, grid_origin: float | None = None):
     ref = buf.reference(cut)
     info = {"epochs": len(cut), "offset_ms": buf.offset_ms, "reference": ref.get("source"), "bad_channel": buf.bad,
             "hitches": hitches_per_state(markers)}
-    return (lambda first_start_ms, decision_ms: window.evaluate(cut, first_start_ms, decision_ms, ref)), info
+    sounds = epochs.sound_density(markers) if rule == "nosound" else None  # D-F6-147 (2), option (2) only
+    info["rule"] = rule
+    return (lambda first_start_ms, decision_ms: window.evaluate(cut, first_start_ms, decision_ms, ref, sounds)), info
 
 
 def replay(events: Iterable[Mapping[str, Any]], version: str | None = None,
@@ -243,6 +246,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="one JSON object per S7 trial")
     parser.add_argument("--version", choices=ESTIMATOR_VERSIONS,
                         help="estimator version (default: the session's own, else the current one)")
+    parser.add_argument("--rule", choices=("current", "nosound"), default="current",
+                        help="with --xdf: the EEG rule (D-F6-246; option (2) = nosound, never live)")
     parser.add_argument("--xdf", nargs="?", const="", metavar="PATH",
                         help="replay as MULTIMODAL_ADAPTIVE with the EEG of this XDF (default: the session's own)")
     args = parser.parse_args(argv)
@@ -251,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     source = None
     if args.xdf is not None:
         path, montage, origin = xdf_of(args.session)
-        source, info = xdf_source(args.xdf or path, montage, origin)
+        source, info = xdf_source(args.xdf or path, montage, origin, args.rule)
         hitches = ", ".join(f"{k} {n} ({ms:.0f} ms)" for k, (n, ms) in info["hitches"].items()) or "none"
         print(f"EEG from {args.xdf or path}: {info['epochs']} epochs cut as live.py, S3 offset {info['offset_ms']} ms, "
               f"reference {info['reference']}; FRAME_HITCH > {HITCH_MS} ms per state: {hitches}", file=sys.stderr)

@@ -38,6 +38,7 @@ class Buffer:
         self.sync_result = None
         self.t0: float | None = None
         self.next_index = 0
+        self.rule = "current"  # D-F6-246: live.run never changes it; replay --rule sets it for the validation
         self.labels = [montage[f"CH{i + 1}"] for i in range(len(montage))]
         self.bins_x: list[np.ndarray] = []
         self.bins_ts: list[np.ndarray] = []
@@ -86,7 +87,7 @@ class Buffer:
             ts = np.asarray(self.ts, dtype=float) - (self.offset_ms or 0.0) / 1000
             x = preprocess.filter_eeg(np.asarray(self.x, dtype=float), self.srate)
             cut = epochs.make_epochs(x, ts, self.srate, self.montage, self.markers, t0=self.t0,
-                                     bad=[(self.bad[0][0], -np.inf)])
+                                     bad=[(self.bad[0][0], -np.inf)], rule=self.rule)
         return reference.compute(cut, baseline.spans(self.markers))
 
     def cut_past(self, t: float) -> bool:
@@ -106,7 +107,8 @@ class Buffer:
             return []
         lo = int(np.searchsorted(ts, start - PAD_S))
         x = preprocess.filter_eeg(np.asarray(self.x[lo:], dtype=float), self.srate)
-        cut = epochs.make_epochs(x, ts[lo:], self.srate, self.montage, self.markers, t0=self.t0, bad=self.bad)
+        cut = epochs.make_epochs(x, ts[lo:], self.srate, self.montage, self.markers, t0=self.t0, bad=self.bad,
+                                 rule=self.rule)
         new = [e for e in cut if e["epoch_index"] >= self.next_index
                and e["lsl_start"] + epochs.EPOCH_S <= ready_until + 1e-9]
         if new:

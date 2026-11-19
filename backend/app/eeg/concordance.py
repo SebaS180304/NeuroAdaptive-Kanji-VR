@@ -30,6 +30,8 @@ def _r(z: float | None) -> float | None:
 def block(window: dict) -> dict:
     """window.evaluate() as the decision stores it (payload ``eeg``, without ``effect``); z rounded to 3 decimals."""
     extra = {"bad_channel": window["bad_channel"]} if window.get("bad_channel") else {}  # D-F6-216; absent = none out
+    if "dense" in window:  # option (2) only (D-F6-147 (2)); absent with the current rule
+        extra["dense"] = window["dense"]
     if "z" not in window:  # already a block (the payload of a stored decision, when the state is rebuilt)
         return {**{k: window.get(k) for k in ("counted", "non_poor", "clean_s", "ei_z", "theta_z", "alpha_z", "fallback")},
                 **extra}
@@ -55,8 +57,8 @@ def effect(state: str, window: dict | None, previous: dict | None) -> str:
         return CONFIRMED if z >= Z_AGREE else VETO if z <= -Z_AGREE else NEUTRAL
 
     z = _z(window, EI)
-    if z is None:
-        return UNAVAILABLE
+    if z is None or (window.get("dense") and state in (UNDERCHALLENGED, STABLE)):
+        return UNAVAILABLE  # D-F6-147 (2): a window this dense in sounds neither confirms UNDERCHALLENGED nor leads
     if state in (DISENGAGED, UNDERCHALLENGED):
         return CONFIRMED if z <= -Z_AGREE else VETO if z >= Z_AGREE else NEUTRAL
     if state == STABLE:

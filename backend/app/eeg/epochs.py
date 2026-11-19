@@ -22,6 +22,7 @@ saturation (AURA's range is not known).
 import bisect
 import json
 import math
+import os
 import statistics
 import uuid
 
@@ -65,24 +66,50 @@ def markers_of(stream: dict | None) -> list[tuple[float, dict]]:
     return [(float(t), json.loads(v[0])) for t, v in zip(stream["time_stamps"], stream["time_series"])]
 
 
-def excluded_intervals(markers: list[tuple[float, dict]]) -> list[tuple[float, float]]:
-    """LSL time spans that no clean chunk may touch, from the markers."""
-    out, answered, away = [], {}, {}
+RULES = ("current", "nosound")  # D-F6-246: option (1) live; (2) only offline (fill_from_xdf, replay --rule) until the go/no-go
+TASK_SOUND_STATES = ("S6_GUIDED_PRACTICE_CALIBRATION", "S7_EXPERIMENTAL_RETRIEVAL", "S8_IMMEDIATE_ASSESSMENT")
+
+
+def sound_onsets(markers: list[tuple[float, dict]]) -> list[tuple[float, str, str | None]]:
+    """(LSL time, kind, state) of every sound onset: S5 readings (D-F6-138), select and result of a trial, the stage
+    sound before STATE_ENTERED (its state is the one entered). As ocul.py's p7_sonidos.sound_onsets."""
+    out, answered = [], {}
+    for t, m in markers:
+        e = m.get("event")
+        if e == "AUDIO_ONSET":
+            out.append((t, "S5_READING", m.get("state")))
+        elif e == "ANSWER_SELECTED":
+            answered[m.get("trial_id")] = t
+            out.append((t, "SELECT", m.get("state")))
+        elif e == "TRIAL_COMPLETED" and m.get("result_sound_offset_ms") is not None and m.get("trial_id") in answered:
+            out.append((answered[m["trial_id"]] + m["result_sound_offset_ms"] / 1000, "RESULT", m.get("state")))  # relative to ANSWER_SELECTED
+        elif e == "STATE_ENTERED" and m.get("transition_sound_lead_ms") is not None:
+            out.append((t - m["transition_sound_lead_ms"] / 1000, "STAGE", m.get("state")))
+    return out
+
+
+def sound_density(markers: list[tuple[float, dict]]) -> tuple[list[int], float | None]:
+    """Every sound onset in session ms, and S6's onsets per second (from its STATE_ENTERED to the next one), for the
+    density control of option (2) (D-F6-147 (2)). None without an S6."""
+    clock0 = _context(markers)[2]
+    onsets = [t for t, _, _ in sound_onsets(markers)]
+    entered = [(t, m.get("state")) for t, m in markers if m.get("event") == "STATE_ENTERED"]
+    s6 = next(((a, b) for (a, s), (b, _) in zip(entered, entered[1:]) if s == TASK_SOUND_STATES[0]), None)
+    d6 = None if s6 is None else sum(s6[0] <= t < s6[1] for t in onsets) / (s6[1] - s6[0])
+    return ([] if clock0 is None else sorted(int(round((t - clock0) * 1000)) for t in onsets)), d6
+
+
+def excluded_intervals(markers: list[tuple[float, dict]], rule: str = "current") -> list[tuple[float, float]]:
+    """LSL time spans that no clean chunk may touch, from the markers. rule "nosound" (option (2), D-F6-242 (2)) keeps
+    the task sounds (select and result) of S6–S8; the stage sound and S5's readings stay trimmed (D-F6-255 (1))."""
+    assert rule in RULES, rule
+    out = [(s, s + SOUND_S) for s, kind, state in sound_onsets(markers)
+           if rule == "current" or kind not in ("SELECT", "RESULT") or state not in TASK_SOUND_STATES]
+    away = {}
     for t, m in markers:
         e = m.get("event")
         if e == "FRAME_HITCH" and m.get("duration_ms", 0) > HITCH_MS:
             out.append((t - m["duration_ms"] / 1000, t))  # pushed when the slow frame ends
-        elif e == "AUDIO_ONSET":  # each S5 reading (D-F6-138)
-            out.append((t, t + SOUND_S))
-        elif e == "ANSWER_SELECTED":
-            answered[m.get("trial_id")] = t
-            out.append((t, t + SOUND_S))
-        elif e == "TRIAL_COMPLETED" and m.get("result_sound_offset_ms") is not None and m.get("trial_id") in answered:
-            s = answered[m["trial_id"]] + m["result_sound_offset_ms"] / 1000  # relative to ANSWER_SELECTED
-            out.append((s, s + SOUND_S))
-        elif e == "STATE_ENTERED" and m.get("transition_sound_lead_ms") is not None:
-            s = t - m["transition_sound_lead_ms"] / 1000
-            out.append((s, s + SOUND_S))
         elif e == "HEAD_AWAY":
             away[m.get("episode")] = t + m.get("onset_offset_ms", 0) / 1000
         elif e == "HEAD_RETURNED" and m.get("episode") in away:
@@ -141,7 +168,7 @@ def _context(markers: list[tuple[float, dict]]):
 
 def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
                 markers: list[tuple[float, dict]], t0: float | None = None,
-                bad: list[tuple[str, float]] | None = None) -> list[dict]:
+                bad: list[tuple[str, float]] | None = None, rule: str = "current") -> list[dict]:
     """x: filtered EEG, samples × channels in µV; ts: corrected LSL stamps; montage: CH1… → label.
     t0: origin of the epoch grid (default ts[0]). live.py passes the session's first stamp with only the tail of
     its buffer, so each epoch keeps its place and index on the session's grid.
@@ -159,7 +186,7 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
     if pad and bad.any():
         bad = np.convolve(bad, np.ones(2 * pad + 1), mode="same") > 0
     over = np.abs(x[:, index_ch]) > MAX_UV  # per channel, so an excluded one can leave the check (D-F6-216)
-    for a, b in excluded_intervals(markers):
+    for a, b in excluded_intervals(markers, rule):
         bad |= (ts >= a) & (ts < b)
 
     times, ctx, clock0 = _context(markers)
@@ -200,7 +227,7 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
 
 
 def cut_session(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict, markers: list[tuple[float, dict]],
-                t0: float | None = None) -> tuple[list[dict], list[tuple[str, float]], dict]:
+                t0: float | None = None, rule: str = "current") -> tuple[list[dict], list[tuple[str, float]], dict]:
     """The whole session's cut with D-F6-216: (epochs, persistently_bad(), reference). x is the filtered EEG of the
     session. A channel out after S6 began → the reference is recomputed with the remaining channels, from a cut with
     that channel out from the start (D-F6-216); out before S6, the session's own epochs already lack it."""
@@ -208,9 +235,9 @@ def cut_session(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict, mark
 
     labels = [montage[f"CH{i + 1}"] for i in range(x.shape[1])]
     bad = persistently_bad(x, ts, labels, markers, t0)
-    eps = make_epochs(x, ts, srate, montage, markers, t0=t0, bad=bad)
+    eps = make_epochs(x, ts, srate, montage, markers, t0=t0, bad=bad, rule=rule)
     s6 = next((t for t, m in markers if m.get("event") == "STATE_ENTERED" and m.get("state") == reference.S6_STATE), math.inf)
-    recut = (make_epochs(x, ts, srate, montage, markers, t0=t0, bad=[(bad[0][0], -math.inf)])
+    recut = (make_epochs(x, ts, srate, montage, markers, t0=t0, bad=[(bad[0][0], -math.inf)], rule=rule)
              if bad and bad[0][1] > s6 else eps)
     return eps, bad, reference.compute(recut, baseline.spans(markers))
 
@@ -261,8 +288,11 @@ async def fill_from_xdf(session_id: str) -> list[dict]:
         stamps = np.asarray(aura["time_stamps"], dtype=float) - (offset or 0.0) / 1000  # D-F6-176: no offset, no correction
         markers = markers_of(streams.get(lsl_reader.MARKER_STREAM))
         # the live grid when live.py stored it (D-F6-200 (1)); null = older sessions, the XDF's first stamp as before
-        eps, bad, ref = cut_session(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers, t0=origin)
-        await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset})
+        # EEG_RULE: option (2) only by hand, for D-F6-246's validation; live is always "current" until the go/no-go
+        rule = os.environ.get("EEG_RULE", "current")
+        eps, bad, ref = cut_session(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers,
+                                    t0=origin, rule=rule)
+        await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset, "rule": rule})
         await reference.save(db, session_id, ref)
         await save_bad(db, session_id, bad_summary(bad, markers))
         await db.commit()
