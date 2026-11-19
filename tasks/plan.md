@@ -245,6 +245,17 @@ Rule and tests as in the CH1 paragraph below (unchanged). Split into three commi
 - **Density:** `window.evaluate` adds `sounds_per_s` of the window and of S6 (same sound events the rule no longer trims); `dense = window ≥ 1.5 × S6`. `concordance.effect`: with `dense`, UNDERCHALLENGED never `CONFIRMED` and STABLE never `LED` (→ `UNAVAILABLE`, as D-F6-147 (2)). The key is absent with `current`, so today's blocks and decisions stay byte-identical.
 - **Tests:** a task sound in S7 trimmed with `current`, kept with `nosound`; S5 and stage sounds kept trimmed; dense window → no confirm, no lead; `current` byte-identical on `rules-v2` and on a stored mm session.
 
+#### O2 done (`67e6265`, 17:35) and OV of option (2)
+
+| Session | `ocul.py` v2, (2): A-7 · S6 · dense | Backend `replay --rule nosound`: A-7 · S6 · dense | Within D-F6-255 (2)? |
+| --- | --- | --- | --- |
+| T01 `0077f47d` | 0/18 · 0 · 9/18 | 0 · 0 · 9 | ✅ |
+| T02 `fffc578f` | 0/18 · 0 · 0/18 | 0 · 0 · 0 | ✅ |
+| T03 `6bcae154` | 7/18 · 15 · 0/18 | 5 · 14 · 0 | S6 ✅ (±1), dense ✅, **A-7 ✗ (−2)** |
+| T03b `2c453b02` | 9/18 · 4 · 4/18 | 6 · 4 · 4 | S6 ✅, dense ✅, **A-7 ✗ (−3)** |
+
+The A-7 gap is not option (2)'s: with the current rule T03b is already 7/18 in `ocul.py` against 2/18 in the backend (T03: 2 and 2). `ocul.py` cuts from the XDF's first sample without the S3 offset and clips each window's clean seconds to the window, while the backend cuts on the live grid (`grid_origin_lsl`) with the offset. To the EEG chat; on a threshold the backend's figure counts (D-F6-255 (2)). With `current`, epochs and decisions byte-identical to `33c2895` on the four sessions.
+
 #### O3 · option (3), off live · slot C · answered by D-F6-252, D-F6-253, D-F6-255 (3)
 
 - **Dependency:** `scikit-learn==1.9.1` in `backend/requirements.txt`, the version `ocul.py` runs with on this PC (Python 3.13.6, the scratchpad venv); image rebuilt with the network, in slot C (D-F6-251).
