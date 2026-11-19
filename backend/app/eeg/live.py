@@ -116,6 +116,35 @@ class Buffer:
         return new
 
 
+# -- the live monitor's per-channel figures (M1b, D-F6-254, D-F6-265): a read of the buffer, never the epoch cut ------
+
+MONITOR_EVERY_S = 2.5
+MONITOR_TAIL_S = 17.0  # monitor.compute filters [now - 17 s, now]
+
+
+def monitor_snapshot(buf: "Buffer", previous: dict | None) -> dict:
+    """monitor.compute on the tail of the buffer, on the markers' clock (the S3 offset once known)."""
+    from app.eeg import monitor
+
+    n = int(MONITOR_TAIL_S * buf.srate) + 1
+    ts = np.asarray(buf.ts[-n:], dtype=float) - (buf.offset_ms or 0.0) / 1000
+    last_bin = None
+    if buf.bins_x:  # % over 100 µV of the last closed 30 s bin, for the Watch of D-F6-231 (3)
+        last_bin = {label: float(100 * np.mean(np.abs(buf.bins_x[-1][:, i]) > epochs.MAX_UV))
+                    for i, label in enumerate(buf.labels)}
+    return monitor.compute(np.asarray(buf.x[-n:], dtype=float), ts, buf.srate, buf.labels, buf.markers,
+                           now=float(ts[-1]), previous=previous, last_bin_over=last_bin)
+
+
+async def save_monitor(db, session_id: str, snapshot: dict) -> None:
+    import json
+
+    from sqlalchemy import text
+
+    await db.execute(text("UPDATE eeg_sessions SET monitor = CAST(:m AS jsonb), monitor_at = now() WHERE session_id = :s"),
+                     {"s": str(session_id), "m": json.dumps(snapshot)})
+
+
 # -- database (written by the PC; read by the backend at each S7 answer) ---------------------------------------------
 
 _COLUMNS = ("epoch_index", "lsl_start", "start_ms", "end_ms", "game_state", "trial_id", "esl_level", "chunk_clean",
@@ -177,6 +206,7 @@ async def run(session_id: str) -> list[float]:
 
     buf, cut, lags, ref_done, last_beat, origin_done = Buffer(srate, montage), [], [], False, 0.0, False
     buf.rule = get_settings().eeg_live_rule  # D-F6-263: "current" until switched on in backend/.env
+    monitor_on, last_monitor, monitor_prev = get_settings().eeg_monitor_live, 0.0, None  # M1b, off unless switched on
     bad_saved: list = []
     watch = s3watch.S3Watch(montage)
     print(f"live: {lsl_reader.EEG_STREAM} at {srate} Hz and {lsl_reader.MARKER_STREAM}; cutting from the end of S3; "
@@ -197,9 +227,10 @@ async def run(session_id: str) -> list[float]:
         beat = time.monotonic() - last_beat >= HEARTBEAT_S
         write_origin = not origin_done and buf.t0 is not None
         write_bad = buf.bad != bad_saved
+        write_monitor = monitor_on and len(buf.ts) > 0 and time.monotonic() - last_monitor >= MONITOR_EVERY_S
         if write_bad and ref_done:  # out after the reference was written: recomputed without it (D-F6-216)
             write_ref = True
-        if just_synced or eps or write_ref or beat or write_origin or write_bad:
+        if just_synced or eps or write_ref or beat or write_origin or write_bad or write_monitor:
             async with AsyncSessionLocal() as db:
                 if just_synced:
                     from app.eeg import sync
@@ -220,6 +251,10 @@ async def run(session_id: str) -> list[float]:
                     await reference.save(db, session_id, ref)
                     ref_done = True
                     print(f"live: reference from {ref.get('source')} ({ref.get('n_epochs')} epochs)")
+                if write_monitor:  # a separate read of the buffer: the epoch cut above is untouched (D-F6-254)
+                    monitor_prev = monitor_snapshot(buf, monitor_prev)
+                    await save_monitor(db, session_id, monitor_prev)
+                    last_monitor = time.monotonic()
                 if beat:
                     gap = None if not buf.ts else int(round((now - buf.ts[-1]) * 1000))
                     await heartbeat(db, session_id, gap)

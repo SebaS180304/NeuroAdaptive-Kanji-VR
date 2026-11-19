@@ -145,3 +145,18 @@ def test_a_clean_session_has_no_channel_out_live() -> None:
     buf = live.Buffer(SR, DEFAULT_MONTAGE)
     got = _feed(buf, x, ts, markers)
     assert buf.bad == [] and {e["excluded_channels"] for e in got} == {None}
+
+
+def test_the_monitor_reads_the_buffer_without_changing_its_epochs() -> None:   # M1b, D-F6-254
+    x, ts = _signal(60.0)
+    markers = [_state(100.0, S3, 0), _state(110.0, S4, 10_000)]
+    a, b = live.Buffer(SR, DEFAULT_MONTAGE), live.Buffer(SR, DEFAULT_MONTAGE)
+    got_a = _feed(a, x, ts, markers)
+    got_b, n, prev = [], int(0.5 * SR), None
+    for i in range(0, len(ts), n):   # the same feed, with a monitor snapshot after every step
+        b.add(x[i:i + n].tolist(), ts[i:i + n].tolist(), [m for m in markers if ts[i] <= m[0] < ts[i] + 0.5])
+        b.sync_if_ready()
+        got_b += b.new_epochs()
+        prev = live.monitor_snapshot(b, prev)
+    assert got_a == got_b
+    assert [c["label"] for c in prev["channels"]] == LABELS and prev["session_60_uv"] is not None

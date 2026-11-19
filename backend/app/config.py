@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # live.py on the PC and by the backend in Docker from the same backend/.env (EEG_LIVE_RULE); change it only between
     # sessions, then restart the backend. The pilot starts with "nosound" after Tue 24's live check.
     eeg_live_rule: Literal["current", "nosound"] = "current"
+    # The live monitor's per-channel figures (M1b, D-F6-265): live.py computes and writes them only when on.
+    # EEG_MONITOR_LIVE=true in backend/.env, between sessions. It never changes the epoch cut or any rule.
+    eeg_monitor_live: bool = False
 
     # WebSocket timeout: uvicorn's --ws-ping-timeout in docker-compose.yml and the Dockerfile.
 

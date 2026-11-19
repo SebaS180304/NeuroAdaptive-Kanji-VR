@@ -69,3 +69,14 @@ async def test_the_newest_in_progress_session_is_current(client, live_session):
 async def test_an_unknown_session_is_404(client):
     r = await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/live")
     assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_the_per_channel_figures_appear_when_live_py_writes_them(client, live_session):   # M1b
+    snap = {"channels": [{"label": "Fp1", "l60_uv": 112.0, "rms_uv": 14.0, "over_pct": 0.8, "status": "OK",
+                          "flat": False, "sync_tap": False, "mark_60": False}],
+            "session_60_uv": 102.0, "session_60_status": "OK", "window_lsl": [0, 5], "computed_lsl": 7}
+    await _exec("UPDATE eeg_sessions SET monitor = CAST(:m AS jsonb), monitor_at = now() WHERE session_id = :s",
+                s=live_session, m=json.dumps(snap))
+    sq = (await client.get(f"/research/sessions/{live_session}/live")).json()["signal_quality"]
+    assert sq["channels"][0]["status"] == "OK" and sq["session_60_uv"] == 102.0 and 0 <= sq["age_s"] < 5

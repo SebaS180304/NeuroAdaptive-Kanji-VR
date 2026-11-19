@@ -499,7 +499,8 @@ FROM experiment_sessions s JOIN participants p ON p.id = s.participant_id WHERE 
 
 _LIVE_EEG = text("""
 SELECT sync_offset_ms, sync_detail, reference, alpha_ratio, alpha_passed, not_counted_reason, bad_channel,
-       bad_channel_from_ms, eeg_gap_ms, EXTRACT(EPOCH FROM now() - heartbeat_at)::float AS heartbeat_age_s
+       bad_channel_from_ms, eeg_gap_ms, EXTRACT(EPOCH FROM now() - heartbeat_at)::float AS heartbeat_age_s,
+       monitor, EXTRACT(EPOCH FROM now() - monitor_at)::float AS monitor_age_s
 FROM eeg_sessions WHERE session_id = :s""")
 
 _LIVE_DECISIONS = text("""
@@ -579,7 +580,8 @@ async def live_snapshot(session_id: uuid.UUID, db: AsyncSession = Depends(get_db
         "system": None if eeg is None else {k: eeg[k] for k in (
             "heartbeat_age_s", "eeg_gap_ms", "bad_channel", "bad_channel_from_ms", "alpha_ratio", "alpha_passed",
             "not_counted_reason")},
-        "signal_quality": None,
+        # M1b: live.py's per-channel figures when EEG_MONITOR_LIVE is on; null otherwise (the page says it waits)
+        "signal_quality": None if not eeg or eeg["monitor"] is None else {**eeg["monitor"], "age_s": eeg["monitor_age_s"]},
     }
 
 
