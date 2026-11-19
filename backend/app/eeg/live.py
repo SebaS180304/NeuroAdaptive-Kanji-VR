@@ -10,7 +10,10 @@ The cut is the offline one (epochs.make_epochs) on the tail of the buffer:
   - the grid starts at the first corrected stamp, so each epoch keeps its index on the session's grid; that origin is
     stored once (eeg_sessions.grid_origin_lsl) and fill_from_xdf and replay --xdf cut on it (D-F6-200 (1));
   - the zero-phase filter runs over the epoch plus PAD_S before it, and an epoch is cut only EDGE_S after its end,
-    so the filter has signal on both sides. That wait is part of the arrival margin measured on Wed 11.
+    so the filter has signal on both sides. That wait is part of the arrival margin measured on Wed 11;
+  - the persistently bad channel (D-F6-216, D-F6-224): each 30 s bin of the grid is filtered once it closes (PAD_S
+    before, EDGE_S after) and epochs.persistently_bad runs over the closed bins, so an epoch that starts after a
+    channel's time is cut without it, as fill_from_xdf cuts it.
 """
 
 import numpy as np
@@ -35,6 +38,10 @@ class Buffer:
         self.sync_result = None
         self.t0: float | None = None
         self.next_index = 0
+        self.labels = [montage[f"CH{i + 1}"] for i in range(len(montage))]
+        self.bins_x: list[np.ndarray] = []
+        self.bins_ts: list[np.ndarray] = []
+        self.bad: list[tuple[str, float]] = []
 
     def add(self, samples, stamps, markers=()) -> None:
         self.x += samples
@@ -53,6 +60,35 @@ class Buffer:
         self.synced = True
         return True
 
+    def _close_bins(self, ts: np.ndarray) -> None:
+        """Filters every bin that has closed (with EDGE_S after it) and re-runs the detector on them."""
+        closed = False
+        while self.t0 + (len(self.bins_x) + 1) * epochs.BAD_BIN_S + EDGE_S <= ts[-1]:
+            a = self.t0 + len(self.bins_x) * epochs.BAD_BIN_S
+            lo, hi = np.searchsorted(ts, [a - PAD_S, a + epochs.BAD_BIN_S + EDGE_S])
+            y = preprocess.filter_eeg(np.asarray(self.x[lo:hi], dtype=float), self.srate)
+            inside = (ts[lo:hi] >= a) & (ts[lo:hi] < a + epochs.BAD_BIN_S)
+            self.bins_x.append(y[inside])
+            self.bins_ts.append(ts[lo:hi][inside])
+            closed = True
+        if closed:
+            self.bad = epochs.persistently_bad(np.concatenate(self.bins_x), np.concatenate(self.bins_ts), self.labels,
+                                               self.markers, self.t0)
+
+    def reference(self, cut: list[dict]) -> dict:
+        """The session's reference from the epochs cut so far, as epochs.cut_session: a channel out after S6 began →
+        recomputed from the whole buffer cut without it (D-F6-216)."""
+        from app.eeg import baseline, reference
+
+        s6 = next((t for t, m in self.markers if m.get("event") == "STATE_ENTERED" and m.get("state") == reference.S6_STATE),
+                  np.inf)
+        if self.bad and self.bad[0][1] > s6:
+            ts = np.asarray(self.ts, dtype=float) - (self.offset_ms or 0.0) / 1000
+            x = preprocess.filter_eeg(np.asarray(self.x, dtype=float), self.srate)
+            cut = epochs.make_epochs(x, ts, self.srate, self.montage, self.markers, t0=self.t0,
+                                     bad=[(self.bad[0][0], -np.inf)])
+        return reference.compute(cut, baseline.spans(self.markers))
+
     def cut_past(self, t: float) -> bool:
         """Every epoch centred before t (a marker's time, as make_epochs assigns states) has been cut."""
         return self.t0 is not None and self.t0 + self.next_index * epochs.STEP_S + epochs.EPOCH_S / 2 >= t
@@ -63,13 +99,14 @@ class Buffer:
         ts = np.asarray(self.ts, dtype=float) - (self.offset_ms or 0.0) / 1000
         if self.t0 is None:
             self.t0 = float(ts[0])
+        self._close_bins(ts)
         start = self.t0 + self.next_index * epochs.STEP_S
         ready_until = ts[-1] - EDGE_S
         if start + epochs.EPOCH_S > ready_until:
             return []
         lo = int(np.searchsorted(ts, start - PAD_S))
         x = preprocess.filter_eeg(np.asarray(self.x[lo:], dtype=float), self.srate)
-        cut = epochs.make_epochs(x, ts[lo:], self.srate, self.montage, self.markers, t0=self.t0)
+        cut = epochs.make_epochs(x, ts[lo:], self.srate, self.montage, self.markers, t0=self.t0, bad=self.bad)
         new = [e for e in cut if e["epoch_index"] >= self.next_index
                and e["lsl_start"] + epochs.EPOCH_S <= ready_until + 1e-9]
         if new:
@@ -135,6 +172,7 @@ async def run(session_id: str) -> list[float]:
         montage = (await db.execute(text("SELECT montage FROM eeg_sessions WHERE session_id = :s"),
                                     {"s": session_id})).scalar_one_or_none() or baseline.DEFAULT_MONTAGE
     buf, cut, lags, ref_done, last_beat, origin_done = Buffer(srate, montage), [], [], False, 0.0, False
+    bad_saved: list = []
     watch = s3watch.S3Watch(montage)
     print(f"live: {lsl_reader.EEG_STREAM} at {srate} Hz and {lsl_reader.MARKER_STREAM}; cutting from the end of S3")
     while True:
@@ -152,7 +190,10 @@ async def run(session_id: str) -> list[float]:
         write_ref = not ref_done and S7_STATE in entered and buf.cut_past(entered[S7_STATE])
         beat = time.monotonic() - last_beat >= HEARTBEAT_S
         write_origin = not origin_done and buf.t0 is not None
-        if just_synced or eps or write_ref or beat or write_origin:
+        write_bad = buf.bad != bad_saved
+        if write_bad and ref_done:  # out after the reference was written: recomputed without it (D-F6-216)
+            write_ref = True
+        if just_synced or eps or write_ref or beat or write_origin or write_bad:
             async with AsyncSessionLocal() as db:
                 if just_synced:
                     from app.eeg import sync
@@ -164,8 +205,12 @@ async def run(session_id: str) -> list[float]:
                 if eps:
                     await save_epochs(db, session_id, eps)
                     cut += eps
+                if write_bad:
+                    await epochs.save_bad(db, session_id, epochs.bad_summary(buf.bad, buf.markers))
+                    bad_saved = list(buf.bad)
+                    print(f"live: persistently bad channel {', '.join(c for c, _ in buf.bad)} (D-F6-216)")
                 if write_ref:
-                    ref = reference.compute(cut, baseline.spans(buf.markers))
+                    ref = buf.reference(cut)
                     await reference.save(db, session_id, ref)
                     ref_done = True
                     print(f"live: reference from {ref.get('source')} ({ref.get('n_epochs')} epochs)")

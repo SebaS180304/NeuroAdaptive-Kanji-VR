@@ -109,8 +109,8 @@ def persistently_bad(x: np.ndarray, ts: np.ndarray, labels: list[str], markers: 
     cols = [i for i, l in enumerate(labels) if l != "Fp1"]
     over = np.abs(x[:, cols]) > MAX_UV
     run, out = np.zeros(len(cols), int), {}
-    k = 0
-    while t0 + (k + 1) * BAD_BIN_S <= ts[-1] + 1e-9:
+    k, dt = 0, (ts[-1] - ts[0]) / (len(ts) - 1) if len(ts) > 1 else 0.0  # the last sample covers one period too
+    while t0 + (k + 1) * BAD_BIN_S <= ts[-1] + dt + 1e-9:
         lo, hi = np.searchsorted(ts, [t0 + k * BAD_BIN_S, t0 + (k + 1) * BAD_BIN_S])
         sel = keep[lo:hi]
         share = over[lo:hi][sel].mean(axis=0) if sel.any() else np.zeros(len(cols))

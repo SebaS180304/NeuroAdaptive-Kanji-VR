@@ -107,3 +107,41 @@ def test_a_live_tail_and_the_whole_xdf_cut_on_the_stored_origin_give_the_same_ep
         for other in (again, offline):
             assert e["lsl_start"] == pytest.approx(other[e["epoch_index"]]["lsl_start"])
             assert e["chunk_clean"] == other[e["epoch_index"]]["chunk_clean"]
+
+
+# ---------- CH1c: the persistently bad channel live, as offline (D-F6-216, D-F6-224) ----------
+
+LABELS = [DEFAULT_MONTAGE[f"CH{i + 1}"] for i in range(8)]
+
+
+def _f3_bad(seconds: float = 150.0):
+    x, ts = _signal(seconds)
+    on = (ts >= 130.0) & (ts < 190.0)   # 30–90 s after the grid's origin (ts[0] = 100); 10 Hz survives the filter
+    x[on, LABELS.index("F3")] += 300.0 * np.sin(2 * np.pi * 10 * ts[on])
+    return x, ts
+
+
+def test_live_finds_the_channel_when_offline_does_and_cuts_without_it() -> None:
+    x, ts = _f3_bad()
+    markers = [_state(100.0, S3, 0), _state(110.0, S4, 10_000), _state(120.0, S6, 20_000)]
+    buf = live.Buffer(SR, DEFAULT_MONTAGE)
+    got = _feed(buf, x, ts, markers)
+    assert buf.bad == epochs.persistently_bad(preprocess.filter_eeg(x, SR), ts, LABELS, markers, buf.t0) == [("F3", 190.0)]
+    assert {e["excluded_channels"] for e in got if e["lsl_start"] >= 190.0} == {"F3"}
+    assert {e["excluded_channels"] for e in got if e["lsl_start"] < 190.0} == {None}
+
+
+def test_live_reference_is_recomputed_without_the_channel_as_offline() -> None:
+    x, ts = _f3_bad()
+    markers = [_state(100.0, S3, 0), _state(110.0, S4, 10_000), _state(120.0, S6, 20_000)]
+    buf = live.Buffer(SR, DEFAULT_MONTAGE)
+    got = _feed(buf, x, ts, markers)
+    assert buf.reference(got) == epochs.cut_session(preprocess.filter_eeg(x, SR), ts, SR, DEFAULT_MONTAGE, markers, buf.t0)[2]
+
+
+def test_a_clean_session_has_no_channel_out_live() -> None:
+    x, ts = _signal(100.0)
+    markers = [_state(100.0, S3, 0), _state(110.0, S4, 10_000)]
+    buf = live.Buffer(SR, DEFAULT_MONTAGE)
+    got = _feed(buf, x, ts, markers)
+    assert buf.bad == [] and {e["excluded_channels"] for e in got} == {None}

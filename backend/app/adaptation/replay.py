@@ -138,8 +138,8 @@ def xdf_source(path: str, montage: dict, grid_origin: float | None = None):
         mk = j
         buf.sync_if_ready()
         cut += buf.new_epochs()
-    ref = reference.compute(cut, baseline.spans(markers))
-    info = {"epochs": len(cut), "offset_ms": buf.offset_ms, "reference": ref.get("source"),
+    ref = buf.reference(cut)
+    info = {"epochs": len(cut), "offset_ms": buf.offset_ms, "reference": ref.get("source"), "bad_channel": buf.bad,
             "hitches": hitches_per_state(markers)}
     return (lambda first_start_ms, decision_ms: window.evaluate(cut, first_start_ms, decision_ms, ref)), info
 
