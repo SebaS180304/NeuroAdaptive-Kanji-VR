@@ -161,7 +161,10 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [x] **D-F6-258 (1)** · 15:03 · BR7's `eeg_sessions` row deleted (1 row; session `338c6948` COMPLETED, 80 events, 15 trials kept).
 - [ ] **E0** · `eeg_sessions` row only if the session reaches S3 (D-F6-258 (2)), with its test · slot C before M0 · **how waits for PM (question 6)**: recommended, delete the row at COMPLETED/ABORTED without S3 (recording untouched).
 - [ ] **M0** · as the M0 section below (port 5300). Never 16:30–18:40.
-- [ ] **M1-plan** · `/plan` of M1 from the validated EEG formulas, no code. **Stop.** Then page + endpoint in the background; `live.py` not in T04.
+- [x] **D-F6-260 (2)** · 17:27 · false start `40583d6f` deleted (session, 3 events, `eeg_sessions` row in cascade; XDF folder `sub-T03/ses-40583d6f/`). T03 keeps `6bcae154` and `2c453b02`.
+- [x] **M1-plan** · written in `tasks/plan.md` (M1a endpoint → M1c page → M1b per-channel figures, gate D-F6-247 (5)). **Stop: Sebas's OK before M1 code.**
+- [ ] **M1a / M1c / M1b** · after the OK.
+- [ ] Was: `/plan` of M1 from the validated EEG formulas, no code. **Stop.** Then page + endpoint in the background; `live.py` not in T04.
 - [ ] Draft 19 Nov: H1 in T03 or not; kit line (re-seat, repeat taps); Dudas 1–4 (evening slot, scikit-learn, blinks after ICA, component not found), recording path of T03/T04, CH1 status.
 
 ## Session automation (D-F6-219, D-F6-221) · never during a session · pilot starts with **manual recording**
