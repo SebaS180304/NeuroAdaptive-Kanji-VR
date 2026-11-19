@@ -143,16 +143,18 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] **Done when:** visit 2 points at `65af2fe4`; 1 recall end, 10 yes/no, 15 `SR-*`, recall saved in V1.12; nothing in `adaptation_decisions`; findings recorded.
 - [ ] Cannot come → Fri 20 morning; last resort Mon 23, interval declared. **Stop.**
 
-### Thu 19 day plan (D-F6-246 to D-F6-250) · **waits for Sebas's OK** · slots A 12:30–13:40, B 15:45–16:30 (`live.py` cut 16:15), C after 18:40 if Sebas says so
+### Thu 19 day plan (D-F6-246 to D-F6-255) · **waits for Sebas's OK** · slots A 12:30–13:40, B 15:45–16:30 (`live.py` cut 16:15), C after 18:40 if Sebas says so
 - [x] **H1** · `66a93c2` · `s3watch.py`: in S3, `HEAD_AWAY` open > 10 s → once `HEAD_AWAY open since <state> — re-seat the headset before S4`. Tests (11 s / 9 s / returned / opened in S2 / after S4); pytest, harness PASS, commit. **By 13:40, else T03 on protocol only.** *Slot A first.*
 - [x] **CH1a** · `3a591a3` · `epochs.persistently_bad()` pure: 30 s bins from `grid_origin_lsl`, ±1 s around `SYNC_TAP` out (one shared guard constant), > 20 % in 2 bins, Fp1 never, 2nd channel → too many. Tests (one bin / two bins / Cz taps / origin / two channels / Fp1). Inert commit. *Slot A.*
 - [x] **CH1b1** · `9ef14d8` · `make_epochs(bad=)`: channel out of amplitude/flat/indices from its time, Fz → theta None, `excluded_channels`; two out → window `BAD_CHANNELS`. Inert (bad=None everywhere). pytest 483, harness 119/119.
 - [ ] **CH1b2** · slot B: callers apply max 1 + reference re-cut if after S6; offline: `make_epochs(bad=)`, EI without it, Fz → theta None, 2 → not counted (`BAD_CHANNELS`), reference re-cut if after S6, migration 0020, `bad_channel` in the block, `fill_from_xdf` + replay, `EPOCHS_VERSION`. `rules-v2` byte-identical; pytest all green. *Slot A/B.*
 - [ ] **CH1c** · `live.Buffer` per closed bin; live = offline test; replay T02 = fill. Enters T04 only if CH1a–c whole + harness PASS at 16:30, else Fri 20 first. *Slot B.*
 - [ ] **13:40 / 16:30 code closed:** commit, `git status` clean, backend restarted, Unity reopened; say what entered. **Stop.**
-- [ ] **O2** · `EEG_RULE` / `--rule` (live always `current`); no task-sound trim S6–S8; `sounds_per_s` + `dense` (≥ 1.5 × S6) → no UNDERCHALLENGED confirm, no STABLE lead; `current` byte-identical. *Slot C.*
-- [ ] **O3** · `ica.py` FastICA S4–S5, identified if corr ≥ 0.7 and top weight Fp1, matrix in `eeg_sessions`. **Waits on questions 2–4.** *Slot C.*
-- [ ] **OV** · replay each rule on T01, T02, T03, T04 vs `ocul.py` (A-7, S6 non-POOR, ICA corr); differences in the draft; aggregates only; D-F6-250 column (≥ 50 % of S6–S8 rule-independent → not evaluable: T02 out, T01 in). **Stop:** table for D-F6-242.
+- [x] **V2 of `ocul.py`** (D-F6-255 (1)) on T01 and T02, 13:05 · `eeg_export_19nov/` · T01 (2) S6 1 → 0, rest equal; T02 unchanged.
+- [ ] **`ocul.py` v2 on T03** (15:40) **and T04** (18:15), aggregates to `eeg_export_19nov/`.
+- [ ] **O2** · `EEG_RULE` / `--rule` (live always `current`); no task-sound trim S6–S8, **stage sound and S5 `AUDIO_ONSET` stay trimmed**; `sounds_per_s` + `dense` (≥ 1.5 × S6) → no UNDERCHALLENGED confirm, no STABLE lead; `current` byte-identical. *Slot C.*
+- [ ] **O3** · `scikit-learn==1.9.1`; `ica.py` as `ocul.py` v2 (k = argmax corr × Fp1 share, `max_iter=1000`, S4 start–S5 end); identified if corr ≥ 0.7 and top weight Fp1, else option (2) with reason + corr in `eeg_sessions`; no blink rule after ICA (D-F6-252, D-F6-253, D-F6-255 (3)). *Slot C, after OV of (2).*
+- [ ] **OV** · replay each rule on T01, T02, T03, T04 vs `ocul.py` **v2**; pass = same component, corr ±0.02, A-7 ±1 window, S6 ±1 epoch; on a threshold the backend's figure counts (D-F6-255 (2)); (A-7, S6 non-POOR, ICA corr); differences in the draft; aggregates only; D-F6-250 column (≥ 50 % of S6–S8 rule-independent → not evaluable: T02 out, T01 in). **Stop:** table for D-F6-242.
 - [ ] **CH1 proof** on the dry run (P7, A-7 with F3 out vs 0/18), read-only.
 - [ ] **M0** · as the M0 section below (port 5300). Never 16:30–18:40.
 - [ ] **M1-plan** · `/plan` of M1 from the validated EEG formulas, no code. **Stop.** Then page + endpoint in the background; `live.py` not in T04.
