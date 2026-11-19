@@ -52,8 +52,12 @@ backend/tests/test_research_api.py
 
 The dashboard runs outside Docker with `npm run dev` on `127.0.0.1:5300` (not Vite's
 default 5173: Windows reserves ports 5163–5262 on the lab PC, Oct 17). It calls the
-API as `/api/...` through Vite's proxy to `:8000`, so CORS is not involved. If it
-later moves into `docker-compose.yml`, publish it on `127.0.0.1`, like pgAdmin.
+API as `/api/...` through Vite's proxy to `:8000`, so CORS is not involved.
+**Since M0 (19 Nov, D-F6-247 (1)) the lab uses the built portal:** `docker compose up`
+starts the `dashboard` service (nginx on `127.0.0.1:5300`, serving `dashboard/dist`,
+`/api/` proxied to the backend with the prefix stripped, `dashboard/nginx.conf`).
+After any dashboard change run `npm run build`: compose serves the last build. For
+development, `docker compose stop dashboard` first, then `npm run dev` (same port).
 
 ## Commands
 
