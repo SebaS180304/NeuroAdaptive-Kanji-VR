@@ -76,3 +76,51 @@ def test_two_channels_are_both_returned_in_order_and_fp1_never() -> None:
     _spoil(x, ts, 6, 30, 60)   # Pz out at 90
     _spoil(x, ts, 2, 0, 60)    # Fz out at 60
     assert epochs.persistently_bad(x, ts, LABELS, [], T0) == [("Fz", T0 + 60), ("Pz", T0 + 90)]
+
+
+# ---------- CH1b1: what the excluded channel changes in the epochs and the window ----------
+
+from app.eeg import window  # noqa: E402
+
+MONTAGE = {f"CH{i + 1}": label for i, label in enumerate(LABELS)}
+CLOCK = [(T0, {"schema_version": 1, "event": "STATE_ENTERED", "state": "S7_EXPERIMENTAL_RETRIEVAL",
+               "session_elapsed_ms": 0})]
+
+
+def _noisy(ch, seconds=120.0):
+    x, ts = _eeg(seconds)
+    _spoil(x, ts, ch, 0, seconds)
+    return x, ts
+
+
+def test_without_bad_the_epochs_are_as_before() -> None:
+    x, ts = _noisy(1)
+    assert epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0) == epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0, bad=None)
+    assert "excluded_channels" not in epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0)[0]
+
+
+def test_the_channel_leaves_the_amplitude_check_and_the_indices_from_its_time() -> None:
+    x, ts = _noisy(1)   # F3 over 100 µV a quarter of the time: every chunk dropped while it counts
+    eps = epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0, bad=[("F3", T0 + 60)])
+    before = [e for e in eps if e["lsl_start"] < T0 + 60]
+    after = [e for e in eps if e["lsl_start"] >= T0 + 60]
+    assert before and all(e["quality"] == "POOR" and e["excluded_channels"] is None for e in before)
+    assert after and all(e["quality"] == "GOOD" and e["excluded_channels"] == "F3" for e in after)
+    assert all(e["engagement_index"] is not None and e["theta_fz"] is not None for e in after)
+
+
+def test_fz_out_leaves_theta_unavailable_and_the_ei_with_six() -> None:
+    x, ts = _noisy(2)
+    eps = [e for e in epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0, bad=[("Fz", T0)])]
+    assert all(e["theta_fz"] is None and e["engagement_index"] is not None for e in eps)
+
+
+def test_a_second_channel_stops_the_eeg_counting_in_the_window() -> None:
+    x, ts = _eeg()
+    eps = epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0, bad=[("F3", T0 + 30), ("Pz", T0 + 60)])
+    assert {e["excluded_channels"] for e in eps if e["lsl_start"] >= T0 + 60} == {"F3,Pz"}
+    ref = {"indices": {"engagement_index": {"mean": 0.0, "sd": 1.0}}}
+    early = window.evaluate(eps, 20_000, 50_000, ref)
+    late = window.evaluate(eps, 80_000, 110_000, ref)
+    assert early["counted"] and "fallback" not in early
+    assert not late["counted"] and late["fallback"] == "BAD_CHANNELS"

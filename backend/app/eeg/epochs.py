@@ -140,20 +140,25 @@ def _context(markers: list[tuple[float, dict]]):
 
 
 def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
-                markers: list[tuple[float, dict]], t0: float | None = None) -> list[dict]:
+                markers: list[tuple[float, dict]], t0: float | None = None,
+                bad: list[tuple[str, float]] | None = None) -> list[dict]:
     """x: filtered EEG, samples × channels in µV; ts: corrected LSL stamps; montage: CH1… → label.
     t0: origin of the epoch grid (default ts[0]). live.py passes the session's first stamp with only the tail of
-    its buffer, so each epoch keeps its place and index on the session's grid."""
+    its buffer, so each epoch keeps its place and index on the session's grid.
+    bad: persistently_bad() (D-F6-216). An epoch that starts at or after a channel's time leaves it out of the
+    amplitude and flat checks and of the indices, and says so in excluded_channels; two out → window.py does not
+    count the EEG. None = as before, without the key."""
     ts = np.asarray(ts, dtype=float)
     labels = [montage[f"CH{i + 1}"] for i in range(x.shape[1])]
     blink_ch = [labels.index("Fp1")] if "Fp1" in labels else [i for i, l in enumerate(labels) if l in ("F3", "Fz", "F4")]
     index_ch = [i for i, l in enumerate(labels) if l != "Fp1"]
 
+    bad_t = bad
     bad = (np.abs(x[:, blink_ch]) > BLINK_UV).any(axis=1)
     pad = int(round(BLINK_PAD_S * srate))
     if pad and bad.any():
         bad = np.convolve(bad, np.ones(2 * pad + 1), mode="same") > 0
-    bad |= (np.abs(x[:, index_ch]) > MAX_UV).any(axis=1)
+    over = np.abs(x[:, index_ch]) > MAX_UV  # per channel, so an excluded one can leave the check (D-F6-216)
     for a, b in excluded_intervals(markers):
         bad |= (ts >= a) & (ts < b)
 
@@ -169,22 +174,28 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
     last = int((ts[-1] + 1 / srate - t0 - EPOCH_S) // STEP_S)  # the last sample covers 1/srate too
     for j in range(first, last + 1):
         start = float(t0 + j * STEP_S)
+        out_ch = [label for label, t in (bad_t or [])[:2] if start >= t]
+        keep = np.array([labels[c] not in out_ch for c in index_ch])
+        cols = [c for c, k in zip(index_ch, keep) if k]
         flags, clean = [], []
         for k in range(CHUNKS):
             chunk = start + k * CHUNK_STEP_S
             lo, hi = np.searchsorted(ts, [chunk, chunk + CHUNK_S])
-            seg = x[lo:hi, index_ch]
-            flags.append(bool(hi - lo >= min_n and not bad[lo:hi].any() and (np.ptp(seg, axis=0) >= FLAT_UV).all()))
+            seg = x[lo:hi, cols]
+            flags.append(bool(hi - lo >= min_n and not bad[lo:hi].any() and not over[lo:hi][:, keep].any()
+                              and (np.ptp(seg, axis=0) >= FLAT_UV).all()))
             if flags[-1]:
                 clean.append(x[lo:hi])
         i = bisect.bisect_right(times, start + EPOCH_S / 2) - 1  # the context at the epoch's midpoint
         state, esl, trial = ctx[i] if i >= 0 else (None, None, None)
         covered = covered_s(flags)
         grade = quality(covered)
+        used = [l if l not in out_ch else None for l in labels]  # features finds no column for an excluded one
+        extra = {} if bad_t is None else {"excluded_channels": ",".join(out_ch) or None}
         out.append({"epoch_index": j, "lsl_start": start, "start_ms": to_ms(start), "end_ms": to_ms(start + EPOCH_S),
                     "game_state": state, "esl_level": esl, "trial_id": trial, "chunk_clean": flags,
                     "clean_fraction": covered / EPOCH_S, "quality": grade,
-                    **(features.compute(clean, labels, srate) if grade != "POOR" else features.EMPTY)})
+                    **(features.compute(clean, used, srate) if grade != "POOR" else features.EMPTY), **extra})
     return out
 
 

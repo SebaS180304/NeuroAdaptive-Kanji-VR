@@ -19,6 +19,7 @@ MIN_NON_POOR = 2
 MIN_CLEAN_S = 5.0
 CENTRE_MS = int(EPOCH_S * 500)
 CHUNK_MS = 1000
+BAD_CHANNELS = "BAD_CHANNELS"  # the BEHAVIOR_FALLBACK reason (concordance.block keeps it)
 ARRIVAL_MARGIN_MS = 1500  # D-F6-188; measured 1.1–1.35 s from an epoch's end to its row (X1b)
 
 
@@ -47,5 +48,8 @@ def evaluate(eps: list[dict], first_start_ms: int, decision_ms: int, ref: dict) 
               and e["end_ms"] <= decision_ms - ARRIVAL_MARGIN_MS]
     usable = [e for e in inside if e["quality"] != "POOR"]
     clean_s = _clean_s(inside)
-    return {"counted": len(usable) >= MIN_NON_POOR and clean_s >= MIN_CLEAN_S, "non_poor": len(usable), "clean_s": clean_s,
-            "z": {name: _z(usable, name, ref) for name in INDICES}}
+    out = {"counted": len(usable) >= MIN_NON_POOR and clean_s >= MIN_CLEAN_S, "non_poor": len(usable), "clean_s": clean_s,
+           "z": {name: _z(usable, name, ref) for name in INDICES}}
+    if any("," in (e.get("excluded_channels") or "") for e in inside):  # D-F6-216: two channels out, the EEG does not count
+        out.update(counted=False, fallback=BAD_CHANNELS)
+    return out
