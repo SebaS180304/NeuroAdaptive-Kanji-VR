@@ -80,7 +80,7 @@ class Buffer:
 # -- database (written by the PC; read by the backend at each S7 answer) ---------------------------------------------
 
 _COLUMNS = ("epoch_index", "lsl_start", "start_ms", "end_ms", "game_state", "trial_id", "esl_level", "chunk_clean",
-            "clean_fraction", "quality", "engagement_index", "theta_fz", "alpha_parietal", "theta_beta")
+            "clean_fraction", "quality", "engagement_index", "theta_fz", "alpha_parietal", "theta_beta", "excluded_channels")
 
 
 async def save_epochs(db, session_id: str, eps: list[dict]) -> None:
@@ -92,7 +92,7 @@ async def save_epochs(db, session_id: str, eps: list[dict]) -> None:
         f"INSERT INTO eeg_epochs (session_id, {cols}) VALUES (:s, {', '.join(':' + c for c in _COLUMNS)}) "
         f"ON CONFLICT (session_id, epoch_index) DO UPDATE SET "
         + ", ".join(f"{c} = EXCLUDED.{c}" for c in _COLUMNS if c != "epoch_index")),
-        [{"s": str(session_id), **{c: e[c] for c in _COLUMNS}} for e in eps])
+        [{"s": str(session_id), **{c: e.get(c) for c in _COLUMNS}} for e in eps])
 
 
 async def save_origin(db, session_id: str, t0: float) -> None:

@@ -124,3 +124,60 @@ def test_a_second_channel_stops_the_eeg_counting_in_the_window() -> None:
     late = window.evaluate(eps, 80_000, 110_000, ref)
     assert early["counted"] and "fallback" not in early
     assert not late["counted"] and late["fallback"] == "BAD_CHANNELS"
+
+
+# ---------- CH1b2: the session's cut, the reference and what is stored ----------
+
+from app.eeg import concordance, reference  # noqa: E402
+
+S6 = "S6_GUIDED_PRACTICE_CALIBRATION"
+
+
+def _session_markers(s6_at):
+    return [(T0, {"schema_version": 1, "event": "STATE_ENTERED", "state": "S5_LEARNING", "session_elapsed_ms": 0}),
+            (T0 + s6_at, {"schema_version": 1, "event": "STATE_ENTERED", "state": S6,
+                          "session_elapsed_ms": int(s6_at * 1000)})]
+
+
+def test_cut_session_without_a_bad_channel_is_todays_cut() -> None:
+    x, ts = _eeg()
+    mk = _session_markers(0)
+    eps, bad, ref = epochs.cut_session(x, ts, SR, MONTAGE, mk, T0)
+    assert bad == []
+    assert eps == [dict(e, excluded_channels=None) for e in epochs.make_epochs(x, ts, SR, MONTAGE, mk, t0=T0)]
+    assert ref == reference.compute(eps, None)
+
+
+def test_out_after_s6_started_the_reference_is_recomputed_without_it() -> None:
+    x, ts = _eeg(150.0)
+    x[:, 1] *= 3                 # F3 louder than the rest: its EI differs, so the reference shows which cut it used
+    _spoil(x, ts, 1, 60, 60)     # out at T0 + 120: after S6 (entered at 0)
+    eps, bad, ref = epochs.cut_session(x, ts, SR, MONTAGE, _session_markers(0), T0)
+    assert bad == [("F3", T0 + 120)]
+    recut = epochs.make_epochs(x, ts, SR, MONTAGE, _session_markers(0), t0=T0, bad=[("F3", -np.inf)])
+    assert ref == reference.compute(recut, None) != reference.compute(eps, None)
+
+
+def test_out_before_s6_the_reference_is_the_cut_one() -> None:
+    x, ts = _eeg()
+    _spoil(x, ts, 1, 0, 60)      # out at T0 + 60, S6 enters at T0 + 70
+    eps, bad, ref = epochs.cut_session(x, ts, SR, MONTAGE, _session_markers(70), T0)
+    assert bad == [("F3", T0 + 60)] and ref == reference.compute(eps, None)
+
+
+def test_session_ms_of_the_channel_and_the_block_carries_it() -> None:
+    assert epochs.bad_summary([("F3", T0 + 60)], _session_markers(0)) == {"bad_channel": "F3", "bad_channel_from_ms": 60_000}
+    assert epochs.bad_summary([("F3", T0 + 60), ("Pz", T0 + 90)], _session_markers(0)) == \
+        {"bad_channel": "F3,Pz", "bad_channel_from_ms": 60_000}
+    assert epochs.bad_summary([], _session_markers(0)) == {"bad_channel": None, "bad_channel_from_ms": None}
+    w = {"counted": True, "non_poor": 3, "clean_s": 9.0, "z": {}, "bad_channel": "F3"}
+    assert concordance.block(w)["bad_channel"] == "F3"
+    assert "bad_channel" not in concordance.block({"counted": True, "non_poor": 3, "clean_s": 9.0, "z": {}})
+
+
+def test_the_window_says_which_channel_is_out() -> None:
+    x, ts = _noisy(1)
+    eps = epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0, bad=[("F3", T0 + 30)])
+    ref = {"indices": {"engagement_index": {"mean": 0.0, "sd": 1.0}}}
+    assert window.evaluate(eps, 80_000, 110_000, ref)["bad_channel"] == "F3"
+    assert "bad_channel" not in window.evaluate(epochs.make_epochs(x, ts, SR, MONTAGE, CLOCK, t0=T0), 80_000, 110_000, ref)

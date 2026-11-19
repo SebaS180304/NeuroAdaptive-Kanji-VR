@@ -50,6 +50,9 @@ def evaluate(eps: list[dict], first_start_ms: int, decision_ms: int, ref: dict) 
     clean_s = _clean_s(inside)
     out = {"counted": len(usable) >= MIN_NON_POOR and clean_s >= MIN_CLEAN_S, "non_poor": len(usable), "clean_s": clean_s,
            "z": {name: _z(usable, name, ref) for name in INDICES}}
+    out_now = [e["excluded_channels"] for e in inside if e.get("excluded_channels")]
+    if out_now:  # D-F6-216: the decision's eeg block says which channel was out
+        out["bad_channel"] = out_now[-1]
     if any("," in (e.get("excluded_channels") or "") for e in inside):  # D-F6-216: two channels out, the EEG does not count
         out.update(counted=False, fallback=BAD_CHANNELS)
     return out

@@ -185,7 +185,7 @@ async def _handle_session_event(
 
 
 _EPOCH_COLUMNS = ("start_ms", "end_ms", "quality", "chunk_clean",
-                  "engagement_index", "theta_fz", "alpha_parietal", "theta_beta")
+                  "engagement_index", "theta_fz", "alpha_parietal", "theta_beta", "excluded_channels")
 
 
 _eeg_trackers: dict[str, "status.Tracker"] = {}

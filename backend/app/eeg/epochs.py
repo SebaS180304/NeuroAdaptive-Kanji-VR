@@ -40,7 +40,7 @@ SOUND_S = 0.5         # rule B, D-F6-149: every sound, every stage, the three co
 HITCH_MS = 100.0
 BAD_BIN_S, BAD_SHARE, BAD_BINS = 30.0, 0.20, 2  # D-F6-216: > 20 % over MAX_UV in 2 consecutive 30 s bins
 TAP_GUARD_S = 1.0     # D-F6-224 (1): ±1 s around each SYNC_TAP is not counted (the taps on Cz's housing)
-EPOCHS_VERSION = "rule B (D-F6-149), 9 chunks by time covered (D-F6-163, D-F6-166), S3 offset (D-F6-176)"  # stored with the filter (D-F6-156); bump when a drop rule changes
+EPOCHS_VERSION = "rule B (D-F6-149), 9 chunks by time covered (D-F6-163, D-F6-166), S3 offset (D-F6-176), bad channel (D-F6-216, D-F6-224)"  # stored with the filter (D-F6-156); bump when a drop rule changes
 
 
 def covered_s(chunk_clean: list[bool]) -> float:
@@ -199,6 +199,37 @@ def make_epochs(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict,
     return out
 
 
+def cut_session(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict, markers: list[tuple[float, dict]],
+                t0: float | None = None) -> tuple[list[dict], list[tuple[str, float]], dict]:
+    """The whole session's cut with D-F6-216: (epochs, persistently_bad(), reference). x is the filtered EEG of the
+    session. A channel out after S6 began → the reference is recomputed with the remaining channels, from a cut with
+    that channel out from the start (D-F6-216); out before S6, the session's own epochs already lack it."""
+    from app.eeg import baseline, reference
+
+    labels = [montage[f"CH{i + 1}"] for i in range(x.shape[1])]
+    bad = persistently_bad(x, ts, labels, markers, t0)
+    eps = make_epochs(x, ts, srate, montage, markers, t0=t0, bad=bad)
+    s6 = next((t for t, m in markers if m.get("event") == "STATE_ENTERED" and m.get("state") == reference.S6_STATE), math.inf)
+    recut = (make_epochs(x, ts, srate, montage, markers, t0=t0, bad=[(bad[0][0], -math.inf)])
+             if bad and bad[0][1] > s6 else eps)
+    return eps, bad, reference.compute(recut, baseline.spans(markers))
+
+
+def bad_summary(bad: list[tuple[str, float]], markers: list[tuple[float, dict]]) -> dict:
+    """eeg_sessions.bad_channel ("F3", or "F3,Pz" when a 2nd went out and the EEG stopped counting) and the session
+    time the first left from (D-F6-216)."""
+    if not bad:
+        return {"bad_channel": None, "bad_channel_from_ms": None}
+    clock0 = _context(markers)[2]
+    return {"bad_channel": ",".join(label for label, _ in bad[:2]),
+            "bad_channel_from_ms": None if clock0 is None else int(round((bad[0][1] - clock0) * 1000))}
+
+
+async def save_bad(db: AsyncSession, session_id: uuid.UUID | str, summary: dict) -> None:
+    await db.execute(text("UPDATE eeg_sessions SET bad_channel = :c, bad_channel_from_ms = :m WHERE session_id = :s"),
+                     {"s": str(session_id), "c": summary["bad_channel"], "m": summary["bad_channel_from_ms"]})
+
+
 async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], filter_params: dict) -> None:
     """Replaces the session's epochs and stores the filter and the drop rule they were computed with."""
     sid = str(session_id)
@@ -206,10 +237,11 @@ async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], f
     if eps:
         await db.execute(text(
             "INSERT INTO eeg_epochs (session_id, epoch_index, lsl_start, start_ms, end_ms, game_state, trial_id, "
-            "esl_level, chunk_clean, clean_fraction, quality, engagement_index, theta_fz, alpha_parietal, theta_beta) "
+            "esl_level, chunk_clean, clean_fraction, quality, engagement_index, theta_fz, alpha_parietal, theta_beta, "
+            "excluded_channels) "
             "VALUES (:s, :epoch_index, :lsl_start, :start_ms, :end_ms, :game_state, :trial_id, :esl_level, :chunk_clean, "
-            ":clean_fraction, :quality, :engagement_index, :theta_fz, :alpha_parietal, :theta_beta)"),
-            [{"s": sid, **e} for e in eps])
+            ":clean_fraction, :quality, :engagement_index, :theta_fz, :alpha_parietal, :theta_beta, :excluded_channels)"),
+            [{"s": sid, "excluded_channels": None, **e} for e in eps])
     await db.execute(text("UPDATE eeg_sessions SET filter_params = CAST(:f AS jsonb) WHERE session_id = :s"),
                      {"s": sid, "f": json.dumps({**filter_params, "sound_s": SOUND_S, "epochs_version": EPOCHS_VERSION})})
 
@@ -217,7 +249,7 @@ async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], f
 async def fill_from_xdf(session_id: str) -> list[dict]:
     """After the session, on the PC: filters the XDF of its eeg_sessions row and stores its epochs."""
     from app.db.base import AsyncSessionLocal
-    from app.eeg import baseline, lsl_reader, preprocess, reference
+    from app.eeg import lsl_reader, preprocess, reference
 
     async with AsyncSessionLocal() as db:
         path, montage, offset, origin = (await db.execute(text(
@@ -229,9 +261,10 @@ async def fill_from_xdf(session_id: str) -> list[dict]:
         stamps = np.asarray(aura["time_stamps"], dtype=float) - (offset or 0.0) / 1000  # D-F6-176: no offset, no correction
         markers = markers_of(streams.get(lsl_reader.MARKER_STREAM))
         # the live grid when live.py stored it (D-F6-200 (1)); null = older sessions, the XDF's first stamp as before
-        eps = make_epochs(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers, t0=origin)
+        eps, bad, ref = cut_session(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers, t0=origin)
         await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset})
-        await reference.save(db, session_id, reference.compute(eps, baseline.spans(markers)))
+        await reference.save(db, session_id, ref)
+        await save_bad(db, session_id, bad_summary(bad, markers))
         await db.commit()
     return eps
 

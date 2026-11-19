@@ -29,14 +29,16 @@ def _r(z: float | None) -> float | None:
 
 def block(window: dict) -> dict:
     """window.evaluate() as the decision stores it (payload ``eeg``, without ``effect``); z rounded to 3 decimals."""
+    extra = {"bad_channel": window["bad_channel"]} if window.get("bad_channel") else {}  # D-F6-216; absent = none out
     if "z" not in window:  # already a block (the payload of a stored decision, when the state is rebuilt)
-        return {k: window.get(k) for k in ("counted", "non_poor", "clean_s", "ei_z", "theta_z", "alpha_z", "fallback")}
+        return {**{k: window.get(k) for k in ("counted", "non_poor", "clean_s", "ei_z", "theta_z", "alpha_z", "fallback")},
+                **extra}
     z = window.get("z") or {}
     # BEHAVIOR_FALLBACK (§5.5, X3): why the behaviour decided alone; None when the EEG counted
     fallback = None if window.get("counted") else window.get("fallback") or NOT_COUNTED
     return {"counted": window.get("counted"), "non_poor": window.get("non_poor"), "clean_s": window.get("clean_s"),
             "ei_z": _r(z.get("engagement_index")), "theta_z": _r(z.get("theta_fz")),
-            "alpha_z": _r(z.get("alpha_parietal")), "fallback": fallback}
+            "alpha_z": _r(z.get("alpha_parietal")), "fallback": fallback, **extra}
 
 
 def _z(eeg: dict | None, index: str) -> float | None:
