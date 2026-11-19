@@ -5,7 +5,8 @@ it changes nothing in the rule or the session.
     (D-F6-197: not the next tap without the peak; under 3 clear taps the session has no offset, D-F6-176);
     a tap outside S3 → warning (D-F6-217: none in S9);
   - from S2 to the end of S3, every 10 s: a channel with > 20 % of its last 30 s over 100 µV (D-F6-216's
-    measure, on the filtered signal as epochs.py, leaving out ±1 s around each SYNC_TAP) → fix it before S4 (D-F6-213); Fp1 gets D-F6-240 (2)'s line.
+    measure, on the filtered signal as epochs.py, leaving out ±1 s around each SYNC_TAP) → fix it before S4 (D-F6-213); Fp1 gets D-F6-240 (2)'s line;
+  - in S3, a HEAD_AWAY open for more than 10 s (from S2 or S3) → re-seat the headset and repeat the taps before S4 (D-F6-249 (2)).
 From S4 on it prints nothing: nothing is touched from S4 to S8 (D-F6-153).
 """
 
@@ -17,6 +18,7 @@ S2, S3, S4 = "S2_VR_TUTORIAL", "S3_SYSTEM_VALIDATION", "S4_EEG_BASELINE"
 BAD_UV, BAD_SHARE, SPAN_S, EVERY_S, PAD_S = 100.0, 0.20, 30.0, 10.0, 5.0
 TAP_GUARD_S = 1.0  # the taps on Cz's housing are thousands of uV: not a bad channel (T02, 18 Nov)
 TAPS = 5
+AWAY_S = 10.0  # D-F6-249 (2)
 
 
 class S3Watch:
@@ -29,6 +31,7 @@ class S3Watch:
         self.bad: set[str] = set()
         self.next_check: float | None = None
         self.closed = False
+        self.away_warned: set = set()
 
     def lines(self, x: list, ts: list, markers: list[tuple[float, dict]], srate: float) -> list[str]:
         if self.closed or len(ts) == 0:
@@ -52,6 +55,8 @@ class S3Watch:
             else:
                 out.append(f"tap {n}/{TAPS}: NOT clear ({d['why']}) - {self.clear} clear so far; "
                            f"check the peak in AURA before the next tap (D-F6-197)")
+        if S3 in entered and S4 not in entered:
+            out += self._away(markers, now)
         if S4 in entered:
             out.append(f"S3 taps: {self.clear}/{TAPS} clear"
                        + ("" if self.clear >= sync.MIN_TAPS else
@@ -64,6 +69,21 @@ class S3Watch:
             self.next_check = now + EVERY_S
             taps = [t for t, m in markers if m.get("event") == "SYNC_TAP"]
             out += self._channels(x, ts, srate, taps)
+        return out
+
+    def _away(self, markers: list[tuple[float, dict]], now: float) -> list[str]:
+        """Each HEAD_AWAY episode still open AWAY_S after its onset (as epochs.excluded_intervals times it), once."""
+        open_ = {}
+        for t, m in markers:
+            if m.get("event") == "HEAD_AWAY":
+                open_[m.get("episode")] = (t + m.get("onset_offset_ms", 0) / 1000, m.get("state"))
+            elif m.get("event") == "HEAD_RETURNED":
+                open_.pop(m.get("episode"), None)
+        out = []
+        for episode, (start, state) in open_.items():
+            if now - start > AWAY_S and episode not in self.away_warned:
+                self.away_warned.add(episode)
+                out.append(f"WARNING: HEAD_AWAY open since {state} - re-seat the headset before S4 (D-F6-249)")
         return out
 
     def _channels(self, x: list, ts: list, srate: float, taps: list[float] = ()) -> list[str]:
