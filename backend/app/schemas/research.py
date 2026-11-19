@@ -412,3 +412,107 @@ class SessionPlan(BaseModel):
     last_state: str | None
     last_state_ms: int | None   # when the last state was entered
     blocks: list[PlanBlock]
+
+
+# ---------- V1.13 Live session monitor (M1a; D-F6-231, D-F6-234, D-F6-254) ----------
+
+class LiveTop(BaseModel):
+    session_id: str
+    external_code: str
+    condition: str
+    set: str | None
+    visit: int | None
+    status: str
+    stage: str | None
+    stage_entered_ms: int | None
+    elapsed_ms: int | None          # session_elapsed_ms of the newest event
+
+
+class LiveSync(BaseModel):
+    clear_taps: int | None
+    taps: int | None
+    offset_ms: float | None
+    robust_spread_ms: float | None
+
+
+class LiveReference(BaseModel):
+    source: str | None
+    fallback: bool | None
+    n_epochs: int | None
+
+
+class LiveLast(BaseModel):
+    trial_id: str
+    counted: bool | None
+    ei_z: float | None
+    ei_band: str | None             # Low / Normal / High (D-F6-234), "Not counted", or None
+    theta_z: float | None
+    theta_band: str | None
+
+
+class LiveWindows(BaseModel):
+    counted: int
+    with_eeg: int
+
+
+class LiveTracePoint(BaseModel):
+    start_ms: int
+    ei_z: float | None
+    theta_z: float | None
+
+
+class LiveIndices(BaseModel):
+    reference: LiveReference | None
+    last: LiveLast | None
+    windows: LiveWindows
+    trace: list[LiveTracePoint]
+
+
+class LiveDecision(BaseModel):
+    trial_id: str
+    trial_sequence: int | None
+    decided_elapsed_ms: int | None
+    learner_state: str | None
+    action: str
+    dimension: str | None
+    from_level: str | None
+    to_level: str | None
+    esl: str | None
+    lal: str | None
+    reason_code: str | None
+    eeg_counted: bool | None
+    eeg_ei_z: float | None
+    eeg_theta_z: float | None
+    eeg_effect: str | None
+
+
+class LiveEvent(BaseModel):
+    elapsed_ms: int | None
+    event_type: str
+    trial_id: str | None
+    flag: Literal["look", "decision"] | None
+
+
+class LiveSystem(BaseModel):
+    heartbeat_age_s: float | None
+    eeg_gap_ms: int | None
+    bad_channel: str | None
+    bad_channel_from_ms: int | None
+    alpha_ratio: dict | None
+    alpha_passed: bool | None
+    not_counted_reason: str | None
+
+
+class LiveSnapshot(BaseModel):
+    generated_at: datetime
+    session: LiveTop
+    sync: LiveSync | None
+    indices: LiveIndices
+    decisions: list[LiveDecision]
+    events: list[LiveEvent]
+    system: LiveSystem | None
+    signal_quality: dict | None     # M1b: live.py's per-channel figures, null until then
+
+
+class LiveCurrent(BaseModel):
+    session_id: str

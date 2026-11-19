@@ -8,6 +8,7 @@ goes into a migration, not into the frontend.
 import csv
 import io
 import json
+import math
 import uuid
 from datetime import datetime
 from typing import Literal
@@ -18,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.research import (
-    DataQuality, LearnerProfile, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
+    DataQuality, LearnerProfile, LiveCurrent, LiveSnapshot, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
     SessionTimeline,
 )
 
@@ -480,3 +481,112 @@ async def export_csv(
     # code page and kanji turn to mojibake. pandas and R skip it with encoding "utf-8-sig".
     return Response(out.getvalue().encode("utf-8-sig"), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+# ---------- V1.13 Live session monitor (M1a; D-F6-231, D-F6-233, D-F6-234, D-F6-247, D-F6-254) ----------
+# One snapshot of what the database already holds, polled by the page. Nothing here is recomputed from the signal:
+# the words come from the engine's z of each decision (D-F6-234), the trace from eeg_epochs against the stored
+# reference (window.py's count, epoch by epoch). signal_quality stays null until M1b.
+
+_LIVE_TOP = text("""
+SELECT s.id::text AS session_id, p.external_code, s.condition::text AS condition, s.assigned_kanji_set AS set,
+       s.visit_number AS visit, s.status::text AS status, s.current_state::text AS stage,
+       (SELECT max(st.entered_elapsed_ms) FROM session_states st
+         WHERE st.session_id = s.id AND st.state::text = s.current_state::text) AS stage_entered_ms,
+       (SELECT (e.payload ->> 'session_elapsed_ms')::int FROM session_events e
+         WHERE e.session_id = s.id AND e.payload ? 'session_elapsed_ms' ORDER BY e.id DESC LIMIT 1) AS elapsed_ms
+FROM experiment_sessions s JOIN participants p ON p.id = s.participant_id WHERE s.id = :s""")
+
+_LIVE_EEG = text("""
+SELECT sync_offset_ms, sync_detail, reference, alpha_ratio, alpha_passed, not_counted_reason, bad_channel,
+       bad_channel_from_ms, eeg_gap_ms, EXTRACT(EPOCH FROM now() - heartbeat_at)::float AS heartbeat_age_s
+FROM eeg_sessions WHERE session_id = :s""")
+
+_LIVE_DECISIONS = text("""
+SELECT trial_id, trial_sequence, decided_elapsed_ms, learner_state, action, dimension, from_level, to_level, esl, lal,
+       reason_code, eeg_counted, eeg_ei_z, eeg_theta_z, eeg_effect
+FROM adaptation_decisions WHERE session_id = :s ORDER BY trial_sequence DESC, decided_elapsed_ms DESC""")
+
+_LIVE_EVENTS = text("""
+SELECT (payload ->> 'session_elapsed_ms')::int AS elapsed_ms, event_type, payload ->> 'trial_id' AS trial_id
+FROM session_events WHERE session_id = :s ORDER BY id DESC LIMIT 40""")
+
+_LIVE_TRACE = text("""
+SELECT start_ms, engagement_index, theta_fz FROM eeg_epochs
+WHERE session_id = :s AND quality <> 'POOR' AND start_ms IS NOT NULL ORDER BY epoch_index""")
+
+_LOOK = {"HEAD_AWAY", "FRAME_HITCH", "EEG_STATUS", "ADAPTATION_SKIPPED"}  # the triangle of V1.13's event console
+
+
+def _r(value: float | None, digits: int) -> float | None:
+    return None if value is None else round(value, digits)
+
+
+def _band(z: float | None, counted: bool | None) -> str | None:
+    """D-F6-234: Low z <= -1, High z >= +1, Normal between; "Not counted" when the window's EEG did not count."""
+    if counted is False:
+        return "Not counted"
+    if z is None:
+        return None
+    return "Low" if z <= -1 else "High" if z >= 1 else "Normal"
+
+
+def _live_z(value: float | None, stats: dict | None) -> float | None:
+    """z of one epoch's index against the session's reference, as window.py (ln, then mean and SD)."""
+    if value is None or not stats or stats.get("mean") is None or not stats.get("sd"):
+        return None
+    return (math.log(value) - stats["mean"]) / stats["sd"]
+
+
+@router.get("/sessions/{session_id}/live", response_model=LiveSnapshot)
+async def live_snapshot(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    top = (await db.execute(_LIVE_TOP, {"s": session_id})).mappings().first()
+    if top is None:
+        raise HTTPException(status_code=404, detail="session not found")
+    eeg = (await db.execute(_LIVE_EEG, {"s": session_id})).mappings().first()
+    # REAL columns: rounded as the decision's eeg block stores them (z to 3 decimals, concordance.block)
+    decisions = [{**dict(r), "eeg_ei_z": _r(r["eeg_ei_z"], 3), "eeg_theta_z": _r(r["eeg_theta_z"], 3)}
+                 for r in (await db.execute(_LIVE_DECISIONS, {"s": session_id})).mappings()]
+    events = [{**dict(r), "flag": "decision" if r["event_type"] == "ADAPTATION_DECISION" else
+               "look" if r["event_type"] in _LOOK else None}
+              for r in (await db.execute(_LIVE_EVENTS, {"s": session_id})).mappings()]
+    ref = (eeg or {}).get("reference") or {}
+    idx = ref.get("indices") or {}
+    trace = [{"start_ms": r["start_ms"], "ei_z": _live_z(r["engagement_index"], idx.get("engagement_index")),
+              "theta_z": _live_z(r["theta_fz"], idx.get("theta_fz"))}
+             for r in (await db.execute(_LIVE_TRACE, {"s": session_id})).mappings()]
+    with_eeg = [d for d in decisions if d["eeg_counted"] is not None]
+    last = with_eeg[0] if with_eeg else None
+    detail = (eeg or {}).get("sync_detail") or {}
+    taps = [t for t in detail.get("taps") or [] if t.get("phase") == "S3"]
+    return {
+        "generated_at": datetime.now().astimezone(),
+        "session": dict(top),
+        "sync": None if eeg is None else {
+            "clear_taps": sum(1 for t in taps if t.get("valid")) if taps else None, "taps": len(taps) or None,
+            "offset_ms": _r(eeg["sync_offset_ms"], 1), "robust_spread_ms": detail.get("spread_ms")},
+        "indices": {
+            "reference": ({"source": ref.get("source"), "fallback": ref.get("fallback"), "n_epochs": ref.get("n_epochs")}
+                          if ref else None),
+            "last": None if last is None else {
+                "trial_id": last["trial_id"], "counted": last["eeg_counted"],
+                "ei_z": last["eeg_ei_z"], "ei_band": _band(last["eeg_ei_z"], last["eeg_counted"]),
+                "theta_z": last["eeg_theta_z"], "theta_band": _band(last["eeg_theta_z"], last["eeg_counted"])},
+            "windows": {"counted": sum(1 for d in with_eeg if d["eeg_counted"]), "with_eeg": len(with_eeg)},
+            "trace": trace},
+        "decisions": decisions,
+        "events": events,
+        "system": None if eeg is None else {k: eeg[k] for k in (
+            "heartbeat_age_s", "eeg_gap_ms", "bad_channel", "bad_channel_from_ms", "alpha_ratio", "alpha_passed",
+            "not_counted_reason")},
+        "signal_quality": None,
+    }
+
+
+@router.get("/live/current", response_model=LiveCurrent)
+async def live_current(db: AsyncSession = Depends(get_db)) -> dict:
+    sid = (await db.execute(text(
+        "SELECT id::text FROM experiment_sessions WHERE status = 'IN_PROGRESS' ORDER BY created_at DESC LIMIT 1"))).scalar()
+    if sid is None:
+        raise HTTPException(status_code=404, detail="no session in progress")
+    return {"session_id": sid}
