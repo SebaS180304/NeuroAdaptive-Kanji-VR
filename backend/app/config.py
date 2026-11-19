@@ -7,6 +7,7 @@ en un entorno de investigacion con datos de participantes reales.
 """
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -35,6 +36,12 @@ class Settings(BaseSettings):
     labrecorder_port: int = 22345
     # Where LabRecorder writes, as a path on the PC (it is LabRecorder that writes).
     labrecorder_root: str = ""
+
+    # --- EEG rule live (D-F6-246, D-F6-263) ---
+    # "current" = option (1); "nosound" = option (2): task sounds of S6–S8 not trimmed + density control. Read by
+    # live.py on the PC and by the backend in Docker from the same backend/.env (EEG_LIVE_RULE); change it only between
+    # sessions, then restart the backend. The pilot starts with "nosound" after Tue 24's live check.
+    eeg_live_rule: Literal["current", "nosound"] = "current"
 
     # WebSocket timeout: uvicorn's --ws-ping-timeout in docker-compose.yml and the Dockerfile.
 

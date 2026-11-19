@@ -199,6 +199,8 @@ async def _eeg_source(session_id: uuid.UUID, answered_ms):
     X3 (§5.5, D-F6-174): with the EEG down (LOST, PROCESS_DOWN) or cancelled for the session (S4 alpha failed,
     > 60 s without EEG) the window does not count and carries the reason (BEHAVIOR_FALLBACK); each status change
     is an EEG_STATUS event."""
+    from app.config import get_settings
+    from app.eeg import epochs as eeg_epochs
     from app.eeg import status, window
 
     if answered_ms is None:
@@ -228,6 +230,13 @@ async def _eeg_source(session_id: uuid.UUID, answered_ms):
                 f"SELECT {', '.join(_EPOCH_COLUMNS)} FROM eeg_epochs WHERE session_id = :s "
                 "AND start_ms <= :hi"),  # no lower bound: trials have no timeout, a window can last > 60 s (D-F6-186)
                 {"s": str(session_id), "hi": int(answered_ms)})).all()
+            sounds = None
+            if get_settings().eeg_live_rule == "nosound":  # D-F6-147 (2): the window's sound density against S6's
+                events = (await db.execute(text(
+                    "SELECT event_type, payload FROM session_events WHERE session_id = :s AND event_type IN "
+                    "('AUDIO_ONSET', 'ANSWER_SELECTED', 'TRIAL_COMPLETED', 'STATE_ENTERED') ORDER BY id"),
+                    {"s": str(session_id)})).all()
+                sounds = eeg_epochs.sound_density(eeg_epochs.markers_of_events([(e, p) for e, p in events]))
     except Exception:
         logger.exception("EEG not read for the decision (session=%s)", session_id)
         return None
@@ -235,7 +244,7 @@ async def _eeg_source(session_id: uuid.UUID, answered_ms):
     reference = ref or {"indices": {}}
     # shortcut: a session without an eeg_sessions row (live.py never started) reads as PROCESS_DOWN above
     return lambda _trial_id, first_start_ms, decision_ms: window.evaluate(epochs, first_start_ms, decision_ms,
-                                                                          reference)
+                                                                          reference, sounds)
 
 
 async def _load_adaptation(db, session_id: uuid.UUID, condition: str | None) -> None:

@@ -22,7 +22,6 @@ saturation (AURA's range is not known).
 import bisect
 import json
 import math
-import os
 import statistics
 import uuid
 
@@ -97,6 +96,13 @@ def sound_density(markers: list[tuple[float, dict]]) -> tuple[list[int], float |
     s6 = next(((a, b) for (a, s), (b, _) in zip(entered, entered[1:]) if s == TASK_SOUND_STATES[0]), None)
     d6 = None if s6 is None else sum(s6[0] <= t < s6[1] for t in onsets) / (s6[1] - s6[0])
     return ([] if clock0 is None else sorted(int(round((t - clock0) * 1000)) for t in onsets)), d6
+
+
+def markers_of_events(events: list[tuple[str, dict]]) -> list[tuple[float, dict]]:
+    """session_events rows (event_type, payload) as markers on the session clock (s): what the backend has when it
+    decides, so sound_density() gives the same onsets in session ms as from the XDF's markers."""
+    return [(p["session_elapsed_ms"] / 1000, {"event": event_type, **p}) for event_type, p in events
+            if p.get("session_elapsed_ms") is not None]
 
 
 def excluded_intervals(markers: list[tuple[float, dict]], rule: str = "current") -> list[tuple[float, float]]:
@@ -275,6 +281,7 @@ async def save(db: AsyncSession, session_id: uuid.UUID | str, eps: list[dict], f
 
 async def fill_from_xdf(session_id: str) -> list[dict]:
     """After the session, on the PC: filters the XDF of its eeg_sessions row and stores its epochs."""
+    from app.config import get_settings
     from app.db.base import AsyncSessionLocal
     from app.eeg import lsl_reader, preprocess, reference
 
@@ -288,8 +295,7 @@ async def fill_from_xdf(session_id: str) -> list[dict]:
         stamps = np.asarray(aura["time_stamps"], dtype=float) - (offset or 0.0) / 1000  # D-F6-176: no offset, no correction
         markers = markers_of(streams.get(lsl_reader.MARKER_STREAM))
         # the live grid when live.py stored it (D-F6-200 (1)); null = older sessions, the XDF's first stamp as before
-        # EEG_RULE: option (2) only by hand, for D-F6-246's validation; live is always "current" until the go/no-go
-        rule = os.environ.get("EEG_RULE", "current")
+        rule = get_settings().eeg_live_rule  # the same rule live.py cut with (D-F6-263)
         eps, bad, ref = cut_session(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers,
                                     t0=origin, rule=rule)
         await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset, "rule": rule})

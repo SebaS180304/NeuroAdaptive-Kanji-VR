@@ -173,10 +173,14 @@ async def run(session_id: str) -> list[float]:
     async with AsyncSessionLocal() as db:
         montage = (await db.execute(text("SELECT montage FROM eeg_sessions WHERE session_id = :s"),
                                     {"s": session_id})).scalar_one_or_none() or baseline.DEFAULT_MONTAGE
+    from app.config import get_settings
+
     buf, cut, lags, ref_done, last_beat, origin_done = Buffer(srate, montage), [], [], False, 0.0, False
+    buf.rule = get_settings().eeg_live_rule  # D-F6-263: "current" until switched on in backend/.env
     bad_saved: list = []
     watch = s3watch.S3Watch(montage)
-    print(f"live: {lsl_reader.EEG_STREAM} at {srate} Hz and {lsl_reader.MARKER_STREAM}; cutting from the end of S3")
+    print(f"live: {lsl_reader.EEG_STREAM} at {srate} Hz and {lsl_reader.MARKER_STREAM}; cutting from the end of S3; "
+          f"EEG rule {buf.rule}")
     while True:
         samples, stamps = eeg_in.pull_chunk(timeout=0.2)
         values, mstamps = mk_in.pull_chunk(timeout=0.0)

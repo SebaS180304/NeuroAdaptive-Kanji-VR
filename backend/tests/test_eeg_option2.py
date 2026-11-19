@@ -72,3 +72,24 @@ def test_the_window_reports_density_only_when_asked() -> None:
     assert w["sounds_per_s"] == pytest.approx(1 / 17.0) and w["dense"] is False   # one onset in [35, 52) s
     w = window.evaluate(eps, 28_000, 52_000, ref, sounds=([30_000, 30_300, 50_000], 2 / 25.0))
     assert w["sounds_per_s"] == pytest.approx(3 / 24.0) and w["dense"] is True    # 0.125 >= 1.5 x 0.08
+
+
+# ---------- the live switch (D-F6-263 (4)): one setting, off by default ----------
+
+from app.config import Settings  # noqa: E402
+
+
+def test_the_live_rule_is_current_unless_switched_on(monkeypatch) -> None:
+    monkeypatch.delenv("EEG_LIVE_RULE", raising=False)
+    assert Settings(_env_file=None).eeg_live_rule == "current"
+    monkeypatch.setenv("EEG_LIVE_RULE", "nosound")
+    assert Settings(_env_file=None).eeg_live_rule == "nosound"
+    monkeypatch.setenv("EEG_LIVE_RULE", "ica")
+    with pytest.raises(ValueError):
+        Settings(_env_file=None)
+
+
+def test_session_events_give_the_same_sound_density_as_the_lsl_markers() -> None:
+    """The backend decides from session_events (session ms), live.py and replay from LSL markers: same onsets."""
+    events = [(m["event"], {k: v for k, v in m.items() if k != "event"}) for _, m in MARKERS]
+    assert epochs.sound_density(epochs.markers_of_events(events)) == epochs.sound_density(MARKERS)
