@@ -10,6 +10,7 @@ import { SessionList } from '@/features/sessions/SessionList'
 import { FreeRecall } from '@/features/sessions/FreeRecall'
 import { SessionView } from '@/features/sessions/SessionView'
 import { TokensPage } from '@/features/tokens/TokensPage'
+import { LiveMonitor } from '@/features/monitor/LiveMonitor'
 
 // One route per v1 screen (stack-and-structure.md). Each renders its reserved
 // placeholder until its task builds it.
@@ -32,6 +33,9 @@ export const routes: RouteObject[] = [
   { path: 'pretest/:participantId', element: <PretestRun /> },
   // V1.12 Block R free recall: focus mode, no rail (D-F6-226).
   { path: 'sessions/:sessionId/recall', element: <FreeRecall /> },
+  // V1.13 Live session monitor: second screen, 1440 x 900, no rail, read-only (D-F6-231, D-F6-265).
+  { path: 'monitor', element: <LiveMonitor /> },
+  { path: 'monitor/:sessionId', element: <LiveMonitor /> },
   // Development reference, outside the rail: the tokens in both themes.
   { path: 'tokens', element: <TokensPage /> },
 ]

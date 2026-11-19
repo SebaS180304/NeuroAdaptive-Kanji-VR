@@ -329,6 +329,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live Snapshot */
+        get: operations["live_snapshot_research_sessions__session_id__live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/live/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live Current */
+        get: operations["live_current_research_live_current_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions": {
         parameters: {
             query?: never;
@@ -500,6 +534,170 @@ export interface components {
             adaptations: components["schemas"]["ProfileAdaptationGroup"][];
             /** Trend */
             trend: components["schemas"]["ProfileTrendPoint"][];
+        };
+        /** LiveCurrent */
+        LiveCurrent: {
+            /** Session Id */
+            session_id: string;
+        };
+        /** LiveDecision */
+        LiveDecision: {
+            /** Trial Id */
+            trial_id: string;
+            /** Trial Sequence */
+            trial_sequence: number | null;
+            /** Decided Elapsed Ms */
+            decided_elapsed_ms: number | null;
+            /** Learner State */
+            learner_state: string | null;
+            /** Action */
+            action: string;
+            /** Dimension */
+            dimension: string | null;
+            /** From Level */
+            from_level: string | null;
+            /** To Level */
+            to_level: string | null;
+            /** Esl */
+            esl: string | null;
+            /** Lal */
+            lal: string | null;
+            /** Reason Code */
+            reason_code: string | null;
+            /** Eeg Counted */
+            eeg_counted: boolean | null;
+            /** Eeg Ei Z */
+            eeg_ei_z: number | null;
+            /** Eeg Theta Z */
+            eeg_theta_z: number | null;
+            /** Eeg Effect */
+            eeg_effect: string | null;
+        };
+        /** LiveEvent */
+        LiveEvent: {
+            /** Elapsed Ms */
+            elapsed_ms: number | null;
+            /** Event Type */
+            event_type: string;
+            /** Trial Id */
+            trial_id: string | null;
+            /** Flag */
+            flag: ("look" | "decision") | null;
+        };
+        /** LiveIndices */
+        LiveIndices: {
+            reference: components["schemas"]["LiveReference"] | null;
+            last: components["schemas"]["LiveLast"] | null;
+            windows: components["schemas"]["LiveWindows"];
+            /** Trace */
+            trace: components["schemas"]["LiveTracePoint"][];
+        };
+        /** LiveLast */
+        LiveLast: {
+            /** Trial Id */
+            trial_id: string;
+            /** Counted */
+            counted: boolean | null;
+            /** Ei Z */
+            ei_z: number | null;
+            /** Ei Band */
+            ei_band: string | null;
+            /** Theta Z */
+            theta_z: number | null;
+            /** Theta Band */
+            theta_band: string | null;
+        };
+        /** LiveReference */
+        LiveReference: {
+            /** Source */
+            source: string | null;
+            /** Fallback */
+            fallback: boolean | null;
+            /** N Epochs */
+            n_epochs: number | null;
+        };
+        /** LiveSnapshot */
+        LiveSnapshot: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            session: components["schemas"]["LiveTop"];
+            sync: components["schemas"]["LiveSync"] | null;
+            indices: components["schemas"]["LiveIndices"];
+            /** Decisions */
+            decisions: components["schemas"]["LiveDecision"][];
+            /** Events */
+            events: components["schemas"]["LiveEvent"][];
+            system: components["schemas"]["LiveSystem"] | null;
+            /** Signal Quality */
+            signal_quality: Record<string, unknown> | null;
+        };
+        /** LiveSync */
+        LiveSync: {
+            /** Clear Taps */
+            clear_taps: number | null;
+            /** Taps */
+            taps: number | null;
+            /** Offset Ms */
+            offset_ms: number | null;
+            /** Robust Spread Ms */
+            robust_spread_ms: number | null;
+        };
+        /** LiveSystem */
+        LiveSystem: {
+            /** Heartbeat Age S */
+            heartbeat_age_s: number | null;
+            /** Eeg Gap Ms */
+            eeg_gap_ms: number | null;
+            /** Bad Channel */
+            bad_channel: string | null;
+            /** Bad Channel From Ms */
+            bad_channel_from_ms: number | null;
+            /** Alpha Ratio */
+            alpha_ratio: Record<string, unknown> | null;
+            /** Alpha Passed */
+            alpha_passed: boolean | null;
+            /** Not Counted Reason */
+            not_counted_reason: string | null;
+        };
+        /** LiveTop */
+        LiveTop: {
+            /** Session Id */
+            session_id: string;
+            /** External Code */
+            external_code: string;
+            /** Condition */
+            condition: string;
+            /** Set */
+            set: string | null;
+            /** Visit */
+            visit: number | null;
+            /** Status */
+            status: string;
+            /** Stage */
+            stage: string | null;
+            /** Stage Entered Ms */
+            stage_entered_ms: number | null;
+            /** Elapsed Ms */
+            elapsed_ms: number | null;
+        };
+        /** LiveTracePoint */
+        LiveTracePoint: {
+            /** Start Ms */
+            start_ms: number;
+            /** Ei Z */
+            ei_z: number | null;
+            /** Theta Z */
+            theta_z: number | null;
+        };
+        /** LiveWindows */
+        LiveWindows: {
+            /** Counted */
+            counted: number;
+            /** With Eeg */
+            with_eeg: number;
         };
         /** ParticipantCreate */
         ParticipantCreate: {
@@ -2142,6 +2340,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    live_snapshot_research_sessions__session_id__live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveSnapshot"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    live_current_research_live_current_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCurrent"];
                 };
             };
         };
