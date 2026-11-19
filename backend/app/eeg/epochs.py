@@ -38,6 +38,8 @@ FLAT_UV = 1.0         # peak to peak in a chunk; proposal, the 29 Oct signal sit
 MIN_SAMPLES = 0.9     # of a chunk's nominal samples
 SOUND_S = 0.5         # rule B, D-F6-149: every sound, every stage, the three conditions
 HITCH_MS = 100.0
+BAD_BIN_S, BAD_SHARE, BAD_BINS = 30.0, 0.20, 2  # D-F6-216: > 20 % over MAX_UV in 2 consecutive 30 s bins
+TAP_GUARD_S = 1.0     # D-F6-224 (1): ±1 s around each SYNC_TAP is not counted (the taps on Cz's housing)
 EPOCHS_VERSION = "rule B (D-F6-149), 9 chunks by time covered (D-F6-163, D-F6-166), S3 offset (D-F6-176)"  # stored with the filter (D-F6-156); bump when a drop rule changes
 
 
@@ -88,6 +90,35 @@ def excluded_intervals(markers: list[tuple[float, dict]]) -> list[tuple[float, f
             out.append((left, left + m["duration_ms"] / 1000 if m.get("duration_ms") is not None else t))
     out += [(left, math.inf) for left in away.values()]  # never came back inside the recording
     return out
+
+
+def persistently_bad(x: np.ndarray, ts: np.ndarray, labels: list[str], markers: list[tuple[float, dict]],
+                     t0: float | None = None) -> list[tuple[str, float]]:
+    """Index channels that went persistently bad (D-F6-216, D-F6-224), in the order they did, with the LSL time
+    they leave from: the end of their 2nd consecutive bin over the share. Bins of BAD_BIN_S from t0 (the grid
+    origin; None = ts[0]); only closed bins count, so live and offline agree. Fp1 keeps its own rule (D-F6-75).
+    The caller applies D-F6-216's maximum: the first is excluded, a second means the session's EEG does not count."""
+    ts = np.asarray(ts, dtype=float)
+    if not len(ts):
+        return []
+    t0 = float(ts[0]) if t0 is None else t0
+    keep = np.ones(len(ts), bool)
+    for t, m in markers:
+        if m.get("event") == "SYNC_TAP":
+            keep &= np.abs(ts - t) > TAP_GUARD_S
+    cols = [i for i, l in enumerate(labels) if l != "Fp1"]
+    over = np.abs(x[:, cols]) > MAX_UV
+    run, out = np.zeros(len(cols), int), {}
+    k = 0
+    while t0 + (k + 1) * BAD_BIN_S <= ts[-1] + 1e-9:
+        lo, hi = np.searchsorted(ts, [t0 + k * BAD_BIN_S, t0 + (k + 1) * BAD_BIN_S])
+        sel = keep[lo:hi]
+        share = over[lo:hi][sel].mean(axis=0) if sel.any() else np.zeros(len(cols))
+        run = np.where(share > BAD_SHARE, run + 1, 0)
+        for c in np.flatnonzero(run >= BAD_BINS):
+            out.setdefault(labels[cols[c]], t0 + (k + 1) * BAD_BIN_S)
+        k += 1
+    return sorted(out.items(), key=lambda kv: kv[1])
 
 
 def _context(markers: list[tuple[float, dict]]):

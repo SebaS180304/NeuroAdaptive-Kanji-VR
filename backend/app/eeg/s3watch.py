@@ -13,10 +13,10 @@ From S4 on it prints nothing: nothing is touched from S4 to S8 (D-F6-153).
 import numpy as np
 
 from app.eeg import preprocess, sync
+from app.eeg.epochs import TAP_GUARD_S  # the taps on Cz's housing: not a bad channel (T02, 18 Nov; D-F6-224)
 
 S2, S3, S4 = "S2_VR_TUTORIAL", "S3_SYSTEM_VALIDATION", "S4_EEG_BASELINE"
 BAD_UV, BAD_SHARE, SPAN_S, EVERY_S, PAD_S = 100.0, 0.20, 30.0, 10.0, 5.0
-TAP_GUARD_S = 1.0  # the taps on Cz's housing are thousands of uV: not a bad channel (T02, 18 Nov)
 TAPS = 5
 AWAY_S = 10.0  # D-F6-249 (2)
 
