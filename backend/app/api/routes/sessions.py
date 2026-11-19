@@ -28,6 +28,7 @@ from app.models.session import (
 )
 from app.pretest.rules import contract
 from app.schemas.session import SessionCreate, SessionRead, SessionStateUpdate
+from app.services import eeg_rows
 from app.services.session_clock import now_utc
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -190,6 +191,7 @@ def enter_state(session: ExperimentSession, new_state: GameFlowState) -> list[tu
         if session.status == SessionStatus.COMPLETED and session.completed_at is None:
             session.completed_at = now_utc()
             after.append((learner_profile.refresh, [session.participant_id]))
+            after.append((eeg_rows.drop_rows_without_s3, [session.id]))  # D-F6-260: no S3, no EEG row
     return after
 
 

@@ -67,6 +67,8 @@ async def test_a_session_names_its_recording_and_stops_it(client, pretested, fak
 
     pid = await pretested("TEST_EEG")
     sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid, "condition": "STATIC", "assigned_kanji_set": "A"})).json()["id"]
+    async with AsyncSessionLocal() as db:  # read at creation: this session never enters S3, so E0 drops the row at S9
+        path = (await db.execute(text("SELECT xdf_path FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
     for state in ("S9_SESSION_SUMMARY", "S10_HCI_SELF_REPORT", "S10_HCI_SELF_REPORT"):
         await client.patch(f"/sessions/{sid}/state", json={"new_state": state})
     for _ in range(50):  # the fake server reads on its own thread
@@ -76,8 +78,6 @@ async def test_a_session_names_its_recording_and_stops_it(client, pretested, fak
 
     rel = f"sub-TESTEEG/ses-{sid[:8]}/eeg/sub-TESTEEG_ses-{sid[:8]}_task-STATIC_run-1_eeg.xdf"
     assert fake_labrecorder == [f"filename {{root:C:/EEG}} {{template:{rel}}}", "stop"]
-    async with AsyncSessionLocal() as db:
-        path = (await db.execute(text("SELECT xdf_path FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
     assert path == f"C:/EEG/{rel}"
 
 
