@@ -165,7 +165,9 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [x] **M0** · `befd53d`, `f2dc879` · nginx on 127.0.0.1:5300; Playwright 51/53 (data). Was: as the M0 section below (port 5300). Never 16:30–18:40.
 - [x] **D-F6-260 (2)** · 17:27 · false start `40583d6f` deleted (session, 3 events, `eeg_sessions` row in cascade; XDF folder `sub-T03/ses-40583d6f/`). T03 keeps `6bcae154` and `2c453b02`.
 - [x] **M1-plan** · written in `tasks/plan.md` (M1a endpoint → M1c page → M1b per-channel figures, gate D-F6-247 (5)). **Stop: Sebas's OK before M1 code.**
-- [ ] **M1a / M1c / M1b** · after the OK.
+- [x] **M1a** · `0ba74b4` · endpoint `/research/sessions/{id}/live` + `/research/live/current`; checked on T03; pytest 508.
+- [ ] **M1c** (page `/monitor`) **→ Fri 20 morning**, outside the cap sessions; System's LabRecorder/autorun lines `—` until PM answers question 8.
+- [ ] **M1b** (per-channel figures, migration 0021, gate D-F6-247 (5)) **→ Fri 20 morning**.
 - [ ] Was: `/plan` of M1 from the validated EEG formulas, no code. **Stop.** Then page + endpoint in the background; `live.py` not in T04.
 - [ ] Draft 19 Nov: H1 in T03 or not; kit line (re-seat, repeat taps); Dudas 1–4 (evening slot, scikit-learn, blinks after ICA, component not found), recording path of T03/T04, CH1 status.
 
