@@ -275,6 +275,12 @@ Port **5300** (recommended there; confirm). M0.2 restarts the backend: never ins
 - **CH1a** `3a591a3` and **CH1b1** `9ef14d8`: inert (nobody passes `bad`). CH1b split: **CH1b2** = migration 0020 (`eeg_sessions.bad_channel`, `bad_channel_from_ms`, `eeg_epochs.excluded_channels`), storage in `epochs.save` / `live.save_epochs` / websocket's `_EPOCH_COLUMNS`, `concordance.block` with `bad_channel`, reference re-cut if out after S6, `fill_from_xdf` and replay; not started before T03 to keep the schema unchanged before a cap session.
 - pytest 468 → 483; harness 119/119 at each commit.
 
+#### Done 13:15–13:25 (D-F6-256: slot B brought forward)
+- **CH1b2** `fb3fad7`: migration 0020 applied on this PC's database; `epochs.cut_session` (detector + reference recut if out after S6) used by `fill_from_xdf`; `excluded_channels` stored live and offline and read by the decision; `bad_channel` in the window and the eeg block only when a channel is out.
+- **CH1c** `74ea726`: `live.Buffer` filters each closed 30 s bin and runs the detector; `Buffer.reference`; `live.run` stores `bad_channel` and rewrites the reference if the channel goes out after it was written; `replay.xdf_source` through the same Buffer. Fix found on the way: a bin counts as closed with its last sample (one period), live and offline.
+- **Gate (D-F6-256) met:** replay in the container, code before CH1 vs now: T01 and T02 identical (epochs and decisions, byte for byte, no channel out); dry run `65af2fe4`: F3 out from 336 s (S5); non-POOR S5 8 → 41, S6/S7/S8 2/3/2; the EEG still counts in 0 of 20 S7 windows (other causes, as V3). **CH1 enters T03.**
+- pytest 491; harness 119/119 at each commit. `live.run`'s database loop has no unit test: T03 is its first real run (the console says `persistently bad channel …` if one goes out).
+
 #### Checkpoints
 - **13:40:** H1 in (or T03 on protocol only, said to Sebas); commits green, `git status` clean, backend restarted, Unity reopened; Sebas told what entered (expected: H1, maybe CH1a; nothing else live).
 - **16:15 / 16:30:** CH1c in or out of T04, said out loud; code closed.
