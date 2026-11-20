@@ -45,11 +45,16 @@ SELECT left(t.id::text, 8) AS session, t.alpha_ratio, t.alpha_passed AS passed, 
 FROM target t ORDER BY 1;
 
 \echo '== 4 · S6 -> reference (D-F6-218, D-F6-220): >= 15 non-POOR epochs (reference.MIN_EPOCHS) -> S6; fewer -> S4 eyes open, marked. Chooses the reference, never fails the session'
+\echo '       at_threshold (D-F6-281 (5)): S6 within one of the 15 (14-16), here from the XDF epochs; ref_at_threshold is the'
+\echo '       mark stored with the reference (null = before the mark). There one epoch at a threshold can pick S6 or S4, live'
+\echo '       or from the XDF. Information only: no rule reads it.'
 SELECT left(t.id::text, 8) AS session,
        count(p.*) FILTER (WHERE p.quality <> 'POOR') AS s6_non_poor, count(p.*) AS s6_epochs,
        CASE WHEN count(p.*) FILTER (WHERE p.quality <> 'POOR') >= 15 THEN 'S6' ELSE 'S4 (fallback)' END AS check,
        t.reference ->> 'source' AS reference_used, (t.reference ->> 'fallback')::boolean AS fallback,
-       (t.reference ->> 'n_epochs')::int AS reference_epochs
+       (t.reference ->> 'n_epochs')::int AS reference_epochs,
+       abs(count(p.*) FILTER (WHERE p.quality <> 'POOR') - 15) <= 1 AS at_threshold,
+       (t.reference ->> 'at_threshold')::boolean AS ref_at_threshold
 FROM target t LEFT JOIN eeg_epochs p ON p.session_id = t.id AND p.game_state = 'S6_GUIDED_PRACTICE_CALIBRATION'
 GROUP BY t.id, t.reference ORDER BY 1;
 

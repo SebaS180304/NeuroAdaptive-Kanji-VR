@@ -79,3 +79,24 @@ async def test_fill_from_xdf_stores_the_reference_of_the_session(client, pretest
         stored = (await db.execute(text("SELECT reference FROM eeg_sessions WHERE session_id = :s"),
                                    {"s": sid})).scalar_one()
     assert stored["source"] == "S6" and stored["indices"]["theta_fz"]["sd"] > 0
+
+
+# ---------- RT (D-F6-281 (5)): «reference at threshold», read-only, no rule reads it ----------
+
+@pytest.mark.parametrize("n, at", [(13, False), (14, True), (15, True), (16, True), (17, False)])
+def test_s6_within_one_of_the_minimum_is_marked_at_threshold(n, at) -> None:
+    eps = [_epoch(S6, 0.2 + i / 40) for i in range(n)] + [_epoch(S6, 0.5, quality="POOR")]
+    out = reference.compute(eps, (OPEN_SPAN, CLOSED_SPAN))
+    assert out["s6_non_poor"] == n and out["at_threshold"] is at
+
+
+def test_the_mark_travels_also_when_there_is_no_reference() -> None:   # T03b: S6 short and no S4 spans
+    out = reference.compute([_epoch(S6, 0.3) for _ in range(14)], None)
+    assert out["source"] is None and out["s6_non_poor"] == 14 and out["at_threshold"] is True
+
+
+def test_the_mark_changes_no_index_of_the_reference() -> None:
+    eps = [_epoch(S6, 0.2 + i / 40) for i in range(15)]
+    out = reference.compute(eps, None)
+    assert set(out) == {"source", "fallback", "n_epochs", "indices", "s6_non_poor", "at_threshold"}
+    assert out["indices"]["engagement_index"]["n"] == 15
