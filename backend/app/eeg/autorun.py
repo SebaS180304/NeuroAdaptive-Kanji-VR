@@ -173,8 +173,9 @@ async def main() -> int:
         still = await wait_completed(sid, baseline, rec, path)
         if rec is not None and still is None:
             how = "automatic, lost mid-session, then manual (LabRecorder GUI)"
+        live_csv = None
         try:  # before the stop: fill_from_xdf replaces these rows with the XDF cut (D-F6-240 (4))
-            await summary.export_live_epochs(sid, LOG_DIR)
+            live_csv = await summary.export_live_epochs(sid, LOG_DIR)
         except Exception as e:  # the session's recording matters more than this file
             print(f"WARNING: live epochs not saved ({e})")
         if live is not None and live.poll() is None:  # its rows are replaced by fill_from_xdf below (D-F6-156)
@@ -199,6 +200,12 @@ async def main() -> int:
     eps = await epochs.fill_from_xdf(sid)
     counts = {q: sum(e["quality"] == q for e in eps) for q in ("GOOD", "ACCEPTABLE", "POOR")}
     print(f"{len(eps)} epochs: {counts}")
+    if live_csv is not None:
+        try:  # D-F6-281 (2): verify_eeg.sql shows it beside the two A-7 figures
+            d = await summary.live_vs_xdf(sid, live_csv)
+            print(f"live vs XDF: {d['differ']} of {d['common']} epochs differ ({d['differ_pct']} %) (D-F6-281 (2))")
+        except Exception as e:  # a missing count never costs the summary
+            print(f"WARNING: live vs XDF not compared ({e})")
     return await summary.write(sid, how, LOG_DIR)
 
 

@@ -44,6 +44,35 @@ async def export_live_epochs(session_id: str, log_dir: Path) -> Path:
     return path
 
 
+def _cut(chunks, quality) -> tuple:
+    """An epoch as the comparison sees it; the CSV holds the chunks as the text of a Python list."""
+    import ast
+
+    return (list(ast.literal_eval(chunks)) if isinstance(chunks, str) else list(chunks), quality)
+
+
+async def live_vs_xdf(session_id: str, live_csv: Path) -> dict:
+    """D-F6-281 (2): how many epochs of the live cut (what the engine saw, saved before the Stop) differ from the XDF
+    cut that replaced them (fill_from_xdf), by epoch index; stored in eeg_sessions.live_vs_xdf for verify_eeg.sql."""
+    from app.db.base import AsyncSessionLocal
+
+    with open(live_csv, newline="", encoding="utf-8") as f:
+        live = {int(r["epoch_index"]): _cut(r["chunk_clean"], r["quality"]) for r in csv.DictReader(f)}
+    _, rows = await _rows("SELECT epoch_index, chunk_clean, quality FROM eeg_epochs WHERE session_id = :s",
+                          s=session_id)
+    xdf = {int(i): _cut(c, q) for i, c, q in rows}
+    common = live.keys() & xdf.keys()
+    differ = sum(live[i] != xdf[i] for i in common)
+    out = {"live": len(live), "xdf": len(xdf), "common": len(common), "differ": differ,
+           "differ_pct": round(100 * differ / len(common), 2) if common else None,
+           "only_live": len(live.keys() - xdf.keys()), "only_xdf": len(xdf.keys() - live.keys())}
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("UPDATE eeg_sessions SET live_vs_xdf = CAST(:v AS jsonb) WHERE session_id = :s"),
+                         {"s": session_id, "v": __import__("json").dumps(out)})
+        await db.commit()
+    return out
+
+
 def run_sql(name: str, rel: str, ses8: str, log_dir: Path) -> tuple[int, str]:
     with open(REPO / rel, "rb") as sql:
         p = subprocess.run(["docker", "compose", "exec", "-T", "db", "psql", "-U", "neuroadaptive",

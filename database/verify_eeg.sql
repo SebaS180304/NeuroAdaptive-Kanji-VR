@@ -101,8 +101,8 @@ FROM target t JOIN eeg_epochs p ON p.session_id = t.id
 GROUP BY t.id, p.game_state, p.esl_level ORDER BY 1, 2, 3;
 
 \echo '== 7 · A-7, multimodal session valid (D-F6-220): S4 alpha passes AND S7 P7 >= 60 %. S6 and the reference used are information only'
-\echo '       Two lines per session (D-F6-200 (2)): what the engine saw live (adaptation_decisions.eeg_counted) is the'
-\echo '       A-7 to report; the eeg_epochs one beside it. live.py and the offline cut start the 2.5 s grid at different'
+\echo '       Two lines per session (D-F6-200 (2), D-F6-281 (2)): what the engine saw live (adaptation_decisions.eeg_counted)'
+\echo '       is the official A-7; the eeg_epochs one (the XDF cut, the per-epoch indices for analysis) beside it. live.py and the offline cut start the 2.5 s grid at different'
 \echo '       points (0.3-1.2 s apart, A-24), so they can differ by a few windows. Both over the same windows (from the 3rd S7 trial).'
 SELECT left(t.id::text, 8) AS session, src.source,
        CASE WHEN t.alpha_passed IS NULL OR src.windows = 0 THEN 'n/a'
@@ -124,6 +124,13 @@ CROSS JOIN LATERAL (
                 ELSE 'eeg_epochs (cut from the XDF)' END, 2, count(*), count(*) FILTER (WHERE non_poor >= 2 AND clean_s >= 5)
     FROM s7_windows WHERE session_id = t.id) src
 ORDER BY 1, src.k;
+\echo '       Epochs, live cut against XDF cut (D-F6-281 (2); autorun compares live_epochs.csv, saved before the Stop):'
+\echo '       they can differ in a chunk at a threshold, as the live filter ends at the newest sample (D-F6-281 (1)).'
+SELECT left(t.id::text, 8) AS session, t.live_vs_xdf ->> 'common' AS common, t.live_vs_xdf ->> 'differ' AS differ,
+       t.live_vs_xdf ->> 'differ_pct' AS differ_pct, t.live_vs_xdf ->> 'only_live' AS only_live,
+       t.live_vs_xdf ->> 'only_xdf' AS only_xdf,
+       CASE WHEN t.live_vs_xdf IS NULL THEN 'not compared (no live_epochs.csv, or before D-F6-281)' END AS note
+FROM target t ORDER BY 1;
 
 -- F4 §7: the EEG effect travels only with MULTIMODAL_ADAPTIVE; outcome of EEG-led changes against behaviour-led ones.
 CREATE TEMP VIEW s7_decisions AS

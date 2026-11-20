@@ -152,3 +152,27 @@ async def test_fill_from_xdf_with_rule_ica_reuses_the_model_live_stored(client, 
             "SELECT (SELECT count(*) FROM eeg_epochs WHERE session_id = :s), filter_params ->> 'rule', ica "
             "FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).one()
     assert n == len(eps) > 0 and rule == "ica" and stored["unmixing"] == first.ica["unmixing"]
+
+
+# ---------- V (D-F6-281 (2)): how many epochs the live cut and the XDF cut differ ----------
+
+@pytest.mark.asyncio
+async def test_the_live_cut_is_compared_with_the_xdf_cut_and_stored(client, pretested, tmp_path) -> None:
+    import csv as _csv
+
+    from app.eeg import summary
+
+    sid = await _session_with_epochs(client, pretested, [0, 2500, 5000])      # the XDF cut, all GOOD and clean
+    path = tmp_path / "live_epochs.csv"
+    with open(path, "w", newline="", encoding="utf-8") as f:                  # as export_live_epochs writes it
+        w = _csv.writer(f)
+        w.writerow(["session_id", "epoch_index", "chunk_clean", "quality"])
+        w.writerow([sid, 0, [True] * 9, "GOOD"])                              # the same
+        w.writerow([sid, 1, [True] * 8 + [False], "GOOD"])                    # one chunk at the threshold
+        w.writerow([sid, 3, [True] * 9, "GOOD"])                              # live only (the XDF ends before)
+    got = await summary.live_vs_xdf(sid, path)
+    assert got == {"live": 3, "xdf": 3, "common": 2, "differ": 1, "differ_pct": 50.0, "only_live": 1, "only_xdf": 1}
+    async with AsyncSessionLocal() as db:
+        stored = (await db.execute(text("SELECT live_vs_xdf FROM eeg_sessions WHERE session_id = :s"),
+                                   {"s": sid})).scalar_one()
+    assert stored == got

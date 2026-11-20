@@ -212,3 +212,34 @@ def test_a_recording_lost_mid_session_keeps_its_part_and_sends_to_the_gui(tmp_pa
     out = capsys.readouterr().out
     assert "RECORDING STOPPED" in out and "MANUAL" in out and "ses-1234abcd" in out
     assert not path.exists() and (tmp_path / "sub-t02_ses-1234abcd_task-x_run-1_eeg_partial.xdf").read_text() == "part"
+
+
+@pytest.mark.asyncio
+async def test_the_live_cut_is_compared_after_the_xdf_cut_replaces_it(monkeypatch) -> None:   # D-F6-281 (2)
+    from pathlib import Path
+
+    from app.eeg import epochs, lsl_reader, summary, sync
+
+    calls = []
+
+    def step(name, result):
+        async def run(*_a, **_k):
+            calls.append(name)
+            return result
+        return run
+
+    async def new_session(_after):
+        return "sid", "x.xdf"
+
+    monkeypatch.setattr(autorun, "wait_new_session", new_session)
+    monkeypatch.setattr(autorun, "wait_completed", _nothing)
+    monkeypatch.setattr(autorun, "wait_xdf_closed", _nothing)
+    monkeypatch.setattr(autorun, "start_child", lambda *_a, **_k: (None, None))
+    monkeypatch.setattr(summary, "export_live_epochs", step("export", Path("sid-live_epochs.csv")))
+    monkeypatch.setattr(lsl_reader, "fill_from_xdf", step("lsl_reader", []))
+    monkeypatch.setattr(sync, "fill_from_xdf", step("sync", (47.0, 17.0, {"reason": None})))
+    monkeypatch.setattr(epochs, "fill_from_xdf", step("epochs", []))
+    monkeypatch.setattr(summary, "live_vs_xdf", step("live_vs_xdf", {"common": 10, "differ": 1, "differ_pct": 10.0}))
+    monkeypatch.setattr(summary, "write", step("summary", 0))
+    assert await autorun.main() == 0
+    assert calls == ["export", "lsl_reader", "sync", "epochs", "live_vs_xdf", "summary"]
