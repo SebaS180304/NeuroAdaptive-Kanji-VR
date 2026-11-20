@@ -35,6 +35,9 @@ function Rail() {
       className="flex w-(--rail-width) shrink-0 flex-col gap-2 bg-(--color-sidebar) px-4 py-6 text-(--color-sidebar-text)"
     >
       <div className="flex flex-col gap-1 px-2 pb-6">
+        {/* Brand (D-F6-120, D-F6-269 (1)): the 32 px icon above the name; the name follows as text, so alt="" */}
+        <img src="/brand/andon_icon_light_32.png" alt="" width={32} height={32} className="mb-2 dark:hidden" />
+        <img src="/brand/andon_icon_dark_32.png" alt="" width={32} height={32} className="mb-2 hidden dark:block" />
         <span className="type-title">NeuroAdaptive VR</span>
         <span className="type-caption text-(--color-sidebar-muted)">Research dashboard</span>
       </div>

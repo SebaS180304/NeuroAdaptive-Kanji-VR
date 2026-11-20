@@ -15,6 +15,15 @@ describe('app shell', () => {
     expect(within(rail).getByText('Runs locally on the lab machine')).toBeInTheDocument()
   })
 
+  it('shows the logo above the name in the rail, decorative, one per theme (Brand, D-F6-269 (1))', () => {
+    renderApp('/sessions')
+    const rail = screen.getByRole('navigation', { name: 'Main' })
+    const icons = Array.from(rail.querySelectorAll('img'))
+    expect(icons.map((i) => i.getAttribute('src'))).toEqual(['/brand/andon_icon_light_32.png', '/brand/andon_icon_dark_32.png'])
+    expect(icons.every((i) => i.getAttribute('alt') === '' && i.width === 32)).toBe(true)
+    expect(within(rail).getByText('NeuroAdaptive VR')).toBeInTheDocument()
+  })
+
   it('marks the rail item of the current section', () => {
     mockApi({ 'GET /api/research/quality': () => new Promise<Response>(() => {}) })   // stays loading
     renderApp('/quality')
