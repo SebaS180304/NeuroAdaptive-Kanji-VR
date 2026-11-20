@@ -1,6 +1,6 @@
 # Todo: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Plan in `tasks/plan.md`. Aligned up to **D-F6-233** (Tue 17 17:05): T01 moves to Wed 18 11:00–12:00; BR3 (and BR4) this afternoon; AU1 Wed; AU4, AU0, M0 and the M1 plan Fri (D-F6-232). **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
+Plan in `tasks/plan.md`. Aligned up to **D-F6-274** (Fri 20 17:50): T05 moves to Tue 24; the rest of Fri 20 is the monitor; clock fixed now (C1, `4245152`); live indices all session wait for the EEG chat's proposal and the validated design; Tue 24 morning live check with (2), M1b and the new indices. Before: D-F6-233 (Tue 17 17:05). **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
 Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
