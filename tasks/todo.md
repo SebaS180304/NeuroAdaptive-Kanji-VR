@@ -208,6 +208,11 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] Synthetic AURA + headset, S1–S9, only Play, network and S3 keys by hand; session deleted after with Sebas's OK.
 - [ ] Pass → automated recording from the next session, each session labelled by recording path; fail or no day → whole pilot manual. **Stop.**
 
+## Fri 20 evening · monitor clock (D-F6-274 (1)) · OK from Sebas
+- [x] **C1** · `4245152`, pytest 528 → 531; T04's S4 moves 10 s per 10 s · `_LIVE_TOP.elapsed_ms` = anchor (max of `session_elapsed_ms − server_received_at`) + `now()` while `IN_PROGRESS`; 4 tests; T04's S4 check read-only; pytest, commit, graphify, backend restart. **Stop.**
+- [x] T04 processing: `ocul.py` v3 + `replay` (1)/(2)/(3) in `eeg_export_20nov_T04/`.
+- [ ] Live indices all session (D-F6-274 (2)–(5)): wait for the EEG chat → design → Sebas.
+
 ## Fri 20 · AU4, AU0, M0, the M1 plan, then go/no-go · no presentation, no video (D-F6-227)
 - [ ] AU4 (dry run and T01) → AU0.
 - [ ] M0 moved to Wed 18 (D-F6-235): see below.

@@ -187,6 +187,36 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 
 **AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
 
+### Fri 20 evening · the monitor's clock (D-F6-274 (1)) · OK from Sebas; C1 done in `4245152`
+
+**Board:** D-F6-274 (1) (clock stuck; development diagnoses and fixes it now, without waiting for the rest). (2)–(5), the live indices all session, wait for the EEG chat's proposal and the validated design: **not in this plan.** (6) live check on Tue 24.
+
+**Diagnosis (read-only, on T04 `dd1f75af`).**
+- The backend's `session.elapsed_ms` (`_LIVE_TOP`, `research.py:494–497`) is the `session_elapsed_ms` of the **newest event**, not the time now.
+- The page (`useClock`, `LiveMonitor.tsx:312`) adds `now − dataUpdatedAt` to it, and `dataUpdatedAt` resets on **every poll (`POLL_MS` = 1 s)**. So whenever no event arrives the clock counts one second, jumps back to the last event, and repeats.
+- T04: `BASELINE_STARTED` at 123.2 s (**2:03**), then **105 s with no event** until S5. The clock showed 2:03 → 2:04 → 2:03… for all of S4, which is what Sebas saw. The same happens, shorter, in every gap: 16–26 s in S2–S3, ≈ 23 s between S5 trials.
+
+**Fix (backend only, one query; the page does not change).**
+- `elapsed_ms` = session time **now**, anchored on the events: `max(session_elapsed_ms − server_received_at in ms)` over the session's events, plus `now()` in ms, while the session is `IN_PROGRESS`. Once it has ended it stays as today (the last event).
+- Why the max: an event that waited in Unity's queue (sent late) has a smaller anchor and cannot pull the clock back. Taking only the newest event would.
+- The page keeps adding `now − dataUpdatedAt` between polls, now on a base that moves. Same PC, same clock for the database and Edge.
+- Not touched: `live.py`, `s3watch.py`, the engine, the database schema, Unity, `/live/current`.
+- Known limit: if Unity dies while the session is still `IN_PROGRESS`, the clock keeps counting until the backend aborts it. That is honest (time since the start), and the System lines (heartbeat, latest event) already say it.
+
+**Task C1 · the clock follows the time now (≈ 30 min).**
+- `_LIVE_TOP`: the new `elapsed_ms` (anchor + `now()`, only `IN_PROGRESS`), rounded to an int, as the response model asks.
+- Tests in `test_research_live.py`:
+  - the existing `elapsed_ms == 14600` becomes "≈ newest event + time since it arrived";
+  - an event received 30 s ago gives ≈ +30 s;
+  - a late event (old elapsed, received now) does not pull the clock back;
+  - a `COMPLETED` session gives the last event, as today.
+- **Check on T04, read-only:** the same anchor computed with `now()` replaced by the times of S4 (every 10 s from 2:05 to 3:50) has to give a clock that moves with them, never 2:03–2:04.
+- **Done when:** backend pytest green (count before → after), Vitest and `tsc` unchanged, one commit, `graphify update .`, `docker compose restart backend` (no session today), `/health/db` ok.
+- **Commit (shown first):** `fix(research): live monitor clock counts the time now, not the newest event (D-F6-274 (1))`.
+- **Stop.** The live proof is the Tue 24 check (D-F6-274 (6)): the clock must keep moving through S4.
+
+**T04's processing (D-F6-274):** already done before this plan. `ocul.py` v3 is in `Claude outputs/eeg_export_20nov_T04/ocul_T04_v3.txt`, with the backend `replay` of (1)/(2)/(3) (0/18 · 3/18 · 18/18, equal to v3) and the README for the EEG chat. Nothing left but to tell the EEG chat.
+
 ### Fri 20 · logo, Player Settings and monitor access (D-F6-268 to D-F6-272) · plan, waits for Sebas's OK
 
 **Board:** D-F6-268 (two ways into the monitor), D-F6-269 (logo in the portal, Unity's Player Settings, the Form), D-F6-270 (windows, Export CSV, latest event, *session ended*, «Sync tap», «—»), D-F6-271 (one plan, three parts; **limits (2)**: only the portal and Player Settings, nothing in `live.py`, `s3watch.py`, the engine, the database or Unity's scenes and scripts; **gate (3) at 16:15 per part**), D-F6-272 (V1.13 access and the new V1.13 states validated as drawn; build even though `design-system.md` still says *Pending*).
