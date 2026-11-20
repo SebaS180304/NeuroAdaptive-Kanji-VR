@@ -134,12 +134,12 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [x] AI workshop clash: T01 moved to 12:15 (D-F6-238) and ran.
 
 ## Fri 20 · before T04: logo, Player Settings, monitor access (D-F6-268 to D-F6-272) · **waits for Sebas's OK** · gate 16:15 per part
-- [ ] Copy `design-handoff/design-system.md` (77 156 bytes) over the skill's `references/design-system.md`.
-- [ ] **A** · favicon (light/dark SVG + apple-touch), rail header icon above the name; no participant screen. Vitest, build, harness. **Commit.**
-- [ ] **B** · icon only in Player Settings (`Assets/Branding/andon_icon_light_1024.png`); `productName` unchanged (`persistentDataPath`, `SessionCommunicationClient.cs:324`). Harness, **Play S0–S2** (Sebas presses Start), Unity reopened. **Commit.**
-- [ ] **C** · `live/current` by latest event + `external_code`; `/live` + `completed_at`; rail «Live monitor» (dot / ring, §1 tooltips); «Open live monitor» on IN_PROGRESS instead of Export CSV (§2); V1.13 *session ended* (§3.1) and «Sync tap» caption. pytest, Vitest, build, harness. **Commit.**
-- [ ] Form header PNG in `design-handoff/brand/` (no commit).
-- [ ] 16:15: a part not passed → `git revert`; close: backend and dashboard restarted, Unity reopened, `EEG_LIVE_RULE=current`, `EEG_MONITOR_LIVE=false`.
+- [x] `64da886` · Copy `design-handoff/design-system.md` (77 156 bytes) over the skill's `references/design-system.md`.
+- [x] **A** · `dfbea59` 15:19 · favicon (light/dark SVG + apple-touch), rail header icon above the name; no participant screen. Vitest, build, harness. **Commit.**
+- [x] **B** · `f752579` 15:29 · Play S1 > S2 > S3 (`f5123492`), 0 errors · icon only in Player Settings (`Assets/Branding/andon_icon_light_1024.png`); `productName` unchanged (`persistentDataPath`, `SessionCommunicationClient.cs:324`). Harness, **Play S0–S2** (Sebas presses Start), Unity reopened. **Commit.**
+- [x] **C** · `5acb6bc` 15:24 · pytest 528, Vitest 160 · `live/current` by latest event + `external_code`; `/live` + `completed_at`; rail «Live monitor» (dot / ring, §1 tooltips); «Open live monitor» on IN_PROGRESS instead of Export CSV (§2); V1.13 *session ended* (§3.1) and «Sync tap» caption. pytest, Vitest, build, harness. **Commit.**
+- [x] Form header PNG: `design-handoff/brand/andon_form_header_1600x400.png` (no commit).
+- [x] Nothing reverted: A, B, C passed. 16:15: a part not passed → `git revert`; close: backend and dashboard restarted, Unity reopened, `EEG_LIVE_RULE=current`, `EEG_MONITOR_LIVE=false`.
 
 ## Thu 19 · BR7 at 14:00, T03, T04; CH1 → D-F6-246 → M0 → M1 (D-F6-246 to D-F6-248)
 
