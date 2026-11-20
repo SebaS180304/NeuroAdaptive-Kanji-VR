@@ -1,6 +1,6 @@
 # Implementation Plan: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Written Mon 16 Nov 2026; **updated Fri 20 Nov 15:20, aligned up to D-F6-272: before T04, the section "Fri 20 · logo, Player Settings and monitor access"; waits for Sebas's OK before //build**. Before: Thu 19 Nov 12:40, aligned up to D-F6-255 (13:10: `ocul.py` v2, OV tolerances, component selection; 12:41 OK with D-F6-251 to D-F6-254): today's plan is the section "Thu 19 · day plan (D-F6-246 to D-F6-255)"; waits for Sebas's OK before `/build`**. Before: Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
+Written Mon 16 Nov 2026; **updated Fri 20 Nov night, aligned up to D-F6-279: the section "Fri 20 night · ICA live behind `EEG_LIVE_RULE=ica`" approved (D-F6-276) with the channel out and the LSL simulation; I1 → I2 → G → S, one commit and a Stop each**. Before: aligned up to D-F6-275. Before: Fri 20 15:20, aligned up to D-F6-272. Before: Thu 19 Nov 12:40, aligned up to D-F6-255 (13:10: `ocul.py` v2, OV tolerances, component selection; 12:41 OK with D-F6-251 to D-F6-254): today's plan is the section "Thu 19 · day plan (D-F6-246 to D-F6-255)"; waits for Sebas's OK before `/build`**. Before: Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
 Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -186,6 +186,68 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 | afternoon | **T2** (above) → **BR4** if it did not finish on Tue → **AU1** | each with its Stop |
 
 **AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
+
+### Fri 20 night · ICA live behind `EEG_LIVE_RULE=ica` (D-F6-275, D-F6-276) · approved (D-F6-276); I1 → I2 → G → S, a Stop and a commit each
+
+**Added by D-F6-276:** (2) the channel out, in I1; (3) the full LSL simulation, task S after G. (4) `backend/.env` stays `current` until Tue 24. D-F6-277 (the monitor's live indices with (3)) is built only with the validated design, after this, behind a switch; not for Tue 24. D-F6-279 (1) done before I1: AURA publishes no quality nor impedance over LSL (see the draft).
+
+**Board:** D-F6-275 (pilot rule = option (3) live, automatic fallback to (2), gate off-session, Tue 24 T05 as the final gate; changes D-F6-263 (2) and (3)); EEG chat's proposal in `Planteamiento_Tecnico_F4.md`, Registro 20 nov 16:30. Order of tonight (5): clock (done, `4245152`) → **this** → the monitor's live indices only with a validated design (D-F6-274 (2)–(5)); the indices never delay this. Development works off-session (D-F6-251); nothing with the cap.
+
+**What exists.**
+- `ica.fit` / `ica.apply` (`app/eeg/ica.py`): the `ocul.py` selection, `scikit-learn` 1.9.1.
+- Offline only: `replay --rule ica` and `epochs.cut_session_ica`. Both fit on the **whole XDF filtered in one pass** and correct the **whole session**.
+- `config.eeg_live_rule` accepts `current | nosound`. `live.Buffer.rule` is set from it, and the backend's `websocket.py` adds the sound density only for `nosound`.
+- **Measured tonight on this PC** (`ica.fit` on the whole filtered XDF): T01 0.23 s, identified (corr 0.97); T03 0.33 s, not (0.40); T03b 0.26 s, not (0.56); T04 0.11 s, identified (0.79). So the fit can run inside live.py's loop, well under the 2 s of D-F6-275 (4).
+
+**The one design choice: live cannot see the whole XDF.** At S6's entry live.py only has what arrived so far. So the live definition is:
+1. **Before S6:** epochs cut as option (2) (`nosound`, blink rule on). The ICA does not exist yet; these epochs feed no decision.
+2. **At S6's entry:** once the buffer has `EDGE_S` past S6's entry, fit on S4's entry → S6's entry, filtered over [S4 − `PAD_S`, S6 + `EDGE_S`]. This is a fixed span, so the fit does not depend on how the samples arrived in chunks. Epochs whose centre is in S6 or later are held until the model exists (≈ 1 s plus the fit).
+3. **Identified (corr ≥ 0.7 and top weight Fp1):** every epoch whose centre is in S6 or later is cut on the corrected signal, without the blink rule, keeping the task sounds of S6–S8 (rule `ica`, as offline). **Not identified, or the fit raises:** the same session goes on with `nosound`, and the reason and the correlation are kept. live.py never stops for the ICA.
+4. **Reference (at S7, as today):** recomputed from the whole buffer with the final rule, the ICA applied to all of it (as offline and as `Buffer.reference` already does with a channel out). So the S4 eyes-open fallback reference is corrected too.
+5. **`replay --rule ica` and `fill_from_xdf` run the same `Buffer` path**, no whole-XDF fit. `fill_from_xdf` reuses the model live stored (no refit), so the after-session rows keep what the engine saw. `cut_session_ica` stays only as the offline reference for the gate.
+
+**Consequence, declared:** the fit's input now differs from `ocul.py` v3 and today's `replay --rule ica` (a filter over the span instead of the whole XDF). The gate compares against them **with the D-F6-255 tolerances** (same component, corr within 0.02, A-7 within ±1 window), not byte for byte.
+
+**I1 · `Buffer` with rule `ica` (≈ 2 h).**
+- Where: `live.Buffer` only. `new_epochs()` gets the model applied to its segment, nothing else (D-F6-275 (2)); `make_epochs`, `window`, `decide()` and the frozen rules are not touched.
+- What: the 5 points above. `Buffer(model=…)` takes a stored model and does not refit. `buf.ica` holds the model or the reason.
+- Tests (synthetic signal with a blink source on Fp1):
+  - identified → S6+ epochs corrected, earlier ones `nosound`;
+  - no ocular source → `nosound` with the reason;
+  - a fit that raises → `nosound`, no exception;
+  - the same epochs, model and reference with 3 chunk sizes;
+  - the reference is corrected;
+  - a stored model gives the same epochs without refitting.
+- **Channel out (D-F6-276 (2)), with synthetic tests:**
+  - out **before S6** (other than Fp1): the ICA is fitted without it (7 components) and applied to the channels left;
+  - **Fp1** out before S6: the session goes on with `nosound`, marked;
+  - out **after S6**: from that channel's time to the end the session is `nosound`, marked with the reason and the time, no refit; the reference is recomputed with `nosound` and the channels left (D-F6-216).
+- **Stop.**
+
+**I2 · switch, storage and the after-session path (≈ 1.5 h).**
+- `config.eeg_live_rule`: `current | nosound | ica`, comment updated.
+- Migration **0022**: `eeg_sessions.ica jsonb` (up and down) with `identified`, `reason`, `corr`, `component`, `top_channel`, fit span, fit seconds and the matrices.
+- `live.run`: saves `buf.ica` once it exists and prints `live: ICA identified (corr 0.79, component 6, 0.1 s)` or `live: ICA not identified (corr 0.40 < 0.7): option (2) for this session (D-F6-253 (2))`.
+- `websocket.py`: the sound density for `nosound` **and** `ica` (options (2) and (3) both carry it, as `replay` already does).
+- `fill_from_xdf` and `replay --rule ica` through the `Buffer` path.
+- Tests: config accepts `ica`; migration up/down; `websocket` passes the sounds with `ica`; `fill_from_xdf` with a stored model gives live's epochs; existing replay tests unchanged.
+- **Stop.**
+
+**G · gate, off-session, no database writes (≈ 45 min) (D-F6-275 (3)).** A read-only script in the scratchpad (never in the repo), on the XDFs of **T01, T03, T03b and T04**, read in place:
+- (a) **Simulated live:** `Buffer` fed with chunks like `live.run`'s pulls (variable, ≈ 0.2 s, markers at their own stamps) gives **the same epochs, reference, model and decisions** as `replay --rule ica`.
+- (b) Identified in **T01 and T04**, the same component as `ocul.py` v3 and corr within 0.02 (0.97, 0.79). **Fallback to (2) in T03 and T03b**, with the reason.
+- (c) A-7 within ±1 window of v3 and of tonight's backend: T01 18/18, T04 18/18; T03 5/18 and T03b 6/18 with (2).
+- (d) Fit time < 2 s and the held S6 epochs released within `EDGE_S` + the fit.
+- (e) pytest all green (531 → ?), Unity harness PASS (no Unity change, 119/119).
+- **If G does not pass tonight, Tue 24 starts with (2), as D-F6-263.** `backend/.env` stays as it is: `EEG_LIVE_RULE=current` until Tue 24.
+
+**S · full simulation over LSL, after G (D-F6-276 (3), ≈ 1 h).** For each of T01, T03, T03b and T04: a test session in the database (its own participant code, `MULTIMODAL_ADAPTIVE`, an `eeg_sessions` row with the montage); the XDF pushed through two LSL outlets (`AURA` and `UnityMarkers`, the XDF's stamps) at 10× into `live.run` with `rule=ica` passed in the process only (`.env` stays `current`). AURA's software and Unity closed meanwhile, so only these outlets exist on this PC. **Done when:** `live.run`'s `eeg_epochs`, its `eeg_sessions.ica` and reference equal G's simulated live for the same XDF; the ICA line printed; the fit < 2 s. Then the test sessions are deleted in one transaction (counts before and after in the draft). A script in the scratchpad, never in the repo. **Stop.**
+
+**After G (code close for Tue 24):** commit per piece, `graphify update .`, backend restarted. **Kit line for Tue 24**, before T05: in `backend\.env`, `EEG_LIVE_RULE=ica`, then `docker compose restart backend`. `autorun`'s first lines say which rule it runs with and, at S6, whether the ICA was identified.
+
+**Watch (D-F6-275 (6), does not block):** from the first exports, theta at Fz in the epochs the ICA recovers against the clean ones (T04 +0.67 SD), and how many sessions fall back to (2). The `ocul.py` line already gives both.
+
+**Out of this plan:** the monitor's live indices (D-F6-274 (2)–(5)) wait for the EEG chat's list and the validated design. An «ICA identified / option (2)» line on the monitor is also design (System section), so it waits too.
 
 ### Fri 20 evening · the monitor's clock (D-F6-274 (1)) · OK from Sebas; C1 done in `4245152`
 

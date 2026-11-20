@@ -1,6 +1,6 @@
 # Todo: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Plan in `tasks/plan.md`. Aligned up to **D-F6-274** (Fri 20 17:50): T05 moves to Tue 24; the rest of Fri 20 is the monitor; clock fixed now (C1, `4245152`); live indices all session wait for the EEG chat's proposal and the validated design; Tue 24 morning live check with (2), M1b and the new indices. Before: D-F6-233 (Tue 17 17:05). **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
+Plan in `tasks/plan.md`. Aligned up to **D-F6-279** (Fri 20 17:30): ICA plan approved with the channel out and the LSL simulation (D-F6-276); live indices with (3) only with the validated design (D-F6-277); foam on Fp1 (D-F6-278, PM); AURA's streams listed (D-F6-279 (1)). Before: **D-F6-275** (Fri 20): the pilot starts with option (3) live and an automatic fallback to (2); tonight I1 → I2 → G off-session; Tue 24 T05 is the final gate. Before: **D-F6-274** (Fri 20 17:50): T05 moves to Tue 24; the rest of Fri 20 is the monitor; clock fixed now (C1, `4245152`); live indices all session wait for the EEG chat's proposal and the validated design; Tue 24 morning live check with (2), M1b and the new indices. Before: D-F6-233 (Tue 17 17:05). **Approved (D-F6-221).** **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0 (D-F6-198, D-F6-204).**
 Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
@@ -207,6 +207,14 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 ### [ ] AU6 · rehearsal with Sebas, no participant (part 2; not Mon 23)
 - [ ] Synthetic AURA + headset, S1–S9, only Play, network and S3 keys by hand; session deleted after with Sebas's OK.
 - [ ] Pass → automated recording from the next session, each session labelled by recording path; fail or no day → whole pilot manual. **Stop.**
+
+## Fri 20 night · ICA live behind `EEG_LIVE_RULE=ica` (D-F6-275, D-F6-276) · approved
+- [x] D-F6-279 (1): AURA's LSL streams listed; no quality nor impedance.
+- [ ] **I1** · `live.Buffer` rule `ica`: before S6 `nosound`; fit at S6 + `EDGE_S` on S4→S6; S6+ epochs held, then corrected (no blink rule) or `nosound` with the reason; reference recomputed with the final rule; stored model without refit; channel out before S6 → fit without it (Fp1 → `nosound`), after S6 → `nosound` to the end, no refit; tests. **Stop.**
+- [ ] **I2** · `eeg_live_rule` + `ica`; migration 0022 `eeg_sessions.ica`; `live.run` saves and prints it; `websocket` sounds for `ica`; `fill_from_xdf` and `replay --rule ica` through `Buffer`; tests. **Stop.**
+- [ ] **G** · scratchpad script, T01 T03 T03b T04: simulated live = `replay --rule ica`; identified T01 T04 (corr ±0.02 of v3); fallback T03 T03b; A-7 ±1 (18, 18, 5, 6); fit < 2 s; pytest; harness 119/119. Not passed → Tue 24 with (2). `.env` unchanged tonight. **Stop.**
+- [ ] **S** · XDFs over two LSL outlets at 10× into `live.run` (rule `ica` in the process), test sessions in the database, equal to G; deleted at the end. **Stop.**
+- [ ] Tue 24 kit line: `EEG_LIVE_RULE=ica` + restart before T05.
 
 ## Fri 20 evening · monitor clock (D-F6-274 (1)) · OK from Sebas
 - [x] **C1** · `4245152`, pytest 528 → 531; T04's S4 moves 10 s per 10 s · `_LIVE_TOP.elapsed_ms` = anchor (max of `session_elapsed_ms − server_received_at`) + `now()` while `IN_PROGRESS`; 4 tests; T04's S4 check read-only; pytest, commit, graphify, backend restart. **Stop.**
