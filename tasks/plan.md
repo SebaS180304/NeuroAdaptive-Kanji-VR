@@ -1,6 +1,6 @@
 # Implementation Plan: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Written Mon 16 Nov 2026; **updated Thu 19 Nov 12:40, aligned up to D-F6-255 (13:10: `ocul.py` v2, OV tolerances, component selection; 12:41 OK with D-F6-251 to D-F6-254): today's plan is the section "Thu 19 · day plan (D-F6-246 to D-F6-255)"; waits for Sebas's OK before `/build`**. Before: Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
+Written Mon 16 Nov 2026; **updated Fri 20 Nov 15:20, aligned up to D-F6-272: before T04, the section "Fri 20 · logo, Player Settings and monitor access"; waits for Sebas's OK before //build**. Before: Thu 19 Nov 12:40, aligned up to D-F6-255 (13:10: `ocul.py` v2, OV tolerances, component selection; 12:41 OK with D-F6-251 to D-F6-254): today's plan is the section "Thu 19 · day plan (D-F6-246 to D-F6-255)"; waits for Sebas's OK before `/build`**. Before: Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
 Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -186,6 +186,47 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 | afternoon | **T2** (above) → **BR4** if it did not finish on Tue → **AU1** | each with its Stop |
 
 **AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
+
+### Fri 20 · logo, Player Settings and monitor access (D-F6-268 to D-F6-272) · plan, waits for Sebas's OK
+
+**Board:** D-F6-268 (two ways into the monitor), D-F6-269 (logo in the portal, Unity's Player Settings, the Form), D-F6-270 (windows, Export CSV, latest event, *session ended*, «Sync tap», «—»), D-F6-271 (one plan, three parts; **limits (2)**: only the portal and Player Settings, nothing in `live.py`, `s3watch.py`, the engine, the database or Unity's scenes and scripts; **gate (3) at 16:15 per part**), D-F6-272 (V1.13 access and the new V1.13 states validated as drawn; build even though `design-system.md` still says *Pending*).
+**Sources:** `Claude outputs/design-handoff/design-system.md` (77 156 bytes; «Brand», «V1.13 Live session monitor», «V1.13 access»), copied first over the skill's `references/design-system.md`; `design-handoff/brand/`; `design-handoff/monitor/` (`MonitorAccess*.dc.html`, `Accesos_monitor_*.png`); `docs_proyecto/Contenido_UI_Monitor_Accesos.md` (§1, §2, §3, §3.1).
+
+**Found while planning (read-only):** `Application.productName` is used. `SessionCommunicationClient.cs:324` writes the unsent-event queue under `Application.persistentDataPath` (it depends on `companyName`/`productName`) in a built player; in the Editor, where the sessions run, it uses the project folder. Nothing else (LSL stream names, log paths) reads it. **By the rule of D-F6-269 (2), B is the icon only; `productName` stays «NeuroAdaptive Kanji VR».**
+
+**Dependency graph:**
+```
+copy design-system.md to the skill ──► A logo (portal) ──┐
+                                    └► C access + V1.13 states (portal) ──┼──► npm run build ──► gate 16:15 per part ──► close (D-F6-269 (4))
+B icon in Player Settings (Unity) ──► Play S0–S2 ─────────────────────────┘
+Form header PNG (design-handoff/brand/, no code): any time before the close
+```
+A and C both touch the rail (`AppShell.tsx`): A first (rail header), then C (the rail item), so each commit stays its own.
+
+#### A · Logo in the portal (D-F6-269 (1), «Brand») · ≈ 15 min · 1 commit
+- **Favicon:** `andon_favicon_light_32.svg`, `andon_favicon_dark_32.svg` and the 180 px apple-touch PNGs into `dashboard/public/brand/`; `index.html` links the light and dark SVGs with `media="(prefers-color-scheme: …)"` and the apple-touch PNG. The SVGs are the source; nothing redrawn.
+- **Rail header:** the 32 px icon (`andon_icon_light_32.png` / `_dark_32.png` by theme) **above** «NeuroAdaptive VR» (Newsreader 500, 22/28); the rail keeps 240 px; `alt=""` (the name follows as text).
+- **Not** on participant screens (pre-test, free recall; D-F6-117) and not on V1.13's no-session state (drawn without it).
+- **Check:** Vitest (the rail shows the icon as decorative), `npm run build`, harness PASS; the rail in light and dark at 1440 × 900.
+
+#### B · Unity, Player Settings only (D-F6-269 (2)) · ≈ 15 min + Play · 1 commit
+- **Icon only:** `andon_icon_light_1024.png` into `unity-client/Assets/Branding/` (its `.meta`, texture type Default), set as the default icon (Editor command through the Unity MCP, `PlayerSettings.SetIcons`). **`productName` not changed** (finding above). No scene, script or content touched: the commit holds `ProjectSettings.asset` and the Branding files only.
+- **Check:** harness PASS and **a Play in the Editor from S0 to S2 without errors** (D-F6-271 (3)). It needs someone to press Start in S1 to reach S2: **Sebas, ≈ 2 min, no headset**; otherwise I Play to S1 and read the console, and say S2 was not reached. Then **Unity reopened** (a Play leaves a `UnityMarkers` outlet).
+
+#### C · Monitor access and the new V1.13 states (D-F6-270, D-F6-272) · ≈ 30 min · 1 commit
+- **Backend, read only (`/research`, no schema change):** `GET /research/live/current` follows **the IN_PROGRESS session with the latest event** (D-F6-270 (3)) and returns `external_code` (rail tooltip); `/research/sessions/{id}/live` adds `completed_at` («closed at {hh:mm:ss}»). Test: two IN_PROGRESS sessions → the one with the newer event.
+- **Rail entry (§1):** second item under Sessions, «Live monitor», signal icon `M1.5 8.5h3l1.5-4 3 7 1.5-3h4`; at the end of the pill an 8 px dot `#3FB7C2` + «Live» with a running session, an empty ring without one or when the backend does not answer; accessible names and tooltips from §1. Opens `/monitor` in the same window; never disabled; polls `live/current` every 5 s.
+- **Session view (§2):** only while `IN_PROGRESS`, «Open live monitor» outline pill in place of Export CSV, `target="_blank" rel="noopener"`, signal icon + external-window mark, tooltip and accessible name from §2; closed sessions keep Export CSV and show nothing in its place.
+- **V1.13 `sessionEnded` (§3.1):** on `/monitor/<id>` once the session is no longer IN_PROGRESS: banner «This session has ended» + «Session {id8} closed at {hh:mm:ss}. Its data is in the session view.» + «Open session view» (same window); the panels keep their last data in the stale style (`--color-bg`, 1 px dashed `--color-border-strong`). `/monitor` without an id goes back to «Waiting for a new session».
+- **V1.13 `syncTap`:** «Sync tap» in `caption`, `--color-text-muted`, right after the status word (today « · Sync tap» in body text), and design-system's sentence at the end of the rule under the table. **«—» on `autorun`:** already shown; checked.
+- **Check:** Vitest (rail live / none, link only on IN_PROGRESS, Export CSV hidden while running, *session ended* banner, Sync tap caption), pytest for `live/current`, `npm run build`, harness PASS; screenshots at 1440 × 900 against `Accesos_monitor_claro.png` and the *sessionEnded* state.
+
+#### Form header PNG (D-F6-269 (3)) · ≈ 10 min · no commit (design-handoff is not in the repo)
+- `design-handoff/brand/andon_form_header_1600x400.png`: the «Brand» logo (icon + «NeuroAdaptive VR», Newsreader 500, clear space ¼ of the icon height, Ink on Paper), rendered from the validated SVG and the bundled font with the portal's Playwright; 1600 × 400, the Form header's ratio. Sebas places it in the Form.
+
+#### Gate at 16:15 (D-F6-271 (3)) and close (D-F6-269 (4))
+- Each part: its commit with tests green, `npm run build` and harness PASS; B also the Play S0–S2. **A part not passed at 16:15 is reverted (`git revert` of its commit); the others stay.** Nothing is fixed after 16:15.
+- Close: `git status` clean, backend and `dashboard` restarted (the new `dist`), Unity reopened, `EEG_LIVE_RULE=current`, `EEG_MONITOR_LIVE=false`, `preflight` without code FAILs.
 
 ### Thu 19 · day plan (D-F6-246 to D-F6-255) · waits for Sebas's OK before `/build`
 
