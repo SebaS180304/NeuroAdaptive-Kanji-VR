@@ -13,7 +13,9 @@ export default defineConfig({
   },
   server: {
     host: '127.0.0.1',
-    port: 5300,
+    // Dev server with live reload; 5300 is the built portal served by docker compose (nginx, M0).
+    // shortcut: if Windows reserves 5173 again (its dynamic range, Oct 17), pick a free port outside it.
+    port: 5173,
     strictPort: true,
     proxy: {
       '/api': {

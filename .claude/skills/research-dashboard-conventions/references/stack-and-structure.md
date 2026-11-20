@@ -57,7 +57,9 @@ API as `/api/...` through Vite's proxy to `:8000`, so CORS is not involved.
 starts the `dashboard` service (nginx on `127.0.0.1:5300`, serving `dashboard/dist`,
 `/api/` proxied to the backend with the prefix stripped, `dashboard/nginx.conf`).
 After any dashboard change run `npm run build`: compose serves the last build. For
-development, `docker compose stop dashboard` first, then `npm run dev` (same port).
+development, `npm run dev` serves the live-reloading portal on `127.0.0.1:5173`
+(20 Nov), so both run at once: 5300 = the built portal, 5173 = the code being
+edited. Playwright keeps testing 5300.
 
 ## Commands
 

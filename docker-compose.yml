@@ -93,8 +93,8 @@ services:
 
   # M0 (D-F6-231 (5), D-F6-247 (1)): the research portal, already built, served by nginx on 127.0.0.1 only (no auth,
   # participant data, D-F6-186), with /api/ proxied to the backend. After a change in dashboard/: `npm run build`
-  # (dist is not built inside Docker). For portal development: `docker compose stop dashboard`, then `npm run dev`
-  # (both want port 5300).
+  # (dist is not built inside Docker). For portal development: `npm run dev` serves the live code on 127.0.0.1:5173,
+  # beside this one.
   dashboard:
     image: nginx:alpine
     container_name: neuroadaptive_dashboard
