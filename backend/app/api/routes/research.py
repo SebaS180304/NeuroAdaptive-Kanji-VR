@@ -493,8 +493,16 @@ SELECT s.id::text AS session_id, p.external_code, s.condition::text AS condition
        s.visit_number AS visit, s.status::text AS status, s.current_state::text AS stage, s.completed_at,
        (SELECT max(st.entered_elapsed_ms) FROM session_states st
          WHERE st.session_id = s.id AND st.state::text = s.current_state::text) AS stage_entered_ms,
-       (SELECT (e.payload ->> 'session_elapsed_ms')::int FROM session_events e
-         WHERE e.session_id = s.id AND e.payload ? 'session_elapsed_ms' ORDER BY e.id DESC LIMIT 1) AS elapsed_ms
+       CASE WHEN s.status::text = 'IN_PROGRESS' THEN
+         -- D-F6-274 (1): session time now, not the newest event's (S4 sends none for ~105 s). The max anchor
+         -- (elapsed minus arrival) keeps an event that waited in Unity's queue from pulling the clock back.
+         (SELECT round(max((e.payload ->> 'session_elapsed_ms')::numeric
+                           - extract(epoch FROM e.server_received_at) * 1000) + extract(epoch FROM now()) * 1000)::int
+            FROM session_events e WHERE e.session_id = s.id AND e.payload ? 'session_elapsed_ms')
+       ELSE
+         (SELECT (e.payload ->> 'session_elapsed_ms')::int FROM session_events e
+           WHERE e.session_id = s.id AND e.payload ? 'session_elapsed_ms' ORDER BY e.id DESC LIMIT 1)
+       END AS elapsed_ms
 FROM experiment_sessions s JOIN participants p ON p.id = s.participant_id WHERE s.id = :s""")
 
 _LIVE_EEG = text("""

@@ -40,7 +40,7 @@ async def test_the_snapshot_has_every_section(client, live_session):
     body = r.json()
     top = body["session"]
     assert top["stage"] == S7 and top["external_code"] == "PROJ0003_TEST" and top["set"] == "B" and top["visit"] == 2
-    assert top["elapsed_ms"] == 14600   # the newest event
+    assert 14600 <= top["elapsed_ms"] < 14600 + 5000   # the newest event plus the moments since it arrived
     assert body["sync"] == {"clear_taps": 4, "taps": 5, "offset_ms": 14.4, "robust_spread_ms": 17.8}
     ind = body["indices"]
     assert ind["reference"] == {"source": "S6", "fallback": False, "n_epochs": 18}
@@ -57,6 +57,32 @@ async def test_the_snapshot_has_every_section(client, live_session):
     assert sysl["heartbeat_age_s"] is not None and sysl["alpha_passed"] is True and sysl["bad_channel"] is None
     assert body["signal_quality"] is None   # M1b
     assert body["generated_at"]
+
+
+async def _clock(client, sid: str) -> int:
+    return (await client.get(f"/research/sessions/{sid}/live")).json()["session"]["elapsed_ms"]
+
+
+@pytest.mark.asyncio
+async def test_the_clock_keeps_counting_with_no_new_event(client, live_session):   # D-F6-274 (1): T04's S4
+    await _exec("UPDATE session_events SET server_received_at = server_received_at - interval '30 seconds' "
+                "WHERE session_id = :s", s=live_session)
+    assert 14600 + 30_000 <= await _clock(client, live_session) < 14600 + 35_000
+
+
+@pytest.mark.asyncio
+async def test_a_late_event_from_the_queue_does_not_pull_the_clock_back(client, live_session):
+    await _exec("INSERT INTO session_events (session_id, event_type, payload) "
+                "VALUES (:s, 'VIEW_RECENTERED', '{\"session_elapsed_ms\": 1000}')", s=live_session)
+    assert await _clock(client, live_session) >= 14600
+
+
+@pytest.mark.asyncio
+async def test_an_ended_session_shows_its_last_event(client, live_session):
+    await _exec("UPDATE experiment_sessions SET status = 'COMPLETED' WHERE id = :s", s=live_session)
+    await _exec("UPDATE session_events SET server_received_at = server_received_at - interval '30 seconds' "
+                "WHERE session_id = :s", s=live_session)
+    assert await _clock(client, live_session) == 14600
 
 
 @pytest.mark.asyncio
