@@ -490,7 +490,7 @@ async def export_csv(
 
 _LIVE_TOP = text("""
 SELECT s.id::text AS session_id, p.external_code, s.condition::text AS condition, s.assigned_kanji_set AS set,
-       s.visit_number AS visit, s.status::text AS status, s.current_state::text AS stage,
+       s.visit_number AS visit, s.status::text AS status, s.current_state::text AS stage, s.completed_at,
        (SELECT max(st.entered_elapsed_ms) FROM session_states st
          WHERE st.session_id = s.id AND st.state::text = s.current_state::text) AS stage_entered_ms,
        (SELECT (e.payload ->> 'session_elapsed_ms')::int FROM session_events e
@@ -587,8 +587,12 @@ async def live_snapshot(session_id: uuid.UUID, db: AsyncSession = Depends(get_db
 
 @router.get("/live/current", response_model=LiveCurrent)
 async def live_current(db: AsyncSession = Depends(get_db)) -> dict:
-    sid = (await db.execute(text(
-        "SELECT id::text FROM experiment_sessions WHERE status = 'IN_PROGRESS' ORDER BY created_at DESC LIMIT 1"))).scalar()
-    if sid is None:
+    # D-F6-270 (3): with more than one IN_PROGRESS (a hung one not yet aborted), the one with the latest event
+    row = (await db.execute(text(
+        "SELECT s.id::text AS session_id, p.external_code FROM experiment_sessions s "
+        "JOIN participants p ON p.id = s.participant_id "
+        "LEFT JOIN LATERAL (SELECT max(e.id) AS last FROM session_events e WHERE e.session_id = s.id) ev ON TRUE "
+        "WHERE s.status = 'IN_PROGRESS' ORDER BY ev.last DESC NULLS LAST, s.created_at DESC LIMIT 1"))).mappings().first()
+    if row is None:
         raise HTTPException(status_code=404, detail="no session in progress")
-    return {"session_id": sid}
+    return dict(row)

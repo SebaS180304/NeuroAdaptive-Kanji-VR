@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router'
+import { RailMonitorItem } from '@/components/LiveMonitorAccess'
 
 // The navigation rail of the *Session list* artboard: 240 px, items 40 px pills,
 // active = accent fill. Icons are the artboard's own 16 px strokes.
@@ -41,7 +42,7 @@ function Rail() {
         <span className="type-title">NeuroAdaptive VR</span>
         <span className="type-caption text-(--color-sidebar-muted)">Research dashboard</span>
       </div>
-      {ITEMS.map(({ to, label, icon }) => (
+      {ITEMS.map(({ to, label, icon }, n) => [
         <NavLink
           key={to}
           to={to}
@@ -55,8 +56,10 @@ function Rail() {
             {icon}
           </svg>
           {label}
-        </NavLink>
-      ))}
+        </NavLink>,
+        // V1.13 access §1: the live monitor is the second item, under Sessions (D-F6-268, D-F6-272)
+        n === 0 && <RailMonitorItem key="monitor" />,
+      ])}
       <div className="flex-1" />
       <p className="type-caption m-0 px-2 text-(--color-sidebar-muted)">Runs locally on the lab machine</p>
     </nav>

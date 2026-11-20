@@ -48,6 +48,21 @@ describe('Session View header and summary (V1.2)', () => {
     expect(await screen.findByRole('link', { name: 'Free recall' })).toHaveAttribute('href', `/sessions/${ID}/recall`)
   })
 
+  it('while the session runs: "Open live monitor" in a new window instead of Export CSV (V1.13 access §2)', async () => {
+    show({ ...ADAPTIVE, status: 'IN_PROGRESS' })
+    const link = await screen.findByRole('link', { name: `Open live monitor for session ${ID.slice(0, 8)}` })
+    expect(link).toHaveAttribute('href', `/monitor/${ID}`)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link.getAttribute('title')).toMatch(/Opens in a new window\.$/)
+    expect(screen.queryByText('Export CSV')).toBeNull()
+  })
+
+  it('a closed session keeps Export CSV and has no monitor link', async () => {
+    show(ADAPTIVE)
+    expect(await screen.findByText('Export CSV')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Open live monitor/ })).toBeNull()
+  })
+
   it('has no free recall link on visit 1', async () => {
     show(ADAPTIVE)
     await screen.findByRole('complementary', { name: 'Session facts' })

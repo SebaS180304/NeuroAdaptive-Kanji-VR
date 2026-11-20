@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState, type ReactNode } from 'react'
-import { useParams } from 'react-router'
-import { ApiError, getJson, type Schemas } from '@/api/client'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { Link, useParams } from 'react-router'
+import { getJson, type Schemas } from '@/api/client'
+import { useCurrentSession } from '@/components/LiveMonitorAccess'
 import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { clock } from '@/lib/format'
 
@@ -21,6 +22,8 @@ type Channel = {
 type Quality = { age_s: number | null; session_60_uv: number | null; session_60_status: 'OK' | 'Watch'; channels: Channel[] }
 
 const POLL_MS = 1000
+/** V1.13 sessionEnded (D-F6-270 (4)): the panels keep their last data in the stale style. */
+const Ended = createContext(false)
 const STALE_S = 5   // a source silent this long reads "No data for [n] s" (D-F6-231 (4))
 
 // TODO(design): V1.13 names only S7; the others show their code and the state's own words until UI/UX names them.
@@ -34,12 +37,14 @@ function stageTitle(stage: string | null | undefined): string {
 
 const minus = (n: number) => (n < 0 ? `−${Math.abs(n).toFixed(1)}` : `+${n.toFixed(1)}`)
 
-const panel = 'flex min-h-0 flex-col rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface) px-5 py-4'
+const panel = 'flex min-h-0 flex-col rounded-(--radius-panel) border px-5 py-4'
+const fresh = 'border-(--color-border) bg-(--color-surface)'
+const stale = 'border-dashed border-(--color-border-strong) bg-(--color-bg) text-(--color-text-muted)'
 
 function Section({ title, updated, children, className = '' }:
   { title: string; updated?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section aria-label={title} className={`${panel} ${className}`}>
+    <section aria-label={title} className={`${panel} ${useContext(Ended) ? stale : fresh} ${className}`}>
       <div className="mb-3 flex items-baseline justify-between gap-4">
         <h2 className="type-subtitle font-heading">{title}</h2>
         {updated && <span className="type-caption text-(--color-text-muted)">{updated}</span>}
@@ -125,7 +130,8 @@ function SignalQuality({ q, heartbeat }: { q: Quality | null; heartbeat: number 
             <tr key={c.label} className="border-t border-(--color-border-subtle)">
               <td className="py-1.5 font-mono">{c.label}</td>
               <td><span className="inline-flex items-center gap-2"><Dot kind={word[c.status]} />{c.status}
-                {c.flat && ' · flat'}{c.sync_tap && ' · Sync tap'}</span></td>
+                {c.flat && ' · flat'}
+                {c.sync_tap && <span className="type-caption text-(--color-text-muted)">Sync tap</span>}</span></td>
               <td className="text-right">{c.l60_uv == null ? '—' : Math.round(c.l60_uv)}{c.mark_60 && ' ◇'}</td>
               <td className="text-right">{c.rms_uv == null ? '—' : Math.round(c.rms_uv)}</td>
               <td className="text-right">{c.over_pct == null ? '—' : c.over_pct.toFixed(1)}</td>
@@ -141,6 +147,7 @@ function SignalQuality({ q, heartbeat }: { q: Quality | null; heartbeat: number 
       <p className="type-caption mt-2 text-(--color-text-muted)">
         Share of samples over 100 µV in the last 5 s, leaving out ±1 s around each sync tap. OK under 5 %. Watch 5–20 %,
         or the last 30 s over 20 %. Bad over 20 %, or flat. ◇ on 60 Hz: under 0.3× or over 3× the others.
+        Sync tap: the taps cover the last 5 s, so the earlier colour stays.
         {heartbeat != null && heartbeat > STALE_S && ` live.py: no data for ${Math.round(heartbeat)} s.`}
       </p>
     </Section>
@@ -310,7 +317,24 @@ function useClock(snap: Snapshot | undefined, fetchedAt: number): number | null 
   return snap!.session.status === 'IN_PROGRESS' ? base + Math.max(0, now - fetchedAt) : base
 }
 
-function Monitor({ sessionId }: { sessionId: string }) {
+const HMS = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+/** V1.13 sessionEnded (Contenido_UI_Monitor_Accesos.md §3.1, D-F6-270 (4)): only on /monitor/<id>. */
+function EndedBanner({ s }: { s: Snapshot['session'] }) {
+  return (
+    <div role="status" className="type-body flex shrink-0 items-center gap-3 border-b border-(--color-border) bg-(--color-surface) px-6 py-2.5">
+      <span aria-hidden className="inline-block size-2.5 rounded-full border border-(--color-text-muted)" />
+      <strong>This session has ended</strong>
+      <span className="text-(--color-text-muted)">
+        Session {s.session_id.slice(0, 8)} closed at {s.completed_at ? HMS.format(new Date(s.completed_at)) : '—'}. Its data is in
+        the session view.
+      </span>
+      <Link to={`/sessions/${s.session_id}`} className="font-semibold text-(--color-accent) underline">Open session view</Link>
+    </div>
+  )
+}
+
+function Monitor({ sessionId, pinned }: { sessionId: string; pinned: boolean }) {
   const { data, error, dataUpdatedAt } = useQuery({
     queryKey: ['live', sessionId],
     queryFn: () => getJson<Snapshot>(`/research/sessions/${sessionId}/live`),
@@ -321,12 +345,17 @@ function Monitor({ sessionId }: { sessionId: string }) {
     return <Frame><p className="type-body p-6">{error ? 'The backend does not answer. Nothing is shown until it does.' : 'Loading the session…'}</p></Frame>
   }
   const heartbeat = data.system?.heartbeat_age_s
+  // /monitor/<id> keeps a session that ended, marked; /monitor (the rail) never gets here with one (it waits instead)
+  const ended = pinned && data.session.status !== 'IN_PROGRESS'
   return (
     <Frame>
+      <Ended.Provider value={ended}>
       <TopBar s={data.session} elapsed={elapsed} />
-      <p className="type-body shrink-0 border-b border-(--color-border) px-6 py-2.5 text-(--color-text-secondary)">
-        Read only. Nothing on this screen changes the session.
-      </p>
+      {ended ? <EndedBanner s={data.session} /> : (
+        <p className="type-body shrink-0 border-b border-(--color-border) px-6 py-2.5 text-(--color-text-secondary)">
+          Read only. Nothing on this screen changes the session.
+        </p>
+      )}
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)] gap-6 p-6">
         <div className="flex min-h-0 flex-col gap-6">
           <SignalQuality q={data.signal_quality as Quality | null} heartbeat={heartbeat} />
@@ -341,6 +370,7 @@ function Monitor({ sessionId }: { sessionId: string }) {
           <Events list={data.events} />
         </div>
       </main>
+      </Ended.Provider>
     </Frame>
   )
 }
@@ -352,20 +382,18 @@ function Frame({ children }: { children: ReactNode }) {
 /** /monitor follows the newest session in progress; /monitor/:sessionId pins one. */
 export function LiveMonitor() {
   const { sessionId } = useParams()
-  const current = useQuery({
-    queryKey: ['live', 'current'],
-    queryFn: () => getJson<Schemas['LiveCurrent']>('/research/live/current'),
-    refetchInterval: 5000,
-    enabled: !sessionId,
-  })
-  const id = sessionId ?? current.data?.session_id
+  // D-F6-270 (3): the IN_PROGRESS session with the latest event, the same rule as the rail's "Live monitor"
+  const current = useCurrentSession()
+  const id = sessionId ?? current?.session_id
   if (!id) {
-    const none = current.error instanceof ApiError && current.error.status === 404
     return (
       <Frame>
-        <p className="type-body p-6">{none || !current.error ? 'Waiting for a new session' : 'The backend does not answer.'}</p>
+        <div className="p-6">
+          <p className="type-subtitle font-heading">Waiting for a new session</p>
+          <p className="type-body text-(--color-text-muted)">The monitor will show the next session when it starts. Nothing to do here.</p>
+        </div>
       </Frame>
     )
   }
-  return <Monitor sessionId={id} />
+  return <Monitor key={id} sessionId={id} pinned={!!sessionId} />
 }

@@ -539,6 +539,8 @@ export interface components {
         LiveCurrent: {
             /** Session Id */
             session_id: string;
+            /** External Code */
+            external_code: string;
         };
         /** LiveDecision */
         LiveDecision: {
@@ -682,6 +684,8 @@ export interface components {
             stage_entered_ms: number | null;
             /** Elapsed Ms */
             elapsed_ms: number | null;
+            /** Completed At */
+            completed_at: string | null;
         };
         /** LiveTracePoint */
         LiveTracePoint: {

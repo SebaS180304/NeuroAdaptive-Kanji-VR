@@ -62,7 +62,24 @@ async def test_the_snapshot_has_every_section(client, live_session):
 @pytest.mark.asyncio
 async def test_the_newest_in_progress_session_is_current(client, live_session):
     r = await client.get("/research/live/current")
-    assert r.status_code == 200 and r.json() == {"session_id": live_session}
+    assert r.status_code == 200 and r.json() == {"session_id": live_session, "external_code": "PROJ0003_TEST"}
+
+
+@pytest.mark.asyncio
+async def test_with_two_in_progress_the_latest_event_wins(client, live_session):   # D-F6-270 (3)
+    other = await _exec("INSERT INTO experiment_sessions (participant_id, condition, status) SELECT participant_id, "
+                        "condition, 'IN_PROGRESS' FROM experiment_sessions WHERE id = :s RETURNING id", s=live_session)
+    newer = str(other[0][0])   # created after live_session, but with no event: an older hung session wins over it
+    assert (await client.get("/research/live/current")).json()["session_id"] == live_session
+    await _exec("INSERT INTO session_events (session_id, event_type, payload) VALUES (:s, 'STATE_ENTERED', '{}')", s=newer)
+    assert (await client.get("/research/live/current")).json()["session_id"] == newer
+
+
+@pytest.mark.asyncio
+async def test_the_snapshot_says_when_the_session_closed(client, live_session):   # V1.13 sessionEnded (D-F6-270 (4))
+    await _exec("UPDATE experiment_sessions SET status = 'COMPLETED', completed_at = now() WHERE id = :s", s=live_session)
+    top = (await client.get(f"/research/sessions/{live_session}/live")).json()["session"]
+    assert top["status"] == "COMPLETED" and top["completed_at"]
 
 
 @pytest.mark.asyncio

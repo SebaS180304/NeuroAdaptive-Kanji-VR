@@ -8,6 +8,7 @@ import { sessionStatusText } from '@/components/SessionStatus'
 import { LoadingNotice, Notice, OfflineNotice } from '@/components/Notice'
 import { formatDate, formatDuration, formatPercent, formatTime, stateCode as code } from '@/lib/format'
 import { ExportMenu } from './ExportMenu'
+import { SessionMonitorLink } from '@/components/LiveMonitorAccess'
 import { Timeline } from './timeline/Timeline'
 import { SessionTables } from './trials/SessionTables'
 
@@ -79,7 +80,10 @@ function Facts({ s }: { s: Detail }) {
         <span className={`type-body inline-flex h-8 items-center rounded-(--radius-pill) px-4 font-medium ${CONDITION_PILL[s.condition]}`}>
           {CONDITION_LABEL[s.condition]}
         </span>
-        <ExportMenu sessionId={s.session_id} condition={s.condition} />
+        {/* V1.13 access §2: while the session runs, the monitor in Export CSV's place (it would export half a session) */}
+        {s.status === 'IN_PROGRESS'
+          ? <SessionMonitorLink sessionId={s.session_id} />
+          : <ExportMenu sessionId={s.session_id} condition={s.condition} />}
         {/* V1.12: block R runs on visits 2-4 (a visit >= 2 always has its evaluated session, D-F6-223). */}
         {s.visit_number >= 2 && (
           <Link

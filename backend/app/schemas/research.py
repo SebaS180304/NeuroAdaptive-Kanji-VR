@@ -426,6 +426,7 @@ class LiveTop(BaseModel):
     stage: str | None
     stage_entered_ms: int | None
     elapsed_ms: int | None          # session_elapsed_ms of the newest event
+    completed_at: datetime | None   # V1.13 sessionEnded: "closed at {hh:mm:ss}"
 
 
 class LiveSync(BaseModel):
@@ -516,3 +517,4 @@ class LiveSnapshot(BaseModel):
 
 class LiveCurrent(BaseModel):
     session_id: str
+    external_code: str              # the rail's tooltip names it (Contenido_UI_Monitor_Accesos.md §1)

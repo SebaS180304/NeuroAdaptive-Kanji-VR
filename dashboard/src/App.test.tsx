@@ -6,11 +6,11 @@ import { renderApp } from './test/render'
 describe('app shell', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('shows the rail with the four sections, in order', () => {
+  it('shows the rail with the five entries, in order (Live monitor second, D-F6-268)', () => {
     renderApp('/sessions')
     const rail = screen.getByRole('navigation', { name: 'Main' })
     expect(within(rail).getAllByRole('link').map((a) => a.textContent)).toEqual([
-      'Sessions', 'Participants', 'Pre-test', 'Data quality',
+      'Sessions', 'Live monitor', 'Participants', 'Pre-test', 'Data quality',
     ])
     expect(within(rail).getByText('Runs locally on the lab machine')).toBeInTheDocument()
   })
