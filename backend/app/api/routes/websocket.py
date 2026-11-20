@@ -231,7 +231,7 @@ async def _eeg_source(session_id: uuid.UUID, answered_ms):
                 "AND start_ms <= :hi"),  # no lower bound: trials have no timeout, a window can last > 60 s (D-F6-186)
                 {"s": str(session_id), "hi": int(answered_ms)})).all()
             sounds = None
-            if get_settings().eeg_live_rule == "nosound":  # D-F6-147 (2): the window's sound density against S6's
+            if get_settings().eeg_live_rule in ("nosound", "ica"):  # D-F6-147 (2): the window's sound density against S6's
                 events = (await db.execute(text(
                     "SELECT event_type, payload FROM session_events WHERE session_id = :s AND event_type IN "
                     "('AUDIO_ONSET', 'ANSWER_SELECTED', 'TRIAL_COMPLETED', 'STATE_ENTERED') ORDER BY id"),

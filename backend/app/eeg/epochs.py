@@ -65,7 +65,7 @@ def markers_of(stream: dict | None) -> list[tuple[float, dict]]:
     return [(float(t), json.loads(v[0])) for t, v in zip(stream["time_stamps"], stream["time_series"])]
 
 
-RULES = ("current", "nosound", "ica")  # options (1), (2) and (3) of D-F6-242; "ica" is never live (D-F6-263 (3))
+RULES = ("current", "nosound", "ica")  # options (1), (2) and (3) of D-F6-242; "ica" live since D-F6-275, in live.Buffer
 TASK_SOUND_STATES = ("S6_GUIDED_PRACTICE_CALIBRATION", "S7_EXPERIMENTAL_RETRIEVAL", "S8_IMMEDIATE_ASSESSMENT")
 
 
@@ -309,8 +309,20 @@ async def fill_from_xdf(session_id: str) -> list[dict]:
         markers = markers_of(streams.get(lsl_reader.MARKER_STREAM))
         # the live grid when live.py stored it (D-F6-200 (1)); null = older sessions, the XDF's first stamp as before
         rule = get_settings().eeg_live_rule  # the same rule live.py cut with (D-F6-263)
-        eps, bad, ref = cut_session(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers,
-                                    t0=origin, rule=rule)
+        if rule == "ica":  # D-F6-276 (1): live's own path, with the model it stored (refitted only if it stored none)
+            from app.eeg import live
+
+            stored = (await db.execute(text("SELECT ica FROM eeg_sessions WHERE session_id = :s"),
+                                       {"s": session_id})).scalar_one_or_none()
+            eps, buf = live.cut_recording(np.asarray(aura["time_series"], dtype=float),
+                                          np.asarray(aura["time_stamps"], dtype=float), sr, montage, markers,
+                                          grid_origin=origin, rule="ica", ica_model=stored)
+            bad, ref = buf.bad, buf.reference(eps)
+            if stored is None and buf.ica is not None:
+                await live.save_ica(db, session_id, buf.ica)
+        else:
+            eps, bad, ref = cut_session(preprocess.filter_eeg(aura["time_series"], sr), stamps, sr, montage, markers,
+                                        t0=origin, rule=rule)
         await save(db, session_id, eps, {**preprocess.filter_params(sr), "sync_offset_ms": offset, "rule": rule})
         await reference.save(db, session_id, ref)
         await save_bad(db, session_id, bad_summary(bad, markers))

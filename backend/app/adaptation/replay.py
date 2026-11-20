@@ -126,36 +126,17 @@ def xdf_source(path: str, montage: dict, grid_origin: float | None = None, rule:
     streams = lsl_reader.load_xdf(path)
     aura, markers = streams[lsl_reader.EEG_STREAM], epochs.markers_of(streams.get(lsl_reader.MARKER_STREAM))
     x, ts = np.asarray(aura["time_series"], dtype=float), np.asarray(aura["time_stamps"], dtype=float)
-    buf = live.Buffer(float(aura["info"]["nominal_srate"][0]), montage)
-    model = None
-    if rule == "ica":  # option (3), offline only (D-F6-263 (2)): fitted on the filtered S4–S5 of the whole XDF
-        from app.eeg import ica, preprocess
-
-        labels = [montage[f"CH{i + 1}"] for i in range(x.shape[1])]
-        model = ica.fit(preprocess.filter_eeg(x, buf.srate), ts, labels, markers)
-        if model["identified"]:
-            x = ica.apply(x, model)  # linear: the same on the raw signal as on the filtered one, up to DC
-        else:
-            rule = "nosound"  # D-F6-253 (2)
-    buf.rule = rule
-    buf.t0 = grid_origin
-    step, mk, cut = max(1, int(buf.srate * CHUNK_S)), 0, []
-    for i in range(0, len(ts), step):
-        hi = ts[min(i + step, len(ts)) - 1]
-        j = mk
-        while j < len(markers) and markers[j][0] <= hi:
-            j += 1
-        buf.add(x[i:i + step].tolist(), ts[i:i + step].tolist(), markers[mk:j])
-        mk = j
-        buf.sync_if_ready()
-        cut += buf.new_epochs()
+    # rule "ica": live's own path (D-F6-276 (1)), the ICA fitted at S6's entry, falling back to (2) by itself
+    cut, buf = live.cut_recording(x, ts, float(aura["info"]["nominal_srate"][0]), montage, markers,
+                                  grid_origin=grid_origin, rule=rule, chunk_s=CHUNK_S)
     ref = buf.reference(cut)
     info = {"epochs": len(cut), "offset_ms": buf.offset_ms, "reference": ref.get("source"), "bad_channel": buf.bad,
             "hitches": hitches_per_state(markers)}
     sounds = epochs.sound_density(markers) if rule != "current" else None  # D-F6-147 (2), options (2) and (3)
-    info["rule"] = rule
-    if model is not None:
-        info["ica"] = {k: model.get(k) for k in ("identified", "reason", "component", "corr", "top_channel")}
+    info["rule"] = buf.effective_rule
+    if buf.ica is not None:
+        info["ica"] = {k: buf.ica.get(k) for k in ("identified", "reason", "component", "corr", "top_channel", "channels",
+                                                   "fit_s", "switched_to_nosound_at", "switch_reason")}
     return (lambda first_start_ms, decision_ms: window.evaluate(cut, first_start_ms, decision_ms, ref, sounds)), info
 
 

@@ -200,6 +200,27 @@ class Buffer:
         return new
 
 
+def cut_recording(x: np.ndarray, ts: np.ndarray, srate: float, montage: dict, markers: list[tuple[float, dict]],
+                  grid_origin: float | None = None, rule: str = "current", ica_model: dict | None = None,
+                  chunk_s: float = 0.5) -> tuple[list[dict], "Buffer"]:
+    """A whole recording through Buffer, fed in chunk_s pieces with the markers up to each piece, as live.run feeds it:
+    the epochs and the buffer (offset, channel out, ICA, reference). replay --xdf and fill_from_xdf with rule "ica"
+    (D-F6-276 (1)). grid_origin: eeg_sessions.grid_origin_lsl; a stored ica_model is used, never refitted."""
+    buf = Buffer(srate, montage, ica_model=ica_model)
+    buf.rule, buf.t0 = rule, grid_origin
+    step, mk, cut = max(1, int(srate * chunk_s)), 0, []
+    for i in range(0, len(ts), step):
+        hi = ts[min(i + step, len(ts)) - 1]
+        j = mk
+        while j < len(markers) and markers[j][0] <= hi:
+            j += 1
+        buf.add(x[i:i + step].tolist(), ts[i:i + step].tolist(), markers[mk:j])
+        mk = j
+        buf.sync_if_ready()
+        cut += buf.new_epochs()
+    return cut, buf
+
+
 # -- the live monitor's per-channel figures (M1b, D-F6-254, D-F6-265): a read of the buffer, never the epoch cut ------
 
 MONITOR_EVERY_S = 2.5
@@ -255,6 +276,26 @@ async def save_origin(db, session_id: str, t0: float) -> None:
                      {"s": str(session_id), "t": t0})
 
 
+async def save_ica(db, session_id: str, model: dict) -> None:
+    """Rule "ica": the S6 fit or why there is none, and a later switch to option (2) (D-F6-276)."""
+    import json
+
+    from sqlalchemy import text
+
+    await db.execute(text("UPDATE eeg_sessions SET ica = CAST(:m AS jsonb) WHERE session_id = :s"),
+                     {"s": str(session_id), "m": json.dumps(model)})
+
+
+def ica_line(model: dict) -> str:
+    """autorun's console line for the operator (D-F6-275 (1), D-F6-276 (2))."""
+    if model.get("switched_to_nosound_at") is not None:
+        return f"ICA dropped: {model['switch_reason']}; option (2) to the end of the session (D-F6-276 (2))"
+    if model.get("identified"):
+        return (f"ICA identified (corr {model['corr']:.2f}, component {model['component']}, "
+                f"{len(model['channels'])} channels, {model.get('fit_s', 0):.1f} s)")
+    return f"ICA not identified ({model.get('reason')}): option (2) for this session (D-F6-253 (2))"
+
+
 async def heartbeat(db, session_id: str, gap_ms: int | None) -> None:
     from sqlalchemy import text
 
@@ -292,6 +333,7 @@ async def run(session_id: str) -> list[float]:
     buf.rule = get_settings().eeg_live_rule  # D-F6-263: "current" until switched on in backend/.env
     monitor_on, last_monitor, monitor_prev = get_settings().eeg_monitor_live, 0.0, None  # M1b, off unless switched on
     bad_saved: list = []
+    ica_saved: dict | None = None
     watch = s3watch.S3Watch(montage)
     print(f"live: {lsl_reader.EEG_STREAM} at {srate} Hz and {lsl_reader.MARKER_STREAM}; cutting from the end of S3; "
           f"EEG rule {buf.rule}")
@@ -312,9 +354,10 @@ async def run(session_id: str) -> list[float]:
         write_origin = not origin_done and buf.t0 is not None
         write_bad = buf.bad != bad_saved
         write_monitor = monitor_on and len(buf.ts) > 0 and time.monotonic() - last_monitor >= MONITOR_EVERY_S
+        write_ica = buf.ica is not None and buf.ica != ica_saved  # the S6 fit, then a switch to (2) if any
         if write_bad and ref_done:  # out after the reference was written: recomputed without it (D-F6-216)
             write_ref = True
-        if just_synced or eps or write_ref or beat or write_origin or write_bad or write_monitor:
+        if just_synced or eps or write_ref or beat or write_origin or write_bad or write_monitor or write_ica:
             async with AsyncSessionLocal() as db:
                 if just_synced:
                     from app.eeg import sync
@@ -330,6 +373,10 @@ async def run(session_id: str) -> list[float]:
                     await epochs.save_bad(db, session_id, epochs.bad_summary(buf.bad, buf.markers))
                     bad_saved = list(buf.bad)
                     print(f"live: persistently bad channel {', '.join(c for c, _ in buf.bad)} (D-F6-216)")
+                if write_ica:
+                    await save_ica(db, session_id, buf.ica)
+                    ica_saved = dict(buf.ica)
+                    print(f"live: {ica_line(buf.ica)}")
                 if write_ref:
                     ref = buf.reference(cut)
                     await reference.save(db, session_id, ref)

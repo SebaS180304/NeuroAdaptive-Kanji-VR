@@ -148,6 +148,17 @@ def test_a_stored_model_gives_the_same_epochs_without_refitting(monkeypatch) -> 
     assert again.ica == first.ica
 
 
+def test_a_whole_recording_through_the_buffer_is_what_live_cuts() -> None:   # I2: replay and fill_from_xdf use it
+    x, ts = _session()
+    buf = _ica_buffer()
+    got = _feed(buf, x, ts)
+    cut, again = live.cut_recording(x, ts, SR, DEFAULT_MONTAGE, MARKERS, rule="ica", chunk_s=0.5)
+    assert [e["chunk_clean"] for e in cut] == [e["chunk_clean"] for e in got]
+    assert again.ica["unmixing"] == buf.ica["unmixing"] and again.reference(cut) == buf.reference(got)
+    stored, _ = live.cut_recording(x, ts, SR, DEFAULT_MONTAGE, MARKERS, rule="ica", ica_model=buf.ica, chunk_s=0.2)
+    assert len(stored) == len(got)
+
+
 # ---------- the channel out (D-F6-276 (2), D-F6-216) ----------
 
 def test_a_channel_out_before_s6_is_left_out_of_the_fit() -> None:

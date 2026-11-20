@@ -94,3 +94,61 @@ async def test_live_writes_each_epoch_once_and_the_heartbeat(client, pretested) 
         beat = (await db.execute(text("SELECT heartbeat_at IS NOT NULL, eeg_gap_ms FROM eeg_sessions "
                                       "WHERE session_id = :s"), {"s": sid})).one()
     assert rows == [(0, "GOOD"), (1, "POOR")] and tuple(beat) == (True, 120)
+
+
+# ---------- I2 (D-F6-275, D-F6-276): option (3) live behind EEG_LIVE_RULE=ica ----------
+
+def _rule(monkeypatch, rule: str) -> None:
+    from types import SimpleNamespace
+
+    import app.config
+
+    monkeypatch.setattr(app.config, "get_settings", lambda: SimpleNamespace(eeg_live_rule=rule))
+
+
+@pytest.mark.asyncio
+async def test_live_stores_the_ica_result_in_eeg_sessions(client, pretested) -> None:   # migration 0022
+    from app.eeg import live
+
+    sid = await _session_with_epochs(client, pretested, [])
+    model = {"identified": False, "reason": "corr with Fp1 0.40 < 0.7", "corr": 0.4037}
+    async with AsyncSessionLocal() as db:
+        await live.save_ica(db, sid, model)
+        await db.commit()
+        stored = (await db.execute(text("SELECT ica FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
+    assert stored == model
+
+
+@pytest.mark.asyncio
+async def test_with_rule_ica_the_window_carries_the_sound_density(client, pretested, monkeypatch) -> None:
+    sid = await _session_with_epochs(client, pretested, [90_000, 92_500])
+    _rule(monkeypatch, "ica")      # options (2) and (3) both carry it (D-F6-147 (2)), as replay does
+    assert "sounds_per_s" in (await _eeg_source(sid, 100_000))("S7-006", 95_000, 100_000)
+    _rule(monkeypatch, "current")
+    assert "sounds_per_s" not in (await _eeg_source(sid, 100_000))("S7-006", 95_000, 100_000)
+
+
+@pytest.mark.asyncio
+async def test_fill_from_xdf_with_rule_ica_reuses_the_model_live_stored(client, pretested, monkeypatch) -> None:
+    from app.eeg import epochs, ica, live, lsl_reader
+    from app.eeg.baseline import DEFAULT_MONTAGE
+    from tests.test_eeg_live_ica import MARKERS, SR, _session
+
+    x, ts = _session()
+    _, first = live.cut_recording(x, ts, SR, DEFAULT_MONTAGE, MARKERS, rule="ica")
+    streams = {lsl_reader.EEG_STREAM: {"time_series": x, "time_stamps": ts, "info": {"nominal_srate": [str(SR)]}},
+               lsl_reader.MARKER_STREAM: {"time_stamps": [t for t, _ in MARKERS],
+                                          "time_series": [[json.dumps(m)] for _, m in MARKERS]}}
+    monkeypatch.setattr(lsl_reader, "load_xdf", lambda _p: streams)
+    monkeypatch.setattr(ica, "fit", lambda *_a, **_k: pytest.fail("refitted"))
+    _rule(monkeypatch, "ica")
+    sid = await _session_with_epochs(client, pretested, [])
+    async with AsyncSessionLocal() as db:
+        await live.save_ica(db, sid, first.ica)
+        await db.commit()
+    eps = await epochs.fill_from_xdf(sid)
+    async with AsyncSessionLocal() as db:
+        n, rule, stored = (await db.execute(text(
+            "SELECT (SELECT count(*) FROM eeg_epochs WHERE session_id = :s), filter_params ->> 'rule', ica "
+            "FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).one()
+    assert n == len(eps) > 0 and rule == "ica" and stored["unmixing"] == first.ica["unmixing"]

@@ -84,7 +84,9 @@ def test_the_live_rule_is_current_unless_switched_on(monkeypatch) -> None:
     assert Settings(_env_file=None).eeg_live_rule == "current"
     monkeypatch.setenv("EEG_LIVE_RULE", "nosound")
     assert Settings(_env_file=None).eeg_live_rule == "nosound"
-    monkeypatch.setenv("EEG_LIVE_RULE", "ica")
+    monkeypatch.setenv("EEG_LIVE_RULE", "ica")   # option (3) live, D-F6-275 (1)
+    assert Settings(_env_file=None).eeg_live_rule == "ica"
+    monkeypatch.setenv("EEG_LIVE_RULE", "ica_everywhere")
     with pytest.raises(ValueError):
         Settings(_env_file=None)
 

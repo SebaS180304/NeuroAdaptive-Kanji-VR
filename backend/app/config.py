@@ -38,10 +38,11 @@ class Settings(BaseSettings):
     labrecorder_root: str = ""
 
     # --- EEG rule live (D-F6-246, D-F6-263) ---
-    # "current" = option (1); "nosound" = option (2): task sounds of S6–S8 not trimmed + density control. Read by
-    # live.py on the PC and by the backend in Docker from the same backend/.env (EEG_LIVE_RULE); change it only between
-    # sessions, then restart the backend. The pilot starts with "nosound" after Tue 24's live check.
-    eeg_live_rule: Literal["current", "nosound"] = "current"
+    # "current" = option (1); "nosound" = option (2): task sounds of S6–S8 not trimmed + density control; "ica" =
+    # option (3), D-F6-275: the ICA fitted at S6's entry, falling back to (2) by itself (live.Buffer). Read by live.py on
+    # the PC and by the backend in Docker from the same backend/.env (EEG_LIVE_RULE); change it only between sessions,
+    # then restart the backend. The pilot runs with "ica" if Tue 24's T05 passes (D-F6-275 (4)), else "nosound".
+    eeg_live_rule: Literal["current", "nosound", "ica"] = "current"
     # The live monitor's per-channel figures (M1b, D-F6-265): live.py computes and writes them only when on.
     # EEG_MONITOR_LIVE=true in backend/.env, between sessions. It never changes the epoch cut or any rule.
     eeg_monitor_live: bool = False
