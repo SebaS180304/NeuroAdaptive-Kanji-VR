@@ -1,6 +1,6 @@
 # Design system · v1 (approved Oct 16)
 
-Alineado hasta: D-F6-96 (`Estado_Actual.md`, Oct 26 2026).
+Alineado hasta: D-F6-272 (`Estado_Actual.md`, Nov 20 2026).
 
 > **Status: v1 design COMPLETE.** Tokens approved Oct 16 2026 (light 23:15, dark
 > 23:18). Every screen, V1.1 to V1.11, validated by Oct 17 2026, 00:20 (see the log).
@@ -43,6 +43,10 @@ the URL. Status *Pending* = do not build the screen yet.
 | F-PROFILE: "Not recorded" outcome badge (D-F6-8, D-F6-16) | Learner Profile artboard, Tweak `manySessions`, second group, canvas version 41 | Validated (D-F6-96; validated by Sebas on the canvas, recorded Oct 26 with no date noted) | Recorded Oct 26 2026, 17:00 |
 | Estimated state `UNDERCHALLENGED`: color `--color-state-underchallenged` (D-F6-81) | *Tokens* artboard, "Estimated state" row, canvas version 42 | Defined by the design chat (D-F6-81: design web defines the color); shown to Sebas | Oct 26 2026, 16:45 |
 | F-PROFILE: canvas-only form written here (D-F6-11; the 12 form points of the dev chat's Task 11a-fix) | same artboards, canvas 30, 38 and 39; no new drawing | Recorded, nothing new to validate | Oct 21 2026, 19:40 |
+| Brand: andon icon, favicon, rail header, logo, covers (D-F6-117, D-F6-120, D-F6-121) | *Brand (D-F6-120): Andon_icono_E vector …*, canvas version 47 (round 2: oval light and two rods) | Validated; kept as is after the Google Lens match with Semibot (D-F6-121) | Oct 30 2026 |
+| V1.12 Block R: free recall form (D-F6-125, D-F6-208, D-F6-225, D-F6-226) | *V1.12 Block R · Free recall* (Tweak `state`: `marking`, `saved`, `nothingRecalled`, `saveError`) and its dark artboard; files `BlockRRecall.dc.html` and `BlockRRecallDark.dc.html` | **Validated** (D-F6-226) by Sebas (from the states sheet and the artboard files in `design-handoff/block-r/`; on the canvas since Nov 17, 16:38, canvas version 51, right of "Brand"). The dev chat replaces its placeholder form with this one (D-F6-208, D-F6-223 (3)). *What counts* fixed by D-F6-225 | Proposed Nov 16 2026; validated Nov 17 2026, 14:37 |
+| V1.13 Live session monitor (D-F6-231, D-F6-233, D-F6-234): read-only second screen, 1440 × 900, no scroll | *V1.13 Live session monitor* (Tweak `state`: `normal`, `channelWatch`, `channelExcluded`, `mains60`, `syncTap`, `sourceCut`, `notCounted`, `beforeS7`, `sessionEnded`, `noSession`) and its dark artboard; files `LiveSessionMonitor.dc.html` and `LiveSessionMonitorDark.dc.html` in `design-handoff/monitor/`, with the states sheets | **Validated** (D-F6-233) by Sebas, ahead of the Thu 19 date of D-F6-231 (5). On the canvas since Nov 17, 16:38 (canvas version 51, right of V1.12). Built in M1, during the pilot (D-F6-231 (5)). Low / Normal / High bands in *Live indices* added by **D-F6-234** (the engine's thresholds; two new Tweak states, `notCounted` and `beforeS7`); canvas version updated the same day. **D-F6-270** completes it with what is already built: the session-ended state (`sessionEnded`), the «Sync tap» mark (`syncTap`, D-F6-254 (2)) and «—» on the `autorun` row (D-F6-267). The two new states are **Validated (D-F6-272)** (canvas versions 70 and 71) | Proposed Nov 17 2026; validated Nov 17 2026, 17:04; bands Nov 17 2026, 17:40; D-F6-270 Nov 20 2026, 15:05; validated (D-F6-272) Nov 20 2026, ≈ 15:20 |
+| V1.13 access: rail entry and session link (D-F6-268, D-F6-270, D-F6-272) | *V1.13 access: rail entry and session link* and its dark artboard, canvas x 16720 (files `MonitorAccess.dc.html`, `MonitorAccessDark.dc.html` and `Accesos_monitor_claro.png` / `_oscuro.png` in `design-handoff/monitor/`) | **Validated (D-F6-272)** by Sebas, as drawn. D-F6-270 confirms the window of each way in, Export CSV hidden while `IN_PROGRESS` and the one rule for several running sessions. Labels and tooltips from `Contenido_UI_Monitor_Accesos.md` (UI/UX, aligned to D-F6-270). Built in the portal only, outside sessions with the cap, inside the gate of D-F6-271 | Proposed Nov 20 2026, 14:45; validated Nov 20 2026, ≈ 15:20 |
 
 All artboards: `https://claude.ai/artifact/Xh2oJPSpVH8hubWxNZcooL`.
 
@@ -694,6 +698,474 @@ Validated by Sebas on Oct 17 2026, 00:02.
     | neutral | ground with a hairline | clock |
 
   - Errors use `role="alert"`; the rest use `role="status"`.
+
+## Brand (D-F6-117, D-F6-120, D-F6-121)
+
+Validated by Sebas on Oct 30 2026: round 2 of the vector redraw of
+`Andon_icono_E`, artboard *Brand* (canvas version 47). Final files are in
+`Claude outputs/design-handoff/brand/`. Brief and history: the "Brief de marca"
+section and the Registro of `Reglas_Diseno_Research_Dashboard.md`.
+
+- **Where it may appear:** app icon, favicon, the rail header, logo, covers, and
+  empty states the researcher sees. **Never** in the VR scenes or on any
+  participant screen, the pre-test included (D-F6-117). Use outside the lab waits
+  for MIRAI (A-12).
+- **Mascot:** an *andon* paper floor lamp with two big round eyes (Ink pupils,
+  two Paper highlights each) on a soft vertical oval of saffron light; two Ink rods
+  cross the paper above and below the light; a cap, a rounded frame and four
+  splayed legs. No mouth, brows, blush, text or brush stroke. The eyes never
+  change with the participant's results.
+- **Colors (fixed, the same in both themes; not theme tokens):**
+
+  | Part | Value | Existing token |
+  | --- | --- | --- |
+  | Icon tile, light | `#0B6A73` Lagoon | `--color-accent` light |
+  | Icon tile, dark | `#0F1115` Night | `--color-bg` dark |
+  | Disc behind the lamp (the only shape in this color) | `#3FB7C2` Light Lagoon | `--color-accent` dark |
+  | Paper, eye highlights | `#F9F8F6` Paper | `--color-bg` light |
+  | Light | `#F2A93B` Saffron | `--color-cta` |
+  | Cap, frame, rods, legs, pupils | `#14171C` Ink | `--color-text` light |
+
+  Ink never touches Lagoon (2.84:1): it sits on paper, light or the disc. No
+  gradients, glows, shadows or outlines.
+- **Geometry (viewBox 0 0 100 100):** tile radius 22.5; disc centered at (50, 49.6),
+  r 44.7; the lamp spans x 26–74 and y 13–87, inside the 80 % safe zone. Frame
+  radius 4.5, paper radius 2.8; light oval rx 18, ry 19.5; rods 2.2 thick (≥ 1/48
+  of the side). The SVGs in `design-handoff/brand/` are the source; do not redraw.
+- **Files:**
+
+  | Use | Light | Dark |
+  | --- | --- | --- |
+  | Master, store, PWA (scale down from it) | `andon_icon_light_1024.png`, `andon_icon_light.svg` | `andon_icon_dark_1024.png`, `andon_icon_dark.svg` |
+  | apple-touch | `andon_icon_light_180.png` | `andon_icon_dark_180.png` |
+  | Rail header, 32 px anywhere outside the browser tab | `andon_icon_light_32.png` | `andon_icon_dark_32.png` |
+  | Favicon 32 | `andon_favicon_light_32.png`, `andon_favicon_light_32.svg` (= `andon_favicon_light.svg`) | `andon_favicon_dark_32.png`, `andon_favicon_dark_32.svg` (= `andon_favicon_dark.svg`) |
+  | Favicon 16 | `andon_favicon_light_16.png`, `andon_favicon_light_16.svg` | `andon_favicon_dark_16.png`, `andon_favicon_dark_16.svg` |
+
+- **Favicon:** simplified, without eyes or legs: disc, thick cap and base, paper,
+  oval light. At 32 px it keeps the two rods at exactly 1 px; at 16 px it drops
+  them. In dark mode use the Night files, or one `favicon.svg` that switches the
+  tile to Night with `prefers-color-scheme`.
+- **Rail header:** the 32 px icon sits **above** "NeuroAdaptive VR" (Newsreader 500,
+  22/28 px); beside it, the name wraps in the 240 px rail. The rail keeps its width.
+- **Logo:** icon + "NeuroAdaptive VR" in Newsreader 500, clear space 1/4 of the icon
+  height; Ink text on Paper or white, `#ECEAE5` on Night. The name never goes
+  inside the icon.
+- **Covers:** 1600 × 900 and 1200 × 630, Paper or Night; the mascot without the
+  tile (disc and lamp) on the left third, the name in Newsreader 500 and one line
+  in Public Sans from UI/UX.
+- **Known resemblance (D-F6-121):** Google Lens relates the icon to Semibot, from
+  the game R.E.P.O. Sebas kept the icon as is. Before asking MIRAI about outside
+  use (A-12), the resemblance is reviewed again, with the shape proposal
+  `andon_propuesta_forma_repo.png` in `design-handoff/brand/`.
+- **When to build:** the dev chat puts the favicon and the rail icon in the portal
+  **after the freeze** (Estado_Actual, Oct 30).
+
+## V1.12 Block R: free recall (D-F6-125, D-F6-208)
+
+**Validated** (D-F6-226, Sebas, Nov 17 2026; see the log). The researcher's form for part 1 of block R: the
+participant says out loud, in the headset, what they remember of the kanji of an
+earlier session; the researcher marks it here as they speak. Researcher-only;
+the participant never sees this screen. Nothing on it feeds the engine.
+
+- **Where:** opened from the page of a session that has block R (visits 2, 3 and
+  the short visit 4), with a "Free recall" link in the header actions. The form
+  belongs to that session and shows **the session it evaluates** (D-F6-190 (2)),
+  never the set of the session in progress.
+- **Shell:** focus mode, like V1.10: dark bar (`--color-sidebar`) with the title
+  "Free recall" (`title`), the participant code (mono), "Visit [n], block R part
+  1 of 3" (`caption`, `--color-sidebar-muted`) and an outline pill "Back to the
+  session" (`--color-on-dark-border`). No rail. Content `max-width` 1120 px,
+  16-column grid, 32 px gutter, padding 48 / 32 / 64 px.
+- **Left column (columns 1–5):** `title` "What they remember" and the rule for
+  the researcher (don't repeat, correct, hint or ask about a kanji they haven't
+  mentioned); a `<dl>` (96 px label column): *Evaluates* (session id, mono
+  link), *Set*, *Learned* (date of that session and days since); a box on
+  `--color-explain-bg`, radius 2 px, with what the board shows in VR (the
+  instruction text from UI/UX, D-F6-208); *What counts* (`caption` label, body
+  text), the scoring rule of **D-F6-225**, word for word: "Meaning: the meaning
+  or a clear synonym, in any language. Reading: the Japanese reading, said
+  close enough to recognise. Anything you're unsure about goes in "What they
+  said", without a mark. There is no mark for a partial answer." The same rule
+  applies to the dev chat's placeholder form (BR3) until this one is validated.
+- **The five kanji (columns 6–16):** one panel (`--color-surface`, 1 px
+  `--color-border`, radius 2 px). Header row in `caption`: Kanji, Taught as,
+  Recalled, Order. One row per kanji of the evaluated set, in the set's order,
+  rows split by `--color-border-subtle`, grid `56px 128px 1fr 48px`, 16 px
+  column gap, padding 16 / 24 px:
+  - the kanji in Noto Serif JP 500, 32 / 40 px, `lang="ja"`;
+  - *Taught as*: meaning (`body`) over reading (`caption`), as the session taught
+    them (from `kanji_content.json`);
+  - two **toggle buttons**, "Meaning" and "Reading": real `<button
+    aria-pressed>`, 32 px pills; off = surface with 1 px `--color-border-strong`;
+    on = the selected toggle chip (accent tint, `--color-on-accent-tint`, 1 px
+    accent border, weight 600) **plus a check before the label**, so the state
+    never rests on color alone;
+  - *Order* (mono, `caption` size, `--color-text-muted`, right-aligned): "1st",
+    "2nd"… is set automatically the **first time** any toggle of that kanji goes
+    on, and kept if it is switched off and on again; "—" while nothing is
+    marked;
+  - under them, across columns 2–4: "What they said", a 32 px text input, radius
+    4 px, optional (partial or doubtful answers, or what they said instead).
+- **Anything else they said:** a textarea (3 rows, label in `caption`) for
+  intrusions: other kanji, words or guesses that don't match the five.
+- **Footer:** 1 px `--color-border` rule; on the left a `role="status"` line with
+  an 8 px dot (ring in `--color-border-strong` = not saved; filled
+  `--color-accent` = saved; filled `--color-alert` = save failed) and "[k] of 5
+  kanji recalled. Not saved yet." / "Saved at [hh:mm]. [k] of 5 kanji recalled.
+  Changes are saved again with their time." / "Nothing marked. Not saved yet." /
+  "[k] of 5 kanji recalled. Not saved."; on the right the primary button (40 px):
+  "Save free recall", "Save changes" once saved, and **"Save: nothing recalled"
+  when no toggle is on**. Under it, in `caption`: "Saving with no marks records
+  that nothing was recalled. Leaving without saving records nothing for this
+  part."
+- **Save failed:** an alert notice above the footer (`role="alert"`,
+  `--color-alert-tint`, `--color-on-alert-tint`, radius 2 px, ✕-in-circle icon):
+  "Couldn't save. Your marks are still here." and "Check that the backend is
+  running, then save again." with the error code in mono. The marks stay on
+  screen.
+- **What is stored** (for the dev chat; names are theirs): per kanji of the
+  evaluated session, meaning yes/no, reading yes/no, the order of first mark and
+  the "What they said" text; the "anything else" text; who evaluated which
+  session; the save time, and a new time on each later save. **Never saved =
+  nothing stored** (NULL, "not recorded"); **saved with no marks = recorded as
+  nothing recalled** (0). The two are never confused (as D9 of the schema).
+- **Who ends it (D-F6-212, D-F6-223):** the researcher. There is no clock: about 2
+  minutes is only a guide. If the participant goes quiet, the researcher says
+  once, "Anything else you remember?"; when the participant says they are done,
+  the researcher saves here and presses **R** in Unity, which ends part 1 and
+  logs `BLOCK_R_RECALL_ENDED` with the elapsed time (D-F6-223 (1)). Neither the
+  VR nor this form shows a clock.
+- **Not here:** no timer or countdown, no score or percentage,
+  no hint of what the answer was to the participant, no edit of the yes/no or
+  multiple-choice parts of block R (those come from Unity).
+- **Dark theme:** the same tokens in their dark values; drawn on the dark
+  artboard (`saved` state).
+
+## V1.13 Live session monitor (D-F6-231, D-F6-233, D-F6-234, D-F6-270, D-F6-272)
+
+**Validated** (D-F6-233, Sebas, Nov 17 2026; see the log). M1 builds it during the
+pilot, on a day with no participant (D-F6-231 (5)). The Low / Normal / High bands
+of *Live indices* follow **D-F6-234**: they are the engine's own thresholds, not
+the S6 min/max first suggested. **D-F6-270** adds the session-ended state, the
+«Sync tap» mark and «—» for `autorun` (below); **Validated (D-F6-272)**.
+
+What it is: one screen where the researcher watches the session as it runs (the
+stage, the signal, what the engine computes and decides). **Read only** (D-F6-231
+(1), D-F6-230): no button on it sends anything to Unity, the engine or the
+recording, and it has no forms. Commands from the portal (M2) are out of scope.
+
+- **Where:** a **second screen, full screen, 1440 × 900, no scroll** (D-F6-231
+  (4)). The page is fixed at 1440 × 900 with `overflow: hidden`; panels never grow
+  a scrollbar. If the window is smaller, it's the browser's zoom, not a
+  responsive layout.
+- **Shell:** focus mode, no rail.
+  - **Dark bar**, 88 px, `--color-sidebar`, 24 px side padding, a 3-column grid:
+    - left: `caption` "Live session monitor" (`--color-sidebar-muted`) over the
+      stage in `display` (36 / 40, Newsreader 500), e.g. "S7 Adaptive practice"
+      (S1–S9 and block R, from `STATE_ENTERED`), then the trial "Trial 12 of 20"
+      in `body`, `--color-sidebar-muted`;
+    - center: the clock since the session started, JetBrains Mono 500, 30 / 36,
+      `hh:mm:ss`, with the `caption` "since the session started";
+    - right: a `<dl>` of `caption` labels over values: Session (id, mono),
+      Participant (P##, mono), Condition, Set, Visit.
+  - **Status strip**, 36 px, full width, under the bar. It carries the one
+    session-level notice, never a modal:
+    - nothing to report: `--color-bg`, `--color-text-muted`, "Read only. Nothing
+      on this screen changes the session.";
+    - 60 Hz session warning: `--color-warn-tint` with `--color-text`, triangle + bold text "Mains
+      noise [n] µV (median of 8 channels). Check reference and ground, unplug the
+      charger.";
+    - EEG source cut: `--color-alert-tint` with `--color-on-alert-tint`, ✕ + "EEG: no data for [n] s. Windows
+      without EEG fall back to behavior.";
+    - channel excluded: `--color-surface`, ring + "F3 excluded at [hh:mm:ss] by
+      the engine. The indices go on without it until the end of the session.";
+    - no session: "No session. The monitor fills in when Unity starts one."
+    - session ended, only on `/monitor/<id>` (D-F6-270 (4)): `--color-surface`,
+      ring + bold "This session has ended", then in `--color-text-muted`
+      "Session {id8} closed at {hh:mm:ss}. Its data is in the session view." and
+      the link "Open session view" (`--color-accent`, 600, underlined, opens the
+      session view in the same window). See *Session ended* below.
+    If two apply at once, the source cut wins, then the 60 Hz warning, then the
+    exclusion (the exclusion is also fixed in the quality table, so it is never
+    lost).
+- **Body:** 16-column grid, 24 px gutter, padding 16 / 24 px. Panels:
+  `--color-surface`, 1 px `--color-border`, radius 2 px, padding 12 / 20 / 14 px,
+  10 px gap. Every panel header has its `title` (22 / 28) on the left and, on the
+  right in `caption`, **when it was last updated** ("Updated 1 s ago", "Measured
+  after S3", "Live").
+  - Columns 1–5: Signal quality, then System (System takes the rest of the
+    height).
+  - Columns 6–11: Live indices, then Adaptation decisions (the rest of the
+    height).
+  - Columns 12–16: Sync, then Events (the rest of the height).
+- **Stale data (D-F6-231 (4)):** when a section's source stops, the panel turns
+  `--color-bg` with a **1 px dashed** `--color-border-strong` border, its update
+  caption becomes "No data for [n] s" in `--color-alert`, the status marks turn
+  into "No data" (dashed ring), and the last numbers stay in
+  `--color-text-muted`. A number is never shown as current when it isn't.
+  - `live.py` stops (no heartbeat): Signal quality and Live indices go stale;
+    System shows `live.py` "No heartbeat for [n] s" with ✕.
+  - The backend stops: the whole page goes stale (each panel the same way).
+  - Events and decisions come from the backend, so they keep updating when only
+    the EEG stops.
+
+### Signal quality (D-F6-231 (2) and (3))
+
+- A table (`role="table"`) of 8 rows, in montage order: Fp1, F3, Fz, F4, Cz, P3,
+  Pz, P4. Grid `44px 80px 1fr 64px 76px`, 8 px gap, rows ≥ 32 px split by
+  `--color-border-subtle`. Header in `caption`: Channel, Last 5 s, **60 Hz
+  (µV)**, **RMS (µV)**, **% > 100 µV**. Numbers right-aligned, tabular; channel
+  names in mono.
+- **Status per channel** (column "Last 5 s"): always a shape + a word, in the
+  quality tokens (Sebas chose the portal tokens over a new green, D-F6-231 (4)):
+  - **OK**: filled circle, 10 px, `--color-quality-ok`;
+  - **Watch**: triangle, 12 × 11 px, `--color-quality-warn`; the row gets
+    `--color-warn-tint`;
+  - **Bad**: ✕, 11 px, `--color-quality-error`; the row gets
+    `--color-alert-tint`;
+  - **No data**: dashed ring, 10 px, `--color-border-strong`.
+- **The rule** (EEG chat, D-F6-231 (3)): share of samples over 100 µV in the
+  **last 5 s**, leaving out ±1 s around each `SYNC_TAP`:
+  - OK under 5 %;
+  - Watch from 5 to 20 %, **or** the last 30 s span over 20 %;
+  - Bad over 20 %, **or a flat signal**.
+  The colour is computed by `live.py`, not by the page; the page only shows it.
+  The rule is printed under the table in `caption`, so nobody has to remember it.
+- **Excluded** (D-F6-216, read from the engine, D-F6-231 (3)): a separate mark,
+  **fixed** from the moment the engine excludes the channel until the end of the
+  session, and **with its time**. It sits on its own line under the channel's
+  row: a 22 px pill with a 1 px **dashed** `--color-border-strong` border, a
+  ⊘ icon and "Excluded at [hh:mm:ss]" (time in mono), then `caption` "set by the
+  engine". The row's numbers go `--color-text-muted` and the row loses its
+  tint, so it reads as out of the count; the status mark keeps showing the 5 s
+  rule (it can say Bad and Excluded at once). System and the status strip repeat
+  it.
+- **60 Hz:**
+  - per channel, the value in µV; if a channel is **under 0.3× or over 3×** the
+    median of the others, a 8 px **ring** in `--color-quality-warn` and its
+    ratio in `caption` ("0.1×") go before the value;
+  - session line under the table: shape + word, then "60 Hz, median of 8:
+    **[n] µV**" and `caption` "warning from 800 µV". **From 800 µV** it becomes
+    Watch (triangle), the caption says "over 800 µV" and the status strip shows
+    the session warning. Below 800 µV it's OK.
+  - RMS and 60 Hz use the methods of the EEG chat's Registro (17 nov, 14:30).
+- **Flat signal:** Bad, with the same ✕; no extra state.
+- **Sync tap** (D-F6-254 (2), D-F6-270 (5); Validated, D-F6-272): when the S3 taps leave **less than
+  1 s** of the last 5 s outside ±1 s of each tap, `live.py` keeps the **previous
+  colour** and flags it. The page shows the same shape and word as before and,
+  right after the word, "Sync tap" in `caption` (`--color-text-muted`), no new
+  colour and no new shape; the row keeps its tint if it had one. In practice it
+  shows on every channel at once during S3 (Tweak `syncTap`). The rule under the
+  table ends with "Sync tap: the taps cover the last 5 s, so the earlier colour
+  stays."
+
+### Live indices (bands: D-F6-234)
+
+- Two strips, **Engagement Index** and **Frontal theta (Fz)**: `body` 600 name
+  on the left; on the right the **band word** and the current z as `figure`
+  (24 / 32, 600), signed with a real minus ("−1.3").
+- **Bands (D-F6-234 (1)) are the engine's thresholds:** **Low** z ≤ −1,
+  **Normal** −1 < z < +1, **High** z ≥ +1, for both indices, against **the same
+  reference the engine uses** (S6, or S4 eyes open as the fallback). No
+  min/max and no percentiles. They are **for reading only**: they change no rule
+  of the engine (D-F6-128, D-F6-198).
+- **The word** (D-F6-234 (2)) comes from the z of the **decision window**
+  (`eeg_ei_z`, `eeg_theta_z`), never from a single epoch: "Low" with a
+  downward triangle (11 × 9 px), "High" with an upward triangle, "Normal" with no
+  mark; `body` 600 in `--color-text`. No red or green: Low and High are not "bad"
+  or "good".
+  - The EEG didn't count in that window (P7): the figure goes
+    `--color-text-muted`, the word is "Not counted" with a dashed ring, and there
+    is no band word.
+  - Before S7: no strips; "Reference after S6. The bands and the first window
+    come after trial 3 of S7."
+- Under each name, an SVG strip 452 × 70 px. The x axis has a slot for each of
+  the 18 decision windows of S7 (after trials 3–20), starting 46 px in so the
+  zone names fit; the windows so far are drawn, the rest stays empty, so the
+  strip doesn't move. The y axis is z from −2 to +2, labels +1 and −1 in mono
+  11 px on the left. Inside it:
+  - the **Normal** zone, −1 to +1, in `--color-explain-bg`, edged in
+    `--color-border`; the zone names **High**, **Normal** and **Low** in 10 px
+    `--color-text-muted` at the left edge of each zone;
+  - the decision-window z as a 1.5 px `--color-accent` line with 3 px dots. If
+    M1 also draws the per-epoch z, it goes as a 1 px `--color-border-strong`
+    line with no word or label (D-F6-234 (2));
+  - on the Engagement strip only, the dashed `--color-quality-error` line at
+    **−1.5** (where `EEG_LED` can lead), kept by D-F6-234 (1), labelled "−1.5" at
+    the right end.
+- **EEG row** under the strips, one dot per window: filled `--color-accent` =
+  the EEG counted in that window (P7); ring `--color-border-strong` = it didn't.
+- Then a `<dl>`: *EEG counted* "[k] of [n] windows ([p] %)" (plus "without F3
+  since [time]" when a channel is excluded) and *Reference* "S6 ([n] epochs not
+  POOR)" or "S4 eyes open (fallback)" (D-F6-220, D-F6-234 (1)); before S7, "After
+  S6". One `caption` line: "Zones use the engine's reference: Low z ≤ −1, High z ≥
+  +1. The word is the decision window's, for reading only. Dashed: −1.5, the EEG
+  leads."
+- **Data (D-F6-234 (3)):** nothing new to compute. The page reads the reference
+  from `eeg_sessions` and the z of each decision; if the reference is recomputed
+  (D-F6-216), it reads the new one.
+- If Fz is the excluded channel, the theta strip shows "Unavailable: Fz
+  excluded at [time]" in `--color-text-muted` instead of the line and the word
+  (D-F6-216).
+
+### Adaptation decisions
+
+- Header caption: "[k] of 3 changes used" (the cap of D-F6-182).
+- **ESL and LAL lanes** (SVG, 46 px): two rows labelled ESL and LAL, x = S7
+  trials 1–20, background `--color-border-subtle`; the level as a step bar in
+  `--color-border-strong` (Low 6 px, Medium 11 px, High 16 px tall); a 2 px
+  `--color-text` tick at each change; a 1.5 px `--color-accent` line at the
+  current trial; the current level in words at the right end (`caption` 600).
+  The SVG has an `aria-label` that says the same in words.
+- **One row per decision, newest first** (the V1.5 language, compressed):
+  - a diamond (filled `--color-text` = a change was applied; outline
+    `--color-border-strong` = no change), "After [trial]" (trial in mono);
+  - the estimated state as a 10 px dot in its state token + label;
+  - the EEG effect as its code in mono 12 px (`EEG_CONFIRMED`, `EEG_VETO`,
+    `EEG_LED`, `EEG_ONLY_ALERT`, …; nothing when the EEG had no effect);
+  - the action on the right ("LAL down one step" in 600; "No change" in 400);
+  - second line, `caption`: the short reason on the left (one line, ellipsis)
+    and "ESL [level], LAL [from] → [to]" on the right.
+- Empty: "No decisions yet."
+
+### Sync and System
+
+- **Sync** (`<dl>`, 120 px label column): S3 taps "[k] of 5 clear", Offset
+  "[n] ms", Dispersion (robust) "[n] ms" + mark + "Within 50 ms" (D-F6-217;
+  outside: triangle + "Over 50 ms"). Caption "Measured after S3". During S3:
+  taps "[k] of 5 so far", Offset and Dispersion "—", a dashed ring + "After S3",
+  caption "Measuring in S3". There are no S9 taps, so there is no drift line
+  (D-F6-217).
+- **System** (`<dl>`): LabRecorder ("Recording AURA and UnityMarkers" / "Not
+  recording"), `autorun` **"—" with no mark** in every state (D-F6-267, D-F6-270
+  (5): its status does not reach the monitor before the pilot; a later decision
+  brings it back with its own shape + word), `live.py` ("Heartbeat [n] s ago" / "No heartbeat for [n] s" / "Not
+  running"), Excluded channel ("None" / "F3, at [time]"), S4 alpha ratio ("P3
+  [x], Pz [x], P4 [x]. Passes (≥ 1.2)"). Each process with the same shape +
+  state marks.
+
+### Events
+
+- `<ol>`, **newest on top**; new lines come in at the top and nothing else moves
+  (no animation). Each line: session time (mono 12, `--color-text-muted`), then
+  the type (mono, 500) and a short detail, wrapping if needed.
+- **Routine** (`TRIAL_STARTED`, `TRIAL_COMPLETED`, `RESPONSE`,
+  `DISTRACTOR_INTERACTION`, `FRAME_HITCH` ≤ 100 ms): all in
+  `--color-text-muted`.
+- **To look at** (`HEAD_AWAY`, `FRAME_HITCH` > 100 ms, an excluded channel, an
+  `autorun` error): a small triangle in `--color-quality-warn`, type in 600 and
+  text in `--color-text`.
+- `ADAPTATION_DECISION`: type in `--color-accent`, 600.
+- As many lines as fit; the oldest fall off the bottom (the full log stays in
+  the Session View).
+
+### No active session
+
+Bar: "No session running" in `display`, "Unity has not started a session", clock
+"--:--:--" in `--color-sidebar-muted`, no metadata. Panels keep their place with
+"Waiting" captions, dashes and the empty sentences above. System still reports
+what it can (LabRecorder "Not recording", `autorun` "—", `live.py` "Not
+running"). `/monitor` comes back here when its session ends (D-F6-270 (4)). With
+more than one `IN_PROGRESS` session (one left hanging before D-A1 closes it),
+`/monitor` follows the one with the latest event; the rail entry uses the same
+rule (D-F6-270 (3)).
+
+### Session ended (D-F6-270 (4); Validated, D-F6-272)
+
+Only on `/monitor/<id>`, when that session closes while the page is open (Tweak
+`sessionEnded`).
+
+- **Bar:** the last stage stays; the trial slot says "Session ended"; the clock
+  stops at the closing time, in `--color-sidebar-muted`. Metadata stays.
+- **Status strip:** the session-ended notice above (it wins over every other
+  notice: nothing else is live any more).
+- **Panels keep their last data in the stale style:** `--color-bg`, 1 px dashed
+  `--color-border-strong`, numbers and words in `--color-text-muted`, the index
+  lines in `--color-border-strong`; every update caption reads "Last data at
+  [hh:mm:ss]" in `--color-text-muted` (not the alert colour: nothing failed).
+  Status marks keep their last shape. Events keep their last lines.
+- The page doesn't jump to another session and doesn't empty itself: the
+  researcher may still be reading it. Text: `Contenido_UI_Monitor_Accesos.md`
+  §3.1.
+
+### Not here
+
+No buttons that act on the session, no sound, no blinking, no animation (values
+change in place), no score or performance figure for the participant, no raw
+EEG trace. Dark theme: the same tokens in their dark values; the bar uses the
+dark `--color-sidebar` (`#08090C`).
+
+## V1.13 access: rail entry and session link (D-F6-268, D-F6-272)
+
+**Validated (D-F6-272)** (see the log), with the answers of D-F6-270. Until it is
+built, V1.13 only opens from its address. These two ways in are **links only**: they change nothing in the session,
+the recording, the engine or `live.py`. Words come from
+`Contenido_UI_Monitor_Accesos.md` (UI/UX); if they change there, they change here.
+
+### 1. Rail entry
+
+- **Place:** the **second item of the navigation rail, under Sessions**, because
+  it is about the session that is running now. Same item as the others: 40 px
+  pill, 16 px left padding, 12 px gap, `--color-sidebar-text`; active =
+  `--color-accent` (light value) fill and `--color-on-accent`, like any view.
+- **Icon:** a signal line, 16 × 16, 1.5 px stroke, round caps and joins, in
+  `currentColor`: `M1.5 8.5h3l1.5-4 3 7 1.5-3h4`. It is not a heart rate and not
+  a brain; it reads as "live signal" next to the other rail icons.
+- **Label:** "Live monitor" in both states (the rail never changes its word).
+- **Status at the end of the pill** (D-F6-268: it follows the running session):
+  - session `IN_PROGRESS`: an 8 px filled dot in `#3FB7C2` (the Lagoon of the dark
+    rail) and the word "Live" (`caption`, 500, `--color-sidebar-muted`); on the
+    active pill, both in `--color-on-accent`;
+  - no session: an 8 px empty ring, 1 px `--color-sidebar-muted`, no word;
+  - the state is also in the accessible name: "Live monitor, session in
+    progress" / "Live monitor, no session in progress". The dot and the word are
+    `aria-hidden`.
+  - No count, no stage, no blinking, no sound: the rail only says that a session
+    is running. How it is going is the monitor's job.
+- **Opens `/monitor` in the same window**, like the other rail items; that page
+  follows the running session and, with none, shows "Waiting for a new session".
+  **Never disabled:** opening the monitor before the session starts is the normal
+  case (it waits on the second screen).
+- **Tooltip** on hover and keyboard focus, UI/UX text: "Opens the live session
+  monitor for {P##}, session {id8}. Read-only." / "No session in progress. The
+  monitor will show the next session when it starts."
+- **Data:** the same endpoint the monitor uses to find the running session; the
+  rail polls it at the monitor's rate or slower. With more than one
+  `IN_PROGRESS` session it follows the one with the latest event, like `/monitor`
+  (D-F6-270 (3)). If the backend doesn't answer,
+  the item shows the no-session ring (it never claims a session it can't see).
+
+### 2. Link on the session view
+
+- **Only on a session whose status is `IN_PROGRESS`.** Completed, aborted and
+  not-started sessions show nothing in its place (no grey or disabled link).
+- **Place:** in the header's facts column, in the row with the condition chip,
+  where Export CSV sits on a closed session. Export CSV is not shown while the
+  session runs (it would export half a session).
+- **Form:** outline pill, 32 px tall, 16 px side padding, 1 px `--color-accent`
+  border, `--color-surface` fill, `--color-accent` text, 600; the 16 px signal
+  icon before the label and a 12 px external-window mark after it. Outline on
+  purpose: the portal's one filled call to action stays Saffron.
+- **Label:** "Open live monitor". Accessible name: "Open live monitor for
+  session {id8}".
+- **Opens `/monitor/<id>` of this session in a new window** (`target="_blank"`,
+  `rel="noopener"`), so the session view stays where it was and the monitor can go
+  to the second screen. The tooltip ends with "Opens in a new window."
+- **Status** in the facts reads "In progress, {stage}" with an 8 px
+  `--color-accent` dot.
+- **Tooltip**, UI/UX text: "Signal quality, live indices, events and adaptation
+  decisions for this session, as it runs. Read-only: it does not change the
+  session. Opens in a new window."
+
+### Answered by D-F6-270
+
+- Window: rail in the same window, session link in a new window (as above).
+- Export CSV is not shown while the session is `IN_PROGRESS`; "Open live
+  monitor" takes its place.
+- Several `IN_PROGRESS` sessions: one rule for the rail and `/monitor`, the
+  latest event.
+- When the session ends with `/monitor/<id>` open: V1.13 *Session ended*.
 
 ## Inherited constraints
 
