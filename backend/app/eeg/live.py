@@ -13,14 +13,23 @@ The cut is the offline one (epochs.make_epochs) on the tail of the buffer:
     so the filter has signal on both sides. That wait is part of the arrival margin measured on Wed 11;
   - the persistently bad channel (D-F6-216, D-F6-224): each 30 s bin of the grid is filtered once it closes (PAD_S
     before, EDGE_S after) and epochs.persistently_bad runs over the closed bins, so an epoch that starts after a
-    channel's time is cut without it, as fill_from_xdf cuts it.
+    channel's time is cut without it, as fill_from_xdf cuts it;
+  - rule "ica", option (3) live (D-F6-275, D-F6-276): before S6 the epochs are cut as option (2); once the buffer has
+    EDGE_S past S6's entry the ICA is fitted on S4 -> S6 (filtered over [S4 - PAD_S, S6 + EDGE_S], a fixed span, so the
+    fit does not depend on how the samples arrived) and every epoch centred in S6 or later is cut on the corrected
+    signal without the blink rule; those epochs wait for the model. Not identified, a failed fit, or Fp1 out before
+    S6 -> option (2) for the session; a channel out before S6 is left out of the fit; one out after S6 -> option (2)
+    from its time to the end, no refit (D-F6-253 (2), D-F6-276 (2)).
 """
+
+import time
 
 import numpy as np
 
 from app.eeg import epochs, preprocess, s3watch, sync
 
 S4_STATE = "S4_EEG_BASELINE"
+S6_STATE = "S6_GUIDED_PRACTICE_CALIBRATION"
 PAD_S = 10.0   # filter warm-up before the first pending epoch
 EDGE_S = 1.0   # signal needed after an epoch's end before cutting it (the filter is zero-phase)
 
@@ -28,7 +37,7 @@ EDGE_S = 1.0   # signal needed after an epoch's end before cutting it (the filte
 class Buffer:
     """Samples and markers as they arrive; new_epochs() gives each finished epoch once."""
 
-    def __init__(self, srate: float, montage: dict):
+    def __init__(self, srate: float, montage: dict, ica_model: dict | None = None):
         self.srate, self.montage = srate, montage
         self.x: list[list[float]] = []
         self.ts: list[float] = []
@@ -43,6 +52,60 @@ class Buffer:
         self.bins_x: list[np.ndarray] = []
         self.bins_ts: list[np.ndarray] = []
         self.bad: list[tuple[str, float]] = []
+        # rule "ica": the S6 fit, or why there is none; a stored one (fill_from_xdf, D-F6-276 (1)) is used, never refitted
+        self.ica: dict | None = None
+        self._stored_ica = ica_model
+
+    @property
+    def effective_rule(self) -> str:
+        """The rule the session's S6-S9 run with: "ica" only while the ICA holds (D-F6-276 (2))."""
+        if self.rule != "ica":
+            return self.rule
+        holds = self.ica is not None and self.ica.get("identified") and "switched_to_nosound_at" not in self.ica
+        return "ica" if holds else "nosound"
+
+    def _s6(self) -> float | None:
+        return next((t for t, m in self.markers if m.get("event") == "STATE_ENTERED" and m.get("state") == S6_STATE), None)
+
+    def _fit_ica(self, ts: np.ndarray, s6: float) -> dict:
+        from app.eeg import ica
+
+        out = [c for c, t in self.bad if t <= s6]
+        if "Fp1" in out:
+            return {"identified": False, "reason": "Fp1 out before S6"}
+        keep = [i for i, label in enumerate(self.labels) if label not in out]
+        s4 = next((t for t, m in self.markers if m.get("event") == "STATE_ENTERED" and m.get("state") == S4_STATE), ts[0])
+        lo, hi = np.searchsorted(ts, [s4 - PAD_S, s6 + EDGE_S])
+        try:  # live.py never stops for the ICA: any failure is option (2), with its reason (D-F6-253 (2))
+            began = time.perf_counter()
+            y = preprocess.filter_eeg(np.asarray(self.x[lo:hi], dtype=float)[:, keep], self.srate)
+            model = ica.fit(y, ts[lo:hi], [self.labels[i] for i in keep], self.markers)
+            model["fit_s"] = round(time.perf_counter() - began, 3)
+        except Exception as e:  # noqa: BLE001
+            return {"identified": False, "reason": f"fit failed: {type(e).__name__}: {e}"}
+        return {**model, "channels": [self.labels[i] for i in keep]}
+
+    def _corrected(self, x: np.ndarray) -> np.ndarray:
+        from app.eeg import ica
+
+        keep = [self.labels.index(c) for c in self.ica["channels"]]
+        y = x.copy()
+        y[:, keep] = ica.apply(x[:, keep], self.ica)
+        return y
+
+    def _ica_step(self, ts: np.ndarray) -> float | None:
+        """Fits once S6's entry + EDGE_S has arrived, and switches to option (2) at a channel out after S6.
+        Returns S6's entry (None before it)."""
+        s6 = self._s6()
+        if s6 is None:
+            return None
+        if self.ica is None and ts[-1] >= s6 + EDGE_S:
+            self.ica = dict(self._stored_ica) if self._stored_ica is not None else self._fit_ica(ts, s6)
+        if self.ica and self.ica.get("identified") and "switched_to_nosound_at" not in self.ica:
+            after = [(c, t) for c, t in self.bad if t > s6]
+            if after:
+                self.ica["switched_to_nosound_at"], self.ica["switch_reason"] = after[0][1], f"{after[0][0]} out after S6"
+        return s6
 
     def add(self, samples, stamps, markers=()) -> None:
         self.x += samples
@@ -87,7 +150,11 @@ class Buffer:
             ts = np.asarray(self.ts, dtype=float) - (self.offset_ms or 0.0) / 1000
             x = preprocess.filter_eeg(np.asarray(self.x, dtype=float), self.srate)
             cut = epochs.make_epochs(x, ts, self.srate, self.montage, self.markers, t0=self.t0,
-                                     bad=[(self.bad[0][0], -np.inf)], rule=self.rule)
+                                     bad=[(self.bad[0][0], -np.inf)], rule=self.effective_rule)
+        elif self.effective_rule == "ica":  # D-F6-276 (1): the reference and S4's fallback carry the matrix
+            ts = np.asarray(self.ts, dtype=float) - (self.offset_ms or 0.0) / 1000
+            x = preprocess.filter_eeg(self._corrected(np.asarray(self.x, dtype=float)), self.srate)
+            cut = epochs.make_epochs(x, ts, self.srate, self.montage, self.markers, t0=self.t0, bad=self.bad, rule="ica")
         return reference.compute(cut, baseline.spans(self.markers))
 
     def cut_past(self, t: float) -> bool:
@@ -106,11 +173,28 @@ class Buffer:
         if start + epochs.EPOCH_S > ready_until:
             return []
         lo = int(np.searchsorted(ts, start - PAD_S))
-        x = preprocess.filter_eeg(np.asarray(self.x[lo:], dtype=float), self.srate)
-        cut = epochs.make_epochs(x, ts[lo:], self.srate, self.montage, self.markers, t0=self.t0, bad=self.bad,
-                                 rule=self.rule)
-        new = [e for e in cut if e["epoch_index"] >= self.next_index
-               and e["lsl_start"] + epochs.EPOCH_S <= ready_until + 1e-9]
+        raw = np.asarray(self.x[lo:], dtype=float)
+        rule = "nosound" if self.rule == "ica" else self.rule  # rule "ica": option (2) until the S6 fit
+        cut = epochs.make_epochs(preprocess.filter_eeg(raw, self.srate), ts[lo:], self.srate, self.montage, self.markers,
+                                 t0=self.t0, bad=self.bad, rule=rule)
+        s6 = self._ica_step(ts) if self.rule == "ica" else None
+
+        def late(e: dict) -> bool:
+            return s6 is not None and e["lsl_start"] + epochs.EPOCH_S / 2 >= s6
+
+        if self.ica and self.ica.get("identified"):
+            fixed = {e["epoch_index"]: e for e in epochs.make_epochs(
+                preprocess.filter_eeg(self._corrected(raw), self.srate), ts[lo:], self.srate, self.montage, self.markers,
+                t0=self.t0, bad=self.bad, rule="ica")}
+            until = self.ica.get("switched_to_nosound_at", np.inf)
+            cut = [fixed[e["epoch_index"]] if late(e) and e["lsl_start"] < until else e for e in cut]
+        new = []
+        for e in cut:
+            if e["epoch_index"] < self.next_index:
+                continue
+            if e["lsl_start"] + epochs.EPOCH_S > ready_until + 1e-9 or (late(e) and self.ica is None):
+                break  # in order: an epoch centred in S6 waits for the model, and so do the ones after it
+            new.append(e)
         if new:
             self.next_index = new[-1]["epoch_index"] + 1
         return new

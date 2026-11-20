@@ -1,6 +1,7 @@
 """
-Option (3) of D-F6-242: ICA fitted on S4–S5, offline only (D-F6-263 (2): computed in parallel, the engine untouched).
-The fit and the choice of the ocular component copy ocul.py v2 lines 152–157 (D-F6-255 (3)): FastICA of 8 components
+Option (3) of D-F6-242: ICA fitted on S4–S5. Live in live.Buffer behind EEG_LIVE_RULE=ica (D-F6-275, D-F6-276); offline
+in epochs.cut_session_ica. The fit and the choice of the ocular component copy ocul.py v2 lines 152–157 (D-F6-255 (3)):
+FastICA of one component per channel given (8; 7 with a channel out before S6, D-F6-276 (2))
 (whiten='unit-variance', random_state=0, max_iter=1000) on the filtered signal from S4's start to S5's end;
 k = argmax(|corr(source_i, Fp1)| x |A[Fp1, i]| / sum_c |A[c, i]|), corr on the fit span. It counts as identified only
 with corr >= 0.7 and its largest |A[c, k]| on Fp1 (D-F6-242 (3)); ocul.py only prints that, the backend decides on it:
@@ -10,7 +11,7 @@ not identified → the session is not corrected and runs with option (2) (D-F6-2
 import numpy as np
 from sklearn.decomposition import FastICA
 
-COMPONENTS, MIN_CORR = 8, 0.7
+MIN_CORR = 0.7
 S4, S5 = "S4_EEG_BASELINE", "S5_STANDARDIZED_LEARNING"
 
 
@@ -29,12 +30,13 @@ def fit(x: np.ndarray, ts: np.ndarray, labels: list[str], markers: list[tuple[fl
         return {"identified": False, "reason": "no S4–S5 span in the markers"}
     sl = (ts >= span[0]) & (ts < span[1])
     fp1 = labels.index("Fp1")
-    model = FastICA(COMPONENTS, whiten="unit-variance", random_state=0, max_iter=1000)
+    n = x.shape[1]
+    model = FastICA(n, whiten="unit-variance", random_state=0, max_iter=1000)
     model.fit(x[sl])
     a = model.mixing_
     src = model.transform(x[sl])
-    corr = [abs(float(np.corrcoef(src[:, i], x[sl, fp1])[0, 1])) for i in range(COMPONENTS)]
-    share = [abs(a[fp1, i]) / np.abs(a[:, i]).sum() for i in range(COMPONENTS)]
+    corr = [abs(float(np.corrcoef(src[:, i], x[sl, fp1])[0, 1])) for i in range(n)]
+    share = [abs(a[fp1, i]) / np.abs(a[:, i]).sum() for i in range(n)]
     k = int(np.argmax([c * f for c, f in zip(corr, share)]))
     top = labels[int(np.argmax(np.abs(a[:, k])))]
     identified = corr[k] >= MIN_CORR and top == "Fp1"

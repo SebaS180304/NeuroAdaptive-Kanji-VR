@@ -210,7 +210,7 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ## Fri 20 night · ICA live behind `EEG_LIVE_RULE=ica` (D-F6-275, D-F6-276) · approved
 - [x] D-F6-279 (1): AURA's LSL streams listed; no quality nor impedance.
-- [ ] **I1** · `live.Buffer` rule `ica`: before S6 `nosound`; fit at S6 + `EDGE_S` on S4→S6; S6+ epochs held, then corrected (no blink rule) or `nosound` with the reason; reference recomputed with the final rule; stored model without refit; channel out before S6 → fit without it (Fp1 → `nosound`), after S6 → `nosound` to the end, no refit; tests. **Stop.**
+- [x] **I1** · pytest 531 → 540 (9 in `test_eeg_live_ica.py`); model and reference chunk-independent; epochs ≥ 97 % equal across chunkings, as with any rule (finding below) · `live.Buffer` rule `ica`: before S6 `nosound`; fit at S6 + `EDGE_S` on S4→S6; S6+ epochs held, then corrected (no blink rule) or `nosound` with the reason; reference recomputed with the final rule; stored model without refit; channel out before S6 → fit without it (Fp1 → `nosound`), after S6 → `nosound` to the end, no refit; tests. **Stop.**
 - [ ] **I2** · `eeg_live_rule` + `ica`; migration 0022 `eeg_sessions.ica`; `live.run` saves and prints it; `websocket` sounds for `ica`; `fill_from_xdf` and `replay --rule ica` through `Buffer`; tests. **Stop.**
 - [ ] **G** · scratchpad script, T01 T03 T03b T04: simulated live = `replay --rule ica`; identified T01 T04 (corr ±0.02 of v3); fallback T03 T03b; A-7 ±1 (18, 18, 5, 6); fit < 2 s; pytest; harness 119/119. Not passed → Tue 24 with (2). `.env` unchanged tonight. **Stop.**
 - [ ] **S** · XDFs over two LSL outlets at 10× into `live.run` (rule `ica` in the process), test sessions in the database, equal to G; deleted at the end. **Stop.**
