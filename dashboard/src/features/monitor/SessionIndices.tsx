@@ -8,7 +8,7 @@ import type { Schemas } from '@/api/client'
 type Snapshot = Schemas['LiveSnapshot']
 type Decision = Schemas['LiveDecision']
 export type Epoch = {
-  i: number; start_ms: number; state: string; trial_id: string | null; valid: boolean; grey: boolean
+  i: number; start_ms: number; state: string | null; trial_id: string | null; valid: boolean; grey: boolean
   excluded: string | null; unit: 'ln' | 'z'; ei: number | null; theta: number | null
 }
 export type SessionTrace = {
@@ -26,8 +26,9 @@ const SLOTS = [
   { id: 'S7', w: 287, expect: 20, block: 3 }, { id: 's89', w: 28, expect: 28, block: 3 },
 ] as const
 const GAP = 5, W = 452, TRIALS = 20
-const slotOf = (state: string) => {
-  const n = Number(state.slice(1, 2))
+// an epoch before the first STATE_ENTERED has no state yet: it belongs with S1–S3
+const slotOf = (state: string | null) => {
+  const n = Number((state ?? 'S1').slice(1, 2))
   return n <= 3 ? 's13' : n === 4 ? 'S4' : n === 5 ? 'S5' : n === 6 ? 'S6' : n === 7 ? 'S7' : 's89'
 }
 const X0: Record<string, number> = {}

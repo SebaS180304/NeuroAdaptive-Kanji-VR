@@ -113,6 +113,16 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(ind.querySelectorAll('[data-point]').length).toBe(2 * 2)   // decisions at trials 11 and 9, in each strip
   })
 
+  it('MI on: an epoch with no state yet (before the first STATE_ENTERED) does not break the monitor', async () => {
+    const base = snapshot()
+    const s = { ...base, indices: { ...base.indices, session: { stages: [], eyes_closed_ms: null, ica: null,
+      epochs: [{ i: 0, start_ms: 0, state: null, trial_id: null, valid: false, grey: false, excluded: null, unit: 'z', ei: null, theta: null }] } } }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(s) })
+    renderApp(`/monitor/${SID}`)
+    const ind = await screen.findByRole('region', { name: 'Live indices' })
+    expect(ind.querySelectorAll('[data-epoch]').length).toBe(2)
+  })
+
   it('MI on before S4: says the indices start at the end of S3 (D-F6-293 (4))', async () => {
     const base = snapshot()
     const s = { ...base, session: { ...base.session, stage: 'S2_VR_TUTORIAL' },
