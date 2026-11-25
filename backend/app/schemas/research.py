@@ -467,6 +467,7 @@ class LiveIndices(BaseModel):
     last: LiveLast | None
     windows: LiveWindows
     trace: list[LiveTracePoint]
+    session: dict | None = None     # MI: every live epoch on its stage's scale (D-F6-277); null with the switch off
 
 
 class LiveDecision(BaseModel):

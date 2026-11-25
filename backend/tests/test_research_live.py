@@ -114,6 +114,75 @@ async def test_an_unknown_session_is_404(client):
     assert r.status_code == 404
 
 
+S4, S5, S6 = "S4_EEG_BASELINE", "S5_STANDARDIZED_LEARNING", "S6_GUIDED_PRACTICE_CALIBRATION"
+
+
+@pytest_asyncio.fixture
+async def whole_session(live_session):
+    """MI (D-F6-277, D-F6-280, D-F6-297 (4)): S4 from 100 s (eyes open 60 s, then closed 45 s), S5 at 210 s, S6 at
+    300 s, S7 at 400 s; epochs in each, on top of live_session's two S7 ones (epoch 0 GOOD, 1 POOR)."""
+    for state, ms in ((S4, 100_000), (S5, 210_000), (S6, 300_000), (S7, 400_000)):
+        await _exec("INSERT INTO session_events (session_id, event_type, payload) VALUES (:s, 'STATE_ENTERED', "
+                    "CAST(:p AS json))", s=live_session, p=json.dumps({"state": state, "session_elapsed_ms": ms}))
+    await _exec("INSERT INTO session_events (session_id, event_type, payload) VALUES (:s, 'BASELINE_STARTED', CAST(:p AS json))",
+                s=live_session, p=json.dumps({"session_elapsed_ms": 100_000, "eyes_open_s": 60.0, "eyes_closed_s": 45.0}))
+    rows = [(10, 105_000, S4, "GOOD", math.e, math.e), (11, 110_000, S4, "GOOD", math.e ** 3, math.e ** 3),  # eyes open
+            (12, 170_000, S4, "GOOD", 1.0, 1.0),                                                        # eyes closed
+            (20, 220_000, S5, "GOOD", math.e ** 2, math.e), (30, 310_000, S6, "ACCEPTABLE", math.e, 1.0),
+            (31, 312_500, S6, "POOR", None, None)]
+    for i, st, g, q, ei, th in rows:
+        await _exec("INSERT INTO eeg_epochs (session_id, epoch_index, lsl_start, start_ms, end_ms, game_state, chunk_clean, "
+                    "clean_fraction, quality, engagement_index, theta_fz) VALUES (:s, :i, 0, :st, :en, :g, :c, 1, :q, :ei, :th)",
+                    s=live_session, i=i, st=st, en=st + 5000, g=g, c=[True] * 9, q=q, ei=ei, th=th)
+    await _exec("UPDATE eeg_sessions SET ica = CAST(:m AS jsonb) WHERE session_id = :s", s=live_session,
+                m=json.dumps({"identified": False, "corr": 0.55, "reason": "corr with Fp1 0.55 < 0.7", "mixing": [[1.0]]}))
+    return live_session
+
+
+@pytest.fixture
+def mi_on(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "monitor_live_indices", True)
+
+
+@pytest.mark.asyncio
+async def test_with_the_mi_switch_off_the_snapshot_is_as_before(client, whole_session):
+    ind = (await client.get(f"/research/sessions/{whole_session}/live")).json()["indices"]
+    assert ind["session"] is None
+    assert len(ind["trace"]) == 6   # the D-F6-234 form, untouched: the non-POOR epochs against the reference
+
+
+@pytest.mark.asyncio
+async def test_mi_gives_every_live_epoch_on_its_stage_scale(client, whole_session, mi_on):
+    s = (await client.get(f"/research/sessions/{whole_session}/live")).json()["indices"]["session"]
+    assert [x["state"] for x in s["stages"]][-4:] == [S4, S5, S6, S7]   # the base fixture has its own S7 entry first
+    assert s["stages"][-4]["ms"] == 100_000
+    assert s["eyes_closed_ms"] == [160_000, 205_000]
+    assert s["ica"] == {"identified": False, "corr": 0.55, "reason": "corr with Fp1 0.55 < 0.7",
+                        "switched_to_nosound_at": None, "switch_reason": None}   # the matrix never leaves the backend
+    ep = {e["i"]: e for e in s["epochs"]}
+    assert [e["i"] for e in s["epochs"]] == [0, 1, 10, 11, 12, 20, 30, 31]      # every epoch, POOR ones too, in order
+    assert ep[10]["unit"] == "ln" and ep[10]["ei"] == pytest.approx(1.0) and not ep[10]["grey"]
+    assert ep[12]["grey"] and ep[12]["valid"]                                   # eyes closed: grey, not red
+    # S5: provisional z against the eyes-open S4 epochs only (ln 1 and 3: mean 2, SD sqrt 2), not the closed one
+    assert ep[20]["unit"] == "z" and ep[20]["ei"] == pytest.approx(0.0, abs=1e-6) and ep[20]["theta"] == pytest.approx(-1 / math.sqrt(2), abs=1e-6)
+    assert ep[30]["unit"] == "ln" and ep[30]["ei"] == pytest.approx(1.0) and ep[30]["theta"] == pytest.approx(0.0, abs=1e-6)
+    assert ep[31]["valid"] is False and ep[31]["ei"] is None and ep[31]["theta"] is None   # POOR: red, no value
+    assert ep[0]["unit"] == "z" and ep[0]["ei"] == pytest.approx(1.0) and ep[0]["theta"] == pytest.approx(1.0)  # S7, ref
+    assert ep[1]["valid"] is False
+
+
+@pytest.mark.asyncio
+async def test_mi_without_s4_eyes_open_epochs_leaves_s5_without_a_value(client, live_session, mi_on):
+    await _exec("INSERT INTO eeg_epochs (session_id, epoch_index, lsl_start, start_ms, end_ms, game_state, chunk_clean, "
+                "clean_fraction, quality, engagement_index, theta_fz) VALUES (:s, 5, 0, 220000, 225000, :g, :c, 1, 'GOOD', 2, 2)",
+                s=live_session, g=S5, c=[True] * 9)
+    s = (await client.get(f"/research/sessions/{live_session}/live")).json()["indices"]["session"]
+    five = next(e for e in s["epochs"] if e["i"] == 5)
+    assert five["unit"] == "z" and five["ei"] is None and s["eyes_closed_ms"] is None
+
+
 @pytest.mark.asyncio
 async def test_the_per_channel_figures_appear_when_live_py_writes_them(client, live_session):   # M1b
     snap = {"channels": [{"label": "Fp1", "l60_uv": 112.0, "rms_uv": 14.0, "over_pct": 0.8, "status": "OK",

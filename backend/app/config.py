@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     # EEG_MONITOR_LIVE=true in backend/.env, between sessions, then `docker compose up -d backend` (D-F6-283 (2)).
     # It never changes the epoch cut or any rule.
     eeg_monitor_live: bool = False
+    # MI (D-F6-277, D-F6-280, D-F6-297 (4)): the monitor's per-epoch indices for the whole session, read by the backend
+    # from eeg_epochs. MONITOR_LIVE_INDICES=true in backend/.env, between sessions, then `docker compose up -d backend`.
+    monitor_live_indices: bool = False
 
     # WebSocket timeout: uvicorn's --ws-ping-timeout in docker-compose.yml and the Dockerfile.
 

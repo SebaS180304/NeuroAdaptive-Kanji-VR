@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.db.session import get_db
 from app.schemas.research import (
     DataQuality, LearnerProfile, LiveCurrent, LiveSnapshot, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
@@ -508,7 +509,7 @@ FROM experiment_sessions s JOIN participants p ON p.id = s.participant_id WHERE 
 _LIVE_EEG = text("""
 SELECT sync_offset_ms, sync_detail, reference, alpha_ratio, alpha_passed, not_counted_reason, bad_channel,
        bad_channel_from_ms, eeg_gap_ms, EXTRACT(EPOCH FROM now() - heartbeat_at)::float AS heartbeat_age_s,
-       monitor, EXTRACT(EPOCH FROM now() - monitor_at)::float AS monitor_age_s
+       monitor, EXTRACT(EPOCH FROM now() - monitor_at)::float AS monitor_age_s, ica
 FROM eeg_sessions WHERE session_id = :s""")
 
 _LIVE_DECISIONS = text("""
@@ -547,6 +548,71 @@ def _live_z(value: float | None, stats: dict | None) -> float | None:
     return (math.log(value) - stats["mean"]) / stats["sd"]
 
 
+_SESSION_EPOCHS = text("""
+SELECT epoch_index, start_ms, end_ms, game_state, trial_id, quality, engagement_index, theta_fz, excluded_channels
+FROM eeg_epochs WHERE session_id = :s AND start_ms IS NOT NULL ORDER BY epoch_index""")
+
+_SESSION_STAGES = text("""
+SELECT payload ->> 'state' AS state, (payload ->> 'session_elapsed_ms')::int AS ms FROM session_events
+WHERE session_id = :s AND event_type = 'STATE_ENTERED' ORDER BY id""")
+
+_SESSION_BASELINE = text("""
+SELECT (payload ->> 'session_elapsed_ms')::int AS ms, (payload ->> 'eyes_open_s')::float AS open_s,
+       (payload ->> 'eyes_closed_s')::float AS closed_s
+FROM session_events WHERE session_id = :s AND event_type = 'BASELINE_STARTED' ORDER BY id DESC LIMIT 1""")
+
+_LN_STATES = {"S1_WELCOME_ORIENTATION", "S2_VR_TUTORIAL", "S3_SYSTEM_VALIDATION", "S4_EEG_BASELINE",
+              "S6_GUIDED_PRACTICE_CALIBRATION"}
+_S4, _S5 = "S4_EEG_BASELINE", "S5_STANDARDIZED_LEARNING"
+_ICA_KEYS = ("identified", "corr", "reason", "switched_to_nosound_at", "switch_reason")
+
+
+async def _session_trace(db: AsyncSession, session_id: uuid.UUID, eeg: dict | None) -> dict:
+    """MI (D-F6-277 (3), D-F6-280 (1)): every live epoch on its stage's scale. ln in S1–S4 and S6; in S5 a provisional
+    z against S4's eyes-open epochs; from S7 the z against the engine's reference, as window.py. POOR: no value (red);
+    S4 eyes closed: grey. Reads only what live.py already wrote: no new EEG computation."""
+    from app.eeg import reference
+
+    epochs = [dict(r) for r in (await db.execute(_SESSION_EPOCHS, {"s": session_id})).mappings()]
+    stages = [dict(r) for r in (await db.execute(_SESSION_STAGES, {"s": session_id})).mappings()]
+    b = (await db.execute(_SESSION_BASELINE, {"s": session_id})).mappings().first()
+    # shortcut: the S4 spans from BASELINE_STARTED and its durations (the exact markers travel only by LSL);
+    # good to the frame for the display, upgrade if Unity sends EYES_*_START/END to the backend
+    opened = (b["ms"], b["ms"] + b["open_s"] * 1000) if b and b["open_s"] is not None else None
+    closed = (opened[1], opened[1] + b["closed_s"] * 1000) if opened and b["closed_s"] is not None else None
+
+    def mid(e: dict) -> float:
+        return (e["start_ms"] + e["end_ms"]) / 2
+
+    def inside(e: dict, span: tuple | None) -> bool:
+        return span is not None and span[0] <= mid(e) < span[1]
+
+    rest = [e for e in epochs if e["game_state"] == _S4 and e["quality"] != "POOR" and inside(e, opened)]
+    s4 = {k: reference._stats([e[col] for e in rest]) for k, col in (("ei", "engagement_index"), ("theta", "theta_fz"))}
+    ref = ((eeg or {}).get("reference") or {}).get("indices") or {}
+    engine = {"ei": ref.get("engagement_index"), "theta": ref.get("theta_fz")}
+
+    def value(e: dict, key: str, col: str) -> float | None:
+        v = e[col]
+        if e["quality"] == "POOR" or v is None or v <= 0:
+            return None
+        if e["game_state"] in _LN_STATES:
+            return math.log(v)
+        return _live_z(v, s4[key] if e["game_state"] == _S5 else engine[key])
+
+    ica = (eeg or {}).get("ica")
+    return {
+        "stages": stages,
+        "eyes_closed_ms": list(closed) if closed else None,
+        "ica": None if ica is None else {k: ica.get(k) for k in _ICA_KEYS},
+        "epochs": [{"i": e["epoch_index"], "start_ms": e["start_ms"], "state": e["game_state"], "trial_id": e["trial_id"],
+                    "valid": e["quality"] != "POOR", "grey": e["game_state"] == _S4 and inside(e, closed),
+                    "excluded": e["excluded_channels"], "unit": "ln" if e["game_state"] in _LN_STATES else "z",
+                    "ei": value(e, "ei", "engagement_index"), "theta": value(e, "theta", "theta_fz")}
+                   for e in epochs],
+    }
+
+
 @router.get("/sessions/{session_id}/live", response_model=LiveSnapshot)
 async def live_snapshot(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
     top = (await db.execute(_LIVE_TOP, {"s": session_id})).mappings().first()
@@ -582,7 +648,8 @@ async def live_snapshot(session_id: uuid.UUID, db: AsyncSession = Depends(get_db
                 "ei_z": last["eeg_ei_z"], "ei_band": _band(last["eeg_ei_z"], last["eeg_counted"]),
                 "theta_z": last["eeg_theta_z"], "theta_band": _band(last["eeg_theta_z"], last["eeg_counted"])},
             "windows": {"counted": sum(1 for d in with_eeg if d["eeg_counted"]), "with_eeg": len(with_eeg)},
-            "trace": trace},
+            "trace": trace,
+            "session": await _session_trace(db, session_id, eeg) if get_settings().monitor_live_indices else None},
         "decisions": decisions,
         "events": events,
         "system": None if eeg is None else {k: eeg[k] for k in (
