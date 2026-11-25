@@ -593,6 +593,8 @@ export interface components {
             windows: components["schemas"]["LiveWindows"];
             /** Trace */
             trace: components["schemas"]["LiveTracePoint"][];
+            /** Session */
+            session?: Record<string, unknown> | null;
         };
         /** LiveLast */
         LiveLast: {

@@ -84,6 +84,49 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(within(ind).getAllByText('Reference after S6').length).toBeGreaterThan(0)
   })
 
+  it('MI on: the whole session per epoch, chips, the S6 line and the legend (D-F6-277, D-F6-280)', async () => {
+    const S = (n: number) => ['S1_WELCOME_ORIENTATION', 'S4_EEG_BASELINE', 'S5_STANDARDIZED_LEARNING',
+      'S6_GUIDED_PRACTICE_CALIBRATION', 'S7_EXPERIMENTAL_RETRIEVAL'][n]!
+    const ep = (i: number, state: string, valid: boolean, unit: 'ln' | 'z', ei: number | null, trial: string | null = null) =>
+      ({ i, start_ms: i * 2500, state, trial_id: trial, valid, grey: false, excluded: null, unit, ei, theta: ei })
+    const session = {
+      stages: [0, 1, 2, 3, 4].map((n) => ({ state: S(n), ms: n * 100_000 })),
+      eyes_closed_ms: [160_000, 205_000],
+      ica: { identified: false, corr: 0.55, reason: 'corr with Fp1 0.55 < 0.7', switched_to_nosound_at: null, switch_reason: null },
+      epochs: [ep(1, S(0), true, 'ln', -1.0), ep(41, S(1), true, 'ln', -0.9), ep(85, S(2), true, 'z', 0.3),
+        ep(121, S(3), false, 'ln', null), ep(122, S(3), true, 'ln', -1.1), ep(161, S(4), true, 'z', -0.4, 'S7-001'),
+        ep(162, S(4), false, 'z', null, 'S7-001')],
+    }
+    const s = snapshot({ indices: { ...snapshot().indices, session } })
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(s) })
+    renderApp(`/monitor/${SID}`)
+    const ind = await screen.findByRole('region', { name: 'Live indices' })
+    expect(within(ind).getByText('For viewing only. Decisions use 3-trial windows from S7.')).toBeInTheDocument()
+    expect(within(ind).getByText('Rule: (2) fallback')).toBeInTheDocument()
+    expect(within(ind).getByText('z vs S6 (rule 2)')).toBeInTheDocument()
+    expect(within(ind).getByText('EEG counted in 8 of 9')).toBeInTheDocument()
+    expect(within(ind).getAllByText('ICA not found, rule (2) from here').length).toBe(1)
+    expect(within(ind).getByText('Not valid under the active rule')).toBeInTheDocument()
+    expect(within(ind).getAllByText('After trial 11').length).toBe(2)   // a readout beside each strip's name
+    // one segment per epoch, by colour: the invalid ones are red (D-F6-293 (6)); 2 strips
+    expect(ind.querySelectorAll('[data-epoch="invalid"]').length).toBe(2 * 2)
+    expect(ind.querySelectorAll('[data-point]').length).toBe(2 * 2)   // decisions at trials 11 and 9, in each strip
+  })
+
+  it('MI on before S4: says the indices start at the end of S3 (D-F6-293 (4))', async () => {
+    const base = snapshot()
+    const s = { ...base, session: { ...base.session, stage: 'S2_VR_TUTORIAL' },
+      indices: { reference: null, last: null, windows: { counted: 0, with_eeg: 0 }, trace: [],
+        session: { stages: [{ state: 'S1_WELCOME_ORIENTATION', ms: 0 }, { state: 'S2_VR_TUTORIAL', ms: 40_000 }],
+          eyes_closed_ms: null, ica: null, epochs: [] } }, decisions: [] }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(s) })
+    renderApp(`/monitor/${SID}`)
+    const ind = await screen.findByRole('region', { name: 'Live indices' })
+    expect(within(ind).getByText('Indices from the end of S3')).toBeInTheDocument()
+    expect(within(ind).getByText('Raw, no reference yet')).toBeInTheDocument()
+    expect(within(ind).queryByText(/Rule:/)).not.toBeInTheDocument()
+  })
+
   it('/monitor follows the session in progress, and waits when there is none', async () => {
     mockApi({ 'GET /api/research/live/current': () => json({ detail: 'no session in progress' }, 404) })
     renderApp('/monitor')
