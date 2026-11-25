@@ -187,6 +187,38 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 
 **AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
 
+### Repo documentation for whoever inherits the project (D-F6-287) · plan, **waits for Sebas's OK before `/build`**
+
+**Audience:** a developer bringing the project up from scratch. English. **Only** `.md`, `mkdocs.yml`, `requirements-docs.txt` and `database/schema.sql`. No code, no restarts, no participant data, no names, no XDF (D-F6-192). **Paused 15:15–17:30 (T05) and during every pilot visit** (D-F6-153); it goes on at night. Not a pilot requirement.
+
+**Found (25 Nov, read-only):** root README 15 Oct, `backend/` 1 Oct, `tools/` 28 Sep, `unity-client/` 7 Sep, none mentioning the EEG; no README in `dashboard/` or `database/`; no `docs/`. `database/schema.sql` is the hand-kept Spanish copy up to migration 0009 (27 Oct); the base is at **0023**. `database/ERD.md` and `EVENT_CONTRACT.md` exist and are reused, not copied. Brand: `design-system.md` §Brand (Lagoon `#0B6A73`, Night `#0F1115`, Light Lagoon `#3FB7C2`, Paper `#F9F8F6`, Saffron `#F2A93B`, Ink `#14171C`); SVGs in `dashboard/public/brand/`.
+
+**Order (dependencies):** B3 schema first (the data-model page and the database README describe it) → B1 site → B2 READMEs (they link to site pages). **One commit per block**, message shown first; `graphify update .` after each.
+
+#### B3 · `database/schema.sql` regenerated from the base (≈ 20 min) · commit 1
+- `docker compose exec -T db pg_dump --schema-only --no-owner --no-privileges -U neuroadaptive neuroadaptive_vr` (reads the catalogue only; no rows, so no participant data), with a short English header: source (pg_dump at migration 0023, date), "do not edit by hand, regenerate with this command after each migration".
+- **Acceptance:** `alembic_version` = 0023 recorded in the header; every table of 0001–0023 present (`eeg_sessions.ica`, `live_vs_xdf`, `head_away_episodes`, …); `git diff --stat` shows only this file; no `COPY`/`INSERT` in it.
+- **Check:** `Select-String "COPY |INSERT INTO"` empty; table count = `\dt` count.
+
+#### B1 · MkDocs Material site in `docs/` (≈ 4–5 h, nights) · commit 2
+- `mkdocs.yml` at the root, `requirements-docs.txt` (`mkdocs-material` pinned; nothing in the backend's requirements). Built **offline**: Material's built-in `offline` plugin, `font: false` (system fonts, no Google Fonts), no Mermaid from a CDN (diagrams as text/tables or SVG). `database/ERD.md` and `EVENT_CONTRACT.md` pulled in with `pymdownx.snippets`, a single source.
+- Pages (minimum of D-F6-287): `index.md` overview and architecture (Unity ↔ backend ↔ Postgres ↔ portal/monitor, AURA → LSL → `live.py`/LabRecorder); `install.md` from scratch (Docker, Postgres, backend `.venv`, portal, Unity with Quest 2 over Link, AURA over LSL, LabRecorder/`LabRecorderCLI`); `session.md` (preflight, autorun, monitor, kit; pointer to the operator kits, no participant data); `eeg.md` (epochs and chunks, reference S6/S4, ICA at S6, rules (1)–(3), `replay`, `fill_from_xdf`, `verify_eeg.sql`); `adaptation.md` (estimator, rules, EEG block, decisions); `data-model.md` (ERD, event contract, schema, verify scripts); `env.md` (every `backend/.env` variable, defaults from `config.py`, **change → `docker compose up -d backend`, no session running**, D-F6-283 (2)); `testing.md` (pytest, Unity harness, Vitest, Playwright); `troubleshooting.md` (stale `UnityMarkers`, two `AURA`, `restart` not reloading `.env`, preflight FAILs, HEAD_AWAY, FRAME_HITCH…).
+- **Acceptance:** `mkdocs build --strict` with no warnings; built HTML has no `https://` asset (fonts, scripts, CSS) outside links in the text; opens from `file://` with the network off; logo and palette as §Brand; every command in `install.md` / `env.md` checked against the repo (compose file, `config.py`, `package.json`), not from memory.
+- **Check:** strict build; `Select-String` on `site/` for `fonts.googleapis|unpkg|cdn.jsdelivr`; privacy grep below.
+
+#### B2 · READMEs (≈ 2 h) · commit 3
+- Update root, `backend/`, `unity-client/`, `tools/`; new `dashboard/README.md` and `database/README.md`. Each: what lives there, how to run/test it, link to the site page; facts only where the code confirms them (graphify first, then the lines it points to).
+- **Acceptance:** each command runs as written in a dry read (paths exist, scripts exist in `package.json`/compose); no stale phase text (F1 "walking skeleton" etc. removed or marked history).
+
+**Privacy check, every block:** no `P0`/`T0` participant code tied to data, no session UUIDs, no person names, no XDF paths with `sub-` folders; grep for `sub-|ses-|[0-9a-f]{8}-[0-9a-f]{4}` and the team's names before each commit.
+
+**Checkpoints:** after B3 (Sebas sees the diff header) · after B1 (Sebas opens the site offline) · after B2 · each a **Stop**.
+
+**Questions (also in the 25 Nov draft, «Dudas para PM»):**
+1. **Brand needs two non-`.md` files:** Material only takes custom hex colors through CSS, and the logo must be inside `docs/`. Allow `docs/stylesheets/brand.css` (the six §Brand colors, nothing else) and a copy of `andon_icon_light.svg`/`andon_favicon_light_32.svg` in `docs/assets/`? Without them: Material's nearest named palette (teal/amber) and no logo.
+2. **Built site (`site/`):** not committed; built on demand to a folder outside the repo (`mkdocs build -d <path>`), since adding `site/` to `.gitignore` is outside the allowed files. Or allow that one `.gitignore` line?
+3. **Installing MkDocs** needs the network once (`pip install -r requirements-docs.txt` into its own venv outside the repo). Only at night, with no session.
+
 ### Wed 25 · T05 with option (3) live and the pilot's start (D-F6-282, D-F6-286) · no code 15:15–17:30
 
 D-F6-282 moves Tue 24's dates (D-F6-274 (6), D-F6-275 (4), D-F6-281 (3)) to today. Development's part, in order:

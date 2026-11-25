@@ -5,6 +5,12 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 
 ---
 
+## Repo documentation (D-F6-287) · plan in `tasks/plan.md` · **waits for Sebas's OK** · paused 15:15–17:30 and during visits
+- [ ] **B3** · `database/schema.sql` from `pg_dump --schema-only` at 0023, English header; no COPY/INSERT. Commit 1. **Stop.**
+- [ ] **B1** · `mkdocs.yml`, `requirements-docs.txt`, `docs/` (index, install, session, eeg, adaptation, data-model, env, testing, troubleshooting); `mkdocs build --strict`; offline, no CDN; brand per questions 1–2. Commit 2. **Stop:** Sebas opens it offline.
+- [ ] **B2** · READMEs: root, backend, unity-client, tools updated; dashboard, database new. Commit 3. **Stop.**
+- [ ] Privacy grep before each commit (codes, UUIDs, `sub-`/`ses-`, names).
+
 ## Wed 25 · T05 with (3) live, go/no-go, pilot start (D-F6-282, D-F6-286) · **no code 15:15–17:30**
 - [x] **T05 kit** · 11:20 · `EEG_LIVE_RULE=ica` in `backend\.env`; `docker compose up -d backend` (`restart` kept `current` in the container); `/health/db` ok; rule `ica` in Docker and on the PC (what `live.py` prints as `EEG rule ica`).
 - [ ] 14:30–15:25, right before T05: Unity closed and reopened, AURA + LSL Stream Out, Edge portal, LabRecorder, Firefox/VS Code/ChatGPT/Codex closed, network off → `preflight` with no FAIL (11:15: 7 FAIL, 3 WARN, all operator-side).
