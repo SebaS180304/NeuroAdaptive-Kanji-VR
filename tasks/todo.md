@@ -15,8 +15,8 @@ Each code task: tests, commit (message shown first), `graphify update .`, Stop.
 - [ ] After P06 (Thu 26): `hitches.py` > 1 over 100 ms → M1b off (`false` + `up -d`) before P08 15:00.
 
 ## Repo documentation (D-F6-287) · plan in `tasks/plan.md` · **waits for Sebas's OK** · paused 15:15–17:30 and during visits
-- [ ] **B3** · `database/schema.sql` from `pg_dump --schema-only` at 0023, English header; no COPY/INSERT. Commit 1. **Stop.**
-- [ ] **B1** · `mkdocs.yml`, `requirements-docs.txt`, `docs/` (index, install, session, eeg, adaptation, data-model, env, testing, troubleshooting); `mkdocs build --strict`; offline, no CDN; brand per questions 1–2. Commit 2. **Stop:** Sebas opens it offline.
+- [x] **B3** · `49d07aa` · 27 tables at 0023, no rows · `database/schema.sql` from `pg_dump --schema-only` at 0023, English header; no COPY/INSERT. Commit 1. **Stop.**
+- [x] **B1** · `d9d4ddc` + `90bef7f` · strict build, offline from file:// (no request out, search works), brand · `mkdocs.yml`, `requirements-docs.txt`, `docs/` (index, install, session, eeg, adaptation, data-model, env, testing, troubleshooting); `mkdocs build --strict`; offline, no CDN; brand per questions 1–2. Commit 2. **Stop:** Sebas opens it offline.
 - [ ] **B2** · READMEs: root, backend, unity-client, tools updated; dashboard, database new. Commit 3. **Stop.**
 - [ ] Privacy grep before each commit (codes, UUIDs, `sub-`/`ses-`, names).
 
