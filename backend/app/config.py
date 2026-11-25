@@ -41,10 +41,12 @@ class Settings(BaseSettings):
     # "current" = option (1); "nosound" = option (2): task sounds of S6–S8 not trimmed + density control; "ica" =
     # option (3), D-F6-275: the ICA fitted at S6's entry, falling back to (2) by itself (live.Buffer). Read by live.py on
     # the PC and by the backend in Docker from the same backend/.env (EEG_LIVE_RULE); change it only between sessions,
-    # then restart the backend. The pilot runs with "ica" if Tue 24's T05 passes (D-F6-275 (4)), else "nosound".
+    # then `docker compose up -d backend`: `restart` keeps the container's old env_file values (D-F6-283 (2)).
+    # The pilot runs with "ica", falling back to (2) by itself (D-F6-289 (2)).
     eeg_live_rule: Literal["current", "nosound", "ica"] = "current"
     # The live monitor's per-channel figures (M1b, D-F6-265): live.py computes and writes them only when on.
-    # EEG_MONITOR_LIVE=true in backend/.env, between sessions. It never changes the epoch cut or any rule.
+    # EEG_MONITOR_LIVE=true in backend/.env, between sessions, then `docker compose up -d backend` (D-F6-283 (2)).
+    # It never changes the epoch cut or any rule.
     eeg_monitor_live: bool = False
 
     # WebSocket timeout: uvicorn's --ws-ping-timeout in docker-compose.yml and the Dockerfile.
