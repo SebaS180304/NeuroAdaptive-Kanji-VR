@@ -1,7 +1,18 @@
 # tools/
 
-Content tooling for the experimental kanji sets. Two scripts and one generated
-artifact.
+Content tooling for the experimental kanji sets, run offline in the
+`kanji-tools` container (`docker compose run --rm kanji-tools python tools/<script>`),
+never during a session. Five scripts:
+
+| Script | What |
+| --- | --- |
+| `kanji_metrics.py` | Verifies the balance of the experimental sets and, with `--export`, writes the content JSON Unity reads |
+| `kanji_optimizer.py` | Exact search for the best split of the kanji into three sets |
+| `kanji_seed_sql.py` | Writes `database/seed_kanji_items.sql`, the `kanji_items` catalogue, from the content contract |
+| `assembly_segments.py` | Cuts each kanji into its assembly groups (spec 5.3); `assembly_preview.png` is its preview |
+| `extract_board_font.py` | Extracts the Japanese face of the Noto font for the board |
+
+The sections below describe the first two and the one generated artifact.
 
 Design decisions and the reasoning behind the sets live in
 `claude/Metricas_Dificultad_Kanji_Fase2.md` (Claude Project). This README covers

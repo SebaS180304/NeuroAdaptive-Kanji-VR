@@ -4,19 +4,27 @@ Adaptive kanji-learning prototype in Virtual Reality, instrumented with
 behavioral telemetry and EEG. Single repository for the project: Unity
 client, backend and database under one version control tree.
 
-Status: **M1 · Technical Feasibility closed** (3 September 2026). Phase 2
-(static learning prototype) and Phase 3 (behavior instrumentation) are
-merged into the current line of work.
-In progress: **Phase 5a · Behavior Adaptation** (closed loop in S7).
+Status (25 November 2026): **Phase 6 · pilot.** Behaviour adaptation (S7), the
+live EEG path (AURA over LSL, `live.py`, `autorun`, the ICA rule with its
+fallback), the research portal and the live session monitor are built; the
+pilot starts on 26 November 2026. Earlier milestones are kept below as history.
+
+**Developer documentation:** the MkDocs site in `docs/` (install from scratch,
+running a session, the EEG pipeline, the adaptation engine, the data model,
+settings, tests, troubleshooting). Build it with `requirements-docs.txt`; it
+opens offline from `site/index.html`.
 
 ## What is here
 
 | Folder | Contents |
 |---|---|
-| `backend/` | FastAPI async + SQLAlchemy 2.0 + WebSocket. See `backend/README.md`. |
-| `database/` | `schema.sql` (human-readable reference), `ERD.md` and `verify_m1.sql` (milestone verification queries). |
-| `unity-client/` | Complete Unity 6000.5.10f1 project, targeting Meta Quest 2. See `unity-client/README.md`. |
-| `docker-compose.yml` | PostgreSQL 16 + backend + pgAdmin, to bring everything up with one command. |
+| `backend/` | FastAPI async + SQLAlchemy 2.0 + WebSocket; the adaptation engine (`app/adaptation/`) and the EEG path (`app/eeg/`). See `backend/README.md`. |
+| `dashboard/` | Research portal and live session monitor (React, Vite). See `dashboard/README.md`. |
+| `database/` | `schema.sql` (generated from the database), `ERD.md`, `EVENT_CONTRACT.md` and the verification SQL. See `database/README.md`. |
+| `unity-client/` | Complete Unity 6000.5.10f1 project, Meta Quest 2 over Link. See `unity-client/README.md`. |
+| `tools/` | Offline kanji content tools, in their own container. See `tools/README.md`. |
+| `docs/`, `mkdocs.yml` | The developer documentation site. |
+| `docker-compose.yml` | PostgreSQL 16, backend, portal (nginx) and pgAdmin, all on `127.0.0.1`. |
 | `pgadmin/servers.json` | Preloaded connection for the pgAdmin portal (`http://localhost:8081`). |
 
 ## Getting started
@@ -25,6 +33,7 @@ In progress: **Phase 5a · Behavior Adaptation** (closed loop in S7).
 cp backend/.env.example backend/.env
 docker compose up -d --build
 docker compose exec backend alembic upgrade head
+(cd dashboard && npm ci && npm run build)                     # the portal nginx serves on :5300
 docker compose exec backend python scripts/ws_smoke_test.py   # walking skeleton
 docker compose exec backend pytest                            # whole suite
 ```
@@ -32,7 +41,11 @@ docker compose exec backend pytest                            # whole suite
 The smoke test and the test suite run **inside the container**: the
 dependencies (`httpx`, `websockets`, `pytest`) are installed there, not in
 the host's Python. Running them from your own shell fails with
-`ModuleNotFoundError`.
+`ModuleNotFoundError`. The EEG path runs on the PC instead, from `backend\.venv`
+(see `docs/install.md`).
+
+A change to `backend/.env` applies with `docker compose up -d backend`, not
+`restart`.
 
 Then `unity-client/README.md` explains how to open the Unity project and
 run the same round trip from the Editor.
@@ -85,7 +98,7 @@ A caveat learned during M1: the Project is the source of truth for
 repository. Update the status documents whenever a block of work closes,
 or verify against the repo before a milestone review.
 
-## In progress — Phase 5a (Behavior Adaptation)
+## Phase 5a (Behavior Adaptation), built
 
 In an adaptive session, the backend decides after every S7 answer whether to
 change the environment (ESL) or the assistance (LAL), and sends a `DECISION`
@@ -100,7 +113,10 @@ Milestones M1 and M2 ran on `milestone/<milestone>-<short-description>`
 (`milestone/m1-unity-backend-communication`,
 `milestone/m2-static-learning-prototype`). From Phase 3 on, each phase runs
 on `phase/<n>-<short-description>` (`phase/3-behavior-instrumentation`,
-`phase/5a-behavior-adpatation`).
+`phase/5a-behavior-adpatation`). The EEG work, the portal and the pilot ran on
+`phase/4-eeg-aura`; the pilot's starting commit is tagged `pilot-start-2026-11-26`.
+Nothing is committed on `main` directly: phases arrive by pull request with a
+merge commit.
 
 ## A note on language
 

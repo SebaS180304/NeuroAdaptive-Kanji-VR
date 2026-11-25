@@ -1,9 +1,30 @@
 # NeuroAdaptive VR — Backend
 
-FastAPI async + SQLAlchemy 2.0 + PostgreSQL + WebSocket. This is the
-"FastAPI skeleton" required by milestone M1 (Technical Feasibility,
-28 Aug 2026): health checks, minimal participant/session CRUD, and the
-WebSocket endpoint Unity uses to send telemetry.
+FastAPI async + SQLAlchemy 2.0 + PostgreSQL + WebSocket. It started as the
+"FastAPI skeleton" of milestone M1 (health checks, participant and session
+CRUD, the WebSocket Unity sends telemetry on). Today it also holds:
+
+| Package | What |
+| --- | --- |
+| `app/adaptation/` | The S7 adaptation engine: profile, indicators, estimator, rules, outcome, `replay` |
+| `app/eeg/` | The EEG path: `autorun`, `live.py`, `preflight`, epochs, reference, ICA, sync, summary, the monitor's figures |
+| `app/api/routes/research.py` | The read-only `/research` API of the portal and the live monitor |
+| `alembic/versions/` | Migrations, head `0023` |
+
+The full picture is in the documentation site (`docs/`, from the repo root):
+`docs/eeg.md`, `docs/adaptation.md`, `docs/env.md`, `docs/testing.md`.
+
+**Two ways it runs.** The API runs in Docker (`backend` service). The EEG path
+runs **on the PC**, from `backend\.venv`, because it reads LSL:
+
+```powershell
+cd backend
+$env:POSTGRES_HOST='127.0.0.1'; $env:ENVIRONMENT='production'; .venv\Scripts\python -m app.eeg.autorun
+.\.venv\Scripts\python.exe -m app.eeg.preflight
+```
+
+**Settings** are in `backend/.env` (template `.env.example`). A change applies
+with `docker compose up -d backend`; `restart` only reloads code.
 
 ## 1. Run everything with Docker (recommended)
 
@@ -37,6 +58,9 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+In the lab the container runs `uvicorn` without `--reload`; a code change goes
+live with `docker compose restart backend`, between sessions only.
+
 ## 3. Run the full walking skeleton (M1 objective)
 
 If you started with Docker (section 1), the script runs **inside the
@@ -68,13 +92,21 @@ the same from `SessionCommunicationClient`.
 
 ## 4. Automated tests
 
-With Docker:
+With Docker (≈ 556 tests, 25 Nov 2026):
 
 ```bash
-docker compose exec backend pytest
+docker compose exec -T -e EEG_LIVE_RULE=current -e EEG_MONITOR_LIVE=false backend python -m pytest -q
 ```
 
+Pass the defaults as above: four `fill_from_xdf` tests read the live rule from
+the container's environment and fail when `backend/.env` has `ica` (a known
+test-isolation gap, not a fault of the code).
+
 With the local venv, from `backend/`: `pytest`.
+
+The paragraph below is history from M1, when the suite had four tests; the
+WebSocket path has its own tests since (`tests/test_websocket_*.py`,
+`tests/test_session_close_ws.py`).
 
 Runs against the database configured in `.env` — make sure you have run
 `alembic upgrade head` first.

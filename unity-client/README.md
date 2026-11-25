@@ -154,3 +154,25 @@ standardized audio, guided assembly, guided association) and the flow
 chained end to end without adaptation.
 
 Detailed plan: `claude/Planteamiento_Fase2_M2.md` in the Claude Project.
+
+## 9. Today: a pilot session from the Editor (Phase 6)
+
+Sections 4–8 are history; this is how the client runs now. More in the
+documentation site: `docs/install.md` and `docs/session.md`.
+
+- **The headset** plays the Editor's Play mode over Meta Quest Link.
+  TODO: Sebas, the Link settings used in the lab.
+- **Inspector, per session, never saved in the scene:** `SessionBootstrap`
+  takes `devParticipantCode` (the code the portal gives), `condition`,
+  `newSessionKanjiSet`, `newSessionVisit`, `createNewSessionOnPlay` on and
+  `newSessionSeed` empty; `SessionFlowRunner` takes `eegStep` on and
+  `baselineTimeScale = 1`. Revert them after the session.
+- **LSL:** besides the WebSocket, every event goes out as a marker on the LSL
+  stream `UnityMarkers` (frame hitches over 50 ms included, as `FRAME_HITCH`).
+  The stream lives as long as the Editor is open, so **reopen Unity before each
+  session**: an old `UnityMarkers` makes the EEG path refuse to start.
+- **No Profiler during a session**, and nobody touches the PC from S4 to S8:
+  both cause frame hitches in the headset.
+- **Tests:** the Editor harness, **Tools › NeuroAdaptive VR › Correr pruebas de
+  Fase 2** (`Assets/Editor/Phase2TestHarness.cs`), 119 cases, PASS or FAIL per
+  case. Never save the scene during Play.
