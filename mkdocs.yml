@@ -32,7 +32,8 @@ extra_css:
 
 plugins:
   - search
-  - privacy      # downloads external assets (the search shim) at build time, so nothing loads from the web
+  - privacy:     # downloads external assets (the search shim) at build time, so nothing loads from the web
+      cache_dir: site/.cache   # inside the git-ignored site/; shortcut: each build downloads again, needs internet once per build
   - offline
 
 markdown_extensions:
