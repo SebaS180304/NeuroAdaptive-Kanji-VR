@@ -187,6 +187,88 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 
 **AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
 
+### Live monitor: per-epoch indices (MI) and 8-channel traces (TR) (D-F6-292, D-F6-293 (4)–(7), EEG Registro 25 Nov 18:00 A–C) · plan, **waits for Sebas's OK and, for TR, the validated drawing**
+
+**Rules for both.** Display only: no rule, window or `Buffer.new_epochs()` reads any of it, and the epochs do not change.
+- Each piece goes behind its own switch, off by default, like M1b.
+- **It is never built, switched on or restarted during a visit** (D-F6-292 (3)). The visits on Thu 26 are P06 10:00, P08 15:00 and P07 17:00 (D-F6-291).
+- A visit that comes before a piece is validated and tested runs with that piece off.
+- Visual values come only from `design-system.md`; the texts come only from UI/UX.
+- One slice = tests + commit (message shown first) + `graphify update .` + **Stop**.
+
+**Where each piece lives today (read 25 Nov):**
+- `GET /research/sessions/{id}/live` (`routes/research.py:550`) already sends `indices.trace`: the z of each non-POOR epoch against the stored reference, so it is empty until S7.
+- `LiveMonitor.tsx` polls every 1 s (`POLL_MS`) and draws `Trace()` as an SVG.
+- M1b is `app/eeg/monitor.py` plus `eeg_sessions.monitor`, written by `live.run` every 2.5 s.
+- Drawings: the indices are validated (D-F6-280, `design-system.md` «Live indices»). The traces panel is still the proposal `LiveSessionMonitorTraces_D-F6-292_propuesta`, which Diseño web redraws with D-F6-293 (5) and option A.
+
+**Order: MI first, then TR.** MI is backend and page only, with no change to `live.py` and with a validated drawing. TR touches `live.py` and waits for its drawing.
+
+#### MI · per-epoch live indices (≈ 3 h) · switch `MONITOR_LIVE_INDICES` (backend, off)
+- **Backend.** The `/live` endpoint sends one point per live `eeg_epochs` row, POOR ones included. The POOR points are flagged and carry no value.
+  - It sends the Engagement Index and frontal theta. The S4 alpha ratio is a figure, not a trace.
+  - The stage scale follows D-F6-277 (3) and D-F6-280 (1):
+    - ln in S1–S4 and in S6;
+    - in S5, a provisional z against S4, from the non-POOR S4 epochs (read-only: mean and SD of ln, as `reference.compute` does);
+    - from S7 to S9, z against the engine's reference.
+  - Each point carries its state and the flags `poor`, `excluded`, `fitting_ica`.
+  - SQL reads only.
+  - Off → the response is as today.
+- **Page.** The trace from D-F6-280:
+  - scale by segment, with a gap between segments;
+  - S7 wider;
+  - **POOR in red** (D-F6-293 (6); the EEG entry at 18:00 said grey, and the board wins);
+  - excluded and «Fitting ICA» in grey;
+  - Low / Normal / High only at S7's decision points;
+  - «Indices from the end of S3» until S3 ends (UI/UX text).
+  - One point per epoch, no smoothing. Polling stays at 1 s.
+- **Tests:**
+  - pytest: the scale per stage; POOR, excluded and fitting flags; switch off → the response is unchanged.
+  - Vitest: the segments and the colours by token.
+  - Playwright: the existing monitor checkpoint.
+  - The harness does not apply (no Unity).
+- **Done when** a replay of T05's rows through the endpoint draws S4–S9 with the right scale per segment, and the switch off gives today's response byte for byte.
+
+#### TR · 8-channel traces (≈ 7 h, after the validated drawing) · switch `EEG_MONITOR_TRACES` (`backend/.env`, read by `live.py`, off)
+- **TR1 · `app/eeg/traces.py`, pure (≈ 2 h).**
+  - A causal filter with state, `scipy.signal.sosfilt` with its `zi` kept between pieces: high-pass 1 Hz (Butterworth order 2), notch 60 Hz always on (Q 30), low-pass 40 Hz (Butterworth order 4).
+  - It works on the samples `live` already receives, with no second LSL inlet.
+  - It reduces them to **min and max per bin**, never averaging. With 40 ms bins, a 20 s window is 500 columns.
+  - It keeps the newest sample of each channel for «Now».
+  - Tests: the filter state across pieces equals filtering the whole signal at once; a tap spike survives the min/max; a flat channel stays flat.
+- **TR2 · storage and `live.run` (≈ 1.5 h).**
+  - Migration **0024**: a table `eeg_trace_bins` (session, session ms, mins[8], maxs[8]), plus the «Now» values in `eeg_sessions`.
+  - `live.run` writes the new bins every 250 ms, **outside `new_epochs()`**, like M1b.
+  - It keeps only the last 30 s per session (display only; nothing of the analysis is stored there).
+  - Times are in session ms on the markers' clock (S3 offset applied), so the tap lines and the stage lines fall in place.
+  - Tests: written only when the switch is on; old bins pruned; the epochs are identical with the switch on and off (deterministic, as M1b on 25 Nov).
+- **TR3 · endpoint (≈ 1 h).**
+  - `GET /research/sessions/{id}/live/traces?since=<ms>`: the bins after `since`, the S3 `SYNC_TAP` marks («Tap n») and the stage changes.
+  - Switch off → an empty answer with the reason.
+  - Read-only SQL. pytest.
+- **TR4 · page (≈ 2.5 h).**
+  - Option A: a panel in the right column, between *Sync* and the console. A canvas, not SVG, because of the 4 refreshes a second.
+  - Its own query every 250 ms with `since`, and a ring buffer of 20 s on the client.
+  - Eight lanes Fp1…P4, with M1b's colour when on and «excluded» in grey.
+  - A 1 s grid, with seconds counting back.
+  - **A fixed common scale**, ±100 µV by default; ±50, ±200 and ±500 to choose before S3; no autoscale.
+  - Out-of-lane peaks are clipped, in another colour, with their value in µV or mV.
+  - A scale bar.
+  - A «Now» line with each channel's current value in µV beside its lane.
+  - Vitest for the min/max drawing, the clipping and the scale. Playwright with a fixture.
+- **TR5 · checks C1–C4 of EEG (≈ 1 h + the Unity pass).**
+  - **C1:** epochs identical with the switch on and off (deterministic `Buffer`, as M1b), and `replay` on T05 byte-identical before and after the code.
+  - **C2:** time per refresh for the 8 channels, **p99 < 20 ms**, measured on T05's XDF at 1× over LSL (as SIM5), with the test session deleted.
+  - **C3:** on T05's XDF, Cz shows the 5 taps on their S3 lines, within ±100 ms.
+  - **C4:** a short Unity pass with no participant and the monitor open (test session deleted). Its `FRAME_HITCH` must stay within the cut of D-F6-289 (5) before the switch goes on in a visit; in the visit, the same cut applies.
+
+**Not in this plan:** per-second indices (D-F6-293 (4) says no), smoothing, a second LSL inlet, any change to `new_epochs()`, `EDGE_S` or a rule.
+
+**Questions for Sebas (also in the 25 Nov draft):**
+1. **Storage for TR:** a pruned table `eeg_trace_bins` (recommended; ≈ 200 numbers every 250 ms), or a rolling `jsonb` column? The column would rewrite ≈ 8 000 numbers 4 times a second.
+2. **«Now» value:** the newest filtered sample (recommended, as EEG B says «valor actual»), or the mean of the last 250 ms?
+3. **Order tonight:** MI only after your OK, and the docs B3 → B1 → B2 (D-F6-290 (1)(c)) before or after MI?
+
 ### Repo documentation for whoever inherits the project (D-F6-287) · plan, **waits for Sebas's OK before `/build`**
 
 **Audience:** a developer bringing the project up from scratch. English. **Only** `.md`, `mkdocs.yml`, `requirements-docs.txt` and `database/schema.sql`. No code, no restarts, no participant data, no names, no XDF (D-F6-192). **Paused 15:15–17:30 (T05) and during every pilot visit** (D-F6-153); it goes on at night. Not a pilot requirement.
