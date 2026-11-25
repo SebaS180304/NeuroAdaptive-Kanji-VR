@@ -1,73 +1,125 @@
-# NeuroAdaptive VR — Fase 1: Foundation & Feasibility
+# NeuroAdaptive VR
 
-Estructura técnica inicial del prototipo NeuroAdaptive VR (aprendizaje
-de kanji en VR con adaptación conductual/EEG). Este repo cubre la
-**Fase 1** del cronograma (W1–W2, 17–28 ago 2026): base de Unity y
-backend, y el esquema inicial de PostgreSQL — orientado a demostrar el
-milestone **M1 · Technical Feasibility**.
+Adaptive kanji-learning prototype in Virtual Reality, instrumented with
+behavioral telemetry and EEG. Single repository for the project: Unity
+client, backend and database under one version control tree.
 
-## Qué hay acá
+Status (25 November 2026): **Phase 6 · pilot.** Behaviour adaptation (S7), the
+live EEG path (AURA over LSL, `live.py`, `autorun`, the ICA rule with its
+fallback), the research portal and the live session monitor are built; the
+pilot starts on 26 November 2026. Earlier milestones are kept below as history.
 
-| Carpeta | Contenido |
+**Developer documentation:** the MkDocs site in `docs/` (install from scratch,
+running a session, the EEG pipeline, the adaptation engine, the data model,
+settings, tests, troubleshooting). Build it with `requirements-docs.txt`; it
+opens offline from `site/index.html`.
+
+## What is here
+
+| Folder | Contents |
 |---|---|
-| `backend/` | FastAPI async + SQLAlchemy + WebSocket. Ver `backend/README.md` para levantarlo. |
-| `database/` | `schema.sql` (referencia) + `ERD.md` — esquema PostgreSQL inicial, verificado contra Postgres real. |
-| `unity-client/` | Estructura de scripts C# (GameFlowController, controladores de la spec, cliente WebSocket) para armar sobre un proyecto Unity 6 nuevo. Ver `unity-client/README.md`. |
-| `docker-compose.yml` | PostgreSQL + backend, para levantar todo con un comando. |
+| `backend/` | FastAPI async + SQLAlchemy 2.0 + WebSocket; the adaptation engine (`app/adaptation/`) and the EEG path (`app/eeg/`). See `backend/README.md`. |
+| `dashboard/` | Research portal and live session monitor (React, Vite). See `dashboard/README.md`. |
+| `database/` | `schema.sql` (generated from the database), `ERD.md`, `EVENT_CONTRACT.md` and the verification SQL. See `database/README.md`. |
+| `unity-client/` | Complete Unity 6000.5.10f1 project, Meta Quest 2 over Link. See `unity-client/README.md`. |
+| `tools/` | Offline kanji content tools, in their own container. See `tools/README.md`. |
+| `docs/`, `mkdocs.yml` | The developer documentation site. |
+| `docker-compose.yml` | PostgreSQL 16, backend, portal (nginx) and pgAdmin, all on `127.0.0.1`. |
+| `pgadmin/servers.json` | Preloaded connection for the pgAdmin portal (`http://localhost:8081`). |
 
-## Cómo arrancar
+## Getting started
 
 ```bash
 cp backend/.env.example backend/.env
 docker compose up -d --build
 docker compose exec backend alembic upgrade head
-python backend/scripts/ws_smoke_test.py   # walking skeleton end-to-end
+(cd dashboard && npm ci && npm run build)                     # the portal nginx serves on :5300
+docker compose exec backend python scripts/ws_smoke_test.py   # walking skeleton
+docker compose exec backend pytest                            # whole suite
 ```
 
-Después, `unity-client/README.md` explica cómo crear el proyecto Unity
-real y conectarlo al mismo WebSocket.
+The smoke test and the test suite run **inside the container**: the
+dependencies (`httpx`, `websockets`, `pytest`) are installed there, not in
+the host's Python. Running them from your own shell fails with
+`ModuleNotFoundError`. The EEG path runs on the PC instead, from `backend\.venv`
+(see `docs/install.md`).
 
-## Qué pide M1 y qué de eso cubre este repo
+A change to `backend/.env` applies with `docker compose up -d backend`, not
+`restart`.
 
-Según `NeuroAdaptative VR Project Proposal.pdf` (acciones inmediatas
-17–28 ago) y el anteproyecto (M1, 28 ago 2026):
+Then `unity-client/README.md` explains how to open the Unity project and
+run the same round trip from the Editor.
 
-- [x] Backend FastAPI skeleton
-- [x] PostgreSQL configurado (esquema inicial + migraciones)
-- [x] Definición de eventos de telemetría conductual (protocolo WS +
-      `session_events` — vocabulario completo llega en Fase 3)
-- [x] Prueba de comunicación Unity↔Backend por WebSocket — protocolo y
-      cliente Unity listos; correr `ws_smoke_test.py` (simulando
-      Unity) confirma el roundtrip REST + WebSocket + PostgreSQL
-- [ ] Setup real de Unity + Oculus Quest — este repo deja la
-      *estructura* (scripts, packages, README de setup); crear el
-      proyecto Unity en tu máquina y correrlo en el headset físico
-      queda pendiente de tu lado (spec de Meta cambia con el tiempo,
-      ver `unity-client/README.md`)
-- [ ] WAVEX capability validation — depende del hardware/API real, no
-      resoluble desde este entorno
+## M1 status
 
-## Por qué el esquema de PostgreSQL es "inicial" y no el completo
+Committed deliverables: *Unity/Quest configured; FastAPI skeleton;
+WebSocket tested; WAVEX capability validation; initial timestamps.*
 
-El anteproyecto marca el **schema v1 completo** (con `KanjiLearningItem`,
-trials, EEG, adaptación, learner profile) como entregable de **M2** (25
-sep 2026), no de Fase 1. Lo que este repo entrega ahora es la base
-mínima necesaria para probar el walking skeleton — participantes,
-sesiones, config snapshot, validación técnica y un event log genérico
-— pensada para que las tablas de Fase 2 en adelante se cuelguen encima
-sin romper nada. Detalle completo en `database/ERD.md`.
+- [x] FastAPI backend, executed and tested against a real PostgreSQL
+- [x] PostgreSQL configured — initial schema and Alembic migrations
+- [x] Unity ↔ backend round trip over WebSocket, with events persisted
+      and their payloads intact
+- [x] Initial telemetry event definition (WS protocol + `session_events`;
+      the full behavioral vocabulary lands in Phase 3)
+- [x] WAVEX capability validation — closed on its documentary axis
+- [ ] The "Quest" half of *Unity/Quest configured*: Meta XR Core SDK,
+      interaction profile, and verification inside the headset
+- [ ] Empirical EEG validation — blocked on having the device in hand
 
-## Fuente de verdad del proyecto
+Details in `claude/Evaluacion_Cierre_M1_Fase1.md` and
+`claude/Fase1_Estructura_Tecnica_Estado.md` (Claude Project).
 
-Las decisiones de diseño (Game Flow S0–S10, ESL/LAL, trial types,
-cronograma de 8 fases) viven en el Project de Claude asociado
-("Neuroadaptative VR Kanji Project"): `Anteproyecto_NeuroAdaptive_VR_MIRAI.docx`,
-`NeuroAdaptive_VR_Game_Flow_v1_Unity_Design_Specification.docx`, y la
-síntesis en `claude/Sintesis_Analisis_Comprension_Proyecto.md`. Este
-repo implementa esas decisiones; no las redefine.
+## Why the PostgreSQL schema is "initial" rather than complete
 
-## Próximos pasos (Fase 2 — W3–W4)
+The project proposal assigns the **full schema v1** (with
+`KanjiLearningItem`, trials, EEG, adaptation and learner profile) to
+**M2**, not to Phase 1. What exists today is the minimum base the walking
+skeleton needs — participants, sessions, config snapshot, technical
+validation and a generic event log — shaped so that later phases hang
+their tables on top without breaking anything. Details in
+`database/ERD.md`.
 
-Escena Unity `Japanese Learning Studio`, contenido de los 15 kanji
-experimentales + pools, core learning loop sin adaptación
-("Static VR Learning Prototype").
+`session_events` has `event_type VARCHAR(64)` plus `payload JSONB`, both
+indexed, so it absorbs new events without a migration. Phase 2 leans on
+that: it emits its telemetry through the generic log and **does not touch
+the database**; Phase 3 promotes those events into relational tables once
+the vocabulary has been stabilized by real use.
+
+## Source of truth
+
+Design decisions (Game Flow S0–S10, ESL/LAL, trial types, the eight-phase
+schedule) live in the associated Claude Project ("Neuroadaptative VR Kanji
+Project"): `Anteproyecto_NeuroAdaptive_VR_MIRAI.docx` and
+`NeuroAdaptive_VR_Game_Flow_v1_1_Unity_Design_Specification.docx`. This
+repository implements those decisions; it does not redefine them.
+
+A caveat learned during M1: the Project is the source of truth for
+**design and decisions**, not for the **execution state** of the
+repository. Update the status documents whenever a block of work closes,
+or verify against the repo before a milestone review.
+
+## Phase 5a (Behavior Adaptation), built
+
+In an adaptive session, the backend decides after every S7 answer whether to
+change the environment (ESL) or the assistance (LAL), and sends a `DECISION`
+over the WebSocket. Unity applies it between trials, and three trials later
+the backend classifies the outcome of each change. Code in
+`backend/app/adaptation/` and `unity-client/Assets/Scripts/Networking/AdaptationClient.cs`;
+detailed plan in `claude/Planteamiento_Tecnico_F5a.md`.
+
+## Branch convention
+
+Milestones M1 and M2 ran on `milestone/<milestone>-<short-description>`
+(`milestone/m1-unity-backend-communication`,
+`milestone/m2-static-learning-prototype`). From Phase 3 on, each phase runs
+on `phase/<n>-<short-description>` (`phase/3-behavior-instrumentation`,
+`phase/5a-behavior-adpatation`). The EEG work, the portal and the pilot ran on
+`phase/4-eeg-aura`; the pilot's starting commit is tagged `pilot-start-2026-11-26`.
+Nothing is committed on `main` directly: phases arrive by pull request with a
+merge commit.
+
+## A note on language
+
+Repository documentation is written in English so the work travels beyond
+the team. Design documents in the Claude Project remain in Spanish; the
+specification and the project proposal are in English already.

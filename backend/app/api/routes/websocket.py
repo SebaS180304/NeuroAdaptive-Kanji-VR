@@ -22,20 +22,47 @@ Cliente -> Servidor, mensaje JSON con forma:
 
 Servidor -> Cliente:
     {"type": "PONG", "server_time": "...", "offset_ms": 12.3}
-    {"type": "ACK", "of": "SESSION_EVENT", "id": 123}
+    {"type": "ACK", "of": "SESSION_EVENT", "id": "123"}
     {"type": "ERROR", "detail": "..."}
+    {"type": "DECISION", "decision_id": "d-...", "trial_id": "S7-009", "action": ..., ...}
+
+DECISION (F5a, Planteamiento_Tecnico_F5a.md §2 and §8.1): in an adaptive
+session, every ANSWER_SELECTED of S7 gets one, NO_CHANGE included, sent right
+after its ACK so it travels during the 1.5 s of feedback. The backend then
+stores it as an ADAPTATION_DECISION event (source BACKEND) with its latency,
+measured from the arrival of the answer to the send. STATIC sessions never
+reach the estimator. Three trials after each change, the backend also stores
+its ADAPTATION_OUTCOME (O4, app/adaptation/outcome.py); that one is not sent.
+
+El `id` de un ACK viaja SIEMPRE como string, para los dos tipos de
+evento. Hasta el cierre de Fase 1 el de SESSION_EVENT salia como entero
+(su PK es BIGINT) y el de VALIDATION_EVENT como string (su PK es UUID),
+lo que obligaba al cliente Unity a deserializarlo como `object` para
+tolerar ambos. Normalizado en el paso 0 de Fase 2: el contrato del
+protocolo queda con un solo tipo por campo, y quien necesite el valor
+numerico lo convierte donde lo necesita.
 """
 
+import asyncio
 import json
 import logging
+import time
 import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
+from sqlalchemy import select, text
 
+from app.adaptation.state import (
+    ADAPTATION_DECISION,
+    ADAPTATION_OUTCOME,
+    PendingDecision,
+    SessionAdaptationState,
+)
+from app.api.routes.sessions import enter_state
 from app.db.base import AsyncSessionLocal
-from app.models.session import ExperimentSession
+from app.models.session import ExperimentSession, GameFlowState
 from app.models.system_event import SystemValidationEvent
 from app.models.system_event import SessionEvent as SessionEventModel
 from app.schemas.event import SessionEventCreate, SystemValidationEventCreate
@@ -44,6 +71,10 @@ from app.services.session_clock import now_utc, offset_ms
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["websocket"])
+
+# F5a: adaptation state per open session, in memory (§2.2). Rebuilt from
+# session_events on every (re)connection, so losing it costs nothing.
+_adaptation: dict[uuid.UUID, SessionAdaptationState] = {}
 
 
 @router.websocket("/ws/session/{session_id}")
@@ -59,8 +90,10 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
             await websocket.send_json({"type": "ERROR", "detail": "unknown session_id"})
             await websocket.close(code=4404)
             return
+        condition = session.condition.value if session.condition is not None else None
+        await _load_adaptation(db, session_id, condition)
 
-    logger.info("WS connected for session=%s", session_id)
+    logger.info("WS connected for session=%s condition=%s", session_id, condition)
 
     try:
         while True:
@@ -73,6 +106,7 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
 
             msg_type = message.get("type")
             received_at = now_utc()
+            received_perf = time.perf_counter()
 
             if msg_type == "PING":
                 client_ts = _parse_timestamp(message.get("client_timestamp"))
@@ -85,7 +119,7 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
                 )
 
             elif msg_type == "SESSION_EVENT":
-                await _handle_session_event(websocket, session_id, message)
+                await _handle_session_event(websocket, session_id, message, received_perf)
 
             elif msg_type == "VALIDATION_EVENT":
                 await _handle_validation_event(websocket, session_id, message)
@@ -99,7 +133,9 @@ async def session_websocket(websocket: WebSocket, session_id: uuid.UUID) -> None
         logger.info("WS disconnected for session=%s", session_id)
 
 
-async def _handle_session_event(websocket: WebSocket, session_id: uuid.UUID, message: dict) -> None:
+async def _handle_session_event(
+    websocket: WebSocket, session_id: uuid.UUID, message: dict, received_perf: float | None = None
+) -> None:
     try:
         parsed = SessionEventCreate(
             session_id=session_id,
@@ -108,16 +144,276 @@ async def _handle_session_event(websocket: WebSocket, session_id: uuid.UUID, mes
             client_timestamp=message.get("client_timestamp"),
         )
     except ValidationError as exc:
+        logger.warning("invalid message, not stored (session=%s): %s; raw: %s", session_id, exc, json.dumps(message))
         await websocket.send_json({"type": "ERROR", "detail": str(exc)})
         return
 
-    async with AsyncSessionLocal() as db:
-        event = SessionEventModel(**parsed.model_dump())
-        db.add(event)
-        await db.commit()
-        await db.refresh(event)
+    try:
+        async with AsyncSessionLocal() as db:
+            event = SessionEventModel(**parsed.model_dump())
+            db.add(event)
+            await db.flush()  # assigns event.id
+            after = await _sync_current_state(db, session_id, parsed)
+            await _project(db, event.id)
+            await db.commit()
+            await db.refresh(event)
+    except Exception:
+        # Keep the socket open; Unity does not resend, so the raw event in the log is the only copy.
+        logger.exception("SESSION_EVENT not stored (session=%s); raw event: %s", session_id, json.dumps(message))
+        await websocket.send_json({"type": "ERROR", "detail": "event not stored"})
+        return
 
-    await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": event.id})
+    await websocket.send_json({"type": "ACK", "of": "SESSION_EVENT", "id": str(event.id)})
+    for task, *args in after:  # as the PATCH's BackgroundTasks: after the commit, never in the way of the ACK
+        _after_commit(task, *args)
+
+    state = _adaptation.get(session_id)
+    if state is not None:
+        source = None
+        if state.multimodal and parsed.event_type == "ANSWER_SELECTED":
+            source = await _eeg_source(session_id, parsed.payload.get("session_elapsed_ms"))
+        try:
+            pending = state.feed(parsed.event_type, parsed.payload, eeg_source=source)
+        except Exception:  # never lose the session over the estimator
+            logger.exception("adaptation failed on event %s (session=%s)", event.id, session_id)
+            pending = None
+        if pending is not None:
+            await _send_decision(websocket, session_id, pending, received_perf)
+        outcomes = state.take_outcomes()
+        if outcomes:
+            await _store_outcomes(session_id, outcomes)
+
+
+_EPOCH_COLUMNS = ("start_ms", "end_ms", "quality", "chunk_clean",
+                  "engagement_index", "theta_fz", "alpha_parietal", "theta_beta", "excluded_channels")
+
+
+_eeg_trackers: dict[str, "status.Tracker"] = {}
+
+
+async def _eeg_source(session_id: uuid.UUID, answered_ms):
+    """MULTIMODAL_ADAPTIVE (D-F6-171): every epoch live.py has written up to the answer and the reference, read
+    once per answer; window.py then keeps only those finished at the decision (D-F6-172). Any failure: no EEG
+    for this window (UNAVAILABLE), never a lost decision.
+
+    X3 (§5.5, D-F6-174): with the EEG down (LOST, PROCESS_DOWN) or cancelled for the session (S4 alpha failed,
+    > 60 s without EEG) the window does not count and carries the reason (BEHAVIOR_FALLBACK); each status change
+    is an EEG_STATUS event."""
+    from app.config import get_settings
+    from app.eeg import epochs as eeg_epochs
+    from app.eeg import status, window
+
+    if answered_ms is None:
+        return None
+    try:
+        async with AsyncSessionLocal() as db:
+            row = (await db.execute(text(
+                "SELECT reference, alpha_passed, not_counted_reason, eeg_gap_ms, "
+                "EXTRACT(EPOCH FROM now() - heartbeat_at) AS age FROM eeg_sessions WHERE session_id = :s"),
+                {"s": str(session_id)})).one_or_none()
+            ref, alpha_passed, reason, gap_ms, age = row if row else (None, None, None, None, None)
+            tracker = _eeg_trackers.setdefault(str(session_id), status.Tracker())
+            now = status.classify(None if age is None else float(age), gap_ms)
+            report = tracker.observe(now, gap_ms, None if age is None else float(age))
+            if report:
+                await _store_eeg_status(db, session_id, report, answered_ms, gap_ms, age)
+            new_reason = reason or (status.S4_ALPHA_FAILED if alpha_passed is False else tracker.cancelled)
+            if row and new_reason and new_reason != reason:   # once, for the rest of the session (§5.5)
+                await db.execute(text("UPDATE eeg_sessions SET not_counted_reason = :r WHERE session_id = :s"),
+                                 {"s": str(session_id), "r": new_reason})
+                logger.warning("EEG cancelled for the session (session=%s): %s", session_id, new_reason)
+            await db.commit()
+            fallback = new_reason or (now if now != status.CONNECTED else None)
+            if fallback:
+                return lambda *_: {"counted": False, "non_poor": 0, "clean_s": 0.0, "z": {}, "fallback": fallback}
+            rows = (await db.execute(text(
+                f"SELECT {', '.join(_EPOCH_COLUMNS)} FROM eeg_epochs WHERE session_id = :s "
+                "AND start_ms <= :hi"),  # no lower bound: trials have no timeout, a window can last > 60 s (D-F6-186)
+                {"s": str(session_id), "hi": int(answered_ms)})).all()
+            sounds = None
+            if get_settings().eeg_live_rule in ("nosound", "ica"):  # D-F6-147 (2): the window's sound density against S6's
+                events = (await db.execute(text(
+                    "SELECT event_type, payload FROM session_events WHERE session_id = :s AND event_type IN "
+                    "('AUDIO_ONSET', 'ANSWER_SELECTED', 'TRIAL_COMPLETED', 'STATE_ENTERED') ORDER BY id"),
+                    {"s": str(session_id)})).all()
+                sounds = eeg_epochs.sound_density(eeg_epochs.markers_of_events([(e, p) for e, p in events]))
+    except Exception:
+        logger.exception("EEG not read for the decision (session=%s)", session_id)
+        return None
+    epochs = [dict(zip(_EPOCH_COLUMNS, r)) for r in rows]
+    reference = ref or {"indices": {}}
+    # shortcut: a session without an eeg_sessions row (live.py never started) reads as PROCESS_DOWN above
+    return lambda _trial_id, first_start_ms, decision_ms: window.evaluate(epochs, first_start_ms, decision_ms,
+                                                                          reference, sounds)
+
+
+async def _load_adaptation(db, session_id: uuid.UUID, condition: str | None) -> None:
+    """Adaptation state for an adaptive session, rebuilt from its stored events."""
+    probe = SessionAdaptationState(condition)
+    if not probe.adaptive:
+        _adaptation.pop(session_id, None)
+        return
+    rows = (await db.execute(
+        select(SessionEventModel.event_type, SessionEventModel.payload)
+        .where(SessionEventModel.session_id == session_id)
+        .order_by(SessionEventModel.id)
+    )).all()
+    _adaptation[session_id] = SessionAdaptationState.rebuild(
+        condition, ({"event_type": r.event_type, "payload": r.payload} for r in rows)
+    )
+    if rows:
+        logger.info("adaptation state rebuilt from %d events (session=%s)", len(rows), session_id)
+
+
+async def _send_decision(
+    websocket: WebSocket, session_id: uuid.UUID, pending: PendingDecision, received_perf: float | None
+) -> None:
+    """Send first (Unity is waiting), then store with the latency measured at the send."""
+    await websocket.send_json(pending.message())
+    latency_ms = None if received_perf is None else (time.perf_counter() - received_perf) * 1000.0
+    payload = pending.event_payload(latency_ms)
+    try:
+        async with AsyncSessionLocal() as db:
+            event = SessionEventModel(
+                session_id=session_id,
+                event_type=ADAPTATION_DECISION,
+                payload=payload,
+                client_timestamp=None,
+            )
+            db.add(event)
+            await db.flush()
+            await _project(db, event.id)
+            await db.commit()
+    except Exception:
+        # Unity already applied it, so the logged payload is the only record of the decision.
+        logger.exception("ADAPTATION_DECISION not stored (session=%s); payload: %s", session_id, json.dumps(payload, default=str))
+        return
+    d = pending.decision
+    logger.info("DECISION %s %s %s (%s, %.1f ms) session=%s", d.trial_id, d.action, d.reason_code,
+                pending.decision_id, latency_ms or -1, session_id)
+
+
+async def _store_eeg_status(db, session_id, status_: str, answered_ms, gap_ms, age) -> None:
+    """EEG_STATUS (F4 §2.3), written by the backend: a dead live.py cannot write its own (D-F6-171)."""
+    event = SessionEventModel(session_id=session_id, event_type="EEG_STATUS", client_timestamp=None, payload={
+        "status": status_, "session_elapsed_ms": int(answered_ms), "eeg_gap_ms": gap_ms,
+        "heartbeat_age_s": None if age is None else round(float(age), 1), "source": "BACKEND"})
+    db.add(event)
+    await db.flush()
+    await _project(db, event.id)
+    logger.info("EEG_STATUS %s session=%s", status_, session_id)
+
+
+async def _store_outcomes(session_id: uuid.UUID, outcomes: list[dict]) -> None:
+    """O4: ADAPTATION_OUTCOME rows (backend only; nothing is sent to Unity)."""
+    try:
+        async with AsyncSessionLocal() as db:
+            for payload in outcomes:
+                event = SessionEventModel(session_id=session_id, event_type=ADAPTATION_OUTCOME,
+                                          payload=payload, client_timestamp=None)
+                db.add(event)
+                await db.flush()
+                await _project(db, event.id)
+            await db.commit()
+    except Exception:
+        logger.exception("ADAPTATION_OUTCOME not stored (session=%s); payloads: %s", session_id, json.dumps(outcomes, default=str))
+        return
+    for p in outcomes:
+        logger.info("OUTCOME %s %s %s session=%s", p.get("decision_trial_id"), p.get("outcome"),
+                    p.get("outcome_reason"), session_id)
+
+
+async def _project(db, event_id: int) -> None:
+    """
+    Schema v1 (F3.4, MER D1): project the event into the relational tables
+    in the same transaction that stores it, so trial_timeline is current
+    while the session runs (F5a reads it during S7).
+
+    project_event() is PL/pgSQL (migration 0002) and never raises: a failure
+    is rolled back to its own savepoint and recorded in projection_errors,
+    and the event is committed anyway. The except below only covers a
+    database without the function (migration not applied): the event still
+    has to be kept.
+    """
+    try:
+        async with db.begin_nested():
+            ok = (await db.execute(text("SELECT project_event(:id)"), {"id": event_id})).scalar()
+        if not ok:
+            logger.warning("event %s stored but not projected; see projection_errors", event_id)
+    except Exception:  # pragma: no cover - only without migration 0002
+        logger.exception("project_event(%s) unavailable; event stored without projection", event_id)
+
+
+async def _sync_current_state(db, session_id: uuid.UUID, parsed: SessionEventCreate) -> list[tuple]:
+    """
+    Mantiene `experiment_sessions.current_state` al dia con los
+    STATE_ENTERED que llegan por el WebSocket.
+
+    Por que existe (7 sep 2026): hasta el paso 0 de Fase 2, Unity emitia
+    STATE_ENTERED y el backend lo guardaba en `session_events`, pero nadie
+    tocaba la fila de la sesion. El resultado eran sesiones que decian
+    `current_state = S0_SESSION_INITIALIZATION` teniendo eventos hasta S9.
+    Para M1 daba igual (el criterio era el event log), pero es metadata que
+    miente y es justo la que va a leer el Research Dashboard.
+
+    El event log sigue siendo la fuente de verdad historica; esta columna es
+    una proyeccion de conveniencia -- el ultimo estado conocido. Por eso un
+    payload que no se pueda interpretar se registra como warning y no aborta
+    el evento: perder la telemetria por no poder actualizar una proyeccion
+    seria el intercambio equivocado.
+
+    `PATCH /sessions/{id}/state` sigue existiendo como herramienta manual del
+    investigador; deja de ser la unica via de actualizacion.
+    """
+    if parsed.event_type != "STATE_ENTERED":
+        return []
+
+    raw_state = parsed.payload.get("state")
+    if not raw_state:
+        logger.warning(
+            "STATE_ENTERED sin 'state' en el payload (session=%s); "
+            "current_state no se actualiza",
+            session_id,
+        )
+        return []
+
+    try:
+        new_state = GameFlowState(raw_state)
+    except ValueError:
+        logger.warning(
+            "STATE_ENTERED con estado desconocido %r (session=%s). "
+            "Los valores validos son los del enum game_flow_state, en "
+            "SCREAMING_SNAKE_CASE; revisa que el cliente serialice el enum "
+            "por su valor de cable y no por el nombre del miembro.",
+            raw_state,
+            session_id,
+        )
+        return []
+
+    session = await db.get(ExperimentSession, session_id)
+    if session is None:  # pragma: no cover - validado al abrir el socket
+        return []
+    # Same close rule as the PATCH (D-F6-186 (3)): status, completed_at once, profile, LabRecorder stop.
+    return enter_state(session, new_state)
+
+
+_background: set[asyncio.Task] = set()
+
+
+def _after_commit(task, *args) -> None:
+    """Runs one of enter_state's follow-ups in the background; a failure is logged, never raised."""
+    async def run() -> None:
+        try:
+            if asyncio.iscoroutinefunction(task):
+                await task(*args)
+            else:
+                await asyncio.to_thread(task, *args)
+        except Exception:
+            logger.exception("after-commit task %s failed", getattr(task, "__name__", task))
+
+    t = asyncio.create_task(run())
+    _background.add(t)  # keeps a reference until it ends
+    t.add_done_callback(_background.discard)
 
 
 async def _handle_validation_event(
@@ -132,14 +428,20 @@ async def _handle_validation_event(
             client_timestamp=message.get("client_timestamp"),
         )
     except ValidationError as exc:
+        logger.warning("invalid message, not stored (session=%s): %s; raw: %s", session_id, exc, json.dumps(message))
         await websocket.send_json({"type": "ERROR", "detail": str(exc)})
         return
 
-    async with AsyncSessionLocal() as db:
-        event = SystemValidationEvent(**parsed.model_dump())
-        db.add(event)
-        await db.commit()
-        await db.refresh(event)
+    try:
+        async with AsyncSessionLocal() as db:
+            event = SystemValidationEvent(**parsed.model_dump())
+            db.add(event)
+            await db.commit()
+            await db.refresh(event)
+    except Exception:
+        logger.exception("VALIDATION_EVENT not stored (session=%s); raw event: %s", session_id, json.dumps(message))
+        await websocket.send_json({"type": "ERROR", "detail": "event not stored"})
+        return
 
     await websocket.send_json({"type": "ACK", "of": "VALIDATION_EVENT", "id": str(event.id)})
 

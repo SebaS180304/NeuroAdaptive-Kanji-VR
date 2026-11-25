@@ -1,19 +1,175 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using NeuroAdaptiveVR.Core;
+using NeuroAdaptiveVR.Data;
 using UnityEngine;
 
 namespace NeuroAdaptiveVR.Controllers
 {
     /// <summary>
-    /// Responsabilidad (spec seccion 8.1 / 14): programa eventos
-    /// visuales no relacionados a la tarea segun la configuracion ESL
-    /// activa (tabla 8.1: MEDIUM ~1 cada 25-35s, HIGH ~1 cada 10-15s).
+    /// Programa los eventos visuales no relacionados con la tarea, segun el
+    /// intervalo del perfil ESL activo (spec 8.1: LOW ninguno, MEDIUM ~1 cada
+    /// 25-35 s, HIGH ~1 cada 10-15 s).
     ///
-    /// FASE: implementacion real en Fase 2, timing exacto sujeto a
-    /// validacion piloto (spec seccion 16).
+    /// NO decide el intervalo: lo lee del perfil que aplico
+    /// EnvironmentalStimulationController. Si lo tuviera en campos propios,
+    /// habria dos sitios diciendo cada cuanto ocurre un evento periferico, y la
+    /// telemetria registraria uno mientras la escena obedece al otro.
+    ///
+    /// Los valores de 8.1 estan marcados "to validate" en 16: el intervalo real
+    /// lo fija el piloto midiendo distraccion y confort.
+    ///
+    /// SEEDED (30 September 2026, F3.2): which object fires and the interval to
+    /// the next one come from a generator derived from the session seed
+    /// ("peripheral:{LEVEL}"), restarted at each ENVIRONMENT_APPLIED. Until M2
+    /// they came from UnityEngine.Random, so the same session could not show
+    /// the same distractions twice.
     /// </summary>
     public class PeripheralEventScheduler : MonoBehaviour
     {
-        // TODO (Fase 2): timers configurables por nivel ESL; los valores
-        // de esta clase son "to validate" segun spec 16, no hardcodear
-        // como definitivos.
+        [SerializeField] private EnvironmentalStimulationController stimulation;
+        [SerializeField] private BehaviorTelemetryController telemetry;
+
+        [Tooltip("Cuanto dura visible cada evento periferico.")]
+        [SerializeField] private float eventDurationSeconds = 1.5f;
+
+        private EnvironmentProfile _profile;
+        private readonly List<GameObject> _pool = new();
+        private float _nextEventAt = -1f;
+        private GameObject _active;
+        private float _activeUntil;
+        private int _eventIndex;
+        private bool _warnedEmptyPool;
+        private System.Random _rng = new System.Random(0);
+
+        /// <summary>
+        /// A peripheral event became visible: the object and its event_index
+        /// (the same as in PERIPHERAL_EVENT). DistractorMonitor opens its
+        /// orienting window here (F5a, D5).
+        /// </summary>
+        public event Action<GameObject, int> OnPeripheralFired;
+
+        private void Awake()
+        {
+            if (stimulation == null) stimulation = GetComponent<EnvironmentalStimulationController>();
+            if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
+        }
+
+        private void OnEnable()
+        {
+            if (stimulation != null) stimulation.OnProfileApplied += HandleProfileApplied;
+        }
+
+        private void OnDisable()
+        {
+            if (stimulation != null) stimulation.OnProfileApplied -= HandleProfileApplied;
+        }
+
+        private void HandleProfileApplied(EnvironmentProfile profile)
+        {
+            _profile = profile;
+            // An animal already on show finishes its way out instead of vanishing (Diseno_Sala_ESL.md
+            // §10.2); Update hides it when its time is up. The shortest interval (10 s) is longer
+            // than the longest animal (4 s), so it never overlaps the next one.
+            if (_active != null && _active.GetComponent<PeripheralAnimation>() == null) HideActive();
+            RebuildPool();
+            if (profile != null && stimulation != null)
+                _rng = new System.Random(EnvironmentSeed.For(stimulation.BaseSeed,
+                    "peripheral:" + EnvironmentalStimulationController.LevelKey(profile.level)));
+
+            if (profile == null || !profile.HasPeripheralEvents)
+            {
+                _nextEventAt = -1f;    // LOW y FOCUS: sin eventos perifericos
+                return;
+            }
+            ScheduleNext();
+        }
+
+        private void RebuildPool()
+        {
+            _pool.Clear();
+            var container = FindContainer();
+            if (container == null) return;
+
+            // Name order, not hierarchy order: the seeded draw must not change if
+            // someone reorders the hierarchy.
+            foreach (Transform child in container.Cast<Transform>().OrderBy(t => t.name, System.StringComparer.Ordinal))
+            {
+                _pool.Add(child.gameObject);
+                if (child.gameObject != _active) child.gameObject.SetActive(false);
+            }
+        }
+
+        private Transform FindContainer()
+        {
+            // El contenedor se localiza a traves del mismo root que usa ESL, no
+            // por una referencia propia: si el scheduler pudiera apuntar a otro
+            // sitio, podria animar cosas fuera de la Environmental Layer, y la
+            // frontera de contencion dejaria de serlo.
+            var root = GameObject.Find("EnvironmentalLayer");
+            return root == null ? null : root.transform.Find("PeripheralEvents");
+        }
+
+        private void ScheduleNext()
+        {
+            float min = _profile.peripheralIntervalMinSeconds;
+            float max = _profile.peripheralIntervalMaxSeconds;
+            _nextEventAt = Time.time + min + (float)_rng.NextDouble() * (max - min);
+        }
+
+        private void Update()
+        {
+            if (_active != null && Time.time >= _activeUntil) HideActive();
+            if (_nextEventAt < 0f || _profile == null) return;
+            if (Time.time < _nextEventAt) return;
+
+            Fire();
+            ScheduleNext();
+        }
+
+        private void Fire()
+        {
+            if (_pool.Count == 0)
+            {
+                if (!_warnedEmptyPool)
+                {
+                    _warnedEmptyPool = true;
+                    Debug.LogWarning("[PeripheralEventScheduler] El perfil pide eventos " +
+                                     "perifericos pero EnvironmentalLayer/PeripheralEvents esta " +
+                                     "vacio. El intervalo corre y no ocurre nada: en Fase 2 los " +
+                                     "objetos son placeholder y llegan con el contenido.");
+                }
+                return;
+            }
+
+            _active = _pool[_rng.Next(_pool.Count)];
+            // Each animal has its own length (bird 1.5 s, cat 4.0 s, butterfly 3.0 s; D-F6-28);
+            // an object without PeripheralAnimation keeps the default.
+            var anim = _active.GetComponent<PeripheralAnimation>();
+            float duration = anim != null ? anim.DurationSeconds : eventDurationSeconds;
+            _active.SetActive(true);
+            _activeUntil = Time.time + duration;
+            _eventIndex++;
+
+            // Se registra porque Fase 5 necesita poder correlacionar una
+            // distraccion concreta con lo que hizo el participante justo despues.
+            // Un evento periferico que ocurre y no deja rastro es una variable
+            // que actuo sobre la sesion y no se puede reconstruir.
+            telemetry?.Emit(TelemetryEvents.PeripheralEvent, new Dictionary<string, object>
+            {
+                { "event_index", _eventIndex },
+                { "object_name", _active.name },
+                { "duration_ms", Mathf.RoundToInt(duration * 1000f) },
+            });
+            OnPeripheralFired?.Invoke(_active, _eventIndex);
+        }
+
+        private void HideActive()
+        {
+            if (_active == null) return;
+            _active.SetActive(false);
+            _active = null;
+        }
     }
 }

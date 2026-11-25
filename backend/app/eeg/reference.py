@@ -1,0 +1,54 @@
+"""
+The person's own reference for the z of each index (Reevaluacion_EEG_Justificacion.md §4.4.1 step 7 and §5.4;
+D-F6-73): mean and SD of ln(index) over the non-POOR epochs of S6. With fewer than 15 of them (D-F6-218), the epochs
+of S4 with the eyes open, and the session says so. That only chooses the reference: it never fails A-7 (D-F6-220).
+verify_eeg.sql blocks 4 and 7 use the same 15. Stored in eeg_sessions.reference.
+RT (D-F6-281 (5)): it also says how many non-POOR S6 epochs there were and whether that is within one of the 15
+(at_threshold): there, one epoch at a threshold can choose between S6 and S4 (T03, gate G). Read only: no rule reads it.
+"""
+
+import json
+import math
+import statistics
+import uuid
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.eeg.epochs import EPOCH_S
+
+S6_STATE, S4_STATE = "S6_GUIDED_PRACTICE_CALIBRATION", "S4_EEG_BASELINE"
+MIN_EPOCHS = 15  # D-F6-218, D-F6-220; S6 has 15 trials (s6Trials in the scene)
+INDICES = ("engagement_index", "theta_fz", "alpha_parietal", "theta_beta")
+MIN_SD = 1e-6  # in ln units; real spreads are near 0.2. Below this a z would only be noise over noise.
+THRESHOLD_MARGIN = 1  # D-F6-281 (5): S6 at 14, 15 or 16 non-POOR epochs is "at threshold"
+NONE = {"source": None, "fallback": False, "n_epochs": 0, "indices": {}}
+
+
+def _stats(values: list[float | None]) -> dict:
+    logs = [math.log(v) for v in values if v is not None]
+    sd = statistics.stdev(logs) if len(logs) >= 2 else 0.0
+    return {"mean": statistics.fmean(logs) if logs else None, "sd": sd if sd >= MIN_SD else None, "n": len(logs)}
+
+
+def compute(eps: list[dict], s4_spans: tuple | None) -> dict:
+    """eps: the session's epochs; s4_spans: baseline.spans(markers), on the clock of lsl_start, or None."""
+    usable = [e for e in eps if e["quality"] != "POOR"]
+    chosen, source = [e for e in usable if e["game_state"] == S6_STATE], "S6"
+    s6 = len(chosen)
+    mark = {"s6_non_poor": s6, "at_threshold": abs(s6 - MIN_EPOCHS) <= THRESHOLD_MARGIN}
+    if s6 < MIN_EPOCHS:
+        if s4_spans is None:
+            return {**NONE, **mark}
+        lo, hi = s4_spans[0]  # whole epochs inside: one that overlaps the closed segment is not a reference of eyes open
+        chosen = [e for e in usable if e["game_state"] == S4_STATE and lo <= e["lsl_start"] and e["lsl_start"] + EPOCH_S <= hi]
+        source = "S4_EYES_OPEN"
+    if not chosen:
+        return {**NONE, **mark}
+    return {"source": source, "fallback": source != "S6", "n_epochs": len(chosen),
+            "indices": {name: _stats([e[name] for e in chosen]) for name in INDICES}, **mark}
+
+
+async def save(db: AsyncSession, session_id: uuid.UUID | str, ref: dict) -> None:
+    await db.execute(text("UPDATE eeg_sessions SET reference = CAST(:r AS jsonb) WHERE session_id = :s"),
+                     {"s": str(session_id), "r": json.dumps(ref)})

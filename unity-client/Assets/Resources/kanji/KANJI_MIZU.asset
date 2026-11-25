@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd121f1b0a1737040ae782aea55a902e, type: 3}
+  m_Name: KANJI_MIZU
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Data.KanjiLearningItem
+  kanjiId: KANJI_MIZU
+  kunyomi: 
+  onyomi: 
+  strokeOrder: []
+  exampleWords: []
+  contextExamples: []
+  visualAssociation: 
+  assemblySegments:
+  - segmentId: KANJI_MIZU_SEG1
+    description: centre hook
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  - segmentId: KANJI_MIZU_SEG2
+    description: side strokes
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  targetReadingAudio: {fileID: 8300000, guid: fdaef49f84a2ee5418a2a69abda80b48, type: 3}
+  anchorObjectPrefab: {fileID: 7196318896866555369, guid: f2e3985cd1c67dc458b5897464139cfa, type: 3}
+  transformationAnimation: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: f689ce186ed56b140bac27359872e08d, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: 59a2750d0b8f95342a11699824fac5cd, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: 56cfed55db96fea448b4e925ce39ed88, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: 94630b526fd608e47a93c00d15def592, type: 3}

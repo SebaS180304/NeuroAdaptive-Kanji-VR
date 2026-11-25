@@ -1,0 +1,197 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1125460835585896871
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7972647531362228387}
+  - component: {fileID: 2799735312363916827}
+  - component: {fileID: 2034076106708227797}
+  - component: {fileID: 6457689268975693395}
+  - component: {fileID: 5529235841013235535}
+  - component: {fileID: 7878927178424696329}
+  - component: {fileID: 6003310181151333935}
+  - component: {fileID: 6417820833383223254}
+  - component: {fileID: 3368099629774189722}
+  - component: {fileID: 7812677166495404057}
+  - component: {fileID: 1484434850191034316}
+  m_Layer: 0
+  m_Name: SessionRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7972647531362228387
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.74308, y: 0, z: -4.20775}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2799735312363916827
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cde5818d2f7d91d4a899a0d7d02b7266, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Networking.SessionCommunicationClient
+  backendBaseUrl: ws://localhost:8000
+  sessionId: 
+  pingIntervalSeconds: 5
+--- !u!114 &2034076106708227797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd02596d596225545b9d734b40b40ee9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.SessionBootstrap
+  backendHttpUrl: http://localhost:8000
+  createNewSessionOnPlay: 1
+  existingSessionId: 
+  condition: STATIC
+  sendValidationEventOnConnect: 1
+  advanceToFirstStateOnConnect: 1
+--- !u!114 &6457689268975693395
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc7573d9f97bbaf4ca5aa46b18b8a30a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.GameFlowController
+  telemetry: {fileID: 0}
+  condition: 0
+  currentState: 0
+--- !u!114 &5529235841013235535
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52bda07cd43380e41a410b785649a64f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.BehaviorTelemetryController
+  communicationClient: {fileID: 2799735312363916827}
+  gameFlow: {fileID: 6457689268975693395}
+  stimulation: {fileID: 1484434850191034316}
+  assistance: {fileID: 6003310181151333935}
+--- !u!114 &7878927178424696329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fe3022f48cbe224daf51e8e21fc787e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.ResponseSystemController
+  telemetry: {fileID: 5529235841013235535}
+  assistance: {fileID: 6003310181151333935}
+  pronunciation: {fileID: 6417820833383223254}
+  presenterBehaviour: {fileID: 3368099629774189722}
+  optionCount: 4
+  feedbackSeconds: 1.5
+--- !u!114 &6003310181151333935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fff46e13836f904b8676cc53463a261, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.LearningAssistanceController
+  currentLevel: 0
+--- !u!114 &6417820833383223254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b10a9a747119ee429985797ee5347fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.PronunciationAudioController
+  audioSource: {fileID: 0}
+--- !u!114 &3368099629774189722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6998ef64e842a64e8673a4dc2fa6a48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.DebugTrialPresenter
+  acceptKeyboardInput: 1
+--- !u!114 &7812677166495404057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c4dda80ec24dea489f3063e5681cbed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Core.TrialDebugRunner
+  responseSystem: {fileID: 0}
+  gameFlow: {fileID: 0}
+  state: 7
+  lal: 1
+  randomSeed: 20260909
+  trialCount: 3
+  immediateFeedback: 1
+  startOnPlay: 0
+--- !u!114 &1484434850191034316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125460835585896871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46d605d2b8daf3b4795dc4de141f7d0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Controllers.EnvironmentalStimulationController
+  currentLevel: 0

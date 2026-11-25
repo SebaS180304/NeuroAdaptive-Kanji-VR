@@ -27,15 +27,24 @@ async def main() -> None:
     async with httpx.AsyncClient(base_url=BASE_HTTP) as client:
         participant = await client.post(
             "/participants",
-            json={"external_code": f"SMOKE_{int(datetime.now().timestamp())}"},
+            json={"external_code": f"SMOKE_{int(datetime.now().timestamp())}", "consent_obtained": True},
         )
         participant.raise_for_status()
         participant_id = participant.json()["id"]
         print(f"[ok] participant created: {participant_id}")
 
+        # Sessions require a completed kanji pre-test: answer every kanji "No".
+        state = (await client.get(f"/participants/{participant_id}/pretest")).json()
+        while state["next"] is not None:
+            resp = await client.post(f"/participants/{participant_id}/pretest/responses",
+                                     json={"kanji_id": state["next"]["kanji_id"], "self_report": "NO"})
+            resp.raise_for_status()
+            state = resp.json()
+        print(f"[ok] pre-test completed: {state['answered']} answered")
+
         session = await client.post(
             "/sessions",
-            json={"participant_id": participant_id, "condition": "STATIC"},
+            json={"random_seed": "test-seed", "participant_id": participant_id, "condition": "STATIC", "assigned_kanji_set": "A"},
         )
         session.raise_for_status()
         session_id = session.json()["id"]

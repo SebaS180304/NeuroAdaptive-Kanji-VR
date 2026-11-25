@@ -7,14 +7,16 @@ contenido pedagogico (kanji, trials), adaptacion (ESL/LAL) y dashboard
 se agregan en fases posteriores sobre esta misma estructura modular.
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, participants, sessions, websocket
+from app.api.routes import block_r, health, participants, pretest, research, sessions, websocket
 from app.config import get_settings
 from app.core.logging import configure_logging
+from app.services import stale_sessions
 
 settings = get_settings()
 configure_logging(settings.environment)
@@ -22,7 +24,9 @@ configure_logging(settings.environment)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    task = asyncio.create_task(stale_sessions.run_forever())
     yield
+    task.cancel()
 
 
 def create_app() -> FastAPI:
@@ -42,7 +46,10 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(participants.router)
+    app.include_router(pretest.router)
+    app.include_router(research.router)
     app.include_router(sessions.router)
+    app.include_router(block_r.router)
     app.include_router(websocket.router)
 
     return app

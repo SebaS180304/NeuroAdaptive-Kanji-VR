@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd121f1b0a1737040ae782aea55a902e, type: 3}
+  m_Name: KANJI_TORI
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Data.KanjiLearningItem
+  kanjiId: KANJI_TORI
+  kunyomi: 
+  onyomi: 
+  strokeOrder: []
+  exampleWords: []
+  contextExamples: []
+  visualAssociation: 
+  assemblySegments:
+  - segmentId: KANJI_TORI_SEG1
+    description: ノ and the box
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  - segmentId: KANJI_TORI_SEG2
+    description: bar and hook
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  - segmentId: KANJI_TORI_SEG3
+    description: four dots
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  targetReadingAudio: {fileID: 8300000, guid: a47038900d191964487e283e6305a3c8, type: 3}
+  anchorObjectPrefab: {fileID: 4439219799873536554, guid: 2779958daa6f3794e8e922772cd4732d, type: 3}
+  transformationAnimation: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: 08cda7820e6f11d4ea2f7d74e812eaa4, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: bccc56deec6f58e4882bb8309281d97e, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: 1d42b80029e64f64599959e3a02397b9, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: bda0703e36c3f244e83e6831bd321f65, type: 3}

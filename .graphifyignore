@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.git
+unity-client/Assets/Samples/
+unity-client/Assets/TextMesh Pro/
+unity-client/Packages/
+
+# --- Research dashboard (dashboard/) ---
+# Config and lockfiles: one node per dependency or compiler option, no code.
+dashboard/package.json
+dashboard/package-lock.json
+dashboard/tsconfig*.json
+dashboard/components.json
+dashboard/.oxlintrc.json
+dashboard/index.html
+# Generated code: the OpenAPI types repeat the backend schemas, and
+# lib/utils.ts is the shadcn CLI's one-line re-export. components/ui stays in:
+# those components get adapted to the design system.
+dashboard/src/api/schema.d.ts
+dashboard/src/lib/utils.ts
+# Build, cache and test output.
+.vite/
+*.tsbuildinfo
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/

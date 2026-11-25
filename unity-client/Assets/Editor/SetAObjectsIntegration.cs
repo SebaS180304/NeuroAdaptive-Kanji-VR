@@ -1,0 +1,206 @@
+using System.IO;
+using System.Linq;
+using NeuroAdaptiveVR.Data;
+using UnityEditor;
+using UnityEngine;
+
+namespace NeuroAdaptiveVR.EditorTools
+{
+    /// <summary>
+    /// Stage-1 objects of S5 for set A (D-F6-20, D-F6-26): 月 車 火 竹 石, and set B
+    /// (D-F6-43): 山 門 女 手 雨, and set C (D-F6-113): 人 足 牛 肉 花, from the modelling chat's KanjiLessonAssets export.
+    /// All five of a set or none: if one is missing, nothing of that set is assigned and
+    /// its sessions keep the labelled placeholders for all five (never real and
+    /// placeholder mixed in one session). A pre-test substitute
+    /// has no object and keeps its placeholder, declared. Same object in every
+    /// condition and ESL level: it lives in the kanji's KanjiLearningItem, not in the
+    /// Environmental Layer. KanjiDiscoveryController instantiates it at objectAnchor;
+    /// the models' pivot is the centre of their envelope, front −Z (ESTADO.md). 07 門's
+    /// leaves are separate meshes pivoted on their hinges and never open (no animation).
+    /// </summary>
+    public static class SetAObjectsIntegration
+    {
+        private const string ArtDir = "Assets/Art/KanjiLessonAssets";
+        private const string ExportRoot = @"C:\Users\drdom\Documents\JapaneseVR\KanjiLessonAssets";   // NN_CODE/export/KANJI_NN_CODE.fbx
+        private static readonly (string kanjiId, string code)[] SetA =
+        {
+            ("KANJI_TSUKI", "01_TSUKI"), ("KANJI_KURUMA", "02_KURUMA"), ("KANJI_HI", "03_HI"),
+            ("KANJI_TAKE", "04_TAKE"), ("KANJI_ISHI", "05_ISHI"),
+        };
+
+        private static readonly (string kanjiId, string code)[] SetB =
+        {
+            ("KANJI_YAMA", "06_YAMA"), ("KANJI_MON", "07_MON"), ("KANJI_ONNA", "08_ONNA"),
+            ("KANJI_TE", "09_TE"), ("KANJI_AME", "10_AME"),
+        };
+
+        private static readonly (string kanjiId, string code)[] SetC =
+        {
+            ("KANJI_HITO", "11_HITO"), ("KANJI_ASHI", "12_ASHI"), ("KANJI_USHI", "13_USHI"),
+            ("KANJI_NIKU", "14_NIKU"), ("KANJI_HANA", "15_HANA"),
+        };
+
+        // Reserve (D-F6-160, D-F6-170; X7): two batches of five, each all or none like a set. Hints named R_NN_CODE_*.
+        private static readonly (string kanjiId, string code)[] Reserve1 =
+        {
+            ("KANJI_NICHI", "16_HI"), ("KANJI_KI", "17_KI"), ("KANJI_KAWA", "18_KAWA"),
+            ("KANJI_TA", "19_TA"), ("KANJI_KUCHI", "20_KUCHI"),
+        };
+
+        private static readonly (string kanjiId, string code)[] Reserve2 =
+        {
+            ("KANJI_TSUCHI", "21_TSUCHI"), ("KANJI_KO", "22_KO"), ("KANJI_MIZU", "23_MIZU"),
+            ("KANJI_ME", "24_ME"), ("KANJI_KOME", "25_KOME"),
+        };
+
+        private static readonly (string kanjiId, string code)[] Reserve3 =
+        {
+            ("KANJI_ITO", "26_ITO"), ("KANJI_MIMI", "27_MIMI"), ("KANJI_KAI", "28_KAI"),
+            ("KANJI_GAKU", "29_GAKU"), ("KANJI_MONO", "30_MONO"),
+        };
+
+        // 4th batch (D-F6-194, D-F6-222; X8): 31-32 face the player, 33-35 side-on as their FBX come; no root turn.
+        private static readonly (string kanjiId, string code)[] Reserve4 =
+        {
+            ("KANJI_KIN", "31_KANE"), ("KANJI_CHA", "32_CHA"), ("KANJI_UMA", "33_UMA"),
+            ("KANJI_SAKANA", "34_SAKANA"), ("KANJI_TORI", "35_TORI"),
+        };
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 31-35", priority = 309)]
+        public static void RunReserve4()
+        {
+            Integrate("R", Reserve4);
+            IntegrateHints("R", Reserve4);
+        }
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 26-30", priority = 308)]
+        public static void RunReserve3()
+        {
+            Integrate("R", Reserve3);
+            IntegrateHints("R", Reserve3);
+        }
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos y pistas de la reserva 16-25", priority = 307)]
+        public static void RunReserve()
+        {
+            foreach (var batch in new[] { Reserve1, Reserve2 })
+            {
+                Integrate("R", batch);
+                IntegrateHints("R", batch);
+            }
+        }
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set A", priority = 301)]
+        public static void Run() => Integrate("A", SetA);
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set B", priority = 302)]
+        public static void RunSetB() => Integrate("B", SetB);
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar objetos del set C", priority = 303)]
+        public static void RunSetC() => Integrate("C", SetC);
+
+        /// <summary>
+        /// Hint and C3 images of set A (D-F6-63, D-F6-64; Diseno_UI_Kanji_Studio_v1.md §11.1): P, F1, F2 and M per
+        /// kanji from KanjiLessonAssets/NN_CODE/pistas/A_NN_CODE_{P,F1,F2,M}.png, validated by Sebas (D-F6-30,
+        /// COORDINACION_27oct.md §0). Only those exact names are copied: other files in pistas/ are drafts. A
+        /// missing image leaves its field empty, so its cells stay PLACEHOLDER with their chip (§9.6).
+        /// </summary>
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar pistas del set A", priority = 304)]
+        public static void RunHintsSetA() => IntegrateHints("A", SetA);
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar pistas del set B", priority = 305)]
+        public static void RunHintsSetB() => IntegrateHints("B", SetB);
+
+        [MenuItem("Tools/NeuroAdaptive VR/Integrar pistas del set C", priority = 306)]
+        public static void RunHintsSetC() => IntegrateHints("C", SetC);
+
+        private static void IntegrateHints(string set, (string kanjiId, string code)[] kanji)
+        {
+            const string hintDir = ArtDir + "/Hints";
+            if (!AssetDatabase.IsValidFolder(hintDir)) AssetDatabase.CreateFolder(ArtDir, "Hints");
+            var codes = new[] { "P", "F1", "F2", "M" };
+            foreach (var (_, code) in kanji)
+                foreach (var c in codes)
+                {
+                    var src = Path.Combine(ExportRoot, code, "pistas", $"{set}_{code}_{c}.png");
+                    if (File.Exists(src)) File.Copy(src, Path.GetFullPath(Path.Combine(Application.dataPath, "..", hintDir, Path.GetFileName(src))), true);
+                }
+            AssetDatabase.Refresh();
+
+            var missing = new System.Collections.Generic.List<string>();
+            foreach (var (kanjiId, code) in kanji)
+            {
+                var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{kanjiId}.asset");
+                if (item == null) { Debug.LogError($"[Pistas {set}] No KanjiLearningItem {kanjiId}"); return; }
+                Sprite Load(string c)
+                {
+                    var path = $"{hintDir}/{set}_{code}_{c}.png";
+                    if (!(AssetImporter.GetAtPath(path) is TextureImporter imp)) { missing.Add($"{code}_{c}"); return null; }
+                    imp.textureType = TextureImporterType.Sprite;
+                    imp.spriteImportMode = SpriteImportMode.Single;
+                    imp.alphaIsTransparency = true;
+                    imp.mipmapEnabled = false;   // shown at a fixed size on the board
+                    imp.maxTextureSize = 1024;
+                    imp.textureCompression = TextureImporterCompression.CompressedHQ;
+                    imp.SaveAndReimport();
+                    return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                }
+                Undo.RecordObject(item, $"Set {set} hints");
+                item.visualAssociationSprite = Load("P");
+                item.transformationForm1Sprite = Load("F1");
+                item.transformationForm2Sprite = Load("F2");
+                item.meaningLinkSprite = Load("M");
+                EditorUtility.SetDirty(item);
+            }
+            AssetDatabase.SaveAssets();
+            if (missing.Count > 0) Debug.LogWarning($"[Pistas {set}] Missing, stay PLACEHOLDER: " + string.Join(", ", missing));
+            else Debug.Log($"[Pistas {set}] {kanji.Length * codes.Length} images assigned (AUTHORED).");
+        }
+
+        private static void Integrate(string set, (string kanjiId, string code)[] kanji)
+        {
+            foreach (var (_, code) in kanji)
+            {
+                var src = Path.Combine(ExportRoot, code, "export", $"KANJI_{code}.fbx");
+                if (File.Exists(src)) File.Copy(src, Path.GetFullPath(Path.Combine(Application.dataPath, "..", ArtDir, Path.GetFileName(src))), true);
+            }
+            AssetDatabase.Refresh();
+            var models = AssetDatabase.FindAssets("t:Model", new[] { ArtDir }).Select(AssetDatabase.GUIDToAssetPath).ToList();
+            var found = kanji.Select(s => (s.kanjiId, s.code, path: models.FirstOrDefault(m => Path.GetFileName(m).Contains(s.code)))).ToList();
+            var missing = found.Where(f => f.path == null).Select(f => f.code).ToList();
+            if (missing.Count > 0)
+            {
+                Debug.LogError($"[Set {set}] Missing " + string.Join(", ", missing) + ": nothing assigned, all five stay placeholders (D-F6-26).");
+                return;
+            }
+
+            const string prefabDir = ArtDir + "/Prefabs";
+            if (!AssetDatabase.IsValidFolder(prefabDir)) AssetDatabase.CreateFolder(ArtDir, "Prefabs");
+            foreach (var (kanjiId, code, path) in found)
+            {
+                var imp = (ModelImporter)AssetImporter.GetAtPath(path);
+                imp.bakeAxisConversion = true; imp.addCollider = false; imp.importAnimation = false;
+                imp.importCameras = false; imp.importLights = false;
+                imp.SaveAndReimport();
+
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+                foreach (var c in instance.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
+                // The cart is read from above: its top to the player, the axle vertical (+90° X in Blender, ESTADO.md 02).
+                // 14 肉 the same: its top face to the player, or edge-on it is only a red strip (COORDINACION_27oct.md §3).
+                // 18 川 and 19 田 are models seen from above too: the same root turn (Tabla_Autoria, Registro 6 nov).
+                if (code == "02_KURUMA" || code == "14_NIKU" || code == "18_KAWA" || code == "19_TA")
+                    instance.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+                var prefab = PrefabUtility.SaveAsPrefabAsset(instance, $"{prefabDir}/{code}.prefab");
+                Object.DestroyImmediate(instance);
+
+                var item = AssetDatabase.LoadAssetAtPath<KanjiLearningItem>($"Assets/Resources/kanji/{kanjiId}.asset");
+                if (item == null) { Debug.LogError($"[Set {set}] No KanjiLearningItem {kanjiId}"); return; }
+                Undo.RecordObject(item, $"Set {set} objects");
+                item.anchorObjectPrefab = prefab;
+                EditorUtility.SetDirty(item);
+                Debug.Log($"[Set {set}] {kanjiId} <- {prefab.name} ({path})");
+            }
+            AssetDatabase.SaveAssets();
+        }
+    }
+}

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd121f1b0a1737040ae782aea55a902e, type: 3}
+  m_Name: KANJI_ONNA
+  m_EditorClassIdentifier: Assembly-CSharp::NeuroAdaptiveVR.Data.KanjiLearningItem
+  kanjiId: KANJI_ONNA
+  kunyomi: 
+  onyomi: 
+  strokeOrder: []
+  exampleWords: []
+  contextExamples: []
+  visualAssociation: 
+  assemblySegments:
+  - segmentId: KANJI_ONNA_SEG1
+    description: "\u304F"
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  - segmentId: KANJI_ONNA_SEG2
+    description: "\u30CE"
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  - segmentId: KANJI_ONNA_SEG3
+    description: "\u4E00"
+    slotPosition: {x: 0, y: 0, z: 0}
+    segmentAsset: {fileID: 0}
+  targetReadingAudio: {fileID: 8300000, guid: 564d528d17c98534babb109473292b4c, type: 3}
+  anchorObjectPrefab: {fileID: 543345046187437243, guid: 7d91a966ed40e974eb8aeec7bb4a4486, type: 3}
+  transformationAnimation: {fileID: 0}
+  visualAssociationSprite: {fileID: 21300000, guid: 20542558b0a37ff4381b8fe4f838935e, type: 3}
+  transformationForm1Sprite: {fileID: 21300000, guid: 497e759e682fe1447aaf68d314e76e05, type: 3}
+  transformationForm2Sprite: {fileID: 21300000, guid: c12e77a3026241d4e97a1e9e295c15fd, type: 3}
+  meaningLinkSprite: {fileID: 21300000, guid: 8ab52862559c2fa4dad3bbee37dfb94d, type: 3}

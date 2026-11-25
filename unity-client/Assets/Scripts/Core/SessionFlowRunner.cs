@@ -1,0 +1,1144 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using NeuroAdaptiveVR.Audio;
+using NeuroAdaptiveVR.Controllers;
+using NeuroAdaptiveVR.Data;
+using NeuroAdaptiveVR.Networking;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+namespace NeuroAdaptiveVR.Core
+{
+    /// <summary>
+    /// Runs a whole session, S1 to S9, in one scene (plan front B2, spec 7).
+    ///
+    /// WHAT IT OWNS, AND WHAT IT DOES NOT
+    /// ----------------------------------
+    /// It owns the ORDER of the session's contents: what happens inside each
+    /// state and when to move on. It does not own the state itself
+    /// (GameFlowController does, and applies the Appendix A levels on entry),
+    /// the trial cycle (ResponseSystemController), the board
+    /// (StudioTrialPresenter), or the sequences (TrialSequenceGenerator).
+    /// Every one of those already existed and was verified; this component
+    /// only calls them in order. If a bug fix ever lands here that belongs to
+    /// one of them, something drifted.
+    ///
+    /// WHEN IT STARTS
+    /// --------------
+    /// When S1 is entered, which SessionBootstrap does once the WebSocket is
+    /// open -- that is, AFTER the session has been installed from the
+    /// backend. Plans are built at that moment and not in Awake. TrialDebugRunner
+    /// built its items in Awake and on 24 September loaded set B while the
+    /// session said A; the chain cannot have that failure because it never
+    /// looks at the set before the session exists.
+    ///
+    /// DECISIONS TAKEN WITH SEBAS ON 24 SEPTEMBER
+    /// ------------------------------------------
+    /// - S1: the participant starts with a "Start" card, ray + trigger. That
+    ///   choice is START_SELECTED.
+    /// - S2: "look &amp; select" only -- three practice trials with the tutorial
+    ///   pool through the real response cycle. Grab &amp; place comes with assembly.
+    /// - S3: if the headset or the WebSocket is missing, the session STOPS and
+    ///   says why. A researcher can force the advance from the context menu,
+    ///   and the forcing is recorded.
+    /// - S4: real 60 s + 45 s by default, with a debug time scale that travels
+    ///   in BASELINE_COMPLETED.
+    /// - S6 = 9 trials (3 per type), S7 = 20, S8 = 15 without feedback.
+    /// </summary>
+    [RequireComponent(typeof(GameFlowController))]
+    public class SessionFlowRunner : MonoBehaviour
+    {
+        private const string Log = "[SessionFlow]";
+        private const string StartOptionId = "START";
+        private const string ContinueOptionId = "CONTINUE";
+        private const string StartLabel = "Start";
+        private const string ContinueLabel = "Continue";
+
+        [Header("Dependencies (found automatically if empty)")]
+        [SerializeField] private GameFlowController flow;
+        [SerializeField] private ResponseSystemController responses;
+        [SerializeField] private KanjiContentController content;
+        [SerializeField] private BehaviorTelemetryController telemetry;
+        [SerializeField] private SessionCommunicationClient client;
+        [Tooltip("F5a: DECISION messages from the backend. Added at runtime if missing.")]
+        [SerializeField] private AdaptationClient adaptation;
+        [SerializeField] private EnvironmentalStimulationController stimulation;
+        [SerializeField] private LearningAssistanceController assistance;
+        [Tooltip("F5a, D1: how long to wait for the DECISION after the trial closes. It normally " +
+                 "arrives during the feedback, so the wait is 0; past this, ADAPTATION_SKIPPED TIMEOUT.")]
+        [SerializeField] private int decisionWaitMs = 300;
+        [Tooltip("The board. Session messages and the Start card go through it: it is the board's only owner.")]
+        [SerializeField] private StudioTrialPresenter board;
+        [Tooltip("Any MonoBehaviour implementing ILearningBlock. Empty = S5 is crossed with a labelled placeholder.")]
+        [SerializeField] private MonoBehaviour learningBlockBehaviour;
+        [Tooltip("Recenters the view when the session starts. Empty = no automatic recenter.")]
+        [SerializeField] private ViewRecenter viewRecenter;
+
+        [Header("Start")]
+        [Tooltip("Start the chain when S1 is entered. Off = only from the context menu.")]
+        [SerializeField] private bool runOnSessionStart = true;
+
+        [Header("Trial blocks (spec 6.1)")]
+        [SerializeField] private int tutorialTrials = 3;
+
+        [Header("Tutorial (30 September)")]
+        [Tooltip("Controls induction on its own lectern at the start of S2. Empty = skipped.")]
+        [SerializeField] private ControlsIntro controlsIntro;
+        [Tooltip("Tutorial kanji built as the worked assembly example in S2. Empty = no example.")]
+        [SerializeField] private string tutorialAssemblyKanjiId = "KANJI_YON";
+        [SerializeField] private KanjiAssemblyController assembly;
+        [SerializeField] private int s6Trials = 9;
+        [SerializeField] private int s7Trials = 20;
+        [SerializeField] private int s8Trials = 15;
+        [Tooltip("Minimum lag between two appearances of the same kanji (decided 16 Sep).")]
+        [SerializeField] private int minLag = 2;
+
+        [Header("Timing -- TO VALIDATE with the pilot")]
+        [Tooltip("Pause between two states, from the `stage` sound to the next STATE_ENTERED " +
+                 "(UI design v1.3, P7: 3.5 s since 30 September; 2 s before). The sound and the " +
+                 "response to it never fall at the start of a stage, S4's baseline included.")]
+        [SerializeField] private float transitionSeconds = 3.5f;
+        [Tooltip("The trial sound set (SessionRoot/TrialSfx): plays `stage` when a state ends.")]
+        [SerializeField] private ProceduralSfx sfx;
+        [Tooltip("Blank board between pressing Continue on a stage announcement and the stage content.")]
+        [SerializeField] private float afterIntroSeconds = 1f;
+        [Tooltip("How long S3 keeps checking before declaring a failure.")]
+        [SerializeField] private float systemCheckWindowSeconds = 5f;
+        [SerializeField] private float baselineEyesOpenSeconds = 60f;
+        [SerializeField] private float baselineEyesClosedSeconds = 45f;
+        [Tooltip("DEBUG ONLY. Multiplies the S4 durations. Travels in BASELINE_COMPLETED, " +
+                 "so a shortened baseline can never pass for a real one.")]
+        [Range(0.01f, 1f)]
+        [SerializeField] private float baselineTimeScale = 1f;
+        [SerializeField] private float s5PlaceholderSeconds = 3f;
+
+        [Header("EEG (F4, D-F6-74)")]
+        [Tooltip("S3 waits for the operator's EEG checklist and runs the sync test; S9 repeats the taps. " +
+                 "Off only for sessions without the cap.")]
+        [SerializeField] private bool eegStep = true;
+        public const int SyncTapCount = 5;
+        [Tooltip("Block 3 (F4 §4): black headset screen after S9, to see whether the headset adds noise.")]
+        [SerializeField] private float blackBlockSeconds = 120f;
+
+        [Header("Debug fallbacks (the session wins when it has them)")]
+        [SerializeField] private string fallbackSet = "A";
+        [SerializeField] private int fallbackSeed = 20260909;
+
+        private readonly List<KanjiItem> _set = new();
+        private string _setName;
+        private int _sessionSeed;
+
+        private bool _running;
+        private bool _forceAdvance;
+        private bool _eegReady;
+        private bool _syncTapRequested;
+        private bool _recallOpen;     // block R part 1 is on screen: only then R acts (D-F6-223)
+        private bool _recallEnded;
+        private string _lastChoice;
+        private TrialResult _lastResult;
+        private bool _trialClosed;
+        private AudioSource _chime;
+
+        private readonly Dictionary<GameFlowState, (int correct, int total)> _scores = new();
+
+        public bool IsRunning => _running;
+
+        // ------------------------------------------------------------------
+        // Lifecycle
+        // ------------------------------------------------------------------
+
+        private void Awake()
+        {
+            if (flow == null) flow = GetComponent<GameFlowController>();
+            if (responses == null) responses = GetComponent<ResponseSystemController>();
+            if (content == null) content = FindAnyObjectByType<KanjiContentController>();
+            if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
+            if (client == null) client = GetComponent<SessionCommunicationClient>();
+            if (board == null) board = FindAnyObjectByType<StudioTrialPresenter>();
+            if (viewRecenter == null) viewRecenter = FindAnyObjectByType<ViewRecenter>();
+            if (sfx == null) sfx = FindAnyObjectByType<ProceduralSfx>();
+            if (stimulation == null) stimulation = GetComponent<EnvironmentalStimulationController>();
+            if (stimulation == null) stimulation = FindAnyObjectByType<EnvironmentalStimulationController>();
+            if (assistance == null) assistance = GetComponent<LearningAssistanceController>();
+            if (assistance == null) assistance = FindAnyObjectByType<LearningAssistanceController>();
+            if (adaptation == null) adaptation = FindAnyObjectByType<AdaptationClient>();
+            if (adaptation == null) adaptation = gameObject.AddComponent<AdaptationClient>();
+        }
+
+        /// <summary>
+        /// D-F6-139 (correction): the first-time work moves to S0, while the scene loads and before the
+        /// participant sees anything: every glyph the board can show, the S2 controls lectern and the
+        /// frames of the S4 closing eye (T2 diagnosis, 4 Nov).
+        /// </summary>
+        private void Start()
+        {
+            var json = Resources.Load<TextAsset>("kanji_content");
+            int added = FontPrewarm.Run(TMPro.TMP_Settings.defaultFontAsset, FontPrewarm.Characters(json != null ? json.text : null));
+            if (controlsIntro == null) controlsIntro = FindAnyObjectByType<ControlsIntro>();
+            if (controlsIntro != null) controlsIntro.Prebuild();
+            if (board != null) board.PrepareBaselineEye();
+            Debug.Log($"{Log} S0 prewarm: {added} glyphs added, controls lectern and S4 eye ready");
+            Debug.Log($"{Log} Researcher keys, Game view in front (D-F6-158): G force advance · E EEG ready (S3) · " +
+                      "T sync tap without controller (S3) · B black block 3 (after S9) · C complete assembly (S5) · " +
+                      "R end of the free recall (block R part 1)");
+        }
+
+        /// <summary>
+        /// What the PARTICIPANT reads at the top of the board. Deliberately not
+        /// the spec names (decided 24 September):
+        /// - "Experimental Retrieval" would reveal the manipulation, so S6 and
+        ///   S7 are both "Practice": to the participant they are the same task.
+        /// - "Assessment" or "Test" invites evaluation anxiety exactly in S8,
+        ///   the primary learning measure, so it is "Final round".
+        /// </summary>
+        private static readonly Dictionary<GameFlowState, string> StageTitles = new()
+        {
+            [GameFlowState.S1_WelcomeOrientation]        = "Welcome",
+            [GameFlowState.S2_VRTutorial]                = "Controls practice",
+            [GameFlowState.S3_SystemValidation]          = "System check",
+            [GameFlowState.S4_EEGBaseline]               = "Rest",
+            [GameFlowState.S5_StandardizedLearning]      = "Learn",
+            [GameFlowState.S6_GuidedPracticeCalibration] = "Practice",
+            [GameFlowState.S7_ExperimentalRetrieval]     = "Practice",
+            [GameFlowState.S8_ImmediateAssessment]       = "Final round",
+            [GameFlowState.S9_SessionSummary]            = "Complete",
+        };
+
+        /// <summary>
+        /// Announcement shown before a stage, with a Continue card (decided
+        /// 25 September). Not before S1 (it has Start), S3 (an automatic check
+        /// of a few seconds the participant plays no part in) or S9 (the end).
+        ///
+        /// Plain, neutral, one line of what comes next. S8 says explicitly that
+        /// there is no feedback: without it, a participant who stops seeing
+        /// "OK" may think the game broke, in the middle of the primary measure.
+        /// </summary>
+        private static readonly Dictionary<GameFlowState, string> StageIntros = new()
+        {
+            [GameFlowState.S2_VRTutorial] =
+                "First, a short introduction to the controls.",
+            [GameFlowState.S4_EEGBaseline] =
+                "Now, a short rest.\n\nRelax and look forward. For part of it you will close your eyes;\n" +
+                "a chime will tell you when to open them.",
+            [GameFlowState.S5_StandardizedLearning] =
+                "You will see five new kanji, one at a time,\nwith their meaning and reading.\n\n" +
+                "After each one, a quick question.",
+            [GameFlowState.S6_GuidedPracticeCalibration] =
+                "Practice with the five kanji you just learned.\n\nChoose the correct answer.",
+            [GameFlowState.S7_ExperimentalRetrieval] =
+                "More practice with the same five kanji.\n\nChoose the correct answer.",
+            [GameFlowState.S8_ImmediateAssessment] =
+                "Final round.\n\nAnswer on your own.\nThis time you won't see whether you were right.",
+        };
+
+        private IEnumerator RunIntro(GameFlowState state)
+        {
+            if (!StageIntros.TryGetValue(state, out var text)) yield break;
+
+            _lastChoice = null;
+            _forceAdvance = false;
+            Show(text);
+            board?.ShowSingleChoice(ContinueOptionId, ContinueLabel);
+            float shownAt = Time.realtimeSinceStartup;
+
+            yield return new WaitUntil(() => _lastChoice == ContinueOptionId || _forceAdvance);
+
+            long waitMs = (long)((Time.realtimeSinceStartup - shownAt) * 1000f);
+            bool forced = _lastChoice != ContinueOptionId;
+            _forceAdvance = false;
+
+            telemetry.Emit(TelemetryEvents.StageIntroAcknowledged, new Dictionary<string, object>
+            {
+                { "wait_ms", waitMs },
+                { "forced_by_researcher", forced },
+            });
+            Debug.Log($"{Log} {state.ShortCode()} · intro {(forced ? "FORCED by researcher" : "acknowledged")} after {waitMs} ms");
+
+            board?.Clear();
+            yield return new WaitForSecondsRealtime(afterIntroSeconds);
+        }
+
+        private void AnnounceStage(GameFlowState state)
+        {
+            if (board == null) return;
+
+            // N comes from GameFlowController, which owns the S2 skip rule: the
+            // counter cannot say "of 9" in a session that runs eight states.
+            var states = flow.SessionStates();
+            int step = 0;
+            for (int i = 0; i < states.Count; i++)
+                if (states[i] == state) { step = i + 1; break; }
+
+            string name = state == GameFlowState.SR_DelayedRetention && content != null
+                ? content.RetentionText("retention.stage_title")
+                : StageTitles.TryGetValue(state, out var t) ? t : string.Empty;
+            board.SetStageTitle(step > 0 ? $"Step {step} of {states.Count} · {name}" : name);
+        }
+
+        private void OnEnable()
+        {
+            if (flow != null) flow.OnStateEntered += HandleStateEntered;
+            if (responses != null) responses.OnTrialCompleted += HandleTrialCompleted;
+            if (board != null) board.OnOptionChosen += HandleBoardChoice;
+        }
+
+        private void OnDisable()
+        {
+            if (flow != null) flow.OnStateEntered -= HandleStateEntered;
+            if (responses != null) responses.OnTrialCompleted -= HandleTrialCompleted;
+            if (board != null) board.OnOptionChosen -= HandleBoardChoice;
+        }
+
+        private void HandleStateEntered(GameFlowState state)
+        {
+            if (_running || !runOnSessionStart) return;
+            if (state == GameFlowState.S1_WelcomeOrientation) StartCoroutine(RunSession());
+        }
+
+        private void HandleTrialCompleted(TrialResult result)
+        {
+            _lastResult = result;
+            _trialClosed = true;
+        }
+
+        private void HandleBoardChoice(string optionId) => _lastChoice = optionId;
+
+        // ------------------------------------------------------------------
+        // Researcher controls
+        // ------------------------------------------------------------------
+
+        /// <summary>K1 (D-F6-158): the researcher's actions are letter keys, read with the Game view in front.
+        /// A component's menu froze the headset 1.6-3.9 s (A-22). No F-keys.</summary>
+        public static readonly Key[] ResearcherKeys = { Key.G, Key.E, Key.T, Key.B, Key.C, Key.R };
+
+        /// <summary>Whether a researcher key acts now; outside its state it is logged and ignored.
+        /// R (D-F6-212, D-F6-223): ends block R's free recall, and only while part 1 is on screen.</summary>
+        public static bool ResearcherKeyActs(Key key, GameFlowState state, bool chainRunning, bool assemblyRunning,
+                                             bool recallOpen = false) => key switch
+        {
+            Key.R => chainRunning && state == GameFlowState.SR_DelayedRetention && recallOpen,
+            Key.G => chainRunning,                                   // every wait of the chain takes Force advance
+            Key.E => chainRunning && state == GameFlowState.S3_SystemValidation,
+            Key.T => chainRunning && state == GameFlowState.S3_SystemValidation,   // no S9 taps (D-F6-217)
+            Key.B => !chainRunning && state == GameFlowState.S9_SessionSummary,
+            Key.C => assemblyRunning,
+            _ => false,
+        };
+
+        private void Update()
+        {
+            var k = Keyboard.current;
+            if (k == null) return;
+            foreach (var key in ResearcherKeys)
+                if (k[key].wasPressedThisFrame) OnResearcherKey(key);
+        }
+
+        private void OnResearcherKey(Key key)
+        {
+            if (assembly == null) assembly = FindAnyObjectByType<KanjiAssemblyController>();
+            var state = flow.CurrentState;
+            if (!ResearcherKeyActs(key, state, _running, assembly != null && assembly.Running, _recallOpen))
+            {
+                Debug.Log($"{Log} Key {key} ignored in {state.ShortCode()}{(_running ? "" : ", chain not running")}.");
+                return;
+            }
+            Debug.Log($"{Log} Key {key} in {state.ShortCode()}.");
+            switch (key)
+            {
+                case Key.G: ForceAdvance(); break;
+                case Key.E: ConfirmEegReady(); break;
+                case Key.T: RequestSyncTap(); break;
+                case Key.B: RunBlackBlock(); break;
+                case Key.C: assembly.ForceComplete(); break;
+                case Key.R: _recallEnded = true; break;
+            }
+        }
+
+        [ContextMenu("Start session chain")]
+        private void StartFromMenu()
+        {
+            if (_running) { Debug.LogWarning($"{Log} Already running."); return; }
+            if (flow.CurrentState == GameFlowState.S0_SessionInitialization)
+                flow.AdvanceToNextState();   // enters S1, whose handler starts the chain
+            else
+                StartCoroutine(RunSession());
+        }
+
+        /// <summary>
+        /// Researcher override for a state that is waiting (S1 without a choice,
+        /// S3 with a failed check). Recorded wherever it is consumed.
+        /// </summary>
+        public void ForceAdvance()
+        {
+            Debug.LogWarning($"{Log} Researcher forced the advance of {flow.CurrentState}.");
+            _forceAdvance = true;
+        }
+
+        /// <summary>S3 EEG checklist done: every channel blue in AURA's software, and LabRecorder
+        /// RECORDING only AURA and UnityMarkers of this PC (D-F6-127, D-F6-135).</summary>
+        public void ConfirmEegReady()
+        {
+            Debug.Log($"{Log} Researcher confirmed the EEG checklist.");
+            _eegReady = true;
+        }
+
+        /// <summary>One sync tap without a controller (Editor without the headset).</summary>
+        public void RequestSyncTap() => _syncTapRequested = true;
+
+        /// <summary>Block 3 (F4 §4, pending since 29 Oct): the headset shows only black for
+        /// blackBlockSeconds, between BLACK_SCREEN_START/END markers. After S9, before LabRecorder's Stop.</summary>
+        public void RunBlackBlock()
+        {
+            if (_running) { Debug.LogWarning($"{Log} Block 3 only after S9: the session is still running."); return; }
+            StartCoroutine(BlackBlock());
+        }
+
+        private IEnumerator BlackBlock()
+        {
+            var cam = Camera.main;
+            if (cam == null) { Debug.LogError($"{Log} Block 3: no main camera."); yield break; }
+            var (mask, flags, color) = (cam.cullingMask, cam.clearFlags, cam.backgroundColor);
+            cam.cullingMask = 0;   // nothing rendered, world-space UI included
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            LslMarkers.Push(LslMarkers.BlackScreenStart, new Dictionary<string, object> { { "duration_s", blackBlockSeconds } });
+            Debug.Log($"{Log} Block 3: black screen for {blackBlockSeconds} s. Participant still, eyes open.");
+            yield return new WaitForSecondsRealtime(blackBlockSeconds);
+            LslMarkers.Push(LslMarkers.BlackScreenEnd);
+            (cam.cullingMask, cam.clearFlags, cam.backgroundColor) = (mask, flags, color);
+            Debug.Log($"{Log} Block 3 done. Now Stop in LabRecorder.");
+        }
+
+        // ------------------------------------------------------------------
+        // The chain
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunSession()
+        {
+            _running = true;
+            _scores.Clear();
+
+            if (!ResolveSetAndSeed())
+            {
+                Show("This session cannot start.\nSee the console.");
+                _running = false;
+                yield break;
+            }
+
+            FitAnswerCards();
+
+            Debug.Log($"{Log} Session chain started · set {_setName} · session seed {_sessionSeed} · " +
+                      $"visit {(SessionContext.IsInstalled ? SessionContext.VisitNumber.ToString() : "?")}");
+
+            while (true)
+            {
+                var state = flow.CurrentState;
+                AnnounceStage(state);
+                yield return RunIntro(state);
+                bool ok = true;
+                yield return RunState(state, r => ok = r);
+
+                if (!ok)
+                {
+                    Debug.LogError($"{Log} {state} could not complete. The chain stops here; " +
+                                   "the session row stays IN_PROGRESS, which is the truth.");
+                    _running = false;
+                    yield break;
+                }
+
+                if (state == GameFlowState.S9_SessionSummary) break;
+
+                // P7: the stage ends with the `stage` sound, the board goes
+                // neutral (empty, no animation) and the next stage starts
+                // transitionSeconds later. The pause comes BEFORE the next
+                // STATE_ENTERED, so no stage window contains it, and that
+                // event carries how long before it the sound started.
+                board?.Clear();
+                if (sfx != null && sfx.Play(ProceduralSfx.Clip.Stage) > 0)
+                    flow.MarkTransitionSound(Time.realtimeSinceStartup);
+                yield return new WaitForSecondsRealtime(transitionSeconds);
+                flow.AdvanceToNextState();
+            }
+
+            Debug.Log($"{Log} Session complete. " + string.Join(" · ",
+                _scores.Select(kv => $"{kv.Key.ShortCode()} {kv.Value.correct}/{kv.Value.total}")));
+            _running = false;
+        }
+
+        private IEnumerator RunState(GameFlowState state, System.Action<bool> done)
+        {
+            switch (state)
+            {
+                case GameFlowState.S1_WelcomeOrientation:        yield return RunWelcome(); break;
+                case GameFlowState.S2_VRTutorial:                yield return RunTutorial(done); yield break;
+                case GameFlowState.SR_DelayedRetention:          yield return RunRetention(done); yield break;
+                case GameFlowState.S3_SystemValidation:          yield return RunSystemCheck(); break;
+                case GameFlowState.S4_EEGBaseline:               yield return RunBaseline(); break;
+                case GameFlowState.S5_StandardizedLearning:      yield return RunLearning(); break;
+                case GameFlowState.S6_GuidedPracticeCalibration: yield return RunBlock(state, _set, s6Trials, true, done); yield break;
+                case GameFlowState.S7_ExperimentalRetrieval:     yield return RunBlock(state, _set, s7Trials, true, done); yield break;
+                // S8 defers feedback: it is the primary learning measure, and
+                // showing the answer would contaminate the trials after it.
+                case GameFlowState.S8_ImmediateAssessment:       yield return RunBlock(state, _set, s8Trials, false, done); yield break;
+                case GameFlowState.S9_SessionSummary:            yield return RunSummary(); break;
+                default:
+                    Debug.LogError($"{Log} No content for {state}.");
+                    done(false);
+                    yield break;
+            }
+            done(true);
+        }
+
+        // ------------------------------------------------------------------
+        // S1 -- Welcome & Orientation (spec 7.2)
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunWelcome()
+        {
+            _lastChoice = null;
+            _forceAdvance = false;
+
+            // Every participant starts from the designed pose, however the
+            // headset was put on (spec 7.2, "appears at the central station").
+            if (viewRecenter != null) viewRecenter.Recenter("SESSION_START");
+
+            Show("Today you will learn five new kanji.\n\nLook at the panel to begin.\n\n" +
+                 "<size=60%>If the view feels off at any time,\npress the menu button on the left controller.</size>");
+            board?.ShowSingleChoice(StartOptionId, StartLabel);
+            float shownAt = Time.realtimeSinceStartup;
+
+            yield return new WaitUntil(() => _lastChoice == StartOptionId || _forceAdvance);
+
+            long reactionMs = (long)((Time.realtimeSinceStartup - shownAt) * 1000f);
+            bool forced = _lastChoice != StartOptionId;
+            _forceAdvance = false;
+
+            telemetry.Emit(TelemetryEvents.StartSelected, new Dictionary<string, object>
+            {
+                { "reaction_ms", reactionMs },
+                { "forced_by_researcher", forced },
+            });
+            Debug.Log($"{Log} S1 · Start {(forced ? "FORCED by researcher" : "selected")} after {reactionMs} ms");
+        }
+
+        // ------------------------------------------------------------------
+        // S2 -- VR Tutorial, "look & select" only (spec 7.3)
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunTutorial(System.Action<bool> done)
+        {
+            var pool = content.Tutorial;
+            if (controlsIntro == null) controlsIntro = FindAnyObjectByType<ControlsIntro>();
+            if (assembly == null) assembly = FindAnyObjectByType<KanjiAssemblyController>();
+            var example = string.IsNullOrEmpty(tutorialAssemblyKanjiId)
+                ? null : pool.FirstOrDefault(i => i.KanjiId == tutorialAssemblyKanjiId);
+
+            var activities = new List<string>();
+            if (controlsIntro != null) activities.Add("CONTROLS_INTRO");
+            activities.Add("LOOK_AND_SELECT");
+            if (example != null && assembly != null) activities.Add("ASSEMBLY_EXAMPLE");
+            telemetry.Emit(TelemetryEvents.TutorialStarted, new Dictionary<string, object>
+            {
+                { "activities", activities },
+                { "pool", pool.Select(i => i.KanjiId).ToList() },
+            });
+
+            // 1 · Controls, on the intro lectern in front of the board.
+            ControlsIntro.Result intro = default;
+            if (controlsIntro != null)
+            {
+                board?.Clear();
+                yield return controlsIntro.Run(r => intro = r);
+            }
+
+            // 2 · Practice questions.
+            yield return WaitForContinue("Now a few practice questions.\n\n" +
+                                         "The line at the top of the board tells you what to answer.\n" +
+                                         "Point at an answer and pull the trigger.");
+
+            bool ok = true;
+            yield return RunBlock(GameFlowState.S2_VRTutorial, pool, tutorialTrials, true, r => ok = r);
+
+            // 3 · One worked assembly, on the board, with a kanji the experiment never measures.
+            if (example != null && assembly != null)
+            {
+                yield return WaitForContinue("Now, build a kanji from its parts.\n\n" +
+                                             "1. Point at a part below the board and pull the trigger.\n" +
+                                             "2. Point at the highlighted place on the board and pull the trigger.");
+                board?.ShowExposure(example.Character, example.Meaning, example.TargetReading);
+                yield return new WaitForSecondsRealtime(2.5f);
+                yield return assembly.Run(example, TrialSequenceGenerator.BlockSeed(_sessionSeed, GameFlowState.S2_VRTutorial), 0);
+            }
+
+            _scores.TryGetValue(GameFlowState.S2_VRTutorial, out var s);
+            telemetry.Emit(TelemetryEvents.TutorialCompleted, new Dictionary<string, object>
+            {
+                { "trials", s.total },
+                { "correct", s.correct },
+                { "controls_intro_ms", controlsIntro != null ? intro.DurationMs : -1 },
+                { "targets_hit", intro.TargetsHit },
+                { "recentered", intro.Recentered },
+                { "controller_callouts", intro.CalloutsShown },
+                { "assembly_example", example != null && assembly != null ? example.KanjiId : null },
+            });
+            done(ok);
+        }
+
+        /// <summary>A message with one Continue card, inside a stage (the stage intros use RunIntro).</summary>
+        private IEnumerator WaitForContinue(string text)
+        {
+            _lastChoice = null;
+            _forceAdvance = false;
+            Show(text);
+            board?.ShowSingleChoice(ContinueOptionId, ContinueLabel);
+            yield return new WaitUntil(() => _lastChoice == ContinueOptionId || _forceAdvance);
+            _forceAdvance = false;
+        }
+
+        // ------------------------------------------------------------------
+        // S3 -- System Validation (spec 7.4)
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunSystemCheck()
+        {
+            _forceAdvance = false;
+            Show("Checking the system...");
+
+            bool headset = false, websocket = false;
+            float until = Time.realtimeSinceStartup + systemCheckWindowSeconds;
+            while (Time.realtimeSinceStartup < until)
+            {
+                headset = XRRuntimeGuard.HeadsetActive;
+                websocket = client != null && client.IsConnected;
+                if (headset && websocket) break;
+                yield return null;
+            }
+
+            bool passed = headset && websocket;
+            bool forced = false;
+            bool eegReady = false;
+
+            if (!passed)
+            {
+                string why = (headset ? "" : "no headset (XR is not running) · ") +
+                             (websocket ? "" : "backend WebSocket disconnected");
+                Debug.LogError($"{Log} S3 FAILED: {why.TrimEnd(' ', '·')}. The session waits. " +
+                               "Fix it, or press G (force advance) -- " +
+                               "the override is recorded.");
+                Show("Please wait.\nThe researcher is checking the equipment.");
+                yield return new WaitUntil(() => _forceAdvance);
+                _forceAdvance = false;
+                forced = true;
+            }
+
+            // F4 (D-F6-74): the operator's EEG checklist, before the sync test.
+            if (eegStep)
+            {
+                Show("Please wait.\nThe researcher is checking the equipment.");
+                Debug.Log($"{Log} S3 · EEG checklist: (1) every channel BLUE in AURA's software; " +
+                          $"(2) LabRecorder RECORDING only AURA and UnityMarkers of {System.Environment.MachineName}, " +
+                          $"Start pressed AFTER the session was created: the file name in LabRecorder has this session's id ({SessionContext.SessionId}) (D-F6-146). " +
+                          "Then press E (EEG ready); G if it cannot be met (recorded).");
+                _eegReady = false;
+                _forceAdvance = false;
+                yield return new WaitUntil(() => _eegReady || _forceAdvance);
+                eegReady = _eegReady;
+                _forceAdvance = false;
+            }
+
+            telemetry.Emit(TelemetryEvents.SystemCheckCompleted, new Dictionary<string, object>
+            {
+                { "headset_active", headset },
+                { "websocket_connected", websocket },
+                { "passed", passed },
+                { "forced_by_researcher", forced },
+                // WAVEX is Phase 4. Saying so explicitly beats omitting it: an
+                // absent field reads as "not checked for an unknown reason".
+                { "eeg_checked", eegStep },
+                { "eeg_ready_confirmed", eegReady },
+            });
+            Debug.Log($"{Log} S3 · headset {headset} · websocket {websocket} · " +
+                      (passed ? "PASSED" : "FORCED by researcher"));
+            if (eegStep) yield return RunSyncTest("S3");
+        }
+
+        /// <summary>
+        /// F4 §2.4, D-F6-150: the assistant strikes Cz's housing with a controller's ring and pulls its
+        /// trigger in the same movement, SyncTapCount times (one person: two would add a reaction time); each pull is a SYNC_TAP marker and each tap a spike on Cz, so the EEG
+        /// and the markers line up at the start (S3). Only in S3 since the pilot (D-F6-217).
+        /// </summary>
+        private IEnumerator RunSyncTest(string phase)
+        {
+            Show("Please keep still.\nThe researcher will touch the top of the cap a few times.");
+            Debug.Log($"{Log} {phase} · sync test (D-F6-150), ONE person, the assistant: rest the controller's ring on Cz's housing " +
+                      $"and pull the trigger AT THE SAME INSTANT the ring strikes it, {SyncTapCount} times. " +
+                      "Before the next one, check the spike on Cz in AURA's software. The participant does nothing " +
+                      "(G skips; recorded).");
+            _forceAdvance = false;
+            _syncTapRequested = false;
+            int taps = 0;
+            bool held = TriggerHeld();
+            while (taps < SyncTapCount && !_forceAdvance)
+            {
+                yield return null;
+                bool now = TriggerHeld();
+                if ((now && !held) || _syncTapRequested)
+                {
+                    taps++;
+                    _syncTapRequested = false;
+                    LslMarkers.Push(LslMarkers.SyncTap, new Dictionary<string, object> { { "phase", phase }, { "index", taps } });
+                }
+                held = now;
+            }
+            bool forced = _forceAdvance;
+            _forceAdvance = false;
+            telemetry.Emit(TelemetryEvents.SyncTestCompleted, new Dictionary<string, object>
+            {
+                { "phase", phase }, { "taps", taps }, { "required", SyncTapCount }, { "forced_by_researcher", forced },
+            });
+            Debug.Log($"{Log} {phase} · sync test {taps}/{SyncTapCount}{(forced ? " (FORCED)" : "")}");
+        }
+
+        private static readonly List<UnityEngine.XR.InputDevice> Controllers = new();
+
+        private static bool TriggerHeld()
+        {
+            UnityEngine.XR.InputDevices.GetDevicesWithCharacteristics(UnityEngine.XR.InputDeviceCharacteristics.Controller, Controllers);
+            foreach (var d in Controllers)
+                if (d.TryGetFeatureValue(UnityEngine.XR.CommonUsages.triggerButton, out bool on) && on) return true;
+            return false;
+        }
+
+        // ------------------------------------------------------------------
+        // S4 -- EEG Baseline, 60 s eyes open + 45 s eyes closed (spec 7.5)
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunBaseline()
+        {
+            float open = baselineEyesOpenSeconds * baselineTimeScale;
+            float closed = baselineEyesClosedSeconds * baselineTimeScale;
+
+            if (baselineTimeScale < 1f)
+                Debug.LogWarning($"{Log} S4 baseline SHORTENED x{baselineTimeScale} (debug). " +
+                                 "Recorded in BASELINE_COMPLETED; this session's baseline is not valid.");
+
+            telemetry.Emit(TelemetryEvents.BaselineStarted, new Dictionary<string, object>
+            {
+                { "eyes_open_s", baselineEyesOpenSeconds },
+                { "eyes_closed_s", baselineEyesClosedSeconds },
+                { "time_scale", baselineTimeScale },
+            });
+
+            float t0 = Time.realtimeSinceStartup;
+            LslMarkers.Push(LslMarkers.EyesOpenStart);
+            if (board != null) board.ShowBaseline("Look at the cross and relax.");
+            else Show("Look at the cross and relax.");
+            yield return new WaitForSecondsRealtime(open);
+            float t1 = Time.realtimeSinceStartup;
+            LslMarkers.Push(LslMarkers.EyesOpenEnd);
+            LslMarkers.Push(LslMarkers.EyesClosedStart);
+
+            // The participant cannot read the board with the eyes closed, so
+            // the END of the closed segment has to be a sound. The chime marks
+            // both edges so the two segments are symmetric for the participant.
+            if (board != null) board.ShowBaseline("Close your eyes. Open them at the chime.", eyesClosed: true);
+            else Show("Close your eyes. Open them at the chime.");
+            PlayChime();
+            yield return new WaitForSecondsRealtime(closed);
+            LslMarkers.Push(LslMarkers.EyesClosedEnd);
+            PlayChime();
+            float t2 = Time.realtimeSinceStartup;
+
+            telemetry.Emit(TelemetryEvents.BaselineCompleted, new Dictionary<string, object>
+            {
+                { "eyes_open_ms", (long)((t1 - t0) * 1000f) },
+                { "eyes_closed_ms", (long)((t2 - t1) * 1000f) },
+                { "time_scale", baselineTimeScale },
+                { "valid_duration", baselineTimeScale >= 1f },
+            });
+            Debug.Log($"{Log} S4 · baseline done ({(t2 - t0):0.0} s, scale {baselineTimeScale})");
+        }
+
+        // ------------------------------------------------------------------
+        // S5 -- Standardized Learning Block (spec 7.6)
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunLearning()
+        {
+            if (learningBlockBehaviour is ILearningBlock block)
+            {
+                yield return block.Run(_set, _setName, _sessionSeed);
+                yield break;
+            }
+
+            Debug.LogWarning($"{Log} S5 has no learning block assigned (front B3). Crossed with a " +
+                             "placeholder: NO learning content was shown, so this session's S6-S8 " +
+                             "measure recognition of kanji that were never taught.");
+            Show("Learning block\n(not built yet)");
+            yield return new WaitForSecondsRealtime(s5PlaceholderSeconds);
+        }
+
+        // ------------------------------------------------------------------
+        // SR -- block R, delayed retention (D-F6-125, D-F6-212, D-F6-223; Contenido_UI_Bloque_R.md)
+        // ------------------------------------------------------------------
+
+        private const string YesOptionId = "R_YES";
+        private const string NoOptionId = "R_NO";
+        private const int RetentionTrials = 15;   // T1-T3, the full 5 x 3 cross (D-F6-125)
+
+        private static string TwoLines(string main, string sub) => $"{main}\n\n<size=90%>{sub}</size>";
+
+        /// <summary>
+        /// On the evaluated session's set, never this session's (D-F6-190). R0 entry → R1 free recall, no cards
+        /// and no clock, ended by the researcher's R → R2 yes/no on 10 kanji (5 studied, 5 new of Metricas §16.7)
+        /// → R3 15 trials as S8: no feedback, no hints → R9 (visits 2-3; the short visit closes in S9).
+        /// Nothing of it reaches the engine: it decides on S7 only.
+        /// </summary>
+        private IEnumerator RunRetention(System.Action<bool> done)
+        {
+            var items = SessionContext.EvaluatedKanjiItems != null ? content.Items(SessionContext.EvaluatedKanjiItems) : null;
+            string set = SessionContext.EvaluatedKanjiSet;
+            var fresh = content.RetentionNew(set);
+            if (items == null || items.Count < 4 || fresh.Count != 5)
+            {
+                Debug.LogError($"{Log} SR needs the evaluated set (got {items?.Count ?? 0} kanji, set '{set}') " +
+                               $"and its 5 new kanji (got {fresh.Count}).");
+                done(false);
+                yield break;
+            }
+
+            // R0
+            yield return WaitForContinue(TwoLines(content.RetentionText("retention.intro.main"),
+                                                  content.RetentionText("retention.intro.sub")));
+
+            // R1 · free recall: the participant speaks, the researcher marks the portal and presses R (no clock)
+            Show(TwoLines(content.RetentionText("retention.free_recall.main"), content.RetentionText("retention.free_recall.sub")));
+            _recallEnded = false;
+            _forceAdvance = false;
+            _recallOpen = true;
+            float recallFrom = Time.realtimeSinceStartup;
+            Debug.Log($"{Log} SR · free recall: when the participant says they have finished, press R. " +
+                      "Say \"Anything else you remember?\" once if they go quiet (D-F6-212). G forces.");
+            yield return new WaitUntil(() => _recallEnded || _forceAdvance);
+            _recallOpen = false;
+            bool recallForced = !_recallEnded;
+            _forceAdvance = false;
+            long recallMs = (long)((Time.realtimeSinceStartup - recallFrom) * 1000f);
+            telemetry.Emit(TelemetryEvents.BlockRRecallEnded, new Dictionary<string, object>
+            {
+                { "elapsed_ms", recallMs },
+                { "forced_by_researcher", recallForced },
+            });
+            Debug.Log($"{Log} SR · free recall ended after {recallMs} ms{(recallForced ? " (FORCED with G)" : "")}");
+
+            // R2 · yes/no: 5 studied (with the pre-test substitutes) and 5 new, in an order fixed by the seed
+            yield return WaitForContinue(TwoLines(content.RetentionText("retention.yes_no.intro.main"),
+                                                  content.RetentionText("retention.yes_no.intro.sub")));
+            var rng = new System.Random(TrialSequenceGenerator.BlockSeed(_sessionSeed, GameFlowState.SR_DelayedRetention));
+            var probes = items.Select(i => (glyph: i.Character, id: i.KanjiId, seen: true))
+                              .Concat(fresh.Select(c => (glyph: c, id: (string)null, seen: false))).ToList();
+            for (int i = probes.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (probes[i], probes[j]) = (probes[j], probes[i]);
+            }
+            for (int k = 0; k < probes.Count; k++)
+            {
+                var probe = probes[k];
+                board?.SetProgress(k, probes.Count);
+                _lastChoice = null;
+                _forceAdvance = false;
+                board?.ShowYesNo(probe.glyph, content.RetentionText("retention.yes_no.question"),
+                                 YesOptionId, content.RetentionText("retention.yes_no.yes"),
+                                 NoOptionId, content.RetentionText("retention.yes_no.no"));
+                float shownAt = Time.realtimeSinceStartup;
+                yield return new WaitUntil(() => _lastChoice == YesOptionId || _lastChoice == NoOptionId || _forceAdvance);
+                bool? yes = _lastChoice == YesOptionId ? true : _lastChoice == NoOptionId ? false : (bool?)null;
+                _forceAdvance = false;
+                if (yes.HasValue && sfx != null) sfx.Play(ProceduralSfx.Clip.Select);
+                telemetry.Emit(TelemetryEvents.BlockRRecognitionAnswered, new Dictionary<string, object>
+                {
+                    { "item_sequence", k + 1 },
+                    { "kanji_char", probe.glyph },
+                    { "kanji_id", probe.id },             // null for a new kanji: it has no row in the contract
+                    { "seen", probe.seen },
+                    { "answer", yes },
+                    { "is_correct", yes.HasValue ? yes.Value == probe.seen : (bool?)null },
+                    { "rt_ms", (long)((Time.realtimeSinceStartup - shownAt) * 1000f) },
+                    { "forced_by_researcher", !yes.HasValue },
+                });
+            }
+            board?.SetProgress(0, 0);
+
+            // R3 · 15 trials T1-T3 with lures, as S8 (no feedback, no hints), on the evaluated set
+            yield return WaitForContinue(TwoLines(content.RetentionText("retention.mc.intro.main"),
+                                                  content.RetentionText("retention.mc.intro.sub")));
+            bool ok = true;
+            yield return RunBlock(GameFlowState.SR_DelayedRetention, items, RetentionTrials, false, r => ok = r, set);
+            if (!ok) { done(false); yield break; }
+
+            // R9 · visits 2 and 3 continue with today's session; the short visit closes in S9 (R9')
+            if (!flow.IsShortVisit) yield return WaitForContinue(content.RetentionText("retention.end.continue.main"));
+            done(true);
+        }
+
+        // ------------------------------------------------------------------
+        // S6 / S7 / S8 (and the S2 tutorial) -- trial blocks
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunBlock(GameFlowState state, IReadOnlyList<KanjiItem> items,
+                                     int count, bool immediateFeedback, System.Action<bool> done,
+                                     string setName = null)
+        {
+            if (items == null || items.Count < 4)
+            {
+                Debug.LogError($"{Log} {state.ShortCode()} needs at least 4 kanji for four distinct " +
+                               $"options (spec 9.3); got {items?.Count ?? 0}.");
+                done(false);
+                yield break;
+            }
+
+            int blockSeed = TrialSequenceGenerator.BlockSeed(_sessionSeed, state);
+            var plan = TrialSequenceGenerator.Build(state, items, count, minLag, blockSeed);
+            if (plan.Count == 0) { done(false); yield break; }
+
+            TrialSequenceTelemetry.Emit(telemetry, plan, setName ?? _setName, _sessionSeed);
+            adaptation?.Clear();
+
+            int correct = 0;
+            int index = 0;
+            foreach (var planned in plan.Trials)
+            {
+                _trialClosed = false;
+                _lastResult = null;
+
+                // P6: the dots move when a trial starts, never on the answer.
+                board?.SetProgress(index++, plan.Count);
+                responses.BeginTrial(planned.ToRequest(immediateFeedback));
+
+                // BeginTrial rejects malformed trials with an error and opens
+                // nothing. Without this check the chain would wait forever for
+                // a trial that never existed.
+                if (!responses.TrialInProgress && !_trialClosed)
+                {
+                    Debug.LogError($"{Log} {state.ShortCode()}-{planned.Sequence:D3} did not open.");
+                    board?.SetProgress(0, 0);
+                    done(false);
+                    yield break;
+                }
+
+                yield return new WaitUntil(() => _trialClosed);
+                if (_lastResult != null && _lastResult.IsCorrect) correct++;
+
+                // F5a: the backend's decision for this trial, applied before the next one.
+                if (state == GameFlowState.S7_ExperimentalRetrieval)
+                {
+                    string closedId = $"{state.ShortCode()}-{planned.Sequence:D3}";
+                    string nextId = index < plan.Count
+                        ? $"{state.ShortCode()}-{plan.Trials[index].Sequence:D3}" : null;
+                    yield return ApplyDecision(closedId, nextId);
+                }
+            }
+
+            board?.SetProgress(0, 0);   // the dots belong to the block: gone before the next screen
+            _scores[state] = (correct, plan.Count);
+            Debug.Log($"{Log} {state.ShortCode()} · {correct}/{plan.Count} correct");
+            done(true);
+        }
+
+        // ------------------------------------------------------------------
+        // F5a -- closed loop: apply the backend's DECISION between trials (§8.2)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Only in an adaptive S7 (STATIC never waits and never emits). Takes the
+        /// DECISION of the trial that just closed, waiting at most decisionWaitMs;
+        /// applies a change with the controllers' own between-trials guard, and
+        /// records ADAPTATION_APPLIED or ADAPTATION_SKIPPED. NO_CHANGE emits
+        /// nothing here: the backend already stored it.
+        /// </summary>
+        private IEnumerator ApplyDecision(string closedTrialId, string nextTrialId)
+        {
+            bool allowed = flow != null && flow.IsAdaptationAllowed();
+            if (!allowed || adaptation == null) yield break;
+
+            float started = Time.realtimeSinceStartup;
+            IncomingMessage decision = null;
+            while (!adaptation.TryTake(closedTrialId, out decision)
+                   && (Time.realtimeSinceStartup - started) * 1000f < decisionWaitMs)
+                yield return null;
+            long waitedMs = (long)((Time.realtimeSinceStartup - started) * 1000f);
+
+            var outcome = AdaptationApply.Resolve(true, responses != null && responses.TrialInProgress,
+                                                  decision, nextTrialId != null, out bool isEsl, out var to);
+            if (outcome == AdaptationApply.Outcome.Nothing) yield break;
+
+            if (outcome == AdaptationApply.Outcome.Apply)
+            {
+                var before = isEsl ? stimulation?.CurrentLevel : assistance?.CurrentLevel;
+                if (isEsl) stimulation?.SetLevel(to, betweenTrials: true);
+                else assistance?.SetLevel(to, betweenTrials: true, proactiveCues: decision.ProactiveCues == true);
+                var after = isEsl ? stimulation?.CurrentLevel : assistance?.CurrentLevel;
+
+                if (after == to)
+                {
+                    telemetry.Emit(TelemetryEvents.AdaptationApplied, new Dictionary<string, object>
+                    {
+                        { "decision_id", decision.DecisionId },
+                        { "decision_trial_id", closedTrialId },
+                        { "applied_before_trial_id", nextTrialId },
+                        { "dimension", decision.Dimension },
+                        { "from_level", before?.ToWireValue() },
+                        { "to_level", to.ToWireValue() },
+                        { "proactive_cues", decision.ProactiveCues == true },
+                        { "waited_ms", waitedMs },
+                    });
+                    Debug.Log($"{Log} {closedTrialId} · {decision.Dimension} {before} -> {to} before {nextTrialId} " +
+                              $"(waited {waitedMs} ms): {decision.Explanation}");
+                    yield break;
+                }
+                outcome = AdaptationApply.Outcome.SkipGuard;   // a controller refused it
+            }
+
+            if (outcome == AdaptationApply.Outcome.SkipTimeout) adaptation.MarkSkipped(closedTrialId);
+            telemetry.Emit(TelemetryEvents.AdaptationSkipped, new Dictionary<string, object>
+            {
+                { "decision_id", decision?.DecisionId },
+                { "decision_trial_id", closedTrialId },
+                { "reason", AdaptationApply.ReasonOf(outcome) },
+                { "dimension", decision?.Dimension },
+                { "to_level", decision?.ToLevel },
+                { "waited_ms", waitedMs },
+            });
+            Debug.LogWarning($"{Log} {closedTrialId} · adaptation skipped ({AdaptationApply.ReasonOf(outcome)}, " +
+                             $"waited {waitedMs} ms)");
+        }
+
+        // ------------------------------------------------------------------
+        // S9 -- Session Summary (spec 7.x): a NEUTRAL message
+        // ------------------------------------------------------------------
+
+        private IEnumerator RunSummary()
+        {
+            // No sync test here since the pilot (D-F6-217): the drift stayed < 30 ms in 3 measurements; sync.py
+            // records the session as "no S9 taps", without drift (D-F6-176).
+            // No score on the board. Spec asks for a neutral completion
+            // message; showing performance would colour the S10 self-report
+            // the participant fills in right after taking the headset off.
+            if (flow.IsShortVisit && content != null)   // S1 → block R → here (Contenido_UI_Bloque_R.md §4, R9')
+                Show(TwoLines(content.RetentionText("retention.end.final.main"), content.RetentionText("retention.end.final.sub")));
+            else
+                Show("The session is complete.\n\nThank you. You can take off the headset.");
+            yield break;
+        }
+
+        // ------------------------------------------------------------------
+        // Helpers
+        // ------------------------------------------------------------------
+
+        private bool ResolveSetAndSeed()
+        {
+            _set.Clear();
+
+            if (content == null)
+            {
+                Debug.LogError($"{Log} No KanjiContentController in the scene.");
+                return false;
+            }
+            if (!content.IsLoaded && !content.Load()) return false;
+
+            bool fromSession = SessionContext.IsInstalled && SessionContext.AssignedKanjiSet != null;
+            _setName = fromSession ? SessionContext.AssignedKanjiSet : fallbackSet;
+            _sessionSeed = SessionContext.IsInstalled && SessionContext.RandomSeedRaw != null
+                ? SessionContext.Seed
+                : fallbackSeed;
+
+            if (!fromSession)
+                Debug.LogWarning($"{Log} The session has no assigned_kanji_set; using the debug " +
+                                 $"fallback '{fallbackSet}'. This run is NOT reconstructible.");
+
+            // The session's effective set: the backend puts each pre-test substitute in
+            // its original's position, so the seeded order still holds. The contract's
+            // set by name only for a run with no session.
+            _set.AddRange(fromSession && SessionContext.KanjiItems != null
+                ? content.Items(SessionContext.KanjiItems)
+                : content.Set(_setName));
+            if (_set.Count == 0)
+            {
+                Debug.LogError($"{Log} Set '{_setName}' came back empty from the contract.");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// One card width for the whole session, from the widest text any card
+        /// can ever show: every option of every kanji in the contract (all sets,
+        /// not only this one, so the layout does not depend on the assigned
+        /// set), plus the Start and Continue buttons. Decided 25 September:
+        /// words like "bamboo" or "Continue" did not fit on one line.
+        /// </summary>
+        private void FitAnswerCards()
+        {
+            if (board == null || content == null) return;
+            var texts = new HashSet<string> { StartLabel, ContinueLabel,
+                                              content.RetentionText("retention.yes_no.yes"), content.RetentionText("retention.yes_no.no") };
+            var types = (RetrievalTrialType[])System.Enum.GetValues(typeof(RetrievalTrialType));
+            foreach (var item in content.All.Concat(content.Tutorial))
+            {
+                foreach (var t in types)
+                    texts.Add(TrialSequenceGenerator.OptionText(item, t));
+                // the lure options too (X6b): T2's "friendship" or "butterfly" are wider than any meaning
+                if (item.Content?.Lures != null)
+                    foreach (var l in item.Content.Lures.Values.Where(l => l != null))
+                    {
+                        if (!string.IsNullOrEmpty(l.LureStrong)) texts.Add(l.LureStrong);
+                        if (!string.IsNullOrEmpty(l.Unrelated)) texts.Add(l.Unrelated);
+                    }
+            }
+            board.FitCardsTo(texts);
+        }
+
+        private void Show(string text)
+        {
+            if (board != null) board.ShowMessage(text);
+            else Debug.Log($"{Log} [board] {text.Replace('\n', ' ')}");
+        }
+
+        private void PlayChime()
+        {
+            if (_chime == null)
+            {
+                _chime = gameObject.AddComponent<AudioSource>();
+                _chime.playOnAwake = false;
+                _chime.spatialBlend = 0f;
+                _chime.clip = BuildChime();
+            }
+            _chime.Play();
+        }
+
+        /// <summary>Pitch of the S4 eyes-closed chime. The stage sound (P4/P7) must
+        /// not share it; the harness checks that (X6).</summary>
+        public const float ChimeHz = 880f;
+
+        /// <summary>A 0.4 s, 880 Hz tone with a soft envelope. Procedural so
+        /// S4 does not depend on an authored asset that does not exist yet.</summary>
+        private static AudioClip BuildChime()
+        {
+            const int rate = 44100;
+            const float seconds = 0.4f;
+            int n = (int)(rate * seconds);
+            var data = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = (float)i / rate;
+                float env = Mathf.Min(1f, t / 0.02f) * Mathf.Exp(-t * 6f);
+                data[i] = 0.35f * env * Mathf.Sin(2f * Mathf.PI * ChimeHz * t);
+            }
+            var clip = AudioClip.Create("S4Chime", n, 1, rate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+    }
+}

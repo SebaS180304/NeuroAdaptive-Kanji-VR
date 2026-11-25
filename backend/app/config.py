@@ -7,6 +7,7 @@ en un entorno de investigacion con datos de participantes reales.
 """
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,11 +30,29 @@ class Settings(BaseSettings):
     # --- CORS / Dashboard (se usara desde Fase 7, pero se deja configurable) ---
     cors_allow_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
-    # --- WebSocket / Unity ---
-    # Umbral simple para el "walking skeleton" de M1: cuanto tiempo (segundos)
-    # toleramos sin recibir un PING de Unity antes de considerar la conexion
-    # caida. Los valores reales de latencia tolerada se validan en Fase 1.
-    websocket_heartbeat_timeout_seconds: int = 15
+    # --- LabRecorder remote control (F4, P9 of D-F6-127) ---
+    # Off when empty. In Docker: host.docker.internal, since LabRecorder runs on the PC.
+    labrecorder_host: str = ""
+    labrecorder_port: int = 22345
+    # Where LabRecorder writes, as a path on the PC (it is LabRecorder that writes).
+    labrecorder_root: str = ""
+
+    # --- EEG rule live (D-F6-246, D-F6-263) ---
+    # "current" = option (1); "nosound" = option (2): task sounds of S6–S8 not trimmed + density control; "ica" =
+    # option (3), D-F6-275: the ICA fitted at S6's entry, falling back to (2) by itself (live.Buffer). Read by live.py on
+    # the PC and by the backend in Docker from the same backend/.env (EEG_LIVE_RULE); change it only between sessions,
+    # then `docker compose up -d backend`: `restart` keeps the container's old env_file values (D-F6-283 (2)).
+    # The pilot runs with "ica", falling back to (2) by itself (D-F6-289 (2)).
+    eeg_live_rule: Literal["current", "nosound", "ica"] = "current"
+    # The live monitor's per-channel figures (M1b, D-F6-265): live.py computes and writes them only when on.
+    # EEG_MONITOR_LIVE=true in backend/.env, between sessions, then `docker compose up -d backend` (D-F6-283 (2)).
+    # It never changes the epoch cut or any rule.
+    eeg_monitor_live: bool = False
+    # MI (D-F6-277, D-F6-280, D-F6-297 (4)): the monitor's per-epoch indices for the whole session, read by the backend
+    # from eeg_epochs. MONITOR_LIVE_INDICES=true in backend/.env, between sessions, then `docker compose up -d backend`.
+    monitor_live_indices: bool = False
+
+    # WebSocket timeout: uvicorn's --ws-ping-timeout in docker-compose.yml and the Dockerfile.
 
     @property
     def database_url(self) -> str:

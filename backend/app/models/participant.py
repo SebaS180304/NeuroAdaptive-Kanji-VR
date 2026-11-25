@@ -35,6 +35,9 @@ class Participant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     consent_obtained: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     consent_obtained_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # --- Kanji pre-test (spec 13.2): no session is created while this is NULL ---
+    pretest_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     sessions: Mapped[list["ExperimentSession"]] = relationship(  # noqa: F821
         back_populates="participant", cascade="all, delete-orphan"
     )

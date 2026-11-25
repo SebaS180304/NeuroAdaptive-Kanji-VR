@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using NeuroAdaptiveVR.Data;
 using NeuroAdaptiveVR.Networking;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -10,15 +11,31 @@ using UnityEngine.Networking;
 namespace NeuroAdaptiveVR.Core
 {
     /// <summary>
-    /// Arranque de sesion para el walking skeleton de M1.
+    /// Arranque de sesion.
     ///
-    /// Hace por REST lo mismo que backend/scripts/ws_smoke_test.py: crea
-    /// un participante, crea una sesion, y le pasa el session_id al
-    /// SessionCommunicationClient antes de abrir el WebSocket. Asi no hay
-    /// que copiar UUIDs a mano entre curl y el Inspector.
+    /// Crea participante y sesion por REST y le pasa el session_id al
+    /// SessionCommunicationClient antes de abrir el WebSocket, para no copiar
+    /// UUIDs a mano entre curl y el Inspector.
     ///
-    /// FASE 1 unicamente. En Fase 2+ la sesion la crea el investigador
-    /// desde el Research Dashboard y Unity solo la consume.
+    /// FASE 2: ademas instala el instante cero del Session Clock a partir del
+    /// `session_clock_started_at` que devuelve el backend. Sin eso, cada
+    /// evento sale con `session_elapsed_ms = -1` (ver SessionClock y
+    /// database/EVENT_CONTRACT.md seccion 3).
+    ///
+    /// Two ways to get a session:
+    ///
+    /// - `createNewSessionOnPlay` (default since 1 Oct 2026): every Play
+    ///   creates a NEW, complete session -- kanji set, seed, condition and
+    ///   visit from the Inspector -- under one reused development participant.
+    ///   Until then development reused one session id (dc28e1ea...) across
+    ///   Plays, so a single session held dozens of runs: trial ids, blocks and
+    ///   head-away episodes repeated, and schema v1 (F3.4) could project only
+    ///   the first run; every later one ended in projection_errors as
+    ///   DUPLICATE. One Play, one session, and the projection is clean.
+    /// - `existingSessionId`, with createNewSessionOnPlay off: a session the
+    ///   researcher created by REST (the real path until the Research
+    ///   Dashboard exists, Phase 7). Use a fresh one per run for the same
+    ///   reason.
     /// </summary>
     [RequireComponent(typeof(SessionCommunicationClient))]
     public class SessionBootstrap : MonoBehaviour
@@ -28,18 +45,35 @@ namespace NeuroAdaptiveVR.Core
         [SerializeField] private string backendHttpUrl = "http://localhost:8000";
 
         [Header("Sesion")]
-        [Tooltip("Si esta activo, crea participante + sesion nuevos en cada Play.")]
+        [Tooltip("Every Play creates a new, complete session (set, seed, condition from " +
+                 "below). Turn off to run a session created by REST (existingSessionId).")]
         [SerializeField] private bool createNewSessionOnPlay = true;
 
-        [Tooltip("Se usa solo si createNewSessionOnPlay esta desactivado.")]
+        [Tooltip("Used only when createNewSessionOnPlay is off. Use a fresh session per run: " +
+                 "a reused id mixes several runs in one session.")]
         [SerializeField] private string existingSessionId;
 
         [Tooltip("STATIC | BEHAVIOR_ADAPTIVE | MULTIMODAL_ADAPTIVE")]
         [SerializeField] private string condition = "STATIC";
 
+        [Header("New session on Play")]
+        [Tooltip("external_code of the development participant. Reused across Plays " +
+                 "(created the first time), so the participants table does not grow per Play.")]
+        [SerializeField] private string devParticipantCode = "DEV_UNITY";
+        [Tooltip("assigned_kanji_set of the new session: A, B or C.")]
+        [SerializeField] private string newSessionKanjiSet = "A";
+        [Tooltip("random_seed of the new session. Empty: a new one per Play " +
+                 "(dev-yyyyMMdd-HHmmss). Fix it (e.g. 777) to repeat a sequence and an ESL " +
+                 "selection for the reproducibility checks.")]
+        [SerializeField] private string newSessionSeed = "";
+        [SerializeField, Min(1)] private int newSessionVisit = 1;
+
         [Header("Prueba")]
         [Tooltip("Manda un VALIDATION_EVENT en cuanto conecta, util para verificar el round trip completo.")]
         [SerializeField] private bool sendValidationEventOnConnect = true;
+
+        [Tooltip("Avanza S0 -> S1 en cuanto conecta, produciendo el primer STATE_ENTERED.")]
+        [SerializeField] private bool advanceToFirstStateOnConnect = true;
 
         private SessionCommunicationClient _client;
         private GameFlowController _flow;
@@ -52,27 +86,52 @@ namespace NeuroAdaptiveVR.Core
 
         private IEnumerator Start()
         {
+            // El reloj es estatico y sobrevive entre Plays en el Editor.
+            // Sin este reset, la segunda sesion heredaria el cero de la primera
+            // y todos sus session_elapsed_ms saldrian desplazados.
+            SessionClock.ResetForNewSession();
+
+            // Lo mismo que el reloj y por lo mismo: el contexto es estatico y
+            // sobrevive entre Plays en el Editor. Sin este reset, la segunda
+            // sesion heredaria el set y la seed de la primera.
+            SessionContext.Reset();
+
             string sessionId = existingSessionId;
 
             if (createNewSessionOnPlay)
             {
+                // One development participant for every Play: look it up by
+                // external_code, create it only the first time.
                 string participantId = null;
-                string externalCode = $"UNITY_{DateTime.UtcNow:yyyyMMddHHmmss}";
-
-                yield return PostJson(
-                    $"{backendHttpUrl}/participants",
-                    JsonConvert.SerializeObject(new Dictionary<string, object>
-                    {
-                        { "external_code", externalCode },
-                    }),
-                    body => participantId = ReadId(body));
+                yield return GetJson($"{backendHttpUrl}/participants",
+                    body => participantId = FindParticipantId(body, devParticipantCode));
 
                 if (string.IsNullOrEmpty(participantId))
                 {
-                    Debug.LogError("[SessionBootstrap] No se pudo crear el participante. Abortando.");
+                    yield return PostJson(
+                        $"{backendHttpUrl}/participants",
+                        JsonConvert.SerializeObject(new Dictionary<string, object>
+                        {
+                            { "external_code", devParticipantCode },
+                            // The pre-test refuses a participant without consent (409).
+                            { "consent_obtained", true },
+                        }),
+                        body => participantId = ReadField(body, "id"));
+                }
+
+                if (string.IsNullOrEmpty(participantId))
+                {
+                    Debug.LogError("[SessionBootstrap] Could not find or create the development " +
+                                   $"participant '{devParticipantCode}'. Aborting.");
                     yield break;
                 }
-                Debug.Log($"[SessionBootstrap] Participante creado: {participantId}");
+
+                // A complete session: with set and seed it is reconstructible
+                // (spec 6.1) and passes the same check as a researcher's one.
+                bool refusedForPretest = false;
+                string seed = string.IsNullOrWhiteSpace(newSessionSeed)
+                    ? $"dev-{DateTime.UtcNow:yyyyMMdd-HHmmss}"
+                    : newSessionSeed.Trim();
 
                 yield return PostJson(
                     $"{backendHttpUrl}/sessions",
@@ -80,15 +139,43 @@ namespace NeuroAdaptiveVR.Core
                     {
                         { "participant_id", participantId },
                         { "condition", condition },
+                        { "assigned_kanji_set", newSessionKanjiSet },
+                        { "random_seed", seed },
+                        { "visit_number", newSessionVisit },
+                        { "software_version", Application.version },
                     }),
-                    body => sessionId = ReadId(body));
+                    body =>
+                    {
+                        sessionId = ReadField(body, "id");
+                        InstallSessionData(body);
+                    },
+                    (status, body) =>
+                    {
+                        // 409: the participant has no completed kanji pre-test. One clear
+                        // error naming the page, and the flow does not start.
+                        if (status != 409) return false;
+                        refusedForPretest = true;
+                        Debug.LogError($"[SessionBootstrap] No session for '{devParticipantCode}': " +
+                                       $"{ReadField(body, "detail") ?? "the kanji pre-test is not complete"}. " +
+                                       "Run the pre-test in the research dashboard, then press Play again.");
+                        return true;
+                    });
 
                 if (string.IsNullOrEmpty(sessionId))
                 {
-                    Debug.LogError("[SessionBootstrap] No se pudo crear la sesion. Abortando.");
+                    if (!refusedForPretest)
+                        Debug.LogError("[SessionBootstrap] Could not create the session. Aborting.");
                     yield break;
                 }
-                Debug.Log($"[SessionBootstrap] Sesion creada: {sessionId}");
+                Debug.Log($"[SessionBootstrap] NEW session {sessionId} · participant " +
+                          $"{devParticipantCode} · set {newSessionKanjiSet} · seed {seed} · " +
+                          $"visit {newSessionVisit} · {condition}");
+            }
+            else if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                // Sesion creada por el investigador: hay que ir a buscar su
+                // instante cero, porque no lo tenemos de una respuesta previa.
+                yield return GetJson($"{backendHttpUrl}/sessions/{sessionId}", InstallSessionData);
             }
 
             if (string.IsNullOrWhiteSpace(sessionId))
@@ -97,34 +184,137 @@ namespace NeuroAdaptiveVR.Core
                 yield break;
             }
 
-            if (sendValidationEventOnConnect)
+            // Una sesion de verdad tiene que traer set y seed. Sin ellos no es
+            // reconstruible (spec 6.1), y eso es un error de configuracion del
+            // investigador, no un caso a resolver en runtime: la sesion se para
+            // antes de producir datos que nadie va a poder reproducir.
+            //
+            // El camino de depuracion --createNewSessionOnPlay, heredado de M1--
+            // crea sesiones sin esos campos a proposito, asi que ahi se avisa y
+            // se sigue.
+            if (!SessionContext.IsComplete)
             {
-                _client.OnConnected += HandleConnected;
+                string falta = (SessionContext.AssignedKanjiSet == null ? "assigned_kanji_set " : "") +
+                               (SessionContext.RandomSeedRaw == null ? "random_seed" : "");
+
+                if (createNewSessionOnPlay)
+                {
+                    Debug.LogWarning($"[SessionBootstrap] Sesion de depuracion sin {falta.Trim()}. " +
+                                     "Se usan los valores del Inspector y la corrida NO es reconstruible. " +
+                                     "Para una sesion real, creala por REST con esos campos.");
+                }
+                else
+                {
+                    Debug.LogError($"[SessionBootstrap] La sesion {sessionId} no trae {falta.Trim()}. " +
+                                   "Sin eso la sesion no es reconstruible (spec 6.1) y no se arranca. " +
+                                   "Recreala por REST con assigned_kanji_set y random_seed.");
+                    yield break;
+                }
             }
+
+            _client.OnConnected += HandleConnected;
 
             _client.Configure(sessionId);
             _client.Connect();
+        }
+
+        /// <summary>
+        /// Instala TODO lo que la sesion declara, no solo el reloj.
+        ///
+        /// Hasta el 16 de septiembre esta respuesta se leia para sacar un campo y
+        /// se tiraban los otros cuatro -- el set asignado, la seed, la condicion y
+        /// el numero de visita--, que mientras tanto vivian a mano en el
+        /// Inspector. La fila podia decir set A con seed 20260909 mientras la
+        /// corrida usaba el set B con otra seed, y nada los comparaba.
+        /// </summary>
+        private static void InstallSessionData(string jsonBody)
+        {
+            string iso = ReadField(jsonBody, "session_clock_started_at");
+            if (!SessionClock.TrySetSessionZeroFromIso(iso))
+            {
+                Debug.LogWarning("[SessionBootstrap] La sesion no trae session_clock_started_at usable. " +
+                                 "Los eventos saldran con session_elapsed_ms = -1.");
+            }
+
+            SessionContext.Install(
+                sessionId:         ReadField(jsonBody, "id"),
+                assignedKanjiSet:  ReadField(jsonBody, "assigned_kanji_set"),
+                randomSeedRaw:     ReadField(jsonBody, "random_seed"),
+                conditionWire:     ReadField(jsonBody, "condition"),
+                visitNumberRaw:    ReadField(jsonBody, "visit_number"),
+                kanjiItems:        ReadKanjiItems(jsonBody),
+                evaluatedKanjiSet: ReadField(jsonBody, "evaluated_kanji_set"),
+                evaluatedKanjiItems: ReadKanjiItems(jsonBody, "evaluated_kanji_items"));
+        }
+
+        private void OnEnable()
+        {
+            // El HTTP vive en este componente, no en GameFlowController: ese
+            // controlador es dueño del estado y no tiene por que saber que hay un
+            // backend. Aqui ya estan la URL base y los helpers.
+            if (_flow == null) _flow = GetComponent<GameFlowController>();
+            if (_flow != null) _flow.OnStateEntered += HandleStateEntered;
+        }
+
+        private void OnDisable()
+        {
+            if (_flow != null) _flow.OnStateEntered -= HandleStateEntered;
+        }
+
+        /// <summary>
+        /// Sube el estado a experiment_sessions.current_state.
+        ///
+        /// Hasta el 16 de septiembre NADIE llamaba a este endpoint: la columna se
+        /// quedaba en el valor con que nacia la fila durante toda la sesion, y
+        /// `status` con ella. Una sesion completa y una abandonada se veian
+        /// exactamente igual en la base.
+        ///
+        /// Es fire-and-forget a proposito: si el PATCH falla, la sesion sigue --
+        /// la fuente de verdad del estado es el STATE_ENTERED del log de eventos,
+        /// que ya viajo por el WebSocket. Esta columna es una comodidad para
+        /// consultar, no el registro primario.
+        /// </summary>
+        private void HandleStateEntered(GameFlowState state)
+        {
+            if (!SessionContext.IsInstalled || string.IsNullOrWhiteSpace(SessionContext.SessionId))
+                return;
+
+            StartCoroutine(PatchJson(
+                $"{backendHttpUrl}/sessions/{SessionContext.SessionId}/state",
+                JsonConvert.SerializeObject(new Dictionary<string, object>
+                {
+                    { "new_state", state.ToWireValue() },
+                })));
         }
 
         private void HandleConnected()
         {
             _client.OnConnected -= HandleConnected;
 
-            _client.SendValidationEvent(
-                component: "UNITY_BACKEND_WS",
-                status: "OK",
-                payload: new Dictionary<string, object>
-                {
-                    { "note", "round trip M1 desde Unity" },
-                    { "unity_version", Application.unityVersion },
-                    { "platform", Application.platform.ToString() },
-                });
+            if (sendValidationEventOnConnect)
+            {
+                _client.SendValidationEvent(
+                    component: "UNITY_BACKEND_WS",
+                    status: "OK",
+                    payload: new Dictionary<string, object>
+                    {
+                        { "note", "round trip desde Unity" },
+                        { "unity_version", Application.unityVersion },
+                        { "platform", Application.platform.ToString() },
+                    });
+            }
+
+            if (!advanceToFirstStateOnConnect) return;
+
+            if (_flow == null)
+            {
+                Debug.LogWarning("[SessionBootstrap] No hay GameFlowController en este GameObject, " +
+                                 "asi que no se enviara el primer STATE_ENTERED.");
+                return;
+            }
 
             // Primer STATE_ENTERED: S0 -> S1.
-            if (_flow != null)
-            {
-                _flow.AdvanceToNextState();
-            }
+            _flow.AdvanceToNextState();
         }
 
         /// <summary>
@@ -142,7 +332,10 @@ namespace NeuroAdaptiveVR.Core
             _flow.AdvanceToNextState();
         }
 
-        private IEnumerator PostJson(string url, string json, Action<string> onSuccess)
+        /// <param name="onFailure">Takes the HTTP status and body and returns true
+        /// if it handled the failure; otherwise the generic error is logged.</param>
+        private IEnumerator PostJson(string url, string json, Action<string> onSuccess,
+                                     Func<long, string, bool> onFailure = null)
         {
             using var request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
             request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
@@ -153,23 +346,115 @@ namespace NeuroAdaptiveVR.Core
 
             if (request.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"[SessionBootstrap] POST {url} fallo: {request.error} · {request.downloadHandler?.text}");
+                if (onFailure?.Invoke(request.responseCode, request.downloadHandler?.text) != true)
+                    Debug.LogError($"[SessionBootstrap] POST {url} fallo: {request.error} · {request.downloadHandler?.text}");
                 yield break;
             }
 
             onSuccess?.Invoke(request.downloadHandler.text);
         }
 
-        private static string ReadId(string jsonBody)
+        private IEnumerator PatchJson(string url, string json)
+        {
+            using var request = new UnityWebRequest(url, "PATCH");
+            request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                // Warning y no error: el estado ya quedo registrado en
+                // session_events. Esto solo sincroniza una columna de comodidad.
+                Debug.LogWarning($"[SessionBootstrap] PATCH {url} fallo: {request.error}. " +
+                                 "current_state queda desactualizado; los STATE_ENTERED no.");
+            }
+        }
+
+        private IEnumerator GetJson(string url, Action<string> onSuccess)
+        {
+            using var request = UnityWebRequest.Get(url);
+
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"[SessionBootstrap] GET {url} fallo: {request.error} · {request.downloadHandler?.text}");
+                yield break;
+            }
+
+            onSuccess?.Invoke(request.downloadHandler.text);
+        }
+
+        /// <summary>
+        /// Lee un campo de primer nivel de una respuesta JSON, como string
+        /// crudo.
+        ///
+        /// DateParseHandling.None no es opcional: por defecto Newtonsoft
+        /// convierte cualquier string que parezca fecha en un DateTime, y
+        /// entonces .ToString() devuelve el formato de la cultura local
+        /// ("07/09/2026 10:06:40") en vez del ISO-8601 con offset que mando
+        /// el backend. SessionClock.TrySetSessionZeroFromIso recibiria una
+        /// fecha sin zona horaria y el instante cero quedaria desplazado por
+        /// el offset local -- nueve horas, corriendo esto en Japon.
+        /// </summary>
+        private static readonly JsonSerializerSettings RawJsonSettings = new()
+        {
+            DateParseHandling = DateParseHandling.None,
+        };
+
+        /// <summary>id of the participant with this external_code in a GET /participants list, or null.</summary>
+        private static string FindParticipantId(string jsonBody, string externalCode)
         {
             try
             {
-                var parsed = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonBody);
-                return parsed != null && parsed.TryGetValue("id", out var id) ? id?.ToString() : null;
+                var list = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(
+                    jsonBody, RawJsonSettings);
+                if (list == null) return null;
+                foreach (var p in list)
+                    if (p != null && p.TryGetValue("external_code", out var code) &&
+                        string.Equals(code?.ToString(), externalCode, StringComparison.Ordinal))
+                        return p.TryGetValue("id", out var id) ? id?.ToString() : null;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SessionBootstrap] No se pudo leer el id de la respuesta: {ex.Message}");
+                Debug.LogError($"[SessionBootstrap] Could not read the participant list: {ex.Message}");
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// kanji_items of a SessionRead: the effective set, substitutes in place.
+        /// Null when the field is missing or null (a session with no set).
+        /// </summary>
+        public static IReadOnlyList<string> ReadKanjiItems(string jsonBody, string field = "kanji_items")
+        {
+            try
+            {
+                var token = Newtonsoft.Json.Linq.JObject.Parse(jsonBody)[field];
+                return token == null || token.Type == Newtonsoft.Json.Linq.JTokenType.Null
+                    ? null
+                    : token.ToObject<List<string>>();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SessionBootstrap] Could not read {field}: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static string ReadField(string jsonBody, string key)
+        {
+            try
+            {
+                var parsed = JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                    jsonBody, RawJsonSettings);
+                return parsed != null && parsed.TryGetValue(key, out var value) ? value?.ToString() : null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SessionBootstrap] No se pudo leer '{key}' de la respuesta: {ex.Message}");
                 return null;
             }
         }

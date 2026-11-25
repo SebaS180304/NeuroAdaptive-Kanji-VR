@@ -1,0 +1,58 @@
+using System;
+using System.Collections.Generic;
+using NeuroAdaptiveVR.Data;
+
+namespace NeuroAdaptiveVR.Controllers
+{
+    /// <summary>
+    /// Lo que el sistema de respuesta necesita de la escena, y nada mas.
+    ///
+    /// Existe para que el ciclo del trial sea verificable sin escena. La
+    /// escena `JapaneseLearningStudio` es trabajo del jueves; el ciclo y su
+    /// telemetria se pueden probar hoy contra un presentador de consola, y
+    /// eso significa que los eventos de trial llegan a la base esta misma
+    /// tarde en vez de al final de la semana.
+    ///
+    /// Tambien delimita responsabilidades: el presentador dibuja y avisa de
+    /// la eleccion; no valida, no mide tiempo y no emite telemetria. Si el
+    /// presentador supiera si la respuesta fue correcta, habria dos sitios
+    /// que deciden lo mismo.
+    /// </summary>
+    public interface ITrialPresenter
+    {
+        /// <summary>
+        /// Muestra el prompt y las opciones. El sistema de respuesta arranca
+        /// el cronometro **cuando este metodo vuelve**, no antes: el tiempo de
+        /// presentacion no es tiempo de respuesta.
+        /// </summary>
+        void Present(RetrievalTrialType trialType, string promptText,
+                     IReadOnlyList<TrialOption> options);
+
+        /// <summary>
+        /// Feedback tras la respuesta. `correctText` es el texto de la opcion
+        /// correcta; `selectedOptionId` y `correctOptionId` dicen que tarjeta se
+        /// eligio y cual era la correcta, para marcarlas (UI design v1.3, D2).
+        /// Solo se llama con ImmediateFeedback. Cambio solo visual: el
+        /// presentador sigue sin decidir si la respuesta es correcta.
+        /// </summary>
+        void ShowFeedback(bool isCorrect, string correctText, string selectedOptionId, string correctOptionId);
+
+        /// <summary>Indica que hay ayuda disponible (o que no la hay) para este trial.</summary>
+        void SetHintAvailable(bool available);
+
+        /// <summary>
+        /// Presenta el cue concedido por LAL; `target` trae las imagenes de la pista (D-F6-63).
+        /// LalCue.None la quita (al responder, §9.4).
+        /// </summary>
+        void ShowCue(LalCue cue, KanjiItem target);
+
+        /// <summary>Limpia board y area de respuesta al cerrar el trial.</summary>
+        void Clear();
+
+        /// <summary>El participante eligio una opcion. Un paso: elegir es confirmar.</summary>
+        event Action<string> OnOptionChosen;
+
+        /// <summary>El participante pidio ayuda.</summary>
+        event Action OnHintRequested;
+    }
+}

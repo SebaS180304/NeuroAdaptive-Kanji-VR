@@ -7,8 +7,10 @@ services:
       POSTGRES_USER: neuroadaptive
       POSTGRES_PASSWORD: neuroadaptive_dev_password
       POSTGRES_DB: neuroadaptive_vr
+    # 127.0.0.1 only: the backend reaches it over Docker's network, and the
+    # password above is in the repo, so the LAN must not reach it.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -26,13 +28,108 @@ services:
       - ./backend/.env
     environment:
       POSTGRES_HOST: db
+      # LabRecorder runs on the PC and names each session's XDF by its remote control
+      # (P9 of D-F6-127). Empty LABRECORDER_HOST turns it off.
+      LABRECORDER_HOST: host.docker.internal
+      LABRECORDER_ROOT: C:/Users/drdom/Documents/Pruebas_EEG
+    depends_on:
+      db:
+        condition: service_healthy
+    # 127.0.0.1 only, as db and pgadmin: the API has no auth and serves participant data (D-F6-186).
+    # Unity in the Editor, the dashboard proxy and ws_smoke_test all use localhost; a standalone Quest build
+    # would need the PC's LAN address and is not planned before the pilot.
+    # Also ::1: Windows resolves "localhost" to ::1 first, and a refused connection there costs ~2 s
+    # before falling back to 127.0.0.1 (measured from Unity, 10 Nov).
+    ports:
+      - "127.0.0.1:8000:8000"
+      - "[::1]:8000:8000"
+    volumes:
+      - ./backend:/app
+      # The kanji content contract, read-only, at the same path relative to
+      # backend/app/ as in the repo: the pre-test reads it from there.
+      - ./unity-client/Assets/Resources:/unity-client/Assets/Resources:ro
+    # No --reload (14 Oct). With the code mounted, uvicorn --reload restarted
+    # the server on every .py change and closed every open WebSocket: that is
+    # what dropped session 98752f4e on 7 Oct (profile.py written at 17:58:43,
+    # "WS disconnected" in the same second). After changing backend code, apply
+    # it with `docker compose restart backend`, between sessions.
+    # --ws-ping-timeout 60: tolerate up to ~60 s without a pong (an Editor stall
+    # or a Link hiccup) before closing; uvicorn's default is 20 s.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
+              "--ws-ping-interval", "20", "--ws-ping-timeout", "60"]
+
+  # Portal web para inspeccionar la base de datos y lanzar queries.
+  #
+  # Abrir http://localhost:8081 y loguear con las credenciales de
+  # PGADMIN_DEFAULT_* de abajo. La conexion a "NeuroAdaptive VR
+  # (docker)" ya queda pre-cargada (./pgadmin/servers.json) -- solo
+  # pide la contrasena de Postgres (POSTGRES_PASSWORD) la primera vez
+  # que se expande el server, no bien entrando.
+  #
+  # Solo herramienta de desarrollo. Se publica en 127.0.0.1 a proposito
+  # para que no sea alcanzable desde la red local.
+  #
+  # NOTA DE SEGURIDAD: las contrasenas van en claro aqui, igual que en
+  # el servicio db de arriba. Es aceptable para una base de desarrollo
+  # local sin datos reales. Antes de que entren datos de participantes
+  # o EEG, las credenciales deben salir del archivo y venir de
+  # variables de entorno o un gestor de secretos.
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: neuroadaptive_pgadmin
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8081:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@neuroadaptive.example.com
+      PGADMIN_DEFAULT_PASSWORD: neuroadaptive_dev_password
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     volumes:
-      - ./backend:/app
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - pgadmin_data:/var/lib/pgadmin
+
+  # M0 (D-F6-231 (5), D-F6-247 (1)): the research portal, already built, served by nginx on 127.0.0.1 only (no auth,
+  # participant data, D-F6-186), with /api/ proxied to the backend. After a change in dashboard/: `npm run build`
+  # (dist is not built inside Docker). For portal development: `npm run dev` serves the live code on 127.0.0.1:5173,
+  # beside this one.
+  dashboard:
+    image: nginx:alpine
+    container_name: neuroadaptive_dashboard
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:5300:80"
+    volumes:
+      - ./dashboard/dist:/usr/share/nginx/html:ro
+      - ./dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # Herramientas de contenido kanji. Perfil "tools": `docker compose up` NO la
+  # levanta, es un contenedor de un solo disparo.
+  #
+  #   docker compose run --rm kanji-tools python tools/kanji_metrics.py
+  #   docker compose run --rm kanji-tools python tools/kanji_metrics.py --export
+  #
+  # Existe porque las metricas dependen de la tipografia (ver tools/Dockerfile)
+  # y porque la maquina de desarrollo no tiene ni las dependencias ni la fuente.
+  # Sin esto, "regenerar en el mismo commit que cambia un kanji" seria una regla
+  # que nadie del equipo puede cumplir.
+  kanji-tools:
+    build:
+      context: ./tools
+    container_name: neuroadaptive_kanji_tools
+    profiles: ["tools"]
+    # El repositorio entero, porque el script escribe el contrato de contenido
+    # en unity-client/Assets/Resources/ -- directamente donde Unity lo lee, sin
+    # copias intermedias.
+    volumes:
+      - .:/repo
+    working_dir: /repo
+
 
 volumes:
   pgdata:
+  pgadmin_data:

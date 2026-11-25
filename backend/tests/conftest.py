@@ -11,8 +11,22 @@ import asyncio
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import delete
 
+from app.db.base import AsyncSessionLocal
 from app.main import app
+from app.models.participant import Participant
+
+# external_code fijos que usan los tests de test_session_lifecycle.py. Como
+# corren contra la misma base configurada en .env (no una DB de test
+# aislada), hay que limpiarlos antes de cada corrida o una segunda
+# ejecucion de `pytest` choca con el UNIQUE de external_code (409).
+_TEST_EXTERNAL_CODES = ["TEST_E0", "TEST_P01", "TEST_P02", "TEST_PRETEST", "TEST_PRETEST_NC", "TEST_STALE",
+                        "TEST_RESEARCH_1", "TEST_RESEARCH_2", "TEST_RESEARCH_3", "TEST_GATE",
+                        "TEST_COMPLETED_AT", "TEST_COMPLETED_AT_ABORTED", "TEST_PROFILE",
+                        "TEST_PROFILE_NONE", "TEST_EEG", "TEST_WS_CLOSE", "TEST_WS_CLOSE_ABORTED",
+                        "TEST_BR_A", "TEST_BR_B", "TEST_BR_C", "TEST_BR_D", "TEST_BR_E", "TEST_BR_F",
+                        "TEST_BR_G", "TEST_BR_H", "TEST_BR_I", "TEST_BR_J", "TEST_BR_K"]
 
 
 @pytest.fixture(scope="session")
@@ -22,8 +36,55 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture(autouse=True)
+def _no_labrecorder(monkeypatch):
+    """Tests never reach the PC's real LabRecorder (it would start recording)."""
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "labrecorder_host", "")
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _clean_test_participants():
+    async def _delete() -> None:
+        async with AsyncSessionLocal() as session:
+            await session.execute(
+                delete(Participant).where(Participant.external_code.in_(_TEST_EXTERNAL_CODES))
+            )
+            await session.commit()
+
+    await _delete()  # por si quedaron de una corrida anterior interrumpida
+    yield
+    await _delete()  # deja la DB limpia para la proxima corrida
+
+
 @pytest_asyncio.fixture
 async def client() -> AsyncClient:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest_asyncio.fixture
+async def pretested(client):
+    """Registers a participant with consent and runs its kanji pre-test through the API.
+
+    Sessions require a completed pre-test (Task 1.7). Every kanji is answered "No"
+    except those in `known`, which are answered "Yes" and right, so the pre-test
+    tries reserves for them (each reserve gets "No" and becomes the substitute).
+    """
+    async def make(code: str, known: frozenset[str] | set[str] = frozenset()) -> str:
+        resp = await client.post("/participants", json={"external_code": code, "consent_obtained": True})
+        assert resp.status_code == 201, resp.text
+        pid = resp.json()["id"]
+        state = (await client.get(f"/participants/{pid}/pretest")).json()
+        while state["next"] is not None:
+            item = state["next"]
+            body = {"kanji_id": item["kanji_id"], "self_report": "NO"}
+            if item["kanji"] in known:
+                body = {**body, "self_report": "YES", "typed_reading": "x", "typed_meaning": "x",
+                        "reading_correct": True, "meaning_correct": True}
+            state = (await client.post(f"/participants/{pid}/pretest/responses", json=body)).json()
+        return pid
+
+    return make

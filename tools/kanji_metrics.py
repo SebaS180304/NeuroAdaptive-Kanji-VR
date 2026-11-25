@@ -1,0 +1,1131 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+kanji_metrics.py — verificación de balance de los sets experimentales de kanji.
+
+Proyecto NeuroAdaptive VR Kanji, Fase 2.
+Documento de referencia: claude/Metricas_Dificultad_Kanji_Fase2.md
+
+Qué hace
+--------
+Calcula seis métricas de dificultad sobre los sets A/B/C y comprueba que cada
+set cae dentro de las bandas de tolerancia acordadas. Devuelve código de salida
+1 si alguna banda se sale, para poder correrlo en CI o en un pre-commit.
+
+    python3 kanji_metrics.py            # tabla + veredicto
+    python3 kanji_metrics.py --pool     # además, matriz de colisiones del pool
+    python3 kanji_metrics.py --font RUTA.otf   # solo para comparar tipografías
+
+Métricas
+--------
+1. Trazos                  — dato de contenido (KANJI[k].strokes)
+2. Complejidad perimétrica — P²/A sobre el glifo renderizado (Pelli et al. 2006)
+3. Moras de la lectura     — dato de contenido
+4. Grupos de ensamblaje    — dato de contenido
+5. Nº de lecturas comunes  — dato de contenido
+6. Confusabilidad gráfica  — correlación de Pearson entre mapas suavizados
+
+Las métricas 2 y 6 dependen de la tipografía. Por eso se calculan sobre
+`unity-client/Assets/Fonts/NotoSansCJKjp-Regular.otf` — el mismo archivo del que
+Unity genera el TMP_FontAsset del Learning Board, extraído por
+`tools/extract_board_font.py`. La forma medida y la forma que ve el participante
+son el mismo glifo por construcción, no por coincidencia.
+
+Requisitos: pillow, numpy. Sin red.
+"""
+
+from __future__ import annotations
+import argparse, itertools, os, pathlib, re, sys
+from dataclasses import dataclass
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+# El .ttc del paquete Debian que fija tools/Dockerfile. Ya NO se usa para
+# calcular: es unicamente el origen del que tools/extract_board_font.py saca la
+# cara japonesa. Ver DEFAULT_FONT mas abajo.
+SYSTEM_TTC = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+
+# Raiz del repositorio. KANJI_REPO_ROOT gana si esta definida; si no, se deduce
+# de la ubicacion de este script, que vive en tools/.
+#
+# La variable existe para el caso del contenedor: dentro de Docker el script se
+# ve en /repo/tools/ solo si el bind mount ocurrio. Cuando no ocurre --Docker
+# Desktop sin permiso de file sharing sobre la carpeta, tipicamente-- la
+# deduccion apunta a un /repo vacio y el fallo aparece como un "no such file or
+# directory" que no dice nada de la causa real.
+REPO_ROOT = pathlib.Path(
+    os.environ.get("KANJI_REPO_ROOT") or pathlib.Path(__file__).resolve().parent.parent
+).resolve()
+
+# El contrato de contenido se genera DIRECTAMENTE donde Unity lo consume.
+# No se genera aqui y se copia alla: dos copias del mismo hecho es exactamente
+# la divergencia que Planteamiento_Fase2_M2.md documenta cuatro veces.
+# Assets/Resources/ y no StreamingAssets/ porque Resources.Load<TextAsset> es
+# sincrono e identico en Editor, Quest Link y un build de Android; en
+# StreamingAssets el archivo vive dentro del APK y hay que leerlo con
+# UnityWebRequest, con codigo distinto segun plataforma.
+DEFAULT_EXPORT = REPO_ROOT / "unity-client" / "Assets" / "Resources" / "kanji_content.json"
+
+# La fuente con la que se calcula. Es un archivo DEL REPOSITORIO, no del sistema,
+# y es el mismo del que Unity genera su TMP_FontAsset.
+#
+# Antes esto apuntaba al .ttc del sistema. El problema no era que estuviera mal
+# --las metricas salian bien-- sino que Unity no podia alcanzarlo y, aunque
+# pudiera, un .ttc es una coleccion de varias caras: PIL abre el indice 0 y TMP
+# elige por su cuenta. Que coincidieran era una suposicion. Y una metrica de
+# complejidad calculada sobre una cara distinta de la que ve el participante es
+# un numero que no describe el experimento.
+#
+# tools/extract_board_font.py saca la cara japonesa por indice explicito,
+# comprobando su nombre, y la escribe aqui. Un archivo, dos consumidores.
+DEFAULT_FONT = REPO_ROOT / "unity-client" / "Assets" / "Fonts" / "NotoSansCJKjp-Regular.otf"
+
+
+# --------------------------------------------------------------------------- #
+# Contenido
+# --------------------------------------------------------------------------- #
+
+@dataclass(frozen=True)
+class Kanji:
+    reading: str        # lectura objetivo
+    strokes: int
+    morae: int
+    groups: int         # grupos de segmentación de ensamblaje
+    readings: int       # nº de lecturas comunes del carácter
+    meaning: str
+    lesson: str = ""    # lección de Basic Kanji Book Vol.1; "P" = lección pictográfica
+
+
+KANJI: dict[str, Kanji] = {
+    # --- set A --- (todos L1/L2, pictográficos)
+    "日": Kanji("ひ",    4, 1, 2, 4, "sun",      "L1-P"),
+    "山": Kanji("やま",  3, 2, 2, 2, "mountain",  "L1-P"),
+    "車": Kanji("くるま", 7, 3, 3, 2, "car",    "L1-P"),
+    "女": Kanji("おんな", 3, 3, 3, 4, "woman",    "L2-P"),
+    "学": Kanji("ガク",  8, 2, 3, 2, "study",  "L2-P"),
+    # --- set B ---
+    "月": Kanji("つき",  4, 2, 2, 3, "moon",     "L1-P"),
+    "川": Kanji("かわ",  3, 2, 3, 2, "river",      "L1-P"),
+    "門": Kanji("もん",  8, 2, 2, 2, "gate",   "L1-P"),
+    "子": Kanji("こ",    3, 1, 2, 3, "child",     "L2-P"),
+    "私": Kanji("わたし", 7, 3, 2, 2, "I",       "L2"),   # en L2 pero SIN derivación
+    # --- set C ---
+    "木": Kanji("き",    4, 1, 2, 3, "tree",    "L1-P"),
+    "田": Kanji("た",    5, 1, 2, 2, "rice field",  "L1-P"),
+    "金": Kanji("きん",  8, 2, 3, 3, "gold",      "L2-P"),
+    "人": Kanji("ひと",  2, 2, 2, 3, "person",  "L1-P"),
+    "先": Kanji("さき",  6, 2, 2, 2, "ahead",  "L2-P"),
+    # --- reserva y candidatos verificados contra el libro ---
+    "口": Kanji("くち",  3, 2, 2, 2, "mouth",     "L1-P"),
+    "火": Kanji("ひ",    4, 1, 3, 2, "fire",    "L2-P"),
+    "水": Kanji("みず",  4, 2, 2, 2, "water",     "L2-P"),
+    "土": Kanji("つち",  3, 2, 2, 2, "ground",   "L2-P"),
+    "目": Kanji("め",    5, 1, 2, 2, "eye",      "L6-P"),
+    "耳": Kanji("みみ",  6, 2, 2, 2, "ear",    "L6-P"),
+    "手": Kanji("て",    4, 1, 2, 2, "hand",     "L6-P"),
+    "足": Kanji("あし",  7, 2, 3, 3, "leg, foot", "L6-P"),
+    "雨": Kanji("あめ",  8, 2, 3, 2, "rain",   "L6-P"),
+    "竹": Kanji("たけ",  6, 2, 2, 2, "bamboo",    "L6-P"),
+    "米": Kanji("こめ",  6, 2, 3, 3, "rice",    "L6-P"),
+    "貝": Kanji("かい",  7, 2, 2, 2, "shellfish",   "L6-P"),
+    "石": Kanji("いし",  5, 2, 2, 2, "stone",   "L6-P"),
+    "糸": Kanji("いと",  6, 2, 2, 2, "thread",     "L6-P"),
+    "牛": Kanji("うし",  4, 2, 2, 2, "cow",     "L7-P"),
+    "肉": Kanji("にく",  6, 2, 2, 1, "meat",    "L7-P"),
+    "花": Kanji("はな",  7, 2, 3, 2, "flower",     "L7-P"),
+    "物": Kanji("もの",  8, 2, 3, 3, "thing",     "L7-P"),
+    "魚": Kanji("さかな", 11, 3, 3, 2, "fish",     "L7-P"),
+    "鳥": Kanji("とり", 11, 2, 3, 2, "bird",      "L7-P"),
+    "馬": Kanji("うま", 10, 2, 3, 2, "horse",  "L7-P"),
+    "中": Kanji("なか",  4, 2, 2, 3, "middle",   "L4"),   # signo, no pictográfico
+    "本": Kanji("ほん",  5, 2, 2, 2, "book",    "L4"),
+    "上": Kanji("うえ",  3, 2, 2, 5, "above",   "L4"),
+    "下": Kanji("した",  3, 2, 2, 5, "below",    "L4"),
+    "力": Kanji("ちから", 2, 3, 2, 3, "power",   "L4"),
+    "茶": Kanji("ちゃ",  9, 2, 3, 2, "tea",       "L7-P"),
+    # Lección 5, "combination of the meanings": tercer mecanismo de
+    # descubrimiento (unión de dos kanji conocidos), no pictográfico.
+    "男": Kanji("おとこ", 7, 3, 2, 3, "man",   "L5"),
+    "体": Kanji("からだ", 7, 3, 2, 2, "body",   "L5"),
+    "林": Kanji("はやし", 8, 3, 2, 2, "grove", "L5"),
+    "畑": Kanji("はたけ", 9, 3, 2, 1, "field",    "L5"),
+    "岩": Kanji("いわ",  8, 2, 2, 2, "rock",     "L5"),
+    "森": Kanji("もり", 12, 2, 3, 2, "forest",   "L5"),
+    "間": Kanji("あいだ", 12, 3, 2, 3, "interval", "L5"),
+    # --- tutorial (Leccion 3, numeros) ---
+    # NO son pictograficos y NO entran en ninguna banda, colision ni sustitucion:
+    # nunca estan en SETS ni en RESERVE. Existen porque el tutorial de S2 ensena
+    # la interaccion --agarrar el segmento, soltarlo en el slot, oir la lectura--
+    # con material que el experimento no mide, para no gastar un item
+    # experimental en ensenar a usar los mandos. Los numeros son lo mas barato
+    # que hay: el participante ya sabe lo que significan.
+    "一": Kanji("いち",  1, 2, 1, 3, "one",   "L3"),
+    "二": Kanji("に",    2, 1, 2, 2, "two",   "L3"),
+    "三": Kanji("さん",  3, 2, 3, 2, "three", "L3"),
+    "四": Kanji("よん",  5, 2, 2, 3, "four",  "L3"),
+    "五": Kanji("ご",    4, 1, 2, 2, "five",  "L3"),
+    # NO están en Basic Kanji Book Vol.1: 刀 (espada), 虫 (insecto).
+    # FUERA DEL POOL OFICIAL (8 de septiembre): 先 y 生. 先 se conserva arriba
+    # solo para poder evaluar el reparto vigente; 生 no se modela.
+}
+
+# ── CONFIGURACIÓN OFICIAL ───────────────────────────────────────────────────
+# Fijada el 8 de septiembre de 2026 (decisiones D1–D4 del registro en
+# claude/Metricas_Dificultad_Kanji_Fase2.md §12).
+#   D1: bandas de tolerancia en lugar de "25 trazos exactos"
+#   D2: solo kanji pictográficos — sin lecciones 4 (signos) ni 5 (compuestos)
+#   D3: contenido libre; no hay assets encargados
+#   D4: óptimo global sobre los 35 pictográficos elegibles
+# Reemplaza a 日山車女学 / 月川門子私 / 木田人金先.
+SETS: dict[str, list[str]] = {
+    "A": ["月", "車", "火", "竹", "石"],
+    "B": ["山", "門", "女", "手", "雨"],
+    "C": ["人", "足", "牛", "肉", "花"],
+}
+
+# Los 20 pictográficos que no entraron. Todos sirven como reserva.
+RESERVE = ["日", "木", "川", "田", "口", "土", "子", "水", "目", "米",
+           "糸", "耳", "貝", "学", "物", "金", "茶", "馬", "魚", "鳥"]
+
+# Los cinco del tutorial de S2. Se exportan en el contrato --los
+# ScriptableObjects son 40, no 35-- pero no participan en nada mas: ni bandas,
+# ni colisiones, ni tabla de sustitucion. Un item de tutorial que el
+# participante ya conoce no es un problema que haya que resolver, es el punto.
+TUTORIAL = ["一", "二", "三", "四", "五"]
+
+# ── BLOQUE R (D-F6-125, D-F6-208, D-F6-223) ─────────────────────────────────
+# Los 5 kanji nuevos del reconocimiento sí/no, por set evaluado: oficiales de
+# Metricas_Dificultad_Kanji_Fase2.md §16.7 (Contenido, 16 nov). Nunca vistos en la
+# VR: ni en el pool, ni en el tutorial, ni como opción de T1 (regla 1; la comprueba
+# export_content). Solo se muestran como glifo: no tienen fila en "kanji".
+RETENTION_NEW: dict[str, list[str]] = {
+    "A": ["才", "近", "広", "行", "北"],
+    "B": ["方", "角", "少", "心", "弟"],
+    "C": ["丸", "作", "市", "外", "当"],
+}
+
+# Los textos del bloque R, de Contenido_UI_Bloque_R.md §1 (UI/UX, 16 nov), con sus
+# claves sugeridas. En inglés, como el resto del juego; "ui.continue" ya existe en Unity.
+RETENTION_TEXTS: dict[str, str] = {
+    "retention.stage_title": "Memory questions",
+    "retention.intro.main": "A few questions about your last session.",
+    "retention.intro.sub": "There are no hints and no feedback. If you are not sure, give your best guess.",
+    "retention.free_recall.main": ("Last time you learned some kanji. Tell the researcher everything you "
+                                   "remember about them: what they mean or how they are read."),
+    "retention.free_recall.sub": "Say it out loud and take your time. When you have finished, tell the researcher.",
+    "retention.yes_no.intro.main": "Now you will see some kanji, one at a time.",
+    "retention.yes_no.intro.sub": "For each one, answer whether it was in your last session.",
+    "retention.yes_no.question": "Was this kanji in your last session?",
+    "retention.yes_no.yes": "Yes",
+    "retention.yes_no.no": "No",
+    "retention.mc.intro.main": "Now some questions about the kanji from your last session.",
+    "retention.mc.intro.sub": "Choose the answer you think is right.",
+    "retention.end.continue.main": "Thank you. Now we continue with today's session.",
+    "retention.end.final.main": "Thank you. That is all for today.",
+    "retention.end.final.sub": "The researcher will help you take off the headset.",
+}
+
+# ── TRAMPAS (D-F6-71, D-F6-129, D-F6-130, D-F6-131) ─────────────────────────
+# En la mitad de los trials de cada tipo, las 3 incorrectas son una trampa fuerte
+# externa, una del set y una sin relación externa (Propuesta_Trampas_T2_T3.md §2.1).
+# Solo T1 está activo (D-F6-131); T2 y T3 quedan vacíos hasta las listas de
+# Contenido (semana del 9 nov).
+#
+# T1, trampa fuerte: kanji de forma muy parecida. Lista OFICIAL de §16.2 de
+# Metricas_Dificultad_Kanji_Fase2.md (D-F6-168): par clásico en 13 de los 15 de
+# los sets; 月, 竹 y la reserva conservan el candidato de la métrica de §15.2 (⚑,
+# METRIC_LURES). Si cambia un par, se cambia aquí y se regenera el contrato.
+LURE_T1: dict[str, str] = {
+    "月": "用", "車": "重", "火": "犬", "竹": "枚", "石": "右",
+    "山": "出", "門": "開", "女": "文", "手": "毛", "雨": "両",
+    "人": "入", "足": "走", "牛": "午", "肉": "内", "花": "化",
+    "日": "旧", "木": "本", "川": "刷", "田": "円", "口": "囚",
+    "土": "上", "子": "干", "水": "氷", "目": "回", "米": "未",
+    "糸": "系", "耳": "且", "貝": "居", "学": "半", "物": "牧",
+    "金": "余", "茶": "革", "馬": "果", "魚": "危", "鳥": "島",
+}
+
+# Las ⚑ de §16.2: la trampa sale de la métrica, sin par clásico todavía (los de la
+# reserva van con el bloque R, semana del 16). Solo estas quedan "provisional".
+METRIC_LURES = {"月", "竹"}
+
+# T1, sin relación: lista OFICIAL de §16.2 (con los cuatro cambios de §16.3), una
+# por kanji. Antes la elegía lure_table() como la menos parecida; ahora es una
+# tabla, para que cambiar una sea contenido y no dependa del orden de elección.
+UNRELATED_T1: dict[str, str] = {
+    "月": "矢", "車": "白", "火": "刀", "竹": "正", "石": "中",
+    "山": "夏", "門": "書", "女": "頭", "手": "左", "雨": "音",
+    "人": "空", "足": "先", "牛": "町", "肉": "弓", "花": "力",
+    "日": "青", "木": "夜", "川": "春", "田": "休", "口": "年",
+    "土": "村", "子": "立", "水": "朝", "目": "赤", "米": "冬",
+    "糸": "早", "耳": "声", "貝": "名", "学": "色", "物": "玉",
+    "金": "船", "茶": "黒", "馬": "家", "魚": "星", "鳥": "夕",
+}
+
+# Candidatos de la sin relación (el método de D-F6-144, §16.3): kanji de 1.º-2.º de
+# primaria fuera del pool, sin números (el tutorial son números) ni significados
+# cercanos a los del pool (森, 林, 男, 見, 草 quedan fuera). El significado está para
+# comprobar que ninguno es una segunda respuesta correcta. 犬 y 文 salen: son
+# trampas fuertes desde §16.2.
+UNRELATED_T1_CANDIDATES: dict[str, str] = {
+    "王": "king", "音": "sound", "気": "spirit", "休": "rest", "玉": "ball",
+    "空": "sky", "校": "school", "左": "left", "正": "correct",
+    "青": "blue", "夕": "evening", "赤": "red", "先": "ahead", "早": "early",
+    "村": "village", "中": "middle", "虫": "insect", "町": "town", "年": "year",
+    "白": "white", "名": "name", "立": "stand", "力": "power",
+    "船": "ship", "星": "star", "風": "wind", "家": "house", "春": "spring",
+    "夏": "summer", "秋": "autumn", "冬": "winter", "朝": "morning", "夜": "night",
+    "歌": "song", "絵": "picture", "書": "write", "線": "line", "紙": "paper",
+    "道": "road", "電": "electricity", "黄": "yellow", "黒": "black", "色": "colour",
+    "声": "voice", "頭": "head", "弓": "bow", "矢": "arrow", "刀": "sword",
+}
+# T2 (kanji -> significado) y T3 (kanji -> lectura): listas OFICIALES de §16.4
+# (D-F6-168), con los seis cambios del 10 nov (D-F6-181 (3)). Las categorías de T2
+# quedan en el documento. 学 va en katakana (ガク), así que sus opciones de T3 también.
+LURE_T2: dict[str, str] = {  # §16.4: misma categoría, nunca una segunda correcta (D-F6-181)
+    "月": "star", "車": "train", "火": "smoke", "竹": "pine", "石": "brick",
+    "山": "valley", "門": "window", "女": "man", "手": "neck", "雨": "snow",
+    "人": "robot", "足": "arm", "牛": "pig", "肉": "egg", "花": "leaf",
+    "日": "cloud", "木": "moss", "川": "lake", "田": "garden", "口": "nose",
+    "土": "sea", "子": "parent", "水": "oil", "目": "tooth", "米": "wheat",
+    "糸": "needle", "耳": "lip", "貝": "seaweed", "学": "play", "物": "place",
+    "金": "silver", "茶": "coffee", "馬": "sheep", "魚": "turtle", "鳥": "butterfly",
+}
+UNRELATED_T2: dict[str, str] = {  # §16.4: otra categoría
+    "月": "holiday", "車": "idea", "火": "price", "竹": "law", "石": "dream",
+    "山": "speed", "門": "luck", "女": "week", "手": "news", "雨": "answer",
+    "人": "noise", "足": "story", "牛": "rule", "肉": "joke", "花": "debt",
+    "日": "peace", "木": "plan", "川": "age", "田": "truth", "口": "game",
+    "土": "size", "子": "sleep", "水": "history", "目": "trip", "米": "hour",
+    "糸": "victory", "耳": "anger", "貝": "courage", "学": "spoon", "物": "yesterday",
+    "金": "friendship", "茶": "winter", "馬": "music", "魚": "noon", "鳥": "silence",
+}
+LURE_T3: dict[str, str] = {  # §16.4: cambia una mora, nunca un dakuten en la primera (rendaku)
+    "月": "つぎ", "車": "くるみ", "火": "ち", "竹": "たて", "石": "いじ",
+    "山": "やみ", "門": "もや", "女": "おんど", "手": "へ", "雨": "あみ",
+    "人": "ひも", "足": "あじ", "牛": "うじ", "肉": "にし", "花": "はら",
+    "日": "み", "木": "け", "川": "かに", "田": "と", "口": "くじ",
+    "土": "つじ", "子": "か", "水": "みぞ", "目": "ね", "米": "こけ",
+    "糸": "いど", "耳": "みき", "貝": "かみ", "学": "ガム", "物": "もも",
+    "金": "きく", "茶": "しゃ", "馬": "うみ", "魚": "さかば", "鳥": "とし",
+}
+UNRELATED_T3: dict[str, str] = {  # §16.4: mismo largo, sin moras en común con la lectura ni con su trampa
+    "月": "ほね", "車": "めがね", "火": "ゆ", "竹": "ゆび", "石": "さる",
+    "山": "ふえ", "門": "なべ", "女": "たまご", "手": "よ", "雨": "ぬの",
+    "人": "ろば", "足": "よる", "牛": "かぜ", "肉": "ゆめ", "花": "せみ",
+    "日": "わ", "木": "ほ", "川": "くつ", "田": "す", "口": "そら",
+    "土": "へそ", "子": "せ", "水": "わに", "目": "う", "米": "えび",
+    "糸": "ふね", "耳": "むね", "貝": "ふろ", "学": "ノリ", "物": "ゆき",
+    "金": "はと", "茶": "しゅ", "馬": "おけ", "魚": "ふとん", "鳥": "さら",
+}
+
+LURE_TYPES = ("T1", "T2", "T3")
+
+# ── IDENTIDAD ESTABLE ───────────────────────────────────────────────────────
+# El `kanji_id` que viaja en cada evento de telemetria y que en Fase 3 pasa a
+# ser llave foranea en Postgres.
+#
+# POR QUE ES UNA TABLA EXPLICITA Y NO SE DERIVA
+# ---------------------------------------------
+# Lo natural seria construirlo de la lectura objetivo: ひ -> KANJI_HI. No
+# funciona. 日 y 火 se leen las dos ひ, asi que el id derivado seria el mismo
+# para los dos. Y no es un caso hipotetico que nunca vaya a darse: la unica
+# sustitucion restringida del pool (RESTRICTED, justo debajo) es literalmente
+# "日 solo puede reemplazar a 火", asi que hay estudios en los que los dos
+# aparecen. Dos filas de trials distintas acabarian con el mismo kanji_id y
+# nada fallaria en el momento -- el error saldria al analizar.
+#
+# 火 se queda con KANJI_HI porque ese valor ya esta escrito en la base desde
+# las corridas de TrialDebugRunner; 日 toma su lectura on'yomi, ニチ.
+#
+# El caracter no sirve como id: acaba en nombres de asset, en URLs y en
+# logs de consola, y no todo lo que hay entre Unity, Docker y psql trata UTF-8
+# fuera de ASCII igual de bien.
+KANJI_IDS: dict[str, str] = {
+    # set A
+    "月": "KANJI_TSUKI", "車": "KANJI_KURUMA", "火": "KANJI_HI",
+    "竹": "KANJI_TAKE",  "石": "KANJI_ISHI",
+    # set B
+    "山": "KANJI_YAMA",  "門": "KANJI_MON",    "女": "KANJI_ONNA",
+    "手": "KANJI_TE",    "雨": "KANJI_AME",
+    # set C
+    "人": "KANJI_HITO",  "足": "KANJI_ASHI",   "牛": "KANJI_USHI",
+    "肉": "KANJI_NIKU",  "花": "KANJI_HANA",
+    # reserva
+    "日": "KANJI_NICHI", "木": "KANJI_KI",     "川": "KANJI_KAWA",
+    "田": "KANJI_TA",    "口": "KANJI_KUCHI",  "土": "KANJI_TSUCHI",
+    "子": "KANJI_KO",    "水": "KANJI_MIZU",   "目": "KANJI_ME",
+    "米": "KANJI_KOME",  "糸": "KANJI_ITO",    "耳": "KANJI_MIMI",
+    "貝": "KANJI_KAI",   "学": "KANJI_GAKU",   "物": "KANJI_MONO",
+    "金": "KANJI_KIN",   "茶": "KANJI_CHA",    "馬": "KANJI_UMA",
+    "魚": "KANJI_SAKANA", "鳥": "KANJI_TORI",
+    # tutorial
+    "一": "KANJI_ICHI",  "二": "KANJI_NI",     "三": "KANJI_SAN",
+    "四": "KANJI_YON",   "五": "KANJI_GO",
+    # fuera del pool, modelados para poder evaluar repartos alternativos
+    "私": "KANJI_WATASHI", "先": "KANJI_SAKI", "中": "KANJI_NAKA",
+    "本": "KANJI_HON",   "上": "KANJI_UE",     "下": "KANJI_SHITA",
+    "力": "KANJI_CHIKARA", "男": "KANJI_OTOKO", "体": "KANJI_KARADA",
+    "林": "KANJI_HAYASHI", "畑": "KANJI_HATAKE", "岩": "KANJI_IWA",
+    "森": "KANJI_MORI",  "間": "KANJI_AIDA",
+}
+
+# Estas dos comprobaciones corren al importar el modulo, no en un test que
+# alguien tiene que acordarse de lanzar. Anadir un kanji a KANJI sin darle id,
+# o darle uno repetido, tiene que romper el export -- no producir un JSON que
+# parece bueno.
+if set(KANJI_IDS) != set(KANJI):
+    _falta = sorted(set(KANJI) - set(KANJI_IDS))
+    _sobra = sorted(set(KANJI_IDS) - set(KANJI))
+    raise AssertionError(
+        f"KANJI_IDS y KANJI no coinciden. Sin id: {_falta}. Id sin kanji: {_sobra}.")
+if len(set(KANJI_IDS.values())) != len(KANJI_IDS):
+    _por_id: dict[str, list[str]] = {}
+    for _ch, _id in KANJI_IDS.items():
+        _por_id.setdefault(_id, []).append(_ch)
+    _dup = {i: cs for i, cs in _por_id.items() if len(cs) > 1}
+    raise AssertionError(f"kanji_id repetido: {_dup}")
+
+
+# Pares con sustitución restringida: reserva -> únicos kanji que puede reemplazar.
+# La colisión ひ sigue siendo la única de lectura del pool, pero cambió de lado:
+# ahora 火 es experimental y 日 es reserva, así que la restricción se invierte.
+RESTRICTED = {
+    "日": {"火"},   # colisión de lectura (ひ) — rompe T3
+}
+
+# ── Imageabilidad · DOS EVALUADORES, DOS CONSTRUCTOS ────────────────────────
+# Escala 1-5, puntuada por los dos revisores de MIRAI (10 y 11 de septiembre).
+# Correlacion entre ambos r = -0.04, acuerdo exacto en 6 de 15: la pregunta era
+# ambigua y cada uno respondio a una cosa distinta.
+#
+#   R1 puntuo TRANSPARENCIA DEL GLIFO - el caracter moderno todavia se parece
+#      al dibujo del que salio?   火 5, 雨 5, 車 2, 花 2
+#   R2 puntuo CONCRECION DEL OBJETO - el significado se puede mostrar como un
+#      objeto que se coge con la mano?   火 2, 雨 2, 車 5, 花 5
+#
+# Los dos hacen falta: la mecanica muestra un objeto 3D Y lo transforma en el
+# caracter, asi que un item falla si cualquiera de las dos se rompe. NO se
+# promedian: promediar dos constructos distintos da 3.5 para 火 y 3.5 para 車,
+# que no significa nada y ademas aprueba a los dos.
+#
+# Ver claude/Metricas_Dificultad_Kanji_Fase2.md §12, D10. R2 solo puntuo los 15.
+IMAGEABILITY_R1: dict[str, int] = {   # transparencia del glifo, los 35
+    "月": 3, "車": 2, "火": 5, "竹": 5, "石": 5,
+    "山": 5, "門": 5, "女": 4, "手": 2, "雨": 5,
+    "人": 5, "足": 3, "牛": 4, "肉": 3, "花": 2,
+    "日": 5, "木": 5, "川": 4, "田": 5, "口": 5,
+    "土": 5, "子": 3, "水": 4, "目": 5, "米": 3,
+    "糸": 5, "耳": 4, "貝": 5, "学": 3, "物": 1,
+    "金": 3, "茶": 1, "馬": 1, "魚": 1, "鳥": 1,
+}
+IMAGEABILITY_R2: dict[str, int] = {   # concrecion del objeto, solo los 15
+    "月": 5, "車": 5, "火": 2, "竹": 5, "石": 5,
+    "山": 5, "門": 5, "女": 3, "手": 3, "雨": 2,
+    "人": 5, "足": 3, "牛": 5, "肉": 4, "花": 5,
+}
+
+# Se REPORTA, no se exige. Congelar el contenido el 14 de septiembre fue una
+# decision consciente sobre una metrica que todavia no esta bien medida; hacer
+# fallar el build con ella seria fingir una certeza que no hay.
+MIN_IMAGEABILITY = 3
+
+
+# Bandas de tolerancia (§5 del documento de métricas)
+BANDS = {
+    "strokes":   (25, 2),      # centro, tolerancia
+    "morae":     (10, 1),
+    "groups":    (12, 2),
+    "readings":  (13, 2),
+}
+PERIM_TOLERANCE_PCT = 8.0      # respecto a la media de los tres sets
+SIM_MAX = 0.55                 # similitud gráfica máxima dentro de un set
+SIM_MEAN_MAX = 0.12            # similitud gráfica media dentro de un set
+
+# ── Regla de sustitución (decisión D5) ──────────────────────────────────────
+# Un kanji de reserva r puede reemplazar a un experimental e dentro del set S
+# si y solo si se cumplen las tres condiciones. La tabla no se escribe a mano:
+# se DERIVA de los datos con substitution_table(), y Unity la consume desde el
+# JSON que produce --export.
+#
+#   1. Sin colisión dura con los cuatro que quedan (S menos e): ni misma
+#      lectura, ni mismo significado, ni forma por encima de SIM_MAX. Si r
+#      choca con alguno de los cuatro, la sustitución rompe un tipo de trial.
+#      D-F6-181 (2): tampoco un significado que incluya a otro o comparta
+#      palabra con él (dos correctas en T2). Compartir palabra se calcula del
+#      texto (rice / rice field); incluir no se ve en el texto y va en
+#      MEANING_INCLUDES (precisión de D-F6-181, 10 nov: thing no entra).
+#   2. Complejidad comparable, ítem a ítem (spec §13.2).
+#   3. El set resultante sigue dentro de banda: un participante con
+#      sustituciones tiene que estar estudiando un set tan equilibrado como el
+#      nominal, o sus datos no son comparables con los del resto.
+SUBST_DELTA_STROKES = 2        # |trazos(r) − trazos(e)| máximo
+SUBST_DELTA_MORAE = 1          # |moras(r) − moras(e)| máximo
+SUBST_APPLY_READINGS_BAND = False
+# La banda de lecturas NO se aplica al sustituir, por principio y no por
+# conveniencia. El estudio ensena y evalua UNA sola lectura por kanji; las demas
+# lecturas del caracter no aparecen en ningun trial. El recuento es un proxy de
+# variabilidad fonetica util al DISENAR los sets, pero no es condicion de
+# validez de una sustitucion: cambiar 女 por 川 no cambia cuantas lecturas se
+# ensenan, que sigue siendo una.
+#
+# Historial, porque importa: esta banda fue el unico obstaculo en los dos
+# repartos evaluados, siempre por un punto y siempre dejando a 女 sin sustituto.
+# Relajarla a ±4 da el mismo resultado que quitarla --79 sustituciones, ningun
+# huerfano--, asi que quitarla es la formulacion honesta de lo mismo. Sigue
+# aplicandose al disenar los sets.
+
+
+# --------------------------------------------------------------------------- #
+# Regla de sustitución, derivada de los datos
+# --------------------------------------------------------------------------- #
+
+MEANING_INCLUDES = {frozenset(p) for p in (("子", "人"), ("女", "人"), ("貝", "魚"))}  # child, woman ⊂ person; shellfish/fish
+
+
+def meaning_overlap(a: str, b: str) -> str | None:
+    """D-F6-181 (2): one meaning includes the other, or they share a word."""
+    if frozenset((a, b)) in MEANING_INCLUDES:
+        return f"significado incluido {KANJI[a].meaning}/{KANJI[b].meaning}"
+    words = lambda c: set(re.findall(r"[a-z]+", KANJI[c].meaning.lower()))
+    shared = words(a) & words(b)
+    return f"significado con palabra común '{min(shared)}'" if shared else None
+
+
+def hard_clash(g: "Glyphs", a: str, b: str) -> str | None:
+    """Colisión que rompe un tipo de trial si a y b coinciden en un set."""
+    if KANJI[a].reading == KANJI[b].reading:
+        return f"lectura {KANJI[a].reading}"
+    if KANJI[a].meaning == KANJI[b].meaning:
+        return f"significado {KANJI[a].meaning}"
+    overlap = meaning_overlap(a, b)
+    if overlap:
+        return overlap
+    sim = g.similarity(a, b)
+    if sim > SIM_MAX:
+        return f"forma {sim:+.3f}"
+    return None
+
+
+def set_in_band(g: "Glyphs", members: list[str], reference_perim: float,
+                readings_band: bool = True) -> str | None:
+    """Devuelve el nombre de la primera banda incumplida, o None."""
+    for name, (centre, tol) in BANDS.items():
+        if name == "readings" and not readings_band:
+            continue
+        if abs(sum(getattr(KANJI[k], name) for k in members) - centre) > tol:
+            return name
+    p = sum(g.perimetric_complexity(k) for k in members)
+    if abs(100.0 * (p - reference_perim) / reference_perim) > PERIM_TOLERANCE_PCT:
+        return "perim"
+    sims = [g.similarity(a, b) for a, b in itertools.combinations(members, 2)]
+    if max(sims) > SIM_MAX:
+        return "sim_max"
+    if float(np.mean(sims)) > SIM_MEAN_MAX:
+        return "sim_mean"
+    return None
+
+
+def substitution_table(g: "Glyphs") -> dict[str, dict[str, list[str]]]:
+    """Para cada set y cada kanji, qué kanji de reserva pueden reemplazarlo.
+
+    Esta es la tabla que Unity debe aplicar como restricción dura. Nadie la
+    escribe: sale de los datos de KANJI, SETS y RESERVE. Cambiar un kanji
+    regenera la tabla, que es justo lo que evita que la regla se desactualice
+    sin que nadie se entere.
+    """
+    ref = float(np.mean([sum(g.perimetric_complexity(k) for k in v)
+                         for v in SETS.values()]))
+    table: dict[str, dict[str, list[str]]] = {}
+    for name, members in SETS.items():
+        table[name] = {}
+        for e in members:
+            rest = [x for x in members if x != e]
+            valid = []
+            for r in RESERVE:
+                if any(hard_clash(g, r, x) for x in rest):
+                    continue
+                if abs(KANJI[r].strokes - KANJI[e].strokes) > SUBST_DELTA_STROKES:
+                    continue
+                if abs(KANJI[r].morae - KANJI[e].morae) > SUBST_DELTA_MORAE:
+                    continue
+                if set_in_band(g, rest + [r], ref, SUBST_APPLY_READINGS_BAND):
+                    continue
+                valid.append(r)
+            table[name][e] = valid
+    return table
+
+
+def lure_table(g: "Glyphs") -> dict[str, dict]:
+    """Trampas por kanji (sets y reserva) y por tipo. T1: la fuerte de LURE_T1 y la
+    sin relación de UNRELATED_T1 (§16.2); provisional solo las ⚑ de la métrica
+    (月, 竹 y la reserva). T2 y T3: las de §16.4, oficiales."""
+    out: dict[str, dict] = {}
+    for ch in [c for v in SETS.values() for c in v] + RESERVE:
+        out[ch] = {"T1": {"lureStrong": LURE_T1[ch], "unrelated": UNRELATED_T1[ch],
+                          "provisional": ch in METRIC_LURES or ch in RESERVE,
+                          "similarityStrong": round(g.similarity(ch, LURE_T1[ch]), 4),
+                          "similarityUnrelated": round(g.similarity(ch, UNRELATED_T1[ch]), 4)},
+                   "T2": {"lureStrong": LURE_T2[ch], "unrelated": UNRELATED_T2[ch], "provisional": False},
+                   "T3": {"lureStrong": LURE_T3[ch], "unrelated": UNRELATED_T3[ch], "provisional": False}}
+    return out
+
+
+_SMALL = set("ゃゅょぁぃぅぇぉャュョァィゥェォ")
+
+
+def _morae(kana: str) -> list[str]:
+    """ちゃ is one mora: a small kana goes with the one before it."""
+    out: list[str] = []
+    for c in kana:
+        if c in _SMALL and out:
+            out[-1] += c
+        else:
+            out.append(c)
+    return out
+
+
+def _voiced_first(a: str, b: str) -> bool:
+    """b's first mora is a's with a dakuten or handakuten: rendaku, a real reading of the kanji."""
+    import unicodedata
+    da, db = unicodedata.normalize("NFD", a[0]), unicodedata.normalize("NFD", b[0])
+    return da != db and db.startswith(da[0]) and db[1:] in (chr(0x3099), chr(0x309A))  # combining dakuten, handakuten
+
+
+def check_lures_t2_t3(table: dict[str, dict]) -> list[str]:
+    """Reglas de §2.4 y §16.5 para T2 y T3: nunca dos correctas. Cada línea es un fallo."""
+    pool = [c for v in SETS.values() for c in v] + RESERVE
+    meanings = {KANJI[c].meaning.lower() for c in pool + TUTORIAL}
+    words = {w.strip() for m in meanings for w in m.replace(",", " ").split()}
+    readings = {KANJI[c].reading for c in pool + TUTORIAL} | {"し", "よん"}   # 四 se lee también し
+    out = []
+    for t in ("T2", "T3"):
+        rows = {ch: table[ch][t] for ch in pool if table.get(ch, {}).get(t)}
+        if len(rows) != len(pool):
+            out.append(f"sin trampa {t}: {''.join(c for c in pool if c not in rows)}")
+        texts = [x for r in rows.values() for x in (r["lureStrong"], r["unrelated"])]
+        if len(set(texts)) != len(texts):
+            out.append(f"{t}: opciones repetidas: {sorted({x for x in texts if texts.count(x) > 1})}")
+        for ch, r in rows.items():
+            for kind in ("lureStrong", "unrelated"):
+                x = r[kind]
+                if t == "T2" and (x.lower() in meanings or set(x.lower().split()) & words):
+                    out.append(f"{ch} T2 {kind} {x!r}: es o comparte palabra con un significado enseñado")
+                if t == "T3" and x in readings:
+                    out.append(f"{ch} T3 {kind} {x}: es una lectura enseñada")
+            if t == "T3":
+                reading, strong, unrel = (_morae(x) for x in (KANJI[ch].reading, r["lureStrong"], r["unrelated"]))
+                if len(strong) != len(reading) or sum(a != b for a, b in zip(strong, reading)) != 1:
+                    out.append(f"{ch} T3: {''.join(strong)} no cambia exactamente una mora de {''.join(reading)}")
+                if _voiced_first(reading[0], strong[0]):
+                    out.append(f"{ch} T3: {''.join(strong)} pone dakuten en la primera mora (rendaku de {''.join(reading)})")
+                if len(unrel) != len(reading) or set(unrel) & (set(reading) | set(strong)):
+                    out.append(f"{ch} T3: la sin relación {''.join(unrel)} no tiene el largo o comparte mora")
+    return out
+
+
+def check_lures(g: "Glyphs", table: dict[str, dict]) -> list[str]:
+    """Reglas de §2.4 de Propuesta_Trampas_T2_T3.md para T1. Cada línea es un fallo."""
+    pool = {c for v in SETS.values() for c in v} | set(RESERVE) | set(TUTORIAL)
+    meanings = {KANJI[c].meaning.lower() for c in pool if c in KANJI}
+    out = []
+    t1 = {ch: row["T1"] for ch, row in table.items()}
+    missing = [c for c in [c for v in SETS.values() for c in v] + RESERVE if not t1.get(c)]
+    if missing:
+        out.append(f"sin trampa T1: {''.join(missing)}")
+    t1 = {ch: r for ch, r in t1.items() if r}
+    strong = [r["lureStrong"] for r in t1.values()]
+    unrel = [r["unrelated"] for r in t1.values()]
+    for name, xs in (("fuerte", strong), ("sin relación", unrel)):
+        if len(set(xs)) != len(xs):
+            out.append(f"trampas {name} repetidas entre kanji")
+        if pool & set(xs):
+            out.append(f"trampa {name} dentro del pool: {''.join(sorted(pool & set(xs)))}")
+    if set(strong) & set(unrel):
+        out.append(f"un kanji es trampa fuerte y sin relación: {''.join(sorted(set(strong) & set(unrel)))}")
+    # Nunca dos correctas: en T1 la opción es un glifo; solo el objetivo significa el prompt.
+    for c in unrel:
+        if c not in UNRELATED_T1_CANDIDATES:
+            out.append(f"{c}: sin relación fuera de los candidatos (sin significado para comprobarlo)")
+        elif UNRELATED_T1_CANDIDATES[c].lower() in meanings:
+            out.append(f"{c} ({UNRELATED_T1_CANDIDATES[c]}) significa lo mismo que un kanji del pool")
+    for ch, r in t1.items():
+        if r["similarityUnrelated"] >= r["similarityStrong"]:
+            out.append(f"{ch}: la sin relación {r['unrelated']} se parece más que la fuerte {r['lureStrong']}")
+    # La trampa compite solo con su objetivo: no se parece a los otros cuatro del set.
+    for name, members in SETS.items():
+        for ch in (c for c in members if c in t1):
+            for other in members:
+                if other != ch and g.similarity(t1[ch]["lureStrong"], other) > SIM_MAX:
+                    out.append(f"set {name}: la trampa de {ch} ({t1[ch]['lureStrong']}) se parece a {other}")
+    return out
+
+
+def export_content(g: "Glyphs", path: str, stream=None) -> dict:
+    """Escribe el contrato de contenido que consumen los ScriptableObjects.
+
+    Una sola fuente de verdad para los kanji, el reparto, la reserva y la tabla
+    de sustitución. `Planteamiento_Fase2_M2.md` §0.4 documenta cuatro
+    divergencias entre documentos y repositorio; este archivo existe para no
+    añadir la quinta.
+    """
+    import json
+    table = substitution_table(g)
+    lures = lure_table(g)
+
+    # §16.7 regla 1: un kanji nuevo del bloque R nunca se vio en la VR; los 15, distintos.
+    seen = set(KANJI) | set(TUTORIAL) | {v["T1"][k] for v in lures.values() if v and v.get("T1")
+                                         for k in ("lureStrong", "unrelated")}
+    new = [c for v in RETENTION_NEW.values() for c in v]
+    assert len(new) == len(set(new)) == 15, "RETENTION_NEW: 15 kanji distintos (§16.7 regla 4)"
+    assert not seen & set(new), f"RETENTION_NEW: vistos en la VR {sorted(seen & set(new))} (§16.7 regla 1)"
+
+    def record(ch: str, role: str, set_name: str | None,
+               discovery: str = "Pictographic") -> dict:
+        k = KANJI[ch]
+        return {
+            # Primero el id: es la llave, y quien abra el JSON a mano tiene que
+            # verla antes que nada.
+            "id": KANJI_IDS[ch],
+            "kanji": ch,
+            "meaning": k.meaning,
+            "targetReading": k.reading,
+            "strokes": k.strokes,
+            "morae": k.morae,
+            "assemblyGroups": k.groups,
+            "commonReadings": k.readings,
+            "discoveryType": discovery,
+            "textbookLesson": k.lesson,
+            "role": role,
+            "experimentalSet": set_name,
+            # 4 decimals, not 1: the pre-test re-checks the ±8 % band from these
+            # values, and 学 for 門 sits at 8.01 % -- 0.1 rounding let it pass.
+            "perimetricComplexity": round(g.perimetric_complexity(ch), 4),
+            "imageabilityGlyph": IMAGEABILITY_R1.get(ch),
+            "imageabilityObject": IMAGEABILITY_R2.get(ch),
+            # Por tipo de trial (D-F6-131); null para el tutorial y para T2/T3 por ahora.
+            "lures": lures.get(ch),
+        }
+
+    blob = {
+        "schemaVersion": 1,
+        "generatedBy": "kanji_metrics.py --export",
+        # Ruta relativa a la raiz del repo: el JSON se versiona, y una ruta
+        # absoluta cambia segun quien lo genere (Windows, Docker, contenedor).
+        "font": str(pathlib.Path(g.font_path).resolve().relative_to(REPO_ROOT).as_posix())
+                if str(pathlib.Path(g.font_path).resolve()).startswith(str(REPO_ROOT))
+                else str(g.font_path),
+        "note": ("Generado, no escrito a mano. Regenerar tras cualquier cambio "
+                 "en KANJI, SETS o RESERVE."),
+        "rules": {
+            "bands": {k: {"centre": v[0], "tolerance": v[1]}
+                      for k, v in BANDS.items()},
+            "perimetricTolerancePct": PERIM_TOLERANCE_PCT,
+            "simMaxPair": SIM_MAX,
+            "simMaxMean": SIM_MEAN_MAX,
+            "substitution": {
+                "deltaStrokes": SUBST_DELTA_STROKES,
+                "deltaMorae": SUBST_DELTA_MORAE,
+                "applyReadingsBand": SUBST_APPLY_READINGS_BAND,
+            },
+            "distractors": "within-set, seeded, 4 options (spec 6.1, 9.3)",
+            "lures": ("in half of each active type's trials of S6-S8, seeded and the same in the "
+                      "three conditions: [CORRECT, LURE_STRONG, IN_SET, UNRELATED]; T1, T2 and T3 active, "
+                      "official lists of Metricas section 16 (D-F6-129, D-F6-131, D-F6-168)"),
+        },
+        "sets": {n: list(v) for n, v in SETS.items()},
+        "reserve": list(RESERVE),
+        "substitutionTable": table,
+        # D-F6-181 (2): pairs of experimental/reserve kanji whose meanings include one another or share a word,
+        # keyed like "similarity". The pre-test reads them to re-check a set after more than one substitution.
+        "meaningClashes": [a + b for a, b in itertools.combinations(
+            [c for v in SETS.values() for c in v] + list(RESERVE), 2) if meaning_overlap(a, b)],
+        # Glyph similarity of every experimental/reserve pair, key = the two
+        # characters in kanji-list order. The pre-test (backend/app/pretest)
+        # needs it to re-check a set after more than one substitution, which
+        # the table above does not cover.
+        "similarity": {a + b: round(g.similarity(a, b), 4)
+                       for a, b in itertools.combinations(
+                           [c for v in SETS.values() for c in v] + list(RESERVE), 2)},
+        "tutorial": list(TUTORIAL),
+        # Bloque R (D-F6-125, D-F6-223): kanji nuevos del sí/no por set evaluado y los textos de UI/UX.
+        "retention": {"newKanji": {n: list(v) for n, v in RETENTION_NEW.items()},
+                      "texts": dict(RETENTION_TEXTS)},
+        "kanji": ([record(c, "Experimental", n)
+                   for n, v in SETS.items() for c in v]
+                  + [record(c, "Reserve", None) for c in RESERVE]
+                  + [record(c, "Tutorial", "Tutorial", discovery="None")
+                     for c in TUTORIAL]),
+    }
+    # "-" escribe a stdout. Es la salida que no depende de ningun montaje:
+    # el shell del host redirige, asi que funciona aunque el contenedor no vea
+    # el repositorio.
+    if str(path) == "-":
+        out = stream or sys.stdout
+        json.dump(blob, out, ensure_ascii=False, indent=2)
+        out.write("\n")
+        return blob
+
+    target = pathlib.Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    # newline="\n": on Windows text mode would write CRLF, and git then shows
+    # the contract as modified with no visible diff (found 28 Sep 2026).
+    with open(target, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(blob, fh, ensure_ascii=False, indent=2)
+    return blob
+
+
+# --------------------------------------------------------------------------- #
+# Métricas geométricas
+# --------------------------------------------------------------------------- #
+
+class Glyphs:
+    """Renderiza y cachea glifos. Una instancia por tipografía."""
+
+    def __init__(self, font_path: str):
+        self.font_path = font_path
+        self.big = ImageFont.truetype(font_path, 512)
+        self.small = ImageFont.truetype(font_path, 256)
+        self._perim: dict[str, float] = {}
+        self._vec: dict[str, np.ndarray] = {}
+
+    def _ink(self, ch: str, font, pad: int) -> np.ndarray:
+        size = font.size + 2 * pad
+        img = Image.new("L", (size, size), 255)
+        ImageDraw.Draw(img).text((pad, pad), ch, font=font, fill=0)
+        return np.array(img) < 128
+
+    def perimetric_complexity(self, ch: str) -> float:
+        """C = P² / A. P = aristas tinta/fondo (4-conectividad), A = área de tinta."""
+        if ch not in self._perim:
+            ink = self._ink(ch, self.big, 64)
+            area = int(ink.sum())
+            if area == 0:
+                raise ValueError(f"la fuente no tiene glifo para {ch!r}")
+            perim = int(np.logical_xor(ink[:, :-1], ink[:, 1:]).sum()
+                        + np.logical_xor(ink[:-1, :], ink[1:, :]).sum())
+            self._perim[ch] = perim * perim / area
+        return self._perim[ch]
+
+    def _shape_vector(self, ch: str, blur: float = 4.0) -> np.ndarray:
+        """Mapa 128×128 recortado, suavizado, centrado y normalizado."""
+        if ch not in self._vec:
+            ink = 255.0 * self._ink(ch, self.small, 40)
+            ys, xs = np.where(ink > 0)
+            crop = ink[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+            im = (Image.fromarray(crop.astype(np.uint8))
+                  .resize((128, 128))
+                  .filter(ImageFilter.GaussianBlur(blur)))
+            v = np.asarray(im, dtype=float).ravel()
+            v -= v.mean()
+            self._vec[ch] = v / np.linalg.norm(v)
+        return self._vec[ch]
+
+    def similarity(self, a: str, b: str) -> float:
+        """Correlación de Pearson entre los mapas. 1 = idéntico, 0 = sin relación."""
+        return float(self._shape_vector(a) @ self._shape_vector(b))
+
+
+# --------------------------------------------------------------------------- #
+# Evaluación
+# --------------------------------------------------------------------------- #
+
+def evaluate_set(g: Glyphs, members: list[str]) -> dict:
+    pairs = list(itertools.combinations(members, 2))
+    sims = [g.similarity(a, b) for a, b in pairs]
+    worst = max(zip(sims, pairs)) if pairs else (0.0, ("", ""))
+    return {
+        "members": "".join(members),
+        "strokes": sum(KANJI[k].strokes for k in members),
+        "perim": sum(g.perimetric_complexity(k) for k in members),
+        "morae": sum(KANJI[k].morae for k in members),
+        "groups": sum(KANJI[k].groups for k in members),
+        "readings": sum(KANJI[k].readings for k in members),
+        "sim_max": worst[0],
+        "sim_max_pair": "/".join(worst[1]),
+        "sim_mean": float(np.mean(sims)) if sims else 0.0,
+    }
+
+
+def check_bands(results: dict[str, dict]) -> list[str]:
+    """Devuelve la lista de violaciones. Vacía = todo dentro de banda."""
+    failures = []
+    mean_perim = float(np.mean([r["perim"] for r in results.values()]))
+    for name, r in results.items():
+        for key, (centre, tol) in BANDS.items():
+            if abs(r[key] - centre) > tol:
+                failures.append(
+                    f"Set {name}: {key} = {r[key]} fuera de {centre}±{tol}")
+        dev = 100.0 * (r["perim"] - mean_perim) / mean_perim
+        if abs(dev) > PERIM_TOLERANCE_PCT:
+            failures.append(
+                f"Set {name}: complejidad perimétrica {dev:+.1f}% "
+                f"fuera de ±{PERIM_TOLERANCE_PCT:.0f}%")
+        if r["sim_max"] > SIM_MAX:
+            failures.append(
+                f"Set {name}: par {r['sim_max_pair']} en {r['sim_max']:+.3f} "
+                f"supera el máximo {SIM_MAX}")
+        if r["sim_mean"] > SIM_MEAN_MAX:
+            failures.append(
+                f"Set {name}: similitud media {r['sim_mean']:+.3f} "
+                f"supera el máximo {SIM_MEAN_MAX}")
+    return failures
+
+
+def check_discovery() -> list[str]:
+    """Uniformidad del mecanismo de descubrimiento.
+
+    El spec asume una secuencia objeto → forma simplificada → kanji. Solo los
+    kanji de las lecciones 'Kanji made from pictures' (L1, L2, L6, L7) traen esa
+    derivación en el libro. Cualquier otro exige un mecanismo aparte, que es una
+    decisión de diseño, no un descuido: por eso se avisa, no se falla.
+    """
+    notes = []
+    for k in [x for ks in SETS.values() for x in ks] + RESERVE:
+        lesson = KANJI[k].lesson
+        if not lesson.endswith("-P"):
+            notes.append(f"{k} ({lesson or 'sin lección'}) no es pictográfico "
+                         f"— necesita su propio mecanismo de descubrimiento")
+    return notes
+
+
+def check_reading_collisions() -> list[str]:
+    """Colisiones de lectura y de significado que de verdad pueden ocurrir.
+
+    Una colisión solo rompe un trial si los dos kanji pueden aparecer en la
+    MISMA sesión, y una sesión enseña un set. Así que hay dos casos:
+      · dentro de un set → error duro, el set no es válido
+      · reserva contra un set → solo válido si RESTRICTED lo cubre, porque el
+        de reserva únicamente puede entrar reemplazando al que choca
+    Dos kanji experimentales en sets DISTINTOS nunca coinciden, así que su
+    colisión no es un problema (sí una nota para el análisis entre visitas).
+    """
+    problems = []
+
+    def clash(a: str, b: str) -> str | None:
+        if KANJI[a].reading == KANJI[b].reading:
+            return f"lectura {KANJI[a].reading}"
+        if KANJI[a].meaning == KANJI[b].meaning:
+            return f"significado '{KANJI[a].meaning}'"
+        return None
+
+    for name, members in SETS.items():
+        for a, b in itertools.combinations(members, 2):
+            what = clash(a, b) or meaning_overlap(a, b)  # D-F6-181 (2): the nominal sets pass it too
+            if what:
+                problems.append(f"{what}: {a}/{b} dentro del set {name} ← SIN RESTRICCIÓN")
+
+    for r in RESERVE:
+        for name, members in SETS.items():
+            for e in members:
+                what = clash(r, e)
+                if what:
+                    allowed = e in RESTRICTED.get(r, set())
+                    note = " (cubierta por RESTRICTED)" if allowed else " ← SIN RESTRICCIÓN"
+                    problems.append(f"{what}: {r}/{e} (reserva vs set {name}){note}")
+    return problems
+
+
+def check_shape_collisions(g: Glyphs, threshold: float = 0.62) -> list[str]:
+    """Igual que las de lectura, pero en el canal visual (rompe T1 y T2)."""
+    problems = []
+    for name, members in SETS.items():
+        for a, b in itertools.combinations(members, 2):
+            s = g.similarity(a, b)
+            if s > threshold:
+                problems.append(f"forma {s:+.3f}: {a}/{b} dentro del set {name} ← SIN RESTRICCIÓN")
+    for r in RESERVE:
+        for name, members in SETS.items():
+            for e in members:
+                s = g.similarity(r, e)
+                if s > threshold:
+                    allowed = e in RESTRICTED.get(r, set())
+                    note = " (cubierta por RESTRICTED)" if allowed else " ← SIN RESTRICCIÓN"
+                    problems.append(f"forma {s:+.3f}: {r}/{e} (reserva vs set {name}){note}")
+    return problems
+
+
+# --------------------------------------------------------------------------- #
+
+def check_repo_root(target: str) -> str | None:
+    """Devuelve un diagnostico si la ruta de exportacion no parece del repositorio.
+
+    Existe porque el modo de fallo mas probable --el bind mount del contenedor
+    no ocurrio-- se manifiesta como un error de archivo inexistente que no
+    menciona el montaje por ningun lado. Un mensaje que dice "vi esto y esperaba
+    aquello" ahorra la media hora de adivinar en que capa esta el problema.
+    """
+    if target == "-":
+        return None
+
+    markers = ["tools", "unity-client", "database"]
+    missing = [m for m in markers if not (REPO_ROOT / m).is_dir()]
+    if not missing:
+        return None
+
+    try:
+        seen = sorted(p.name for p in REPO_ROOT.iterdir())[:12] or ["(vacio)"]
+    except OSError as exc:
+        seen = [f"(no se pudo listar: {exc})"]
+
+    return (
+        f"REPO_ROOT es {REPO_ROOT} y no parece la raiz del repositorio.\n"
+        f"  faltan: {', '.join(missing)}\n"
+        f"  contiene: {', '.join(seen)}\n"
+        "\n"
+        "  Si esto corre en Docker, lo mas probable es que el bind mount no\n"
+        "  ocurriera: revisa que la carpeta del proyecto este compartida en\n"
+        "  Docker Desktop > Settings > Resources > File sharing.\n"
+        "\n"
+        "  Salidas alternativas:\n"
+        "    --export -                        escribe el JSON a stdout\n"
+        "    KANJI_REPO_ROOT=/otra/ruta        fija la raiz a mano"
+    )
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--font", default=DEFAULT_FONT, help="ruta a una fuente CJK")
+    ap.add_argument("--pool", action="store_true",
+                    help="listar además los pares más confundibles del pool")
+    ap.add_argument("--export", nargs="?", const=str(DEFAULT_EXPORT), metavar="ARCHIVO",
+                    help="escribir el contrato de contenido JSON para Unity. "
+                         f"Sin argumento: {DEFAULT_EXPORT.relative_to(REPO_ROOT)}")
+    ap.add_argument("--subst", action="store_true",
+                    help="imprimir la tabla de sustitución derivada")
+    args = ap.parse_args()
+
+    # El JSON va por el stdout real; todo lo demas, por stderr.
+    real_stdout = sys.stdout
+    if args.export == "-":
+        sys.stdout = sys.stderr
+
+    try:
+        g = Glyphs(str(args.font))
+    except OSError:
+        print(f"No se pudo abrir la fuente: {args.font}", file=sys.stderr)
+        if str(args.font) == str(DEFAULT_FONT):
+            print("\nEsa es la fuente del Learning Board, y se genera. Extraerla:\n"
+                  "    docker compose run --rm kanji-tools "
+                  "python tools/extract_board_font.py\n"
+                  "Se calcula sobre ella --y no sobre el .ttc del sistema-- para que "
+                  "el glifo medido y el glifo que ve el participante sean el mismo.",
+                  file=sys.stderr)
+        return 2
+
+    results = {name: evaluate_set(g, ks) for name, ks in SETS.items()}
+    mean_perim = float(np.mean([r["perim"] for r in results.values()]))
+
+    print(f"{'Set':<5}{'kanji':<9}{'trazos':>7}{'C_perim':>9}{'Δ%':>7}"
+          f"{'moras':>7}{'grupos':>8}{'lect.':>7}{'sim_max':>9}{'sim_med':>9}")
+    print("-" * 84)
+    for name, r in results.items():
+        dev = 100.0 * (r["perim"] - mean_perim) / mean_perim
+        print(f"{name:<5}{r['members']:<9}{r['strokes']:>7}{r['perim']:>9.0f}"
+              f"{dev:>+7.1f}{r['morae']:>7}{r['groups']:>8}{r['readings']:>7}"
+              f"{r['sim_max']:>+9.3f}{r['sim_mean']:>+9.3f}")
+
+    print()
+    notes = check_discovery()
+    if notes:
+        print("Mecanismo de descubrimiento:")
+        for n in notes:
+            print(f"  {n}")
+        print()
+
+    collisions = check_reading_collisions() + check_shape_collisions(g)
+    if collisions:
+        print("Colisiones detectadas:")
+        for c in collisions:
+            print(f"  {c}")
+        print()
+
+    if args.pool:
+        universe = [k for ks in SETS.values() for k in ks] + RESERVE
+        top = sorted(((g.similarity(a, b), a, b)
+                      for a, b in itertools.combinations(universe, 2)),
+                     reverse=True)[:12]
+        print("Pares más confundibles del pool:")
+        for s, a, b in top:
+            print(f"  {a}/{b}  {s:+.3f}")
+        print()
+
+    table = substitution_table(g)
+    if args.subst or args.export:
+        print("Tabla de sustitución derivada (kanji ← reserva admisible):")
+        for name, rows in table.items():
+            for e, valid in rows.items():
+                mark = "" if valid else "   ← SIN SUSTITUTO"
+                print(f"  {name} {e}  ({len(valid):>2}) {''.join(valid)}{mark}")
+        print()
+
+    if args.export:
+        problem = check_repo_root(args.export)
+        if problem:
+            print(f"\nNo se exporto nada.\n\n  {problem}\n", file=sys.stderr)
+            return 2
+        export_content(g, args.export, stream=real_stdout)
+        if args.export != "-":
+            print(f"Contrato de contenido escrito en {args.export}\n")
+            # The kanji_items seed (schema v1, F3.4) comes from the same json,
+            # written in the same run, so the catalogue and the content
+            # contract cannot drift apart (decided 1 Oct 2026).
+            from kanji_seed_sql import DEFAULT_OUT, write_seed
+            write_seed(pathlib.Path(args.export), DEFAULT_OUT)
+            print(f"Semilla de kanji_items escrita en {DEFAULT_OUT}\n")
+
+    orphans = [e for rows in table.values() for e, v in rows.items() if not v]
+
+    lures = lure_table(g)
+    print("Trampas T1 (§16.2, D-F6-168; ⚑ = de la métrica, provisional): kanji  fuerte (sim)  sin relación (sim)")
+    for ch, row in lures.items():
+        r = row["T1"]
+        flag = " ⚑" if r["provisional"] else ""
+        print(f"  {ch}  {r['lureStrong']} ({r['similarityStrong']:+.2f})  {r['unrelated']} ({r['similarityUnrelated']:+.2f}){flag}")
+    print()
+    lure_problems = check_lures(g, lures) + check_lures_t2_t3(lures)
+
+    print("Imageabilidad - se reporta, no se exige (ver §12, D10):")
+    for tag, tbl in (("R1 glifo ", IMAGEABILITY_R1),
+                     ("R2 objeto", IMAGEABILITY_R2)):
+        if not all(k in tbl for v in SETS.values() for k in v):
+            continue
+        t = {n: sum(tbl[k] for k in v) for n, v in SETS.items()}
+        detail = "  ".join(f"{n} {v}" for n, v in t.items())
+        print(f"  {tag}:  {detail}   rango {max(t.values()) - min(t.values())}"
+              f"   set mas bajo: {min(t, key=t.get)}")
+    disputed = [k for v in SETS.values() for k in v if k in IMAGEABILITY_R2
+                and abs(IMAGEABILITY_R1[k] - IMAGEABILITY_R2[k]) >= 3]
+    if disputed:
+        print(f"  en disputa (>=3 puntos entre evaluadores): {''.join(disputed)}")
+    low = [k for v in SETS.values() for k in v
+           if min(IMAGEABILITY_R1.get(k, 9), IMAGEABILITY_R2.get(k, 9))
+           < MIN_IMAGEABILITY]
+    if low:
+        print(f"  por debajo de {MIN_IMAGEABILITY} para alguno de los dos: "
+              f"{''.join(low)}")
+    print()
+
+    failures = check_bands(results)
+    unrestricted = [c for c in collisions if "SIN RESTRICCIÓN" in c]
+    if failures or unrestricted or orphans or lure_problems:
+        print("FUERA DE BANDA:")
+        for p_ in lure_problems:
+            print(f"  trampas: {p_}")
+        for o in orphans:
+            print(f"  {o} no tiene ningún sustituto válido en la reserva")
+        for f in failures:
+            print(f"  {f}")
+        for c in unrestricted:
+            print(f"  colisión sin restricción declarada — {c}")
+        return 1
+
+    print("Todos los sets dentro de banda; todas las colisiones restringidas; "
+          "todos los kanji con sustituto; trampas T1, T2 y T3 según §2.4 y §16.5.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

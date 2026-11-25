@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NeuroAdaptiveVR.Controllers;
 using NeuroAdaptiveVR.Data;
 using NeuroAdaptiveVR.Networking;
 using UnityEngine;
@@ -12,36 +13,63 @@ namespace NeuroAdaptiveVR.Core
     /// transiciones entre fases estandarizadas/calibracion/adaptativa/
     /// assessment.
     ///
-    /// FASE 1: implementa solo la maquina de estados y la notificacion
-    /// de STATE_ENTERED al backend via SessionCommunicationClient. Cada
-    /// controlador especifico (LearningBoardController, TrialController,
-    /// etc.) se conecta en las fases donde su contenido se construye
-    /// (ver README de este proyecto y Sintesis_Analisis_Comprension_Proyecto).
+    /// FASE 2: emite STATE_ENTERED a traves de BehaviorTelemetryController,
+    /// no directamente por el cliente WebSocket, para que el evento lleve el
+    /// bloque de contexto del contrato de payload
+    /// (database/EVENT_CONTRACT.md). El campo `state` del payload lo pone
+    /// ahora el contexto, no este controlador.
+    ///
+    /// Desde el 16 de septiembre hace ademas dos cosas al entrar a un estado:
+    /// comprueba el par ESL/LAL contra la matriz del Apendice A, y avisa a quien
+    /// escuche --SessionBootstrap-- para que la fila de la base siga el estado
+    /// real de la sesion. Las dos son guardas: no eligen nada.
     /// </summary>
     [RequireComponent(typeof(SessionCommunicationClient))]
+    [RequireComponent(typeof(BehaviorTelemetryController))]
     public class GameFlowController : MonoBehaviour
     {
-        [SerializeField] private SessionCommunicationClient communicationClient;
+        [SerializeField] private BehaviorTelemetryController telemetry;
 
         [Header("Session context (asignado en S0)")]
+        [Tooltip("Fallback de depuracion. Si la sesion trae condicion, gana la sesion: " +
+                 "es un dato de experiment_sessions, no una preferencia del Editor.")]
         [SerializeField] private ExperimentalCondition condition;
+
         [SerializeField] private GameFlowState currentState = GameFlowState.S0_SessionInitialization;
+
+        [Header("Guarda del Apendice A")]
+        [Tooltip("Comprobar que el par ESL/LAL sea admisible en el estado al que se entra. " +
+                 "Desactivarlo solo tiene sentido para probar a proposito una combinacion prohibida.")]
+        [SerializeField] private bool enforceStateLevelMatrix = true;
+
+        private EnvironmentalStimulationController _stimulation;
+        private LearningAssistanceController _assistance;
 
         public event Action<GameFlowState> OnStateEntered;
 
         public GameFlowState CurrentState => currentState;
-        public ExperimentalCondition Condition => condition;
 
         /// <summary>
-        /// Orden canonico de estados (spec 14.1). No incluye transiciones
-        /// condicionales (p.ej. S2 solo en la primera visita); esa logica
-        /// se agrega en Fase 2 cuando el contenido real exista.
+        /// La condicion de la sesion. Sale de experiment_sessions cuando hay
+        /// sesion instalada; el campo del Inspector es solo el fallback.
+        /// </summary>
+        public ExperimentalCondition Condition
+            => SessionContext.IsInstalled ? SessionContext.Condition : condition;
+
+        /// <summary>
+        /// Orden canonico de estados (spec 14.1).
+        ///
+        /// S2 es condicional: spec 7.3 lo limita a la primera visita. La decision
+        /// se toma en AdvanceToNextState leyendo SessionContext.VisitNumber, que
+        /// viene de la base; no hay un flag aparte que alguien tenga que recordar
+        /// poner.
         /// </summary>
         private static readonly GameFlowState[] StateOrder =
         {
             GameFlowState.S0_SessionInitialization,
             GameFlowState.S1_WelcomeOrientation,
             GameFlowState.S2_VRTutorial,
+            GameFlowState.SR_DelayedRetention,
             GameFlowState.S3_SystemValidation,
             GameFlowState.S4_EEGBaseline,
             GameFlowState.S5_StandardizedLearning,
@@ -53,23 +81,122 @@ namespace NeuroAdaptiveVR.Core
 
         private void Awake()
         {
-            if (communicationClient == null)
-                communicationClient = GetComponent<SessionCommunicationClient>();
+            if (telemetry == null) telemetry = GetComponent<BehaviorTelemetryController>();
+            _stimulation = GetComponent<EnvironmentalStimulationController>();
+            _assistance = GetComponent<LearningAssistanceController>();
+
+            if (telemetry == null)
+            {
+                Debug.LogError("[GameFlowController] Falta BehaviorTelemetryController en este " +
+                               "GameObject. Sin el no se emite telemetria con el bloque de contexto.");
+            }
         }
 
-        public void EnterState(GameFlowState newState)
-        {
-            currentState = newState;
-            Debug.Log($"[GameFlowController] STATE_ENTERED: {newState}");
+        /// <param name="applyNominalLevels">
+        /// Aplicar el par ESL/LAL que la tabla del Apendice A da como nominal
+        /// para este estado, ANTES de emitir STATE_ENTERED.
+        ///
+        /// Por omision true, y ese es el punto: si entrar a un estado no fijara
+        /// sus niveles, alguien tendria que acordarse de hacerlo en cada
+        /// transicion, y el 17 de septiembre quedo demostrado que no basta con
+        /// acordarse. El banco de pruebas lo pasa en false porque parte de su
+        /// trabajo es ejercitar combinaciones prohibidas a proposito.
+        /// </param>
+        private float? _transitionSoundAt;
 
-            communicationClient.SendSessionEvent(
-                eventType: "STATE_ENTERED",
-                payload: new Dictionary<string, object>
-                {
-                    { "state", newState.ToString() },
-                });
+        /// <summary>
+        /// The `stage` sound started now (Time.realtimeSinceStartup). The next
+        /// STATE_ENTERED reports how long before it that was, and forgets it:
+        /// one sound, one transition.
+        /// </summary>
+        public void MarkTransitionSound(float realtime) => _transitionSoundAt = realtime;
+
+        public void EnterState(GameFlowState newState, bool applyNominalLevels = true)
+        {
+            // Este controlador es el unico dueño del estado. La telemetria lo
+            // LEE de aqui al emitir, en vez de guardar una copia que alguien
+            // tenga que mantener al dia -- por eso basta con asignarlo antes
+            // de emitir y no hay ningun SetState que se pueda olvidar.
+            currentState = newState;
+
+            // Los niveles se aplican ANTES de emitir. Si se aplicaran despues,
+            // el STATE_ENTERED saldria con el par del estado anterior y la fila
+            // diria que S7 empezo con el LAL de S1.
+            if (applyNominalLevels) ApplyNominalLevels(newState);
+
+            Debug.Log($"[GameFlowController] STATE_ENTERED: {newState} (wire: {newState.ToWireValue()})");
+
+            // `state` viaja en el bloque de contexto. transition_sound_lead_ms
+            // (UI design v1.3, 8.2 and P7): how long before this event the
+            // `stage` sound started, measured. Null when no stage sound came
+            // before this state (the first state of the session).
+            object lead = null;
+            if (_transitionSoundAt.HasValue)
+                lead = (long)Mathf.Round((Time.realtimeSinceStartup - _transitionSoundAt.Value) * 1000f);
+            _transitionSoundAt = null;
+            telemetry.Emit(TelemetryEvents.StateEntered, StimulusTelemetry.KeyTransitionSoundLeadMs, lead);
+
+            CheckStateLevelMatrix(newState);
 
             OnStateEntered?.Invoke(newState);
+        }
+
+        /// <summary>
+        /// Pone el par ESL/LAL que el estado pide (spec 7, tabla del Game Flow).
+        ///
+        /// ORIGEN DE ESTE METODO. El 17 de septiembre la guarda del Apendice A
+        /// --escrita el dia anterior-- empezo a gritar en cada corrida:
+        /// "S7 no admite LAL=OFF". Tenia razon. El banco de pruebas entraba al
+        /// estado y SOLO DESPUES fijaba los niveles, asi que entre una cosa y la
+        /// otra el estado era S7 con los niveles de S1, y el STATE_ENTERED salia
+        /// con ese par.
+        ///
+        /// El arreglo no fue reordenar dos lineas en quien llamaba: fue que
+        /// entrar a un estado aplique sus niveles. Reordenar habria funcionado
+        /// hasta el siguiente sitio que entrara a un estado sin acordarse.
+        /// </summary>
+        private void ApplyNominalLevels(GameFlowState state)
+        {
+            var esl = StateLevelMatrix.ExpectedEsl(state);
+            var lal = StateLevelMatrix.ExpectedLal(state);
+            if (esl == null || lal == null) return;   // S0 y S10 no tienen niveles
+
+            // betweenTrials: true porque entrar a un estado ES, por definicion,
+            // fuera de un trial. Si hubiera uno abierto, el guard de 10.2 lo
+            // rechazaria, y eso seria correcto: significaria que alguien cambia
+            // de estado a media respuesta.
+            if (_stimulation != null) _stimulation.SetLevel(esl.Value, betweenTrials: true);
+            if (_assistance != null) _assistance.SetLevel(lal.Value, betweenTrials: true);
+        }
+
+        /// <summary>
+        /// Guarda del Apendice A.
+        ///
+        /// Error, pero NO se bloquea la transicion. Quedarse atascado a mitad de
+        /// una sesion por un nivel mal puesto es peor que continuar con el nivel
+        /// mal puesto y que quede constancia: el estado y los dos niveles viajan
+        /// en el bloque de contexto de cada evento, asi que la violacion queda en
+        /// la base y `verify_esl_content.sql` la encuentra aunque nadie estuviera
+        /// mirando la consola.
+        /// </summary>
+        private void CheckStateLevelMatrix(GameFlowState state)
+        {
+            if (!enforceStateLevelMatrix || !StateLevelMatrix.HasRuleFor(state)) return;
+
+            if (_stimulation == null || _assistance == null)
+            {
+                Debug.LogWarning("[GameFlowController] No hay ESL o LAL en este GameObject: " +
+                                 "la matriz del Apendice A no se puede comprobar.");
+                return;
+            }
+
+            string violacion = StateLevelMatrix.Violation(
+                state, _stimulation.CurrentLevel, _assistance.CurrentLevel);
+
+            if (violacion != null)
+                Debug.LogError($"[GameFlowController] Apendice A: {violacion}. " +
+                               "El estado cambia igual y la violacion queda registrada en la " +
+                               "telemetria, pero el dato de este bloque hay que mirarlo con cuidado.");
         }
 
         public void AdvanceToNextState()
@@ -80,7 +207,59 @@ namespace NeuroAdaptiveVR.Core
                 Debug.LogWarning("[GameFlowController] No next state (already at S9 or invalid state).");
                 return;
             }
-            EnterState(StateOrder[currentIndex + 1]);
+
+            // S2 solo en la primera visita (spec 7.3): repetirlo gasta tiempo y mete practica
+            // extra con la mecanica justo antes de medirla. SR solo con sesion evaluada
+            // (visitas 2-4, D-F6-125). La visita corta salta de SR a S9 (D-F6-207).
+            int nextIndex = currentIndex + 1;
+            while (nextIndex < StateOrder.Length - 1 && WillSkip(StateOrder[nextIndex]))
+            {
+                Debug.Log($"[GameFlowController] {StateOrder[nextIndex].ShortCode()} se salta " +
+                          $"(visita {SessionContext.VisitNumber}{(IsShortVisit ? ", corta" : "")}).");
+                nextIndex++;
+            }
+
+            EnterState(StateOrder[nextIndex]);
+        }
+
+        /// <summary>
+        /// Whether this session skips a state. Today only S2, on visits after
+        /// the first (spec 7.3).
+        ///
+        /// Public since 24 September because the participant-facing "Step X of
+        /// N" counter needs the same answer. The rule lives here and only here:
+        /// a counter that recomputed it could say "Step 3 of 9" in a session
+        /// that runs eight states.
+        /// </summary>
+        public bool WillSkip(GameFlowState state) => state switch
+        {
+            GameFlowState.S2_VRTutorial => SessionContext.IsInstalled && !SessionContext.IsFirstVisit,
+            // Block R needs the evaluated session's set (D-F6-190); visit 1 has none.
+            GameFlowState.SR_DelayedRetention => SessionContext.EvaluatedKanjiItems == null,
+            GameFlowState.S3_SystemValidation or GameFlowState.S4_EEGBaseline or GameFlowState.S5_StandardizedLearning or
+            GameFlowState.S6_GuidedPracticeCalibration or GameFlowState.S7_ExperimentalRetrieval or
+            GameFlowState.S8_ImmediateAssessment => IsShortVisit,
+            _ => false,
+        };
+
+        /// <summary>
+        /// The short visit: S1 (S2) → block R → S9, no cap (D-F6-125: visit 4; D-F6-207: the visit 2 test).
+        /// Visit 4 is always short; the Inspector field is for the visit 2 test of Thu 19.
+        /// </summary>
+        public bool IsShortVisit => SessionContext.EvaluatedKanjiItems != null &&
+                                    (shortVisit || SessionContext.VisitNumber >= 4);
+
+        [Tooltip("Visita corta: S1 → bloque R → cierre, sin gorro (D-F6-207, prueba del jue 19). La visita 4 lo es siempre.")]
+        [SerializeField] private bool shortVisit;
+
+        /// <summary>The states this session will actually run, S1 to S9, in order.</summary>
+        public IReadOnlyList<GameFlowState> SessionStates()
+        {
+            var states = new List<GameFlowState>(StateOrder.Length);
+            foreach (var s in StateOrder)
+                if (s != GameFlowState.S0_SessionInitialization && !WillSkip(s))
+                    states.Add(s);
+            return states;
         }
 
         /// <summary>
@@ -93,7 +272,7 @@ namespace NeuroAdaptiveVR.Core
             if (currentState != GameFlowState.S7_ExperimentalRetrieval)
                 return false;
 
-            return condition switch
+            return Condition switch
             {
                 ExperimentalCondition.Static => false,
                 ExperimentalCondition.BehaviorAdaptive => true,

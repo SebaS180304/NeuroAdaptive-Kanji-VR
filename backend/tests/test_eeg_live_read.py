@@ -1,0 +1,178 @@
+"""
+X1 (tasks/todo.md): the backend reads the live epochs at an S7 answer of MULTIMODAL_ADAPTIVE (D-F6-171) and gives
+window.py the window that ends at the answer (D-F6-172, D-F6-177). Needs the database, like test_eeg_reference.
+"""
+
+import json
+import math
+
+import pytest
+from sqlalchemy import text
+
+from app.api.routes.websocket import _eeg_source
+from app.db.base import AsyncSessionLocal
+
+REF = {"source": "S6", "indices": {"engagement_index": {"mean": 0.0, "sd": 1.0}, "theta_fz": {"mean": 0.0, "sd": 1.0},
+                                   "alpha_parietal": {"mean": 0.0, "sd": 1.0}, "theta_beta": {"mean": 0.0, "sd": 1.0}}}
+
+
+async def _session_with_epochs(client, pretested, starts):
+    pid = await pretested("TEST_EEG")
+    sid = (await client.post("/sessions", json={"random_seed": "test-seed", "participant_id": pid,
+                                                "condition": "MULTIMODAL_ADAPTIVE", "assigned_kanji_set": "A"})).json()["id"]
+    async with AsyncSessionLocal() as db:
+        # live.py alive: fresh heartbeat, samples flowing (X3)
+        await db.execute(text("INSERT INTO eeg_sessions (session_id, xdf_path, reference, heartbeat_at, eeg_gap_ms) "
+                              "VALUES (:s, 'x.xdf', CAST(:r AS jsonb), now(), 200) ON CONFLICT (session_id) DO UPDATE "
+                              "SET reference = CAST(:r AS jsonb), heartbeat_at = now(), eeg_gap_ms = 200, "
+                              "not_counted_reason = NULL"),
+                         {"s": sid, "r": json.dumps(REF)})
+        for i, start in enumerate(starts):
+            await db.execute(text(
+                "INSERT INTO eeg_epochs (session_id, epoch_index, lsl_start, start_ms, end_ms, chunk_clean, "
+                "clean_fraction, quality, engagement_index, theta_fz, alpha_parietal, theta_beta) VALUES "
+                "(:s, :i, :l, :a, :b, :c, 1.0, 'GOOD', :ei, 1.0, 1.0, 1.0)"),
+                {"s": sid, "i": i, "l": start / 1000, "a": start, "b": start + 5000, "c": [True] * 9,
+                 "ei": math.exp(-2.0)})
+        await db.commit()
+    return sid
+
+
+@pytest.mark.asyncio
+async def test_the_window_of_the_answer_counts_with_the_epochs_finished_at_it(client, pretested) -> None:
+    sid = await _session_with_epochs(client, pretested, [90_000, 92_500, 97_500])   # the last ends after the answer
+    source = await _eeg_source(sid, 100_000)
+    w = source("S7-006", 95_000, 100_000)
+    assert w["counted"] is True and w["non_poor"] == 2 and w["z"]["engagement_index"] == pytest.approx(-2.0)
+
+
+@pytest.mark.asyncio
+async def test_no_epochs_yet_is_a_window_that_does_not_count(client, pretested) -> None:
+    sid = await _session_with_epochs(client, pretested, [])
+    assert (await _eeg_source(sid, 100_000))("S7-006", 95_000, 100_000)["counted"] is False
+
+
+@pytest.mark.asyncio
+async def test_without_the_answer_time_there_is_no_source() -> None:
+    assert await _eeg_source("00000000-0000-0000-0000-000000000000", None) is None
+
+
+@pytest.mark.asyncio
+async def test_a_window_of_75_s_reads_every_epoch_in_it(client, pretested) -> None:  # D-F6-186 (2), D-F6-172
+    # three slow trials from 25 s to 100 s: the window starts at the 1st trial, 75 s before the answer
+    starts = list(range(25_000, 92_501, 2_500))                     # epochs that end 1.5 s before the answer (D-F6-188)
+    sid = await _session_with_epochs(client, pretested, starts)
+    w = (await _eeg_source(sid, 100_000))("S7-006", 25_000, 100_000)
+    from app.eeg import window
+    epochs = [{"start_ms": s, "end_ms": s + 5000, "quality": "GOOD", "chunk_clean": [True] * 9,
+               "engagement_index": math.exp(-2.0), "theta_fz": 1.0, "alpha_parietal": 1.0, "theta_beta": 1.0}
+              for s in starts]
+    assert w["non_poor"] == window.evaluate(epochs, 25_000, 100_000, REF)["non_poor"] == 28
+
+
+# X1b · what live.py writes ----------------------------------------------------------------------------------------
+
+def _row(i: int, start_ms: int, quality: str = "GOOD") -> dict:
+    return {"epoch_index": i, "lsl_start": 100.0 + i * 2.5, "start_ms": start_ms, "end_ms": start_ms + 5000,
+            "game_state": "S7_EXPERIMENTAL_RETRIEVAL", "trial_id": None, "esl_level": "MEDIUM",
+            "chunk_clean": [True] * 9, "clean_fraction": 1.0, "quality": quality,
+            "engagement_index": 0.5, "theta_fz": 0.2, "alpha_parietal": 0.3, "theta_beta": 1.1}
+
+
+@pytest.mark.asyncio
+async def test_live_writes_each_epoch_once_and_the_heartbeat(client, pretested) -> None:
+    from app.eeg import live
+
+    sid = await _session_with_epochs(client, pretested, [])
+    async with AsyncSessionLocal() as db:
+        await live.save_epochs(db, sid, [_row(0, 1000), _row(1, 3500)])
+        await live.save_epochs(db, sid, [_row(1, 3500, "POOR")])        # the same epoch again: replaced, not doubled
+        await live.heartbeat(db, sid, gap_ms=120)
+        await db.commit()
+        rows = (await db.execute(text("SELECT epoch_index, quality FROM eeg_epochs WHERE session_id = :s "
+                                      "ORDER BY epoch_index"), {"s": sid})).all()
+        beat = (await db.execute(text("SELECT heartbeat_at IS NOT NULL, eeg_gap_ms FROM eeg_sessions "
+                                      "WHERE session_id = :s"), {"s": sid})).one()
+    assert rows == [(0, "GOOD"), (1, "POOR")] and tuple(beat) == (True, 120)
+
+
+# ---------- I2 (D-F6-275, D-F6-276): option (3) live behind EEG_LIVE_RULE=ica ----------
+
+def _rule(monkeypatch, rule: str) -> None:
+    from types import SimpleNamespace
+
+    import app.config
+
+    monkeypatch.setattr(app.config, "get_settings", lambda: SimpleNamespace(eeg_live_rule=rule))
+
+
+@pytest.mark.asyncio
+async def test_live_stores_the_ica_result_in_eeg_sessions(client, pretested) -> None:   # migration 0022
+    from app.eeg import live
+
+    sid = await _session_with_epochs(client, pretested, [])
+    model = {"identified": False, "reason": "corr with Fp1 0.40 < 0.7", "corr": 0.4037}
+    async with AsyncSessionLocal() as db:
+        await live.save_ica(db, sid, model)
+        await db.commit()
+        stored = (await db.execute(text("SELECT ica FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
+    assert stored == model
+
+
+@pytest.mark.asyncio
+async def test_with_rule_ica_the_window_carries_the_sound_density(client, pretested, monkeypatch) -> None:
+    sid = await _session_with_epochs(client, pretested, [90_000, 92_500])
+    _rule(monkeypatch, "ica")      # options (2) and (3) both carry it (D-F6-147 (2)), as replay does
+    assert "sounds_per_s" in (await _eeg_source(sid, 100_000))("S7-006", 95_000, 100_000)
+    _rule(monkeypatch, "current")
+    assert "sounds_per_s" not in (await _eeg_source(sid, 100_000))("S7-006", 95_000, 100_000)
+
+
+@pytest.mark.asyncio
+async def test_fill_from_xdf_with_rule_ica_reuses_the_model_live_stored(client, pretested, monkeypatch) -> None:
+    from app.eeg import epochs, ica, live, lsl_reader
+    from app.eeg.baseline import DEFAULT_MONTAGE
+    from tests.test_eeg_live_ica import MARKERS, SR, _session
+
+    x, ts = _session()
+    _, first = live.cut_recording(x, ts, SR, DEFAULT_MONTAGE, MARKERS, rule="ica")
+    streams = {lsl_reader.EEG_STREAM: {"time_series": x, "time_stamps": ts, "info": {"nominal_srate": [str(SR)]}},
+               lsl_reader.MARKER_STREAM: {"time_stamps": [t for t, _ in MARKERS],
+                                          "time_series": [[json.dumps(m)] for _, m in MARKERS]}}
+    monkeypatch.setattr(lsl_reader, "load_xdf", lambda _p: streams)
+    monkeypatch.setattr(ica, "fit", lambda *_a, **_k: pytest.fail("refitted"))
+    _rule(monkeypatch, "ica")
+    sid = await _session_with_epochs(client, pretested, [])
+    async with AsyncSessionLocal() as db:
+        await live.save_ica(db, sid, first.ica)
+        await db.commit()
+    eps = await epochs.fill_from_xdf(sid)
+    async with AsyncSessionLocal() as db:
+        n, rule, stored = (await db.execute(text(
+            "SELECT (SELECT count(*) FROM eeg_epochs WHERE session_id = :s), filter_params ->> 'rule', ica "
+            "FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).one()
+    assert n == len(eps) > 0 and rule == "ica" and stored["unmixing"] == first.ica["unmixing"]
+
+
+# ---------- V (D-F6-281 (2)): how many epochs the live cut and the XDF cut differ ----------
+
+@pytest.mark.asyncio
+async def test_the_live_cut_is_compared_with_the_xdf_cut_and_stored(client, pretested, tmp_path) -> None:
+    import csv as _csv
+
+    from app.eeg import summary
+
+    sid = await _session_with_epochs(client, pretested, [0, 2500, 5000])      # the XDF cut, all GOOD and clean
+    path = tmp_path / "live_epochs.csv"
+    with open(path, "w", newline="", encoding="utf-8") as f:                  # as export_live_epochs writes it
+        w = _csv.writer(f)
+        w.writerow(["session_id", "epoch_index", "chunk_clean", "quality"])
+        w.writerow([sid, 0, [True] * 9, "GOOD"])                              # the same
+        w.writerow([sid, 1, [True] * 8 + [False], "GOOD"])                    # one chunk at the threshold
+        w.writerow([sid, 3, [True] * 9, "GOOD"])                              # live only (the XDF ends before)
+    got = await summary.live_vs_xdf(sid, path)
+    assert got == {"live": 3, "xdf": 3, "common": 2, "differ": 1, "differ_pct": 50.0, "only_live": 1, "only_xdf": 1}
+    async with AsyncSessionLocal() as db:
+        stored = (await db.execute(text("SELECT live_vs_xdf FROM eeg_sessions WHERE session_id = :s"),
+                                   {"s": sid})).scalar_one()
+    assert stored == got

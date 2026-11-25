@@ -1,0 +1,66 @@
+"""
+Does the EEG count in a decision window, and with which z (Planteamiento_Tecnico_F4.md §2.2)?
+The same definition as verify_eeg.sql (D-F6-162) and, later, the live path and replay.py.
+
+The window ends at the answer of its 3rd trial, where the decision is taken (D-F6-177), and reaches back over its
+3 trials or 15 s, whichever is longer (D-F6-151). An epoch is in it by its centre and only if it had finished at least
+1.5 s before the answer (D-F6-172, D-F6-188: what reaches the database in time live). The EEG counts with >= 2 non-POOR epochs and >= 5 s of clean chunks, each second once (D-F6-127).
+z of an index = mean over the non-POOR epochs of (ln index - mean) / SD of the session's reference (§4.4.1).
+"""
+
+import math
+import statistics
+
+from app.eeg.epochs import EPOCH_S
+from app.eeg.reference import INDICES
+
+MIN_SPAN_MS = 15_000
+MIN_NON_POOR = 2
+MIN_CLEAN_S = 5.0
+CENTRE_MS = int(EPOCH_S * 500)
+CHUNK_MS = 1000
+DENSE = 1.5  # D-F6-147 (2)
+BAD_CHANNELS = "BAD_CHANNELS"  # the BEHAVIOR_FALLBACK reason (concordance.block keeps it)
+ARRIVAL_MARGIN_MS = 1500  # D-F6-188; measured 1.1–1.35 s from an epoch's end to its row (X1b)
+
+
+def _clean_s(eps: list[dict]) -> float:
+    spans = sorted((e["start_ms"] + k * 4000 // (len(e["chunk_clean"]) - 1),) * 2 for e in eps
+                   for k, clean in enumerate(e["chunk_clean"]) if clean)
+    covered, end = 0, None
+    for start, _ in spans:
+        covered += CHUNK_MS - (max(0, end - start) if end is not None else 0)
+        end = start + CHUNK_MS
+    return covered / 1000
+
+
+def _z(eps: list[dict], name: str, ref: dict) -> float | None:
+    stats = ref["indices"].get(name)
+    values = [e[name] for e in eps if e[name] is not None]
+    if not stats or stats["sd"] is None or not values:
+        return None
+    return statistics.fmean((math.log(v) - stats["mean"]) / stats["sd"] for v in values)
+
+
+def evaluate(eps: list[dict], first_start_ms: int, decision_ms: int, ref: dict,
+             sounds: tuple[list[int], float | None] | None = None) -> dict:
+    """eps: the session's epochs; first_start_ms: start of the window's 1st trial; decision_ms: answer of its 3rd.
+    sounds: epochs.sound_density() for option (2) (D-F6-147 (2)): the window's onsets per second and whether that is
+    >= DENSE x S6's; None (the current rule) adds nothing."""
+    lo = min(first_start_ms, decision_ms - MIN_SPAN_MS)
+    inside = [e for e in eps if e["start_ms"] is not None and lo <= e["start_ms"] + CENTRE_MS <= decision_ms
+              and e["end_ms"] <= decision_ms - ARRIVAL_MARGIN_MS]
+    usable = [e for e in inside if e["quality"] != "POOR"]
+    clean_s = _clean_s(inside)
+    out = {"counted": len(usable) >= MIN_NON_POOR and clean_s >= MIN_CLEAN_S, "non_poor": len(usable), "clean_s": clean_s,
+           "z": {name: _z(usable, name, ref) for name in INDICES}}
+    out_now = [e["excluded_channels"] for e in inside if e.get("excluded_channels")]
+    if out_now:  # D-F6-216: the decision's eeg block says which channel was out
+        out["bad_channel"] = out_now[-1]
+    if any("," in (e.get("excluded_channels") or "") for e in inside):  # D-F6-216: two channels out, the EEG does not count
+        out.update(counted=False, fallback=BAD_CHANNELS)
+    if sounds is not None:
+        onsets, d6 = sounds
+        per_s = sum(lo <= t < decision_ms for t in onsets) / ((decision_ms - lo) / 1000)
+        out.update(sounds_per_s=per_s, dense=d6 is not None and per_s >= DENSE * d6)
+    return out

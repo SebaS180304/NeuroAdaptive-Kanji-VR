@@ -1,0 +1,282 @@
+using System;
+using System.Collections;
+using System.Linq;
+using NeuroAdaptiveVR.Controllers;
+using NeuroAdaptiveVR.Data;
+using NeuroAdaptiveVR.Networking;
+using Unity.Cinemachine;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
+
+namespace NeuroAdaptiveVR.Core
+{
+    /// <summary>
+    /// Demonstration scene for the 30 Oct video (D-F6-84), not in Build Settings. It loads the experiment scene
+    /// additively, so the room is always the current one, and switches the session chain off before any Start runs:
+    /// no backend, no session, no telemetry, nothing in the database. The states are fixed in the Inspector before
+    /// Play (never send editor commands during Play, finding P2).
+    /// </summary>
+    public class DemoDirector : MonoBehaviour
+    {
+        public const string ScenePath = "Assets/Scenes/Demo_Video.unity";
+        public const string ExperimentScene = "JapaneseLearningStudio";
+
+        /// <summary>Everything that would open a session, talk to the backend or draw a random event.</summary>
+        public static readonly Type[] Silenced =
+        {
+            typeof(SessionBootstrap), typeof(SessionFlowRunner), typeof(GameFlowController),
+            typeof(SessionCommunicationClient), typeof(AdaptationClient), typeof(PeripheralEventScheduler),
+            typeof(DebugTrialPresenter),   // its H and digit keys would answer a trial nobody started
+        };
+
+        [Tooltip("Label only: with no session nothing reads it; it names the condition the shots stand for.")]
+        [SerializeField] private string condition = "BEHAVIOR_ADAPTIVE";
+        [SerializeField] private StimulationOrAssistanceLevel esl = StimulationOrAssistanceLevel.Medium;
+        [SerializeField] private StimulationOrAssistanceLevel lal = StimulationOrAssistanceLevel.Medium;
+        [SerializeField] private string kanji = "火";
+        [SerializeField] private int roomSeed = 1;
+        [SerializeField] private float cardSeconds = 3f;
+        [SerializeField] private string card = "Demonstration scene. States set for the recording.";
+
+        [Tooltip("The cinematic look (D-F6-114): seen only by the recording camera, through its own layer.")]
+        [SerializeField] private Volume cineLook;
+
+        /// <summary>The editor's DemoRecording starts the Recorder on this (file stem) and stops it on ShotEnded.</summary>
+        public static event Action<string> ShotStarted;
+        public static event Action ShotEnded;
+
+        private const float MaxPullWait = 32f;    // two and a half silhouette cycles (8 s walk + 5 s pause)
+        private float _pullAt;                   // clip time the focus pull starts; NaN while it waits for the target
+        private const float LookFollowRate = 6f;   // 1/s: about 0.4 s to settle on a new focus point
+
+        private EnvironmentalStimulationController _room;
+        private StudioTrialPresenter _board;
+        private KanjiDiscoveryController _discovery;
+        private PronunciationAudioController _voice;
+        private KanjiItem _item;
+        private DemoShot[] _shots;
+        private readonly System.Collections.Generic.Dictionary<(int, bool), int> _lastOnKey = new();
+        private readonly System.Collections.Generic.Dictionary<DemoShot, Vector3> _lookHome = new();
+        private LearningAssistanceController _assistance;
+        private KanjiContentController _content;
+        private Coroutine _running;
+
+        private IEnumerator Start()
+        {
+            SceneManager.sceneLoaded += Silence;
+            yield return SceneManager.LoadSceneAsync(ExperimentScene, LoadSceneMode.Additive);
+            SceneManager.sceneLoaded -= Silence;
+            // Lighting and skybox come from the active scene.
+            SceneManager.SetActiveScene(SceneManager.GetSceneByName(ExperimentScene));
+            // Untracked (flat run) the controller models sit at the eye, right where the recording cameras start.
+            foreach (var hand in new[] { "Left Controller", "Right Controller" }) GameObject.Find(hand)?.SetActive(false);
+
+            var content = FindAnyObjectByType<KanjiContentController>();
+            if (content != null && !content.IsLoaded) content.Load();
+            var item = _item = content != null ? content.ByCharacter(kanji) : null;
+            if (item == null) Debug.LogError($"[Demo] Kanji {kanji} is not in the contract.");
+
+            // The room still builds its telemetry events (they stay queued, the client is off); a zero keeps the
+            // clock from logging an error on every level change. Enter Play Mode keeps statics, so reset first.
+            SessionClock.ResetForNewSession();
+            SessionClock.SetSessionZero(DateTime.UtcNow);
+            _room = FindAnyObjectByType<EnvironmentalStimulationController>();
+            _room.SetSeed(roomSeed);
+            _room.SetLevel(esl, betweenTrials: true);
+            FindAnyObjectByType<LearningAssistanceController>().SetLevel(lal, betweenTrials: true);
+            Debug.Log($"[Demo] {condition} · ESL {esl} · LAL {lal} · kanji {kanji} · seed {roomSeed}");
+
+            _discovery = FindAnyObjectByType<KanjiDiscoveryController>();
+            _voice = FindAnyObjectByType<PronunciationAudioController>();
+            _shots = FindObjectsByType<DemoShot>(FindObjectsInactive.Include, FindObjectsSortMode.None).OrderBy(s => s.cameraName).ToArray();
+            foreach (var s in _shots) { var l = s.GetComponent<CinemachineCamera>().LookAt; if (l != null) _lookHome[s] = l.position; }
+            _assistance = FindAnyObjectByType<LearningAssistanceController>();
+            _content = content;
+            var board = _board = FindAnyObjectByType<StudioTrialPresenter>();
+            board.ShowMessage(card);
+            yield return new WaitForSecondsRealtime(cardSeconds);
+            if (item != null) board.ShowExposure(item.Character, item.Meaning, item.TargetReading);
+        }
+
+        // L / M / H switch the room; the fixed seed gives the same room at a level on every attempt (plan §2).
+        private void Update()
+        {
+            var k = Keyboard.current;
+            if (_room == null || k == null) return;
+            if (k.lKey.wasPressedThisFrame) _room.SetLevel(StimulationOrAssistanceLevel.Low, betweenTrials: true);
+            if (k.mKey.wasPressedThisFrame) _room.SetLevel(StimulationOrAssistanceLevel.Medium, betweenTrials: true);
+            if (k.hKey.wasPressedThisFrame) _room.SetLevel(StimulationOrAssistanceLevel.High, betweenTrials: true);
+            // Digit N launches shot TN from its first frame; one shot (one camera) at a time.
+            for (int n = 1; n <= 9; n++)
+            {
+                if (!k[Key.Digit1 + (n - 1)].wasPressedThisFrame) continue;
+                bool shift = k.shiftKey.isPressed;
+                var onKey = _shots.Where(s => s.number == n && s.shift == shift).ToArray();
+                if (onKey.Length == 0) { Debug.LogWarning($"[Demo] No shot T{n}{(shift ? " (Shift)" : "")} in the scene."); continue; }
+                if (_running != null) { Debug.LogWarning("[Demo] A shot is running; wait for it to end."); continue; }
+                int next = DemoShot.NextIndex(_lastOnKey.TryGetValue((n, shift), out int last) ? last : -1, onKey.Length);
+                _lastOnKey[(n, shift)] = next;
+                var shot = onKey[next];
+                _running = StartCoroutine(RunShot(shot));
+            }
+        }
+
+        private IEnumerator RunShot(DemoShot shot)
+        {
+            foreach (var s in _shots) s.GetComponent<CinemachineCamera>().Priority = s == shot ? 10 : 0;
+            var dolly = shot.GetComponent<CinemachineSplineDolly>();
+            dolly.CameraPosition = 0f;
+            var look = shot.GetComponent<CinemachineCamera>().LookAt;
+            if (look != null && _lookHome.TryGetValue(shot, out var home)) look.position = home;
+            if (shot.lookAtFocus && look != null) look.position = FocusPoint(shot, 0f);
+            yield return null;   // let the brain cut to the shot before the first recorded frame
+            string stem = DemoShot.Stem(shot.number, shot.cameraName, shot.levelInName ? _room.CurrentLevel.ToString().ToUpperInvariant() : null);
+            ShotStarted?.Invoke(stem);
+            Debug.Log($"[Demo] {stem} · {shot.total:F0} s");
+
+            bool acted = false, waitsForTarget = shot.pullAtAbsX > 0f;
+            _pullAt = waitsForTarget ? float.NaN : shot.pullStart;
+            float pullSeconds = shot.pullEnd - shot.pullStart;
+            float lastAbsX = float.MaxValue;
+            float total = shot.total;
+            if (shot.action == DemoShot.Action.Animal && Animal(shot) is { } anim) total = shot.actionAt + anim.DurationSeconds + DemoShot.Margin;
+            float t0 = Time.realtimeSinceStartup;
+            for (float t = 0f; ; t = Time.realtimeSinceStartup - t0)
+            {
+                if (!waitsForTarget && t >= total) break;
+                if (waitsForTarget)
+                {
+                    if (!float.IsNaN(_pullAt) && t >= _pullAt + pullSeconds + shot.holdAfterPull) break;
+                    if (t >= MaxPullWait) { Debug.LogWarning($"[Demo] {shot.pullTo} never crossed |x| {shot.pullAtAbsX} in {MaxPullWait:F0} s."); break; }
+                    var target = PullTarget(shot);
+                    float absX = target != null ? Mathf.Abs(target.transform.position.x) : 0f;
+                    // Not in the first margin: the clip needs its 2 s before the pull, so a crossing that early waits a cycle.
+                    if (float.IsNaN(_pullAt) && t >= DemoShot.Margin && DemoShot.Crossed(lastAbsX, absX, shot.pullAtAbsX))
+                    {
+                        _pullAt = t;
+                        Debug.Log($"[Demo] {target.name} out past |x| {shot.pullAtAbsX} at {t:F1} s: focus pull");
+                    }
+                    lastAbsX = absX;
+                }
+                dolly.CameraPosition = DemoShot.Position(t, shot.moveStart, shot.moveEnd, shot.returnHome);
+                // Eased, so the cut from the board to the object (they are 0.1 m apart when it appears) is a glide.
+                if (shot.lookAtFocus && look != null)
+                    look.position = Vector3.Lerp(look.position, FocusPoint(shot, t), 1f - Mathf.Exp(-LookFollowRate * Time.deltaTime));
+                if (cineLook != null && cineLook.profile.TryGet(out DepthOfField dof))
+                    dof.focusDistance.value = Vector3.Distance(shot.transform.position, FocusPoint(shot, t));
+                if (!acted && t >= shot.actionAt) { acted = true; Act(shot); }
+                yield return null;
+            }
+
+            ShotEnded?.Invoke();
+            _discovery?.Hide();
+            _board.Clear();
+            if (shot.action == DemoShot.Action.Animal) Animal(shot)?.gameObject.SetActive(false);
+            if (shot.action == DemoShot.Action.Hint) _assistance.SetLevel(lal, betweenTrials: true);
+            if (_item != null) _board.ShowExposure(_item.Character, _item.Meaning, _item.TargetReading);
+            _running = null;
+        }
+
+        // A set focus wins; then a focus pull (T4); otherwise the board until the object appears on it, then the object (Sebas, 29 Oct).
+        private Vector3 FocusPoint(DemoShot shot, float t)
+        {
+            if (shot.focus != null) return shot.focus.position;
+            if (!string.IsNullOrEmpty(shot.animal))
+            {
+                var a = Animal(shot);
+                var ars = a != null && a.gameObject.activeInHierarchy ? a.GetComponentsInChildren<Renderer>() : Array.Empty<Renderer>();
+                if (ars.Length > 0) return ars.Aggregate(ars[0].bounds, (b, r) => { b.Encapsulate(r.bounds); return b; }).center;
+                return _lookHome.TryGetValue(shot, out var home) ? home : shot.transform.position + shot.transform.forward;
+            }
+            if (!string.IsNullOrEmpty(shot.pullTo))
+            {
+                var target = PullTarget(shot);
+                var rs = target != null ? target.GetComponentsInChildren<Renderer>() : Array.Empty<Renderer>();
+                float pull = float.IsNaN(_pullAt) ? 0f : DemoShot.Travel(t, _pullAt, _pullAt + shot.pullEnd - shot.pullStart);
+                if (rs.Length > 0) return Vector3.Lerp(BoardOrObject(), rs[0].bounds.center, pull);
+            }
+            return BoardOrObject();
+        }
+
+        // The seed decides which silhouette is on, so take the active one.
+        private static EnvironmentProp PullTarget(DemoShot shot) =>
+            FindObjectsByType<EnvironmentProp>(FindObjectsSortMode.None).FirstOrDefault(p => p.name.StartsWith(shot.pullTo));
+
+        private Vector3 BoardOrObject()
+        {
+            var obj = _discovery != null ? _discovery.Spawned : null;
+            if (obj == null) return _discovery != null ? _discovery.transform.position : _board.transform.position;   // the discovery controller sits on LearningBoard
+            var rs = obj.GetComponentsInChildren<Renderer>();
+            return rs.Length > 0 ? rs.Aggregate(rs[0].bounds, (b, r) => { b.Encapsulate(r.bounds); return b; }).center : obj.position;
+        }
+
+        // C3 as in S5 (D-F6-64, D-F6-90): the object on the board shrinks into form 1 → form 2 → kanji, 7.8 s with the strip.
+        private IEnumerator RunC3()
+        {
+            _discovery.ShowStage(_item, 1);
+            _board.BeginC3(_item, string.Empty);
+            float c0 = Time.realtimeSinceStartup;
+            for (float t = 0f; t < C3Timeline.TotalSeconds; t = Time.realtimeSinceStartup - c0)
+            {
+                _board.SetC3(t);
+                _discovery.SetObjectScale(C3Timeline.ObjectScale(t));
+                yield return null;
+            }
+            _board.EndC3();
+            _discovery.Hide();
+            _board.ShowExposure(_item.Character, _item.Meaning, _item.TargetReading);
+        }
+
+        private static PeripheralAnimation Animal(DemoShot shot) =>
+            GameObject.Find("EnvironmentalLayer")?.transform.Find("PeripheralEvents")?
+                .GetComponentsInChildren<PeripheralAnimation>(true).FirstOrDefault(a => a.name == shot.animal);
+
+        // A real trial on the board with the hint the game gives for that type and LAL (Diseno_UI_Kanji_Studio_v1.md §9.1).
+        private void ShowHint(DemoShot shot)
+        {
+            var others = _content.Set("A").Where(k => k.KanjiId != _item.KanjiId).Take(3).ToList();
+            var all = others.Prepend(_item).ToList();
+            string Text(KanjiItem k) => shot.hintType switch
+            {
+                RetrievalTrialType.MeaningToKanji => k.Character,
+                RetrievalTrialType.KanjiToMeaning => k.Meaning,
+                _ => k.TargetReading,
+            };
+            string prompt = shot.hintType == RetrievalTrialType.MeaningToKanji ? _item.Meaning : _item.Character;
+            var options = all.OrderBy(k => k.KanjiId).Select(k => new TrialOption(k.KanjiId, Text(k), k == _item)).ToList();
+            _assistance.SetLevel(shot.hintLevel, betweenTrials: true);
+            _board.Present(shot.hintType, prompt, options);
+            _board.ShowCue(_assistance.AvailableCuesNow(shot.hintType), _item);
+        }
+
+        private void Act(DemoShot shot)
+        {
+            var action = shot.action;
+            if (action == DemoShot.Action.C3 && _item != null && _discovery != null) { StartCoroutine(RunC3()); return; }
+            if (action == DemoShot.Action.Hint && _item != null && _content != null) { ShowHint(shot); return; }
+            if (action == DemoShot.Action.Animal && Animal(shot) is { } anim)
+            {
+                anim.gameObject.SetActive(false);
+                anim.gameObject.SetActive(true);   // OnEnable restarts its pose at t = 0
+                return;
+            }
+            if (action != DemoShot.Action.ObjectApproach || _item == null || _discovery == null) return;
+            // As S5 stage 1 (D-F6-49): the object comes close, levitates while the reading plays, and goes back.
+            if (!_discovery.ShowStage(_item, 1)) return;
+            // Unlike S5, the board keeps the kanji, its meaning and reading in view (Sebas, 29 Oct).
+            _board.ShowExposure(_item.Character, _item.Meaning, _item.TargetReading);
+            StartCoroutine(_discovery.Approach(() => _voice?.PlayInitialExposure(_item)));
+        }
+
+        // sceneLoaded runs after Awake and OnEnable and before Start, so a component switched off here never starts.
+        private static void Silence(Scene scene, LoadSceneMode mode)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var b in root.GetComponentsInChildren<Behaviour>(true).Where(b => Silenced.Contains(b.GetType())))
+                    b.enabled = false;
+        }
+    }
+}
