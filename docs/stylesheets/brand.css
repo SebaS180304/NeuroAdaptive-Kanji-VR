@@ -1,0 +1,21 @@
+/* The six Brand colours of design-system.md «Brand» (D-F6-117, D-F6-120, D-F6-121), allowed by D-F6-288 (1).
+   Nothing else: every other value is Material's own. */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #0B6A73;        /* Lagoon */
+  --md-primary-fg-color--light: #3FB7C2; /* Light Lagoon */
+  --md-primary-fg-color--dark: #0B6A73;
+  --md-primary-bg-color: #F9F8F6;        /* Paper */
+  --md-accent-fg-color: #F2A93B;         /* Saffron */
+  --md-default-bg-color: #F9F8F6;        /* Paper */
+  --md-typeset-color: #14171C;           /* Ink */
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #0F1115;        /* Night */
+  --md-primary-fg-color--light: #3FB7C2;
+  --md-primary-fg-color--dark: #0F1115;
+  --md-primary-bg-color: #F9F8F6;
+  --md-accent-fg-color: #F2A93B;
+  --md-default-bg-color: #0F1115;        /* Night */
+  --md-typeset-a-color: #3FB7C2;         /* Light Lagoon */
+}

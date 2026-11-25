@@ -1,0 +1,6 @@
+# The documentation site only (D-F6-287 (2)); not the backend's dependencies. Install once, in its own venv:
+#   python -m venv %USERPROFILE%\.venvs\mkdocs
+#   %USERPROFILE%\.venvs\mkdocs\Scripts\python -m pip install -r requirements-docs.txt
+mkdocs==1.6.1
+mkdocs-material==9.8.2
+pymdown-extensions==13.1.2

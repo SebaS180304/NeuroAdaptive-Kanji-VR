@@ -80,3 +80,6 @@ graphify-out/
 
 # autorun logs (D-F6-179)
 backend/logs/
+
+# MkDocs build output (D-F6-288 (2)): built on demand, never committed
+site/

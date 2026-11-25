@@ -1,0 +1,59 @@
+# Documentation site for whoever inherits the project (D-F6-287, D-F6-288).
+# Build (offline result, opens from file://):  %USERPROFILE%\.venvs\mkdocs\Scripts\mkdocs build --strict
+# Output in site/ (git-ignored).
+site_name: NeuroAdaptive VR · developer docs
+site_description: How the system is built, installed, run and tested.
+docs_dir: docs
+site_dir: site
+use_directory_urls: false   # so the built pages open from file:// without a server
+
+theme:
+  name: material
+  font: false               # no Google Fonts: the site must open without internet
+  logo: assets/andon_icon_light.svg
+  favicon: assets/andon_favicon_light_32.svg
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle: { icon: material/weather-night, name: Dark }
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle: { icon: material/weather-sunny, name: Light }
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+
+extra_css:
+  - stylesheets/brand.css
+
+plugins:
+  - search
+  - privacy      # downloads external assets (the search shim) at build time, so nothing loads from the web
+  - offline
+
+markdown_extensions:
+  - admonition
+  - tables
+  - attr_list
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: ["."]      # pulls database/ERD.md and EVENT_CONTRACT.md in, one source
+      check_paths: true
+
+nav:
+  - Overview and architecture: index.md
+  - Install from scratch: install.md
+  - Running a session: session.md
+  - EEG pipeline: eeg.md
+  - Adaptation engine: adaptation.md
+  - Data model: data-model.md
+  - Settings (.env): env.md
+  - Tests: testing.md
+  - Troubleshooting: troubleshooting.md
