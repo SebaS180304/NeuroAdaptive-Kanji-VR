@@ -43,6 +43,11 @@ def test_missing_aura_software_or_labrecorder_fails() -> None:
     assert (FAIL, "AURA software not running") in out
 
 
+def test_the_aura_lsl_connector_counts_as_the_aura_software() -> None:   # Sebas, 26 Nov: AURA_LSL_CONNECTOR.exe
+    connector = [p for p in READY if p["Name"] != "Aura.exe"] + [_p("AURA_LSL_CONNECTOR.exe")]
+    assert (OK, "AURA software running") in preflight.check_processes(connector, NOW)
+
+
 def test_lsl_exactly_one_real_local_aura() -> None:
     real = {"name": "AURA", "hostname": HOST, "source_id": "aura-123"}
     other_pc = {"name": "AURA", "hostname": "MSI", "source_id": "x"}

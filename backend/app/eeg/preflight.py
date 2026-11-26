@@ -29,7 +29,9 @@ XDF_ROOT = Path(os.environ.get("LABRECORDER_ROOT", r"C:\Users\drdom\Documents\Pr
 LABRECORDER_CLI = Path(os.environ.get(
     "LABRECORDER_CLI",
     r"C:\Users\drdom\Downloads\LabRecorder-1.18.0-Win_amd64\LabRecorder-1.18.0-Win_amd64\LabRecorderCLI.exe"))
-MUST_RUN = {"Aura.exe": "AURA software", "msedge.exe": "Edge (portal)", "LabRecorder.exe": "LabRecorder"}
+# each label passes with any of its executables: the AURA software is Aura.exe or, since 26 Nov, AURA_LSL_CONNECTOR.exe
+MUST_RUN = {("Aura.exe", "AURA_LSL_CONNECTOR.exe"): "AURA software", ("msedge.exe",): "Edge (portal)",
+            ("LabRecorder.exe",): "LabRecorder"}
 MUST_BE_CLOSED = {"blender.exe": "Blender", "firefox.exe": "Firefox", "Code.exe": "VS Code",
                   "ChatGPT.exe": "ChatGPT", "codex.exe": "Codex"}  # D-F6-153
 UNITY_STALE_MIN = 60  # kit: Unity freshly opened before each session (16 Nov: open 6 h → reopened)
@@ -51,8 +53,9 @@ def check_processes(procs: list[dict], now: datetime) -> list[tuple[str, str]]:
         level = WARN if age > UNITY_STALE_MIN else OK
         out.append((level, f"Unity Editor open since {start:%H:%M} ({age} min)"
                     + (": close and reopen it before the session" if level == WARN else "")))
-    for exe, label in MUST_RUN.items():
-        out.append((OK, f"{label} running") if exe.lower() in names else (FAIL, f"{label} not running"))
+    for exes, label in MUST_RUN.items():
+        running = any(exe.lower() in names for exe in exes)
+        out.append((OK, f"{label} running") if running else (FAIL, f"{label} not running"))
     for exe, label in MUST_BE_CLOSED.items():
         if exe.lower() in names:
             out.append((FAIL, f"{label} open: close it (D-F6-153)"))

@@ -76,6 +76,19 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(within(sys).getByText('None')).toBeInTheDocument()   // excluded channel
   })
 
+  it('Full width (D-F6-301 (6)): fills a wider screen, 900 px high, columns 5 / 6 / 5 of 16 in the same order', async () => {
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot()) })
+    renderApp(`/monitor/${SID}`)
+    const main = await screen.findByRole('main')
+    expect(main.className).toContain('grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,5fr)]')
+    const frame = main.parentElement!
+    const classes = Array.from(frame.classList)
+    expect(classes).toEqual(expect.arrayContaining(['w-full', 'min-w-[1440px]', 'h-[900px]']))
+    expect(classes).not.toContain('w-[1440px]')
+    const cols = Array.from(main.children).map((c) => Array.from(c.querySelectorAll('section')).map((s) => s.getAttribute('aria-label')))
+    expect(cols).toEqual([['Signal quality', 'System'], ['Live indices', 'Adaptation decisions'], ['Sync', 'Channel traces, 8 channels, last 20 seconds', 'Events']])
+  })
+
   it('says Not counted without a band, and Reference after S6 before the first decision', async () => {
     const s = snapshot({ indices: { reference: null, last: null, windows: { counted: 0, with_eeg: 0 }, trace: [] } })
     mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(s) })

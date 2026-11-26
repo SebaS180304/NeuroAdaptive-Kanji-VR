@@ -160,3 +160,43 @@ def test_the_monitor_reads_the_buffer_without_changing_its_epochs() -> None:   #
         prev = live.monitor_snapshot(b, prev)
     assert got_a == got_b
     assert [c["label"] for c in prev["channels"]] == LABELS and prev["session_60_uv"] is not None
+
+
+def test_the_traces_read_the_samples_without_changing_the_epochs() -> None:   # TR2, C1 of EEG (D-F6-301 (5))
+    from app.eeg import traces
+
+    x, ts = _signal(60.0)
+    markers = [_state(100.0, S3, 0), _state(110.0, S4, 10_000)]
+    a, b = live.Buffer(SR, DEFAULT_MONTAGE), live.Buffer(SR, DEFAULT_MONTAGE)
+    got_a = _feed(a, x, ts, markers)
+    tr, got_b, n = traces.Traces(SR, 8), [], int(0.5 * SR)
+    for i in range(0, len(ts), n):   # the same feed, with the traces fed every step as live.run does
+        chunk, stamps = x[i:i + n].tolist(), ts[i:i + n].tolist()
+        b.add(chunk, stamps, [m for m in markers if ts[i] <= m[0] < ts[i] + 0.5])
+        tr.feed(chunk, stamps)
+        b.sync_if_ready()
+        got_b += b.new_epochs()
+    assert got_a == got_b
+    assert tr.take_bins() and all(r is not None for r in tr.now_rms())
+
+
+def test_trace_rows_are_in_session_ms_on_the_markers_clock() -> None:   # TR2
+    markers = [_state(100.0, S3, 40_000), _state(110.0, S4, 50_000)]   # session zero at 60.0 s on the markers' clock
+    bins = [{"t": 120.025, "min": [-1.0] * 8, "max": [2.0] * 8}, {"t": 120.065, "min": [0.0] * 8, "max": [1.0] * 8}]
+    assert live.trace_rows([], markers, None) == []
+    rows = live.trace_rows(bins, markers, 25.0)   # EEG 25 ms ahead of the markers (the S3 offset)
+    assert [r["t_ms"] for r in rows] == [60_000, 60_040]
+    assert rows[0]["mins"] == [-1.0] * 8 and rows[0]["maxs"] == [2.0] * 8
+    assert live.trace_rows(bins, [], None) is None   # no session clock yet: the bins wait
+
+
+def test_the_traces_switch_is_off_by_default(monkeypatch) -> None:   # TR2
+    from app.config import Settings
+
+    monkeypatch.delenv("EEG_MONITOR_TRACES", raising=False)
+    assert Settings(_env_file=None).eeg_monitor_traces is False
+
+def test_the_sync_taps_go_to_the_traces_in_session_ms() -> None:   # TR2: the «Tap n» marks
+    markers = [_state(100.0, S3, 40_000), (101.5, {"event": "SYNC_TAP", "tap": 1}), (104.0, {"event": "SYNC_TAP", "tap": 2})]
+    assert live.tap_ms(markers) == [41_500, 44_000]
+    assert live.tap_ms([(101.5, {"event": "SYNC_TAP"})]) == []   # no session clock yet

@@ -241,6 +241,43 @@ def monitor_snapshot(buf: "Buffer", previous: dict | None) -> dict:
                            now=float(ts[-1]), previous=previous, last_bin_over=last_bin)
 
 
+TRACES_EVERY_S = 0.25
+TRACES_KEEP_S = 30.0  # eeg_trace_bins keeps only this much per session: the panel shows 20 s (D-F6-297 (3))
+
+
+def trace_rows(bins: list[dict], markers: list[tuple[float, dict]], offset_ms: float | None) -> list[dict] | None:
+    """TR's bins in session ms on the markers' clock (S3 offset applied, so taps and stage lines fall in place).
+    None while no marker gives the session clock yet: the caller keeps the bins until it does."""
+    zero = epochs._context(markers)[2]
+    if zero is None:
+        return None
+    shift = (offset_ms or 0.0) / 1000
+    return [{"t_ms": int(round((b["t"] - shift - zero) * 1000)), "mins": b["min"], "maxs": b["max"]} for b in bins]
+
+
+def tap_ms(markers: list[tuple[float, dict]]) -> list[int]:
+    """The S3 SYNC_TAP markers in session ms: they travel only by LSL, so live.py hands them to the traces panel."""
+    zero = epochs._context(markers)[2]
+    return [] if zero is None else [int(round((t - zero) * 1000)) for t, m in markers if m.get("event") == "SYNC_TAP"]
+
+
+async def save_traces(db, session_id: str, rows: list[dict], rms: list[float | None], taps: list[int] = ()) -> None:
+    import json
+
+    from sqlalchemy import text
+
+    if rows:
+        await db.execute(text("INSERT INTO eeg_trace_bins (session_id, t_ms, mins, maxs) VALUES (:s, :t, :mins, :maxs) "
+                              "ON CONFLICT DO NOTHING"),
+                         [{"s": str(session_id), "t": r["t_ms"], "mins": r["mins"], "maxs": r["maxs"]} for r in rows])
+        await db.execute(text("DELETE FROM eeg_trace_bins WHERE session_id = :s AND t_ms < :keep"),
+                         {"s": str(session_id), "keep": rows[-1]["t_ms"] - int(TRACES_KEEP_S * 1000)})
+    now = {"rms_uv": [None if r is None else round(r, 1) for r in rms], "t_ms": rows[-1]["t_ms"] if rows else None,
+           "taps": list(taps)}
+    await db.execute(text("UPDATE eeg_sessions SET traces_now = CAST(:n AS jsonb), traces_at = now() WHERE session_id = :s"),
+                     {"s": str(session_id), "n": json.dumps(now)})
+
+
 async def save_monitor(db, session_id: str, snapshot: dict) -> None:
     import json
 
@@ -332,6 +369,9 @@ async def run(session_id: str) -> list[float]:
     buf, cut, lags, ref_done, last_beat, origin_done = Buffer(srate, montage), [], [], False, 0.0, False
     buf.rule = get_settings().eeg_live_rule  # D-F6-263: "current" until switched on in backend/.env
     monitor_on, last_monitor, monitor_prev = get_settings().eeg_monitor_live, 0.0, None  # M1b, off unless switched on
+    from app.eeg import traces
+    tr = traces.Traces(srate, len(buf.labels)) if get_settings().eeg_monitor_traces else None  # TR, off unless on
+    last_traces = 0.0
     bad_saved: list = []
     ica_saved: dict | None = None
     watch = s3watch.S3Watch(montage)
@@ -342,6 +382,8 @@ async def run(session_id: str) -> list[float]:
         values, mstamps = mk_in.pull_chunk(timeout=0.0)
         new_markers = [(t, json.loads(v[0])) for v, t in zip(values, mstamps)]
         buf.add(samples, stamps, new_markers)
+        if tr is not None and samples:  # its own filter state; Buffer and its epochs are untouched (C1)
+            tr.feed(samples, stamps)
         for line in watch.lines(buf.x, buf.ts, buf.markers, srate):  # S2–S3 warnings for the operator (AU3)
             print(f"live: {line}")
         just_synced = not buf.synced and buf.sync_if_ready()
@@ -355,9 +397,15 @@ async def run(session_id: str) -> list[float]:
         write_bad = buf.bad != bad_saved
         write_monitor = monitor_on and len(buf.ts) > 0 and time.monotonic() - last_monitor >= MONITOR_EVERY_S
         write_ica = buf.ica is not None and buf.ica != ica_saved  # the S6 fit, then a switch to (2) if any
+        trace_out = None
+        if tr is not None and time.monotonic() - last_traces >= TRACES_EVERY_S:
+            trace_out = trace_rows(tr.bins, buf.markers, buf.offset_ms)  # None: no session clock yet, bins wait
+            if trace_out is not None:
+                tr.take_bins()
+            last_traces = time.monotonic()
         if write_bad and ref_done:  # out after the reference was written: recomputed without it (D-F6-216)
             write_ref = True
-        if just_synced or eps or write_ref or beat or write_origin or write_bad or write_monitor or write_ica:
+        if just_synced or eps or write_ref or beat or write_origin or write_bad or write_monitor or write_ica or trace_out is not None:
             async with AsyncSessionLocal() as db:
                 if just_synced:
                     from app.eeg import sync
@@ -386,6 +434,8 @@ async def run(session_id: str) -> list[float]:
                     monitor_prev = monitor_snapshot(buf, monitor_prev)
                     await save_monitor(db, session_id, monitor_prev)
                     last_monitor = time.monotonic()
+                if trace_out is not None:  # display only, outside new_epochs(), like M1b
+                    await save_traces(db, session_id, trace_out, tr.now_rms(), tap_ms(buf.markers))
                 if beat:
                     gap = None if not buf.ts else int(round((now - buf.ts[-1]) * 1000))
                     await heartbeat(db, session_id, gap)

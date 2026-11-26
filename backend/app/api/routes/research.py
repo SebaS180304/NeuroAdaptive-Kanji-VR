@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.db.session import get_db
 from app.schemas.research import (
-    DataQuality, LearnerProfile, LiveCurrent, LiveSnapshot, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
+    DataQuality, LearnerProfile, LiveCurrent, LiveSnapshot, LiveTraces, ResearchAdaptation, ResearchParticipant, ResearchParticipantDetail, ResearchSession, ResearchSessionDetail, ResearchTrial, SessionPlan,
     SessionTimeline,
 )
 
@@ -659,6 +659,32 @@ async def live_snapshot(session_id: uuid.UUID, db: AsyncSession = Depends(get_db
         "signal_quality": None if not eeg or eeg["monitor"] is None else {**eeg["monitor"], "age_s": eeg["monitor_age_s"]},
     }
 
+
+_TRACE_BINS = text("SELECT t_ms, mins, maxs FROM eeg_trace_bins WHERE session_id = :s AND t_ms > :since ORDER BY t_ms")
+_TRACE_TOP = text("""
+SELECT montage, bad_channel, traces_now, EXTRACT(EPOCH FROM now() - traces_at)::float AS age_s
+FROM eeg_sessions WHERE session_id = :s""")
+
+
+@router.get("/sessions/{session_id}/live/traces", response_model=LiveTraces)
+async def live_traces(session_id: uuid.UUID, since: int = Query(-1, description="session ms of the last bin held"),
+                      db: AsyncSession = Depends(get_db)) -> dict:
+    """TR (D-F6-301 (5)): what live.py wrote for the traces panel, read only. Off: empty, with the reason."""
+    from app.eeg.baseline import DEFAULT_MONTAGE
+
+    if (await db.execute(_LIVE_TOP, {"s": session_id})).first() is None:
+        raise HTTPException(status_code=404, detail="session not found")
+    eeg = (await db.execute(_TRACE_TOP, {"s": session_id})).mappings().first()
+    montage = (eeg or {}).get("montage") or DEFAULT_MONTAGE
+    labels = [montage[f"CH{i + 1}"] for i in range(len(montage))]
+    stages = [dict(r) for r in (await db.execute(_SESSION_STAGES, {"s": session_id})).mappings()]
+    if not get_settings().eeg_monitor_traces:
+        return {"on": False, "reason": "Channel traces are off (EEG_MONITOR_TRACES)", "labels": labels, "bins": [],
+                "now": None, "stages": stages, "excluded": None}
+    bins = [dict(r) for r in (await db.execute(_TRACE_BINS, {"s": session_id, "since": since})).mappings()]
+    now = None if not eeg or eeg["traces_now"] is None else {**eeg["traces_now"], "age_s": eeg["age_s"]}
+    return {"on": True, "reason": None, "labels": labels, "bins": bins, "now": now, "stages": stages,
+            "excluded": (eeg or {}).get("bad_channel")}
 
 @router.get("/live/current", response_model=LiveCurrent)
 async def live_current(db: AsyncSession = Depends(get_db)) -> dict:

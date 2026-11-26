@@ -516,6 +516,23 @@ class LiveSnapshot(BaseModel):
     signal_quality: dict | None     # M1b: live.py's per-channel figures, null until then
 
 
+class LiveTraceBin(BaseModel):
+    t_ms: int                       # session ms on the markers' clock
+    mins: list[float]               # µV per channel, min of the 40 ms bin (filtered 1–40 Hz, 60 Hz notch)
+    maxs: list[float]
+
+
+class LiveTraces(BaseModel):
+    """TR (D-F6-301 (5)): the monitor's 8-channel traces since a session ms. Display only."""
+    on: bool                        # EEG_MONITOR_TRACES
+    reason: str | None              # why there is nothing, when off
+    labels: list[str]
+    bins: list[LiveTraceBin]
+    now: dict | None                # {"rms_uv": [8, µV RMS of the last second], "t_ms", "taps": [ms], "age_s"}
+    stages: list[dict]              # [{"state", "ms"}] from STATE_ENTERED
+    excluded: str | None            # the channel out (bad_channel), drawn grey with "excluded"
+
+
 class LiveCurrent(BaseModel):
     session_id: str
     external_code: str              # the rail's tooltip names it (Contenido_UI_Monitor_Accesos.md §1)
