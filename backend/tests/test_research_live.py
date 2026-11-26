@@ -192,3 +192,43 @@ async def test_the_per_channel_figures_appear_when_live_py_writes_them(client, l
                 s=live_session, m=json.dumps(snap))
     sq = (await client.get(f"/research/sessions/{live_session}/live")).json()["signal_quality"]
     assert sq["channels"][0]["status"] == "OK" and sq["session_60_uv"] == 102.0 and 0 <= sq["age_s"] < 5
+
+
+# ---------- TR3 (D-F6-301 (5)): GET /research/sessions/{id}/live/traces ----------
+
+@pytest.fixture
+def tr_on(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "eeg_monitor_traces", True)
+
+
+async def _bins(sid, times):
+    for t in times:
+        await _exec("INSERT INTO eeg_trace_bins (session_id, t_ms, mins, maxs) VALUES (:s, :t, :a, :b)",
+                    s=sid, t=t, a=[-1.0] * 8, b=[1.0] * 8)
+    await _exec("UPDATE eeg_sessions SET traces_now = CAST(:n AS jsonb), traces_at = now(), bad_channel = 'Fz' "
+                "WHERE session_id = :s", s=sid, n=json.dumps({"rms_uv": [15.0] * 8, "t_ms": times[-1], "taps": [41_500]}))
+
+
+@pytest.mark.asyncio
+async def test_traces_off_answer_empty_with_the_reason(client, live_session):
+    r = (await client.get(f"/research/sessions/{live_session}/live/traces")).json()
+    assert r["on"] is False and r["bins"] == [] and r["now"] is None and "off" in r["reason"]
+
+
+@pytest.mark.asyncio
+async def test_traces_give_the_bins_after_since_the_now_values_taps_and_stages(client, live_session, tr_on):
+    await _bins(live_session, [40_000, 40_040, 40_080])
+    r = (await client.get(f"/research/sessions/{live_session}/live/traces", params={"since": 40_000})).json()
+    assert r["on"] is True and r["reason"] is None
+    assert [b["t_ms"] for b in r["bins"]] == [40_040, 40_080] and r["bins"][0]["maxs"] == [1.0] * 8
+    assert r["labels"] == ["Fp1", "F3", "Fz", "F4", "Cz", "P3", "Pz", "P4"]
+    assert r["now"]["rms_uv"] == [15.0] * 8 and r["now"]["taps"] == [41_500] and 0 <= r["now"]["age_s"] < 5
+    assert r["excluded"] == "Fz" and r["stages"][-1]["state"] == S7
+    assert (await client.get(f"/research/sessions/{live_session}/live/traces")).json()["bins"][0]["t_ms"] == 40_000
+
+
+@pytest.mark.asyncio
+async def test_traces_of_an_unknown_session_are_404(client, tr_on):
+    assert (await client.get("/research/sessions/00000000-0000-0000-0000-000000000000/live/traces")).status_code == 404

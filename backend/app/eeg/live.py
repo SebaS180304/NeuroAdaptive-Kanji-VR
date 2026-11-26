@@ -255,7 +255,13 @@ def trace_rows(bins: list[dict], markers: list[tuple[float, dict]], offset_ms: f
     return [{"t_ms": int(round((b["t"] - shift - zero) * 1000)), "mins": b["min"], "maxs": b["max"]} for b in bins]
 
 
-async def save_traces(db, session_id: str, rows: list[dict], rms: list[float | None]) -> None:
+def tap_ms(markers: list[tuple[float, dict]]) -> list[int]:
+    """The S3 SYNC_TAP markers in session ms: they travel only by LSL, so live.py hands them to the traces panel."""
+    zero = epochs._context(markers)[2]
+    return [] if zero is None else [int(round((t - zero) * 1000)) for t, m in markers if m.get("event") == "SYNC_TAP"]
+
+
+async def save_traces(db, session_id: str, rows: list[dict], rms: list[float | None], taps: list[int] = ()) -> None:
     import json
 
     from sqlalchemy import text
@@ -266,7 +272,8 @@ async def save_traces(db, session_id: str, rows: list[dict], rms: list[float | N
                          [{"s": str(session_id), "t": r["t_ms"], "mins": r["mins"], "maxs": r["maxs"]} for r in rows])
         await db.execute(text("DELETE FROM eeg_trace_bins WHERE session_id = :s AND t_ms < :keep"),
                          {"s": str(session_id), "keep": rows[-1]["t_ms"] - int(TRACES_KEEP_S * 1000)})
-    now = {"rms_uv": [None if r is None else round(r, 1) for r in rms], "t_ms": rows[-1]["t_ms"] if rows else None}
+    now = {"rms_uv": [None if r is None else round(r, 1) for r in rms], "t_ms": rows[-1]["t_ms"] if rows else None,
+           "taps": list(taps)}
     await db.execute(text("UPDATE eeg_sessions SET traces_now = CAST(:n AS jsonb), traces_at = now() WHERE session_id = :s"),
                      {"s": str(session_id), "n": json.dumps(now)})
 
@@ -428,7 +435,7 @@ async def run(session_id: str) -> list[float]:
                     await save_monitor(db, session_id, monitor_prev)
                     last_monitor = time.monotonic()
                 if trace_out is not None:  # display only, outside new_epochs(), like M1b
-                    await save_traces(db, session_id, trace_out, tr.now_rms())
+                    await save_traces(db, session_id, trace_out, tr.now_rms(), tap_ms(buf.markers))
                 if beat:
                     gap = None if not buf.ts else int(round((now - buf.ts[-1]) * 1000))
                     await heartbeat(db, session_id, gap)

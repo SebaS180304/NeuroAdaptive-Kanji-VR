@@ -189,10 +189,10 @@ async def test_live_writes_the_trace_bins_keeps_30_s_and_the_now_values(client, 
     async with AsyncSessionLocal() as db:
         await live.save_traces(db, sid, bins(0, 5), [12.34] * 7 + [None])
         await live.save_traces(db, sid, bins(0, 5), [12.34] * 8)            # the same bins again: not doubled
-        await live.save_traces(db, sid, bins(40_000, 2), [5.0] * 8)        # 40 s later: the first ones are pruned
+        await live.save_traces(db, sid, bins(40_000, 2), [5.0] * 8, [41_000])   # 40 s later: the first ones pruned
         await db.commit()
         kept = (await db.execute(text("SELECT t_ms FROM eeg_trace_bins WHERE session_id = :s ORDER BY t_ms"),
                                  {"s": sid})).scalars().all()
         now = (await db.execute(text("SELECT traces_now FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
     assert kept == [40_000, 40_040]
-    assert now == {"rms_uv": [5.0] * 8, "t_ms": 40_040}
+    assert now == {"rms_uv": [5.0] * 8, "t_ms": 40_040, "taps": [41_000]}

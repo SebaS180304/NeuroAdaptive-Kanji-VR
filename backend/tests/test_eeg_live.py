@@ -195,3 +195,8 @@ def test_the_traces_switch_is_off_by_default(monkeypatch) -> None:   # TR2
 
     monkeypatch.delenv("EEG_MONITOR_TRACES", raising=False)
     assert Settings(_env_file=None).eeg_monitor_traces is False
+
+def test_the_sync_taps_go_to_the_traces_in_session_ms() -> None:   # TR2: the «Tap n» marks
+    markers = [_state(100.0, S3, 40_000), (101.5, {"event": "SYNC_TAP", "tap": 1}), (104.0, {"event": "SYNC_TAP", "tap": 2})]
+    assert live.tap_ms(markers) == [41_500, 44_000]
+    assert live.tap_ms([(101.5, {"event": "SYNC_TAP"})]) == []   # no session clock yet
