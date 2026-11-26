@@ -196,3 +196,16 @@ async def test_live_writes_the_trace_bins_keeps_30_s_and_the_now_values(client, 
         now = (await db.execute(text("SELECT traces_now FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
     assert kept == [40_000, 40_040]
     assert now == {"rms_uv": [5.0] * 8, "t_ms": 40_040, "taps": [41_000]}
+
+
+@pytest.mark.asyncio
+async def test_a_failed_traces_write_keeps_the_rest_of_the_transaction(client, pretested) -> None:
+    from app.eeg import live
+
+    sid = await _session_with_epochs(client, pretested, [])
+    async with AsyncSessionLocal() as db:
+        await live.heartbeat(db, sid, 7)                                      # stands for the cycle's epochs
+        ok = await live.save_traces_guarded(db, sid, [], [float("nan")] * 8)  # NaN: jsonb refuses it (review C1)
+        await db.commit()
+        gap = (await db.execute(text("SELECT eeg_gap_ms FROM eeg_sessions WHERE session_id = :s"), {"s": sid})).scalar_one()
+    assert ok is False and gap == 7

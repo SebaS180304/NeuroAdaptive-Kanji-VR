@@ -278,6 +278,18 @@ async def save_traces(db, session_id: str, rows: list[dict], rms: list[float | N
                      {"s": str(session_id), "n": json.dumps(now)})
 
 
+async def save_traces_guarded(db, session_id: str, rows: list[dict], rms: list[float | None], taps=()) -> bool:
+    """save_traces in its own savepoint: the traces are display only, so a failure (a NaN from a dropout, no 0024)
+    is printed and never rolls back the cycle's epochs or stops live.run (//review C1, 26 Nov)."""
+    try:
+        async with db.begin_nested():
+            await save_traces(db, session_id, rows, rms, taps)
+        return True
+    except Exception as e:  # noqa: BLE001
+        print(f"live: traces not saved ({type(e).__name__}: {str(e)[:120]})")
+        return False
+
+
 async def save_monitor(db, session_id: str, snapshot: dict) -> None:
     import json
 
@@ -402,6 +414,8 @@ async def run(session_id: str) -> list[float]:
             trace_out = trace_rows(tr.bins, buf.markers, buf.offset_ms)  # None: no session clock yet, bins wait
             if trace_out is not None:
                 tr.take_bins()
+            else:  # the waiting bins never outgrow what the table keeps (//review R2)
+                del tr.bins[:-int(TRACES_KEEP_S / traces.BIN_S)]
             last_traces = time.monotonic()
         if write_bad and ref_done:  # out after the reference was written: recomputed without it (D-F6-216)
             write_ref = True
@@ -435,7 +449,7 @@ async def run(session_id: str) -> list[float]:
                     await save_monitor(db, session_id, monitor_prev)
                     last_monitor = time.monotonic()
                 if trace_out is not None:  # display only, outside new_epochs(), like M1b
-                    await save_traces(db, session_id, trace_out, tr.now_rms(), tap_ms(buf.markers))
+                    await save_traces_guarded(db, session_id, trace_out, tr.now_rms(), tap_ms(buf.markers))
                 if beat:
                     gap = None if not buf.ts else int(round((now - buf.ts[-1]) * 1000))
                     await heartbeat(db, session_id, gap)
