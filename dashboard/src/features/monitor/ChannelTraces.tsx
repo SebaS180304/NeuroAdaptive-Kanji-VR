@@ -31,7 +31,8 @@ function useRing(sessionId: string) {
   const q = useQuery({
     queryKey: ['live-traces', sessionId],
     queryFn: () => getJson<Traces>(`/research/sessions/${sessionId}/live/traces?since=${since.current}`),
-    refetchInterval: POLL_MS,
+    // off: one read only, so a visit's /monitor adds no load; the switch changes only with no session running
+    refetchInterval: (query) => (query.state.data?.on === false ? false : POLL_MS),
   })
   useEffect(() => {
     const got = q.data?.bins.filter((b) => b.t_ms > since.current)

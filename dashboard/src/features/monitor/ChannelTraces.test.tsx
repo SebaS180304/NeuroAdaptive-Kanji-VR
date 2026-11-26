@@ -64,8 +64,8 @@ describe('Channel traces panel (TR4)', () => {
       .toEqual(['Sync', 'Channel traces, 8 channels, last 20 seconds', 'Events'])
   })
 
-  it('switch off: only the title and where the raw signal is', async () => {
-    mockApi({
+  it('switch off: only the title and where the raw signal is, and no more polling', async () => {
+    const calls = mockApi({
       [`GET /api/research/sessions/${SID}/live`]: () => json(live),
       [`GET /api/research/sessions/${SID}/live/traces?since=-1`]: () => json({
         on: false, reason: 'Channel traces are off (EEG_MONITOR_TRACES)', labels: LABELS, bins: [], now: null, stages: [],
@@ -75,5 +75,7 @@ describe('Channel traces panel (TR4)', () => {
     const panel = await screen.findByRole('region', { name: 'Channel traces' })
     expect(within(panel).getByText('Channel traces are off for this session.')).toBeInTheDocument()
     expect(within(panel).getByText('The raw signal is in the AURA software.')).toBeInTheDocument()
+    await new Promise((r) => setTimeout(r, 700))   // past two 250 ms polls
+    expect(calls.filter((c) => c.key.includes('/live/traces'))).toHaveLength(1)
   })
 })
