@@ -8,7 +8,7 @@ import { clock } from '@/lib/format'
 import { SessionIndices, type SessionTrace } from './SessionIndices'
 
 // V1.13 Live session monitor (design-handoff/monitor, validated D-F6-233; D-F6-231, D-F6-234, D-F6-254, D-F6-265).
-// Second screen, 1440 x 900, no scroll, read-only: nothing here writes or sends a command (M2 is another feature).
+// Second screen, drawn at 1440 x 900 and full width on a wider one (D-F6-301 (6): columns 5 / 6 / 5, heights fixed), no scroll, read-only: nothing here writes or sends a command (M2 is another feature).
 // One snapshot from GET /research/sessions/{id}/live every second; each section says when it last changed and
 // "No data for [n] s" when its source stops. The words and z come from the engine (D-F6-234); nothing is recomputed.
 
@@ -368,7 +368,7 @@ function Monitor({ sessionId, pinned }: { sessionId: string; pinned: boolean }) 
           Read only. Nothing on this screen changes the session.
         </p>
       )}
-      <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)] gap-6 p-6">
+      <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,5fr)] gap-6 p-6">
         <div className="flex min-h-0 flex-col gap-6">
           <SignalQuality q={data.signal_quality as Quality | null} heartbeat={heartbeat} />
           <System s={data.system} />
@@ -388,7 +388,7 @@ function Monitor({ sessionId, pinned }: { sessionId: string; pinned: boolean }) 
 }
 
 function Frame({ children }: { children: ReactNode }) {
-  return <div className="flex h-[900px] w-[1440px] flex-col overflow-hidden bg-(--color-bg) text-(--color-text) tabular-nums">{children}</div>
+  return <div className="flex h-[900px] w-full min-w-[1440px] flex-col overflow-hidden bg-(--color-bg) text-(--color-text) tabular-nums">{children}</div>
 }
 
 /** /monitor follows the newest session in progress; /monitor/:sessionId pins one. */
