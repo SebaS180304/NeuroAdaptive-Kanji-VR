@@ -1,6 +1,6 @@
 # Implementation Plan: week of 16 – 20 Nov 2026 (dry run → unfreeze → pilot ready)
 
-Written Mon 16 Nov 2026; **updated Wed 25 Nov 18:55, Alineado hasta D-F6-297** (D-F6-290: EEG on T05; D-F6-291: two groups, first capped visit P06 Thu 26 10:00, M1b cut «after P06, before P08»; D-F6-292–293: live monitor indices per epoch and 8-channel traces; D-F6-294: conditions and sets; D-F6-295–296: fixed hours without visits; D-F6-297: sweep closed, «Now» = µV RMS 1 s, `eeg_trace_bins`, MI built tonight and off). Before: 17:15, aligned up to D-F6-289 (T05 does not pass by the letter; the pilot starts with `ica` + automatic (2), declared; tonight: `config.py` commit → LSL simulation of T05 ((c), M1b off/on) → M1b on before Thu 12:30 if it passes → docs B3 → B1 → B2; `autorun` window with `$env:ENVIRONMENT='production'`). Before: 12:30, aligned up to D-F6-286 (T05 at 15:30; no code 15:15–17:30; `config.py` commit after 17:30; export ready ≈ 16:50). Before: 11:35, aligned up to D-F6-283 (kit approved; only (c) failing → find the cause, (3) if removed; every `.env` change with `docker compose up -d backend`; `config.py` comment after 15:30). Before: 11:20, aligned up to D-F6-282 (Tue 24 not worked; T05 today 13:30–14:45 with (3) live, processing and go/no-go 14:45–15:30; V1 of ≈ 4 candidates Thu 26 / Fri 27; ethics v1.5 and consent v1.4 approved). Before: Fri 20 Nov night, aligned up to D-F6-281 (G approved with T03's finding declared; S next; then V, RT if time, MI):** before: aligned up to D-F6-280 (I1 approved; the threshold epoch counted in G, `new_epochs()` untouched; MI after S):** before: aligned up to D-F6-279: the section "Fri 20 night · ICA live behind `EEG_LIVE_RULE=ica`" approved (D-F6-276) with the channel out and the LSL simulation; I1 → I2 → G → S, one commit and a Stop each**. Before: aligned up to D-F6-275. Before: Fri 20 15:20, aligned up to D-F6-272. Before: Thu 19 Nov 12:40, aligned up to D-F6-255 (13:10: `ocul.py` v2, OV tolerances, component selection; 12:41 OK with D-F6-251 to D-F6-254): today's plan is the section "Thu 19 · day plan (D-F6-246 to D-F6-255)"; waits for Sebas's OK before `/build`**. Before: Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
+Written Mon 16 Nov 2026; **updated Thu 26 Nov 13:30, Alineado hasta D-F6-301** (P06 V1 counts, declared: Cz/P3 swapped, no sync correction, first live ICA identified; kit + montage, AURA samples, headset in the scene, Play off after S9, discomfort at S5; M1b and MI off today; tonight after P07: FRAME_HITCH vs M1b, AURA-replay pass, TR with the validated drawing, full width; section «Thu 26 night»). Before: Wed 25 Nov 18:55, **Alineado hasta D-F6-297** (D-F6-290: EEG on T05; D-F6-291: two groups, first capped visit P06 Thu 26 10:00, M1b cut «after P06, before P08»; D-F6-292–293: live monitor indices per epoch and 8-channel traces; D-F6-294: conditions and sets; D-F6-295–296: fixed hours without visits; D-F6-297: sweep closed, «Now» = µV RMS 1 s, `eeg_trace_bins`, MI built tonight and off). Before: 17:15, aligned up to D-F6-289 (T05 does not pass by the letter; the pilot starts with `ica` + automatic (2), declared; tonight: `config.py` commit → LSL simulation of T05 ((c), M1b off/on) → M1b on before Thu 12:30 if it passes → docs B3 → B1 → B2; `autorun` window with `$env:ENVIRONMENT='production'`). Before: 12:30, aligned up to D-F6-286 (T05 at 15:30; no code 15:15–17:30; `config.py` commit after 17:30; export ready ≈ 16:50). Before: 11:35, aligned up to D-F6-283 (kit approved; only (c) failing → find the cause, (3) if removed; every `.env` change with `docker compose up -d backend`; `config.py` comment after 15:30). Before: 11:20, aligned up to D-F6-282 (Tue 24 not worked; T05 today 13:30–14:45 with (3) live, processing and go/no-go 14:45–15:30; V1 of ≈ 4 candidates Thu 26 / Fri 27; ethics v1.5 and consent v1.4 approved). Before: Fri 20 Nov night, aligned up to D-F6-281 (G approved with T03's finding declared; S next; then V, RT if time, MI):** before: aligned up to D-F6-280 (I1 approved; the threshold epoch counted in G, `new_epochs()` untouched; MI after S):** before: aligned up to D-F6-279: the section "Fri 20 night · ICA live behind `EEG_LIVE_RULE=ica`" approved (D-F6-276) with the channel out and the LSL simulation; I1 → I2 → G → S, one commit and a Stop each**. Before: aligned up to D-F6-275. Before: Fri 20 15:20, aligned up to D-F6-272. Before: Thu 19 Nov 12:40, aligned up to D-F6-255 (13:10: `ocul.py` v2, OV tolerances, component selection; 12:41 OK with D-F6-251 to D-F6-254): today's plan is the section "Thu 19 · day plan (D-F6-246 to D-F6-255)"; waits for Sebas's OK before `/build`**. Before: Tue 17 Nov 17:05, aligned up to D-F6-233: the T01 test moves to Wed 18 11:00–12:00, BR3 (and BR4 if time) this afternoon, AU1 on Wed, AU4/AU0/M0/M1 plan on Fri (D-F6-232; monitor D-F6-231/233)**. Before: Tue 17 14:55: test with the cap at 17:00, participant T01 (D-F6-228); S2 only on visit 1 (D-F6-229); two portal writes, T01's data kept as a test (D-F6-230) · **Sebas's OK for `/build`**. Before: Tue 17, aligned up to D-F6-227 (X8 with the five kanji and the BR2 Editor Stop today; BR3 with V1.12: D-F6-226; CH1 with D-F6-224; no presentation on Fri 20: D-F6-227). Before: 16 Nov night, aligned up to D-F6-221 · approved (D-F6-221); Tue 17 09:00: D-F6-222 (automation in two parts, manual recording for the pilot start: D-F6-221; one S6 threshold: D-F6-220; bad channel: D-F6-216; sync: D-F6-217; S6 and reference: D-F6-218; session automation: D-F6-219, **proposal waiting for Sebas's OK**; two `AURA`: D-F6-206; two-visit test: D-F6-207; block R inputs: D-F6-208; end of the free recall: D-F6-212; one bad channel: D-F6-213; sync spread: D-F6-214). **Approved by Sebas (16 Nov). No code today; `/build` starts Tue 17 after V4 and U0.**
 Last week's plan is archived in `tasks/archive/semana_9nov_{plan,todo}.md`; its open items are carried over in the last section.
 
 ## Sources of truth
@@ -187,6 +187,81 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
 
 **AU1 · pre-session check, Wed 18 afternoon (moved from Fri 20, D-F6-232 (2)).** As in the automation section below; tested on this PC as it is after T2.
 
+### Thu 26 night · FRAME_HITCH vs M1b, full width, TR and the AURA-replay pass (D-F6-301 (3)–(6)) · plan, **waits for Sebas's OK** · starts after P07, never between visits
+
+**Rules for tonight.**
+- No code and no `.env` change before P07 ends (≈ 18:00). TR touches `live.run`, so it is **never** built between visits (D-F6-301 (5)).
+- Every switch stays off at the end of the night: M1b only comes back on Fri 27 with a decision number (D-F6-301 (3)). MI and TR only with their pass.
+- One slice = tests + commit (message shown first) + `graphify update .` + **Stop**. //review over the night's diff before the last commit.
+- Test sessions use code `TEST…`, are deleted in a transaction with counts before and after, and their XDF folder is deleted. Scripts go in the scratchpad, not the repo.
+
+**What the code says today (read 26 Nov, 13:25):**
+- M1b (`live.monitor_snapshot`, `live.py:230`) runs every 2.5 s **from the first sample** (`len(buf.ts) > 0`, `live.py:356`), not from S4. So it was already running in S2, where P06 had two of its three hitches.
+- T04 and T05 ran with M1b **off**: T04 had 3 hitches over 100 ms (max 323 ms, S2) and T05 had 1 (119 ms, S4). P06, with M1b **on**, had 3 (S2 114 and 126 ms, S4 360 ms).
+- The monitor root is fixed at `w-[1440px] h-[900px]` (`LiveMonitor.tsx:391`), so a wider second screen leaves an empty strip on the right. The body grid is `1fr 1fr 0.9fr` (`LiveMonitor.tsx:371`), **not the drawing's 5 / 6 / 5 of 16** (`design-system.md`, V1.13 «Body»).
+- The latest migration is 0023, so TR's table is **0024**.
+
+**Dependency graph:**
+```
+H (FRAME_HITCH review, read-only) ─────────────┐
+W (full width, page only) ──┐                  │
+TR1 → TR2 → TR3 → TR4 ──────┴→ //review → P (AURA-replay pass: off / M1b+MI / +TR) → close
+```
+H and W do not depend on each other. P needs W and, for its third run, TR. If TR is not finished, P runs only its first two runs.
+
+#### H · FRAME_HITCH against M1b's activity (≈ 45 min, read-only) · D-F6-301 (3)
+- For P06 (`641bfced`, M1b on), T05 (`2e9e641b`) and T04 (`dd1f75af`) (both off), put on one session-time line:
+  - every `FRAME_HITCH` (from `hitches.py`);
+  - the state changes;
+  - the moments when `live` does heavy work: the batch cut at the end of S3 (≈ 83 epochs at once), the S3 offset, the ICA fit at S6 + `EDGE_S`, the reference after S7, and M1b's 2.5 s ticks (reconstructed from the first sample).
+- Hitches are counted per state and per minute, with M1b on and off.
+- The output is a table plus a reading in plain words: whether the hitches line up with M1b ticks (± one Unity frame), with the batch cut or the ICA fit, or with neither (S2 tutorial load, as in T04 with M1b off).
+- Script in the scratchpad. The text goes in the 27 Nov draft for PM, who decides on M1b with a number.
+- **Done when** each > 100 ms hitch of the three sessions has its nearest `live` event and its distance in ms.
+
+#### W · monitor at full width (≈ 1 h, `dashboard/` only) · D-F6-301 (6)
+- The root goes from `w-[1440px]` to the window's full width (`w-screen`, at least 1440 px). Height stays at 900 px, `overflow: hidden`, no scroll.
+- The body grid becomes **`5fr 6fr 5fr`**: the three columns grow in that proportion. Order and heights do not change.
+  - **Visible change at 1440 px:** the middle column is a little wider than today's `1fr 1fr 0.9fr`. It follows the drawing and the board. Diseño web reviews it afterwards.
+- Tests:
+  - Vitest: the root has no fixed width, and the grid uses 5 / 6 / 5.
+  - Playwright on the existing monitor checkpoint, at 1440 × 900 and at 1920 × 900: no empty strip on the right, no scroll, and the panels in the same order.
+- `npm run build` of `dist` only after the last commit of the night, with no session running.
+- **Done when** the 1920 screenshot fills the width, and the 1440 one shows the same panels as today with no scroll.
+
+#### TR · 8-channel live traces (≈ 7 h) · switch `EEG_MONITOR_TRACES` (off) · D-F6-301 (5)
+The slices TR1–TR5 are as written in the section below, with the validated drawing *V1.13 with 8-channel live traces* (option A: right column, between *Sync* and the console; «µV rms, 1 s», «▲», 20 s, «Now»). **C2b** is measured in run 3 of P.
+- **Time:** ≈ 7 h does not fit after P07 together with H, W and P. Recommended order: **H → W → TR1 → TR2 → TR3 → P (runs 1–2)** tonight. **TR4 + TR5 + run 3** go on Fri 27 night, after P04, or on Mon 30. TR stays off until then. Question 5 of the dev draft asks PM.
+
+#### P · pass with a recorded XDF replayed as `AURA` (≈ 1 h 15 min) · D-F6-301 (4)
+- **Setup:**
+  - The AURA software is closed, so the only `AURA` on the PC is the replay.
+  - A scratchpad script (`pylsl`) sends **P06's XDF** (8 ch, 250 Hz, with a cap and ICA identified, so it exercises the heavy path) as an outlet named `AURA`, with the XDF's channel labels and info, **at 1×**, with timestamps shifted to now. It loops if Unity outlasts the XDF.
+  - Only `AURA` is replayed: `UnityMarkers` comes from Unity live.
+  - Before Play: the 2 s check of the kit gives ≈ 500 samples. `preflight` passes. `autorun` runs as in a visit, with LabRecorderCLI recording.
+- **Three runs, each with Unity in Play with its own code to S8:**
+  - **Run 1:** `TEST2601`, all off. Its hitches are the base.
+  - **Run 2:** `TEST2602`, with `EEG_MONITOR_LIVE=true` and `MONITOR_LIVE_INDICES=true`.
+  - **Run 3:** `TEST2603`, run 2 plus `EEG_MONITOR_TRACES=true`. Only when TR is done.
+  - Each switch change is made with `docker compose up -d backend` and no session running, and checked with `printenv`.
+- **Measured in each run:**
+  - `FRAME_HITCH` over 100 ms per state (`hitches.py`);
+  - CPU of `live`;
+  - `/monitor` with the 8 channels, MI from the end of S3, no crash (the `d536522` fix);
+  - in run 3: C1–C4 and C2b.
+- **Criteria for a visit:**
+  - MI goes on only if run 2 has **0** hitches over 100 ms and the monitor does not crash (D-F6-297 (4), D-F6-299 (2)).
+  - M1b comes back only with a number: P gives PM the data (run 2 against run 1).
+  - TR goes on only if run 3 passes C1–C4 (D-F6-301 (5)).
+- **Close:**
+  - The three test sessions are deleted in a transaction, with counts before and after, and their `sub-TEST26…` folders too.
+  - The switches end the night **off**, checked in the container.
+  - `/health/db` passes and `git status` is clean.
+
+**Not in this plan:**
+- the `live.py` fix for a stream with no samples (after the pilot, D-F6-301 (4));
+- any change to `new_epochs()`, `EDGE_S`, a rule or the montage (Cz/P3 of P06 are relabelled by EEG in the analysis, D-F6-301 (1)).
+
 ### Live monitor: per-epoch indices (MI) and 8-channel traces (TR) (D-F6-292, D-F6-293 (4)–(7), EEG Registro 25 Nov 18:00 A–C) · plan, **waits for Sebas's OK and, for TR, the validated drawing**
 
 **Rules for both.** Display only: no rule, window or `Buffer.new_epochs()` reads any of it, and the epochs do not change.
@@ -229,7 +304,7 @@ G1 and G2 go first on Tue: both touch `fill_from_xdf` and are small. S1 and S6 a
   - The harness does not apply (no Unity).
 - **Done when** a replay of T05's rows through the endpoint draws S4–S9 with the right scale per segment, and the switch off gives today's response byte for byte.
 
-#### TR · 8-channel traces (≈ 7 h, after the validated drawing) · switch `EEG_MONITOR_TRACES` (`backend/.env`, read by `live.py`, off)
+#### TR · 8-channel traces (≈ 7 h; drawing validated by D-F6-301 (5); schedule in «Thu 26 night») · switch `EEG_MONITOR_TRACES` (`backend/.env`, read by `live.py`, off)
 - **TR1 · `app/eeg/traces.py`, pure (≈ 2 h).**
   - A causal filter with state, `scipy.signal.sosfilt` with its `zi` kept between pieces: high-pass 1 Hz (Butterworth order 2), notch 60 Hz always on (Q 30), low-pass 40 Hz (Butterworth order 4).
   - It works on the samples `live` already receives, with no second LSL inlet.
