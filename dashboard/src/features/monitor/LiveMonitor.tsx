@@ -5,6 +5,7 @@ import { getJson, type Schemas } from '@/api/client'
 import { useCurrentSession } from '@/components/LiveMonitorAccess'
 import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { clock } from '@/lib/format'
+import { ChannelTraces, type ChannelStatus } from './ChannelTraces'
 import { SessionIndices, type SessionTrace } from './SessionIndices'
 
 // V1.13 Live session monitor (design-handoff/monitor, validated D-F6-233; D-F6-231, D-F6-234, D-F6-254, D-F6-265).
@@ -379,6 +380,8 @@ function Monitor({ sessionId, pinned }: { sessionId: string; pinned: boolean }) 
         </div>
         <div className="flex min-h-0 flex-col gap-6">
           <Sync s={data.sync} />
+          <ChannelTraces sessionId={sessionId} ended={ended}
+            status={Object.fromEntries(((data.signal_quality as Quality | null)?.channels ?? []).map((c) => [c.label, c.status as ChannelStatus]))} />
           <Events list={data.events} />
         </div>
       </main>

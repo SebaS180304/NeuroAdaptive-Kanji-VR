@@ -346,6 +346,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/sessions/{session_id}/live/traces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live Traces
+         * @description TR (D-F6-301 (5)): what live.py wrote for the traces panel, read only. Off: empty, with the reason.
+         */
+        get: operations["live_traces_research_sessions__session_id__live_traces_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/live/current": {
         parameters: {
             query?: never;
@@ -689,6 +709,15 @@ export interface components {
             /** Completed At */
             completed_at: string | null;
         };
+        /** LiveTraceBin */
+        LiveTraceBin: {
+            /** T Ms */
+            t_ms: number;
+            /** Mins */
+            mins: number[];
+            /** Maxs */
+            maxs: number[];
+        };
         /** LiveTracePoint */
         LiveTracePoint: {
             /** Start Ms */
@@ -697,6 +726,26 @@ export interface components {
             ei_z: number | null;
             /** Theta Z */
             theta_z: number | null;
+        };
+        /**
+         * LiveTraces
+         * @description TR (D-F6-301 (5)): the monitor's 8-channel traces since a session ms. Display only.
+         */
+        LiveTraces: {
+            /** On */
+            on: boolean;
+            /** Reason */
+            reason: string | null;
+            /** Labels */
+            labels: string[];
+            /** Bins */
+            bins: components["schemas"]["LiveTraceBin"][];
+            /** Now */
+            now: Record<string, unknown> | null;
+            /** Stages */
+            stages: Record<string, unknown>[];
+            /** Excluded */
+            excluded: string | null;
         };
         /** LiveWindows */
         LiveWindows: {
@@ -2368,6 +2417,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LiveSnapshot"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    live_traces_research_sessions__session_id__live_traces_get: {
+        parameters: {
+            query?: {
+                /** @description session ms of the last bin held */
+                since?: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveTraces"];
                 };
             };
             /** @description Validation Error */

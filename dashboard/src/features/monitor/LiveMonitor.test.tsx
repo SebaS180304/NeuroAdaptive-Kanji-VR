@@ -86,7 +86,7 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(classes).toEqual(expect.arrayContaining(['w-full', 'min-w-[1440px]', 'h-[900px]']))
     expect(classes).not.toContain('w-[1440px]')
     const cols = Array.from(main.children).map((c) => Array.from(c.querySelectorAll('section')).map((s) => s.getAttribute('aria-label')))
-    expect(cols).toEqual([['Signal quality', 'System'], ['Live indices', 'Adaptation decisions'], ['Sync', 'Events']])
+    expect(cols).toEqual([['Signal quality', 'System'], ['Live indices', 'Adaptation decisions'], ['Sync', 'Channel traces, 8 channels, last 20 seconds', 'Events']])
   })
 
   it('says Not counted without a band, and Reference after S6 before the first decision', async () => {
