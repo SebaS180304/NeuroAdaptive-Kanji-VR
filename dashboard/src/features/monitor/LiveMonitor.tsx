@@ -399,7 +399,7 @@ function Monitor({ sessionId, pinned }: { sessionId: string; pinned: boolean }) 
 }
 
 function Frame({ children }: { children: ReactNode }) {
-  return <div className="flex h-[900px] w-full min-w-[1440px] flex-col overflow-hidden bg-(--color-bg) text-(--color-text) tabular-nums">{children}</div>
+  return <div className="flex h-screen min-h-[900px] w-full min-w-[1440px] flex-col overflow-hidden bg-(--color-bg) text-(--color-text) tabular-nums">{children}</div>
 }
 
 /** /monitor follows the newest session in progress; /monitor/:sessionId pins one. */

@@ -76,15 +76,17 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(within(sys).getByText('None')).toBeInTheDocument()   // excluded channel
   })
 
-  it('Full width (D-F6-301 (6)): fills a wider screen, 900 px high, columns 5 / 6 / 5 of 16 in the same order', async () => {
+  it('Full width (D-F6-301 (6)) and full height (D-F6-323 (4)): fills a wider and taller screen, columns 5 / 6 / 5 of 16 in the same order', async () => {
     mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot()) })
     renderApp(`/monitor/${SID}`)
     const main = await screen.findByRole('main')
     expect(main.className).toContain('grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,5fr)]')
     const frame = main.parentElement!
     const classes = Array.from(frame.classList)
-    expect(classes).toEqual(expect.arrayContaining(['w-full', 'min-w-[1440px]', 'h-[900px]']))
+    // D-F6-323 (4): the window's height, at least 900 px; the extra goes to Events and Decisions (their flex-1)
+    expect(classes).toEqual(expect.arrayContaining(['w-full', 'min-w-[1440px]', 'h-screen', 'min-h-[900px]']))
     expect(classes).not.toContain('w-[1440px]')
+    expect(classes).not.toContain('h-[900px]')
     const cols = Array.from(main.children).map((c) => Array.from(c.querySelectorAll('section')).map((s) => s.getAttribute('aria-label')))
     expect(cols).toEqual([['Signal quality', 'System'], ['Live indices', 'Adaptation decisions'], ['Sync', 'Channel traces, 8 channels, last 20 seconds', 'Events']])
   })
