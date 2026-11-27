@@ -426,14 +426,14 @@ Diseño web espera la captura, según su Registro del 26 nov a las 20:05. Ese Re
 
 ## Casillas de hoy
 
-- [ ] 0 · OK de Sebas, textos §7.6, condición de `TEST`, subagente para SY0
-- [ ] SY0 · reproductor y prueba de humo (scratchpad)
-- [ ] MI-B · backend, interruptor `MONITOR_INDICES_WINDOW`, pytest · commit · parada
-- [ ] PF · FAIL de `preflight` sin AURA, su test · commit · parada
-- [ ] MI-P · página, Vitest, capturas a 1440 y a 1920 · commit · parada
-- [ ] RV · //review del diff y arreglos
-- [ ] IN · `pg_dump`, integración, pytest y Vitest, `dist`, `up -d`, `printenv` · antes de las 14:30
-- [ ] C-1 · captura de `/monitor` a 1920 × 1080 con la fixture → `design-handoff/monitor/` · 14:30–14:35
+- [x] 0 · OK de Sebas (D-F6-320), textos §7.6, condición de `TEST`, subagente para SY0
+- [x] SY0 · reproductor y prueba de humo (scratchpad)
+- [x] MI-B · (`947212b`, pytest 576) backend, interruptor `MONITOR_INDICES_WINDOW`, pytest · commit · parada
+- [x] PF · (`ae803bd`) FAIL de `preflight` sin AURA, su test · commit · parada
+- [x] MI-P · (`8dd051c`, Vitest 172) página, Vitest, capturas a 1440 y a 1920 · commit · parada
+- [x] RV · (`73952fd`) //review del diff y arreglos
+- [x] IN · (`8a2df2a`, 12:17–12:25) `pg_dump`, integración, pytest y Vitest, `dist`, `up -d`, `printenv` · antes de las 14:30
+- [x] C-1 · (12:27) captura de `/monitor` a 1920 × 1080 con la fixture → `design-handoff/monitor/` · 14:30–14:35
 - [ ] SY1 · conteos de antes, interruptores, `TEST2701`, `baseline` y `live`, monitor
 - [ ] SY4 · corrida de 14,1 min con los paneles anotados
 - [ ] SY2 · comprobación de que nadie decidió: (a)–(d)
