@@ -87,7 +87,7 @@ export function Readout({ last, k }: { last: Snapshot['indices']['last']; k: Key
 
 export function Chip({ children, dashed = false, title }: { children: ReactNode; dashed?: boolean; title?: string }) {
   return (
-    <span title={title} className={`type-caption inline-flex h-[22px] items-center gap-1.5 rounded-full border px-2.5 font-medium border-(--color-border-strong) ${dashed ? 'border-dashed' : ''}`}>
+    <span title={title} className={`type-caption inline-flex h-[22px] shrink-0 items-center gap-1.5 rounded-full border px-2.5 font-medium whitespace-nowrap border-(--color-border-strong) ${dashed ? 'border-dashed' : ''}`}>
       {children}
     </span>
   )

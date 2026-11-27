@@ -108,7 +108,7 @@ function S7Strip({ k, epochs, s7, now, width, kind, decisions, switchLine, reado
   const zOf = (d: Decision) => (k === 'ei' ? d.eeg_ei_z : d.eeg_theta_z)
   return (
     <div>
-      <div className="flex items-baseline justify-between">
+      <div data-strip-head className="flex h-7 items-baseline justify-between">
         <h3 className="type-body-strong">{NAME[k]}</h3>
         {readout}
       </div>
@@ -118,7 +118,6 @@ function S7Strip({ k, epochs, s7, now, width, kind, decisions, switchLine, reado
         {[-1, 1].map((g) => <line key={g} x1={0} x2={width} y1={y(g)} y2={y(g)} strokeWidth={1} className="stroke-(--color-border)" />)}
         {k === 'ei' && <>
           <line x1={0} x2={width} y1={y(-1.5)} y2={y(-1.5)} strokeDasharray="4 3" className="stroke-(--color-quality-error)" />
-          <text x={width} y={y(-1.5) - 2} textAnchor="end" className="fill-(--color-text-muted) text-[9px]">Lead line (−1.5)</text>
         </>}
         {epochs.map((e, j) => (
           <line key={e.i} data-epoch={kind(e)} x1={j ? x(mid(epochs[j - 1]!)) : x(mid(e)) - 1} x2={x(mid(e))}
@@ -143,6 +142,10 @@ function S7Strip({ k, epochs, s7, now, width, kind, decisions, switchLine, reado
               </g>
             )
           })}
+        {k === 'ei' && (   // left end, where no decision falls (they start at trial 3), on a halo and above them (12:15, 2)
+          <text x={2} y={y(-1.5) - 2} strokeWidth={3}
+            className="fill-(--color-text-muted) stroke-(--color-surface) text-[9px] [paint-order:stroke]">Lead line (−1.5)</text>
+        )}
       </svg>
     </div>
   )
@@ -183,8 +186,22 @@ export function IndicesWindow({ i, s, stage, decisions, ended, now }: {
   const line = reached('S6') ? icaLine(s.ica) : null
   const s7epochs = s.epochs.filter((e) => e.state === S7)
   const switchLine = s.ica?.switch_ms != null && s.ica.switch_ms >= s7 && line ? { ms: s.ica.switch_ms, text: line.text } : null
-  const trials = new Map<number, number>()
-  for (const e of s7epochs) { const n = trialNo(e.trial_id); if (n && n % 2 === 1 && !trials.has(n)) trials.set(n, mid(e)) }
+  // «Trial n» at the end of trial n, where its decision point is (D-F6-328 (2) (b)): the decision's time, or before
+  // trial 3 (no decision) its last epoch's end. The newest label stays clear of «Now»; older ones give way.
+  const ends = new Map<number, number>()
+  for (const e of s7epochs) { const n = trialNo(e.trial_id); if (n) ends.set(n, Math.max(ends.get(n) ?? 0, e.end_ms)) }
+  const decided = new Set<number>()
+  for (const d of decisions) if (d.trial_sequence != null && d.decided_elapsed_ms != null) {
+    ends.set(d.trial_sequence, d.decided_elapsed_ms); decided.add(d.trial_sequence)
+  }
+  const current = Math.max(0, ...ends.keys())
+  for (const n of [...ends.keys()]) if (!decided.has(n) && n === current) ends.delete(n)   // the trial in course has no end yet
+  const sx = (ms: number) => ((ms - s7) / Math.max(1, t - s7)) * width
+  const trialLabels: [number, number][] = []
+  for (const [n, ms] of [...ends].filter(([n]) => n % 2 === 1).sort((a, b) => b[0] - a[0])) {
+    const x = Math.min(sx(ms), width - 30 - 18)
+    if (x >= 18 && trialLabels.every(([, x2]) => Math.abs(x2 - x) >= 44)) trialLabels.push([n, x])
+  }
   return (
     <div ref={ref}>
       <p className="type-caption text-(--color-text-secondary)">For viewing only. Decisions use 3-trial windows from S7.</p>
@@ -193,7 +210,7 @@ export function IndicesWindow({ i, s, stage, decisions, ended, now }: {
           Updates with each epoch, every 2.5 s.</span>
         {inS7 && <span className="type-caption">EEG counted in {i.windows.counted} of {i.windows.with_eeg}</span>}
       </div>
-      <div className="mb-2 flex flex-wrap items-center gap-2">
+      <div data-testid="chip-row" className="mb-2 flex flex-nowrap items-center gap-1.5">
         {reached('S6') && s.ica != null && (fallback
           ? <Chip title="ICA is not active in this session. Epochs follow rule (2): the blink rule applies and task sounds are not cut. Expect more red epochs if blinks are frequent.">
               <span aria-hidden className="text-(--color-quality-warn)">▲</span>Rule: (2) fallback</Chip>
@@ -201,29 +218,32 @@ export function IndicesWindow({ i, s, stage, decisions, ended, now }: {
               <span aria-hidden className="inline-block size-2 rounded-full bg-(--color-accent)" />Rule: ICA</Chip>)}
         <Chip dashed={!solid}>{refName}</Chip>
         {line && (
-          <span className="type-caption inline-flex items-center gap-1.5 text-(--color-text-secondary)">
-            {line.mark === 'ring' ? <span aria-hidden className="inline-block size-2 rounded-full border border-(--color-text-secondary)" />
-              : line.mark === 'dot' ? <span aria-hidden className="inline-block size-2 rounded-full bg-(--color-accent)" />
-              : <svg aria-hidden width={9} height={8}><path d="M4.5,0L9,8H0z" className="fill-(--color-quality-warn)" /></svg>}
-            <span data-testid="ica-line">{line.text}</span>
+          <span title={line.text}   // may be cut with «…» at 1440 (D-F6-328 (2) (a)); the DOM keeps the whole text
+            className="type-caption inline-flex min-w-0 items-center gap-1.5 text-(--color-text-secondary)">
+            {line.mark === 'ring' ? <span aria-hidden className="inline-block size-2 shrink-0 rounded-full border border-(--color-text-secondary)" />
+              : line.mark === 'dot' ? <span aria-hidden className="inline-block size-2 shrink-0 rounded-full bg-(--color-accent)" />
+              : <svg aria-hidden width={9} height={8} className="shrink-0"><path d="M4.5,0L9,8H0z" className="fill-(--color-quality-warn)" /></svg>}
+            <span data-testid="ica-line" className="min-w-0 truncate">{line.text}</span>
           </span>
         )}
       </div>
       {!reached('S4') ? (
-        <div className="type-body flex items-center justify-center text-(--color-text-muted)" style={{ height: HEIGHT.ei + HEIGHT.theta + 40 }}>
+        <div className="type-body flex items-center justify-center text-(--color-text-muted)" style={{ height: HEIGHT.ei + HEIGHT.theta + 2 * 28 + 14 }}>
           Indices from the end of S3</div>
       ) : inS7 ? (<>
         {(['ei', 'theta'] as Key[]).map((k) => <S7Strip key={k} k={k} epochs={s7epochs} s7={s7} now={t} width={width} kind={kind}
           decisions={decisions} switchLine={switchLine} readout={<Readout last={i.last} k={k} />} />)}
         <svg width={width} height={14} className="block" aria-label="Trials">
-          {[...trials].filter(([, ms]) => ((ms - s7) / Math.max(1, t - s7)) * width < width - 56).map(([n, ms]) => <text key={n} x={((ms - s7) / Math.max(1, t - s7)) * width} y={11}
+          {trialLabels.map(([n, x]) => <text key={n} data-trial={n} x={x} y={11} textAnchor="middle"
             className="fill-(--color-text-muted) text-[10px]">Trial {n}</text>)}
           <text x={width} y={11} textAnchor="end" className="fill-(--color-text) text-[10px] font-semibold">Now</text>
         </svg>
       </>) : (<>
         {(['ei', 'theta'] as Key[]).map((k) => (
           <div key={k}>
-            <h3 className="type-body-strong">{NAME[k]}</h3>
+            <div data-strip-head className="flex h-7 items-baseline">   {/* as S7's, so the panel keeps its height (12:15, 1) */}
+              <h3 className="type-body-strong">{NAME[k]}</h3>
+            </div>
             <WindowStrip k={k} epochs={s.epochs} stages={s.stages} now={t} width={width} kind={kind} />
           </div>
         ))}

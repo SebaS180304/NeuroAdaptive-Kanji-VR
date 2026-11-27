@@ -76,15 +76,17 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(within(sys).getByText('None')).toBeInTheDocument()   // excluded channel
   })
 
-  it('Full width (D-F6-301 (6)): fills a wider screen, 900 px high, columns 5 / 6 / 5 of 16 in the same order', async () => {
+  it('Full width (D-F6-301 (6)) and full height (D-F6-323 (4)): fills a wider and taller screen, columns 5 / 6 / 5 of 16 in the same order', async () => {
     mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot()) })
     renderApp(`/monitor/${SID}`)
     const main = await screen.findByRole('main')
     expect(main.className).toContain('grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,5fr)]')
     const frame = main.parentElement!
     const classes = Array.from(frame.classList)
-    expect(classes).toEqual(expect.arrayContaining(['w-full', 'min-w-[1440px]', 'h-[900px]']))
+    // D-F6-323 (4): the window's height, at least 900 px; the extra goes to Events and Decisions (their flex-1)
+    expect(classes).toEqual(expect.arrayContaining(['w-full', 'min-w-[1440px]', 'h-screen', 'min-h-[900px]']))
     expect(classes).not.toContain('w-[1440px]')
+    expect(classes).not.toContain('h-[900px]')
     const cols = Array.from(main.children).map((c) => Array.from(c.querySelectorAll('section')).map((s) => s.getAttribute('aria-label')))
     expect(cols).toEqual([['Signal quality', 'System'], ['Live indices', 'Adaptation decisions'], ['Sync', 'Channel traces, 8 channels, last 20 seconds', 'Events']])
   })
@@ -245,6 +247,106 @@ describe('V1.13 live session monitor (M1c)', () => {
       { state: ST.s8, ms: 1_590_000 }], epochs: [...session.epochs, wep(9, ST.s8, 1_592_000, -1.1)] }))
     expect(within(after).getByText('Raw, no decisions after S7')).toBeInTheDocument()
     expect(within(after).getByRole('img', { name: 'Engagement Index, last 20 seconds, log values' })).toBeInTheDocument()
+  })
+
+  // ---------- D-F6-323 (5), D-F6-328: cosmetics of Diseño web (27 Nov 12:15, 15:55) ----------
+  const s7Session = (trials: number, dec: object[] = []) => {
+    const s7 = 1_200_000
+    const epochs = Array.from({ length: trials }, (_, k) => wep(10 + k, ST.s7, s7 + k * 5_000 + 500, -1.0,
+      { unit: 'z', ei: 0.1, theta: 0.1, trial_id: `S7-${String(k + 1).padStart(3, '0')}` }))
+    return { s7, session: { stages: [{ state: ST.s6, ms: 1_100_000 }, { state: ST.s7, ms: s7 }],
+      ica: { identified: true, corr: 0.8, at_ms: 1_101_000, switch_ms: null, switch_channel: null, switched_to_nosound_at: null },
+      epochs }, dec }
+  }
+
+  it('I1: the strip header row is 28 px in both views, and the chip row never wraps; a cut ICA line keeps its full text', async () => {
+    const win = await showIndices(windowSnap(ST.s8, 1_600_000, { stages: [{ state: ST.s8, ms: 1_590_000 }],
+      ica: { identified: false, corr: 0.55, at_ms: 852_000, switch_ms: null, switch_channel: null, switched_to_nosound_at: null },
+      epochs: [wep(9, ST.s8, 1_592_000, -1.1)] }))
+    expect(win.querySelectorAll('[data-strip-head]').length).toBe(2)
+    win.querySelectorAll('[data-strip-head]').forEach((h) => expect(h.className).toContain('h-7'))
+    const row = within(win).getByTestId('chip-row')
+    expect(row.className).toContain('flex-nowrap')
+    const ica = within(win).getByTestId('ica-line')
+    const full = 'ICA not found at 00:14:12, rule (2) from here'
+    expect(ica.textContent).toBe(full)
+    expect(ica.className).toContain('truncate')
+    expect(ica.closest('[title]')!.getAttribute('title')).toBe(full)
+    expect(ica.closest('[aria-hidden="true"]')).toBeNull()   // read whole by screen readers: «…» only clips the drawing (//review 1)
+    document.body.innerHTML = ''
+    const { session } = s7Session(4)
+    const s7 = await showIndices(windowSnap(ST.s7, 1_221_000, session))
+    s7.querySelectorAll('[data-strip-head]').forEach((h) => expect(h.className).toContain('h-7'))
+    expect(s7.querySelectorAll('[data-strip-head]').length).toBe(2)
+  })
+
+  it('I2: the lead line label sits at the left end of the S7 strip, on a halo, above the points', async () => {
+    const { session } = s7Session(6)
+    const ind = await showIndices(windowSnap(ST.s7, 1_231_000, session))
+    const svg = within(ind).getByRole('img', { name: 'Engagement Index, stage S7, z against S6' })
+    const label = within(svg).getByText('Lead line (−1.5)')
+    expect(Number(label.getAttribute('x'))).toBeLessThan(10)
+    expect(label.getAttribute('text-anchor')).not.toBe('end')
+    expect(label.getAttribute('class')).toContain('paint-order')
+    expect(svg.lastElementChild).toBe(label)
+  })
+
+  it('I3 and I4: "Trial n" sits at the end of trial n, with its decision point; the newest label stays and the oldest give way', async () => {
+    const { s7, session } = s7Session(13)
+    const dec = (n: number) => ({ ...snapshot().decisions[0], trial_id: `S7-${String(n).padStart(3, '0')}`, trial_sequence: n,
+      decided_elapsed_ms: s7 + n * 5_000, eeg_counted: true, eeg_ei_z: 0.2, eeg_theta_z: 0.1 })
+    const base = windowSnap(ST.s7, s7 + 13 * 5_000 + 1_000, session)
+    const ind = await showIndices({ ...base, decisions: [11, 9, 5, 3].map(dec) })   // trial 13 in course: its epochs, no decision
+    const axis = within(ind).getByLabelText('Trials')
+    const labels = Array.from(axis.querySelectorAll('[data-trial]')).map((t) => [t.textContent, Number(t.getAttribute('x'))] as const)
+    expect(labels.map(([t]) => t)).toContain('Trial 11')
+    expect(labels.map(([t]) => t)).not.toContain('Trial 13')
+    const xs = labels.map(([, x]) => x).sort((a, b) => a - b)
+    xs.slice(1).forEach((x, j) => expect(x - xs[j]!).toBeGreaterThanOrEqual(44))
+    expect(Math.max(...xs)).toBeLessThanOrEqual(452 - 30 - 18)   // clear of "Now"
+    const svg = within(ind).getByRole('img', { name: 'Engagement Index, stage S7, z against S6' })
+    const point5 = Array.from(svg.querySelectorAll('[data-point]'))
+      .find((g) => g.querySelector('title')!.textContent!.startsWith('Decision at trial 5.'))!
+    const cx = Number(point5.querySelector('circle')!.getAttribute('cx'))
+    const label5 = axis.querySelector('[data-trial="5"]')
+    expect(label5).not.toBeNull()
+    expect(Number(label5!.getAttribute('x'))).toBeCloseTo(cx, 0)                 // the label and the point share the trial's end
+  })
+
+  it('D1: the 60 Hz line reads as drawn: mark and word, then "60 Hz, median of 8", with no middle dot', async () => {
+    const q = { channels: [{ label: 'Fp1', l60_uv: 92, rms_uv: 31, over_pct: 1.8, status: 'OK', flat: false, sync_tap: false,
+      mark_60: false }], session_60_uv: 60.4, session_60_status: 'OK', age_s: 1 }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot({ signal_quality: q })) })
+    renderApp(`/monitor/${SID}`)
+    const sq = await screen.findByRole('region', { name: 'Signal quality' })
+    const line = within(sq).getByText(/60 Hz, median of 8:/).closest('p')!
+    expect(line.textContent).not.toContain('·')
+    expect(within(line).getByText('OK')).toBeInTheDocument()
+    expect(within(line).getByText('60 µV')).toBeInTheDocument()
+  })
+
+  it('D2: decisions in words: "LAL down one step" and a second line "ESL Medium, LAL Medium → Low"', async () => {
+    const odd = { ...snapshot().decisions[1], trial_id: 'S7-007', trial_sequence: 7, from_level: 'MEDIUM', to_level: 'WEIRD' }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot({ decisions: [...snapshot().decisions, odd] })) })
+    renderApp(`/monitor/${SID}`)
+    const dec = await screen.findByRole('region', { name: 'Adaptation decisions' })
+    const rows = within(dec).getAllByRole('listitem')
+    expect(rows[0]).toHaveTextContent('No change')
+    expect(rows[0]).toHaveTextContent('ESL Medium, LAL Low')
+    expect(rows[1]).toHaveTextContent('LAL down one step')
+    expect(rows[1]).toHaveTextContent('ESL Medium, LAL Medium → Low')
+    expect(rows[1]).not.toHaveTextContent('MEDIUM → LOW')
+    expect(rows[2]).toHaveTextContent('LAL changed')                 // a level it does not know: no crash, no guess
+    expect(rows[2]).toHaveTextContent('ESL Medium, LAL Medium → Weird')
+  })
+
+  it('D2: a change with no dimension never prints "null" (//review 2)', async () => {
+    const d = { ...snapshot().decisions[1], dimension: null }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot({ decisions: [d] })) })
+    renderApp(`/monitor/${SID}`)
+    const row = within(await screen.findByRole('region', { name: 'Adaptation decisions' })).getAllByRole('listitem')[0]!
+    expect(row).not.toHaveTextContent('null')
+    expect(row).toHaveTextContent('Level down one step')
   })
 
   it('/monitor follows the session in progress, and waits when there is none', async () => {
