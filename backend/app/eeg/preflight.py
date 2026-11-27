@@ -76,7 +76,7 @@ def check_lsl(streams: list[dict], host: str) -> list[tuple[str, str]]:
     elif local_aura:
         out.append((OK, "one AURA on this PC"))
     else:
-        out.append((WARN, "no AURA on this PC yet: LSL Stream Out on before Play"))
+        out.append((FAIL, "no AURA on this PC yet: LSL Stream Out on before Play"))  # D-F6-315 (4): not a WARN
     if any(s["hostname"] == host and s["name"] == "UnityMarkers" for s in streams):
         # Unity keeps its outlet after leaving Play (AU0, 18 Nov): the next Play would show two
         out.append((FAIL, "UnityMarkers already on before Play: an earlier Play's outlet, reopen Unity"))

@@ -52,7 +52,7 @@ def test_lsl_exactly_one_real_local_aura() -> None:
     real = {"name": "AURA", "hostname": HOST, "source_id": "aura-123"}
     other_pc = {"name": "AURA", "hostname": "MSI", "source_id": "x"}
     assert _levels(preflight.check_lsl([real], HOST)) == [OK]
-    assert _levels(preflight.check_lsl([], HOST)) == [WARN]
+    assert preflight.check_lsl([], HOST) == [(FAIL, "no AURA on this PC yet: LSL Stream Out on before Play")]  # D-F6-315 (4)
     assert _levels(preflight.check_lsl([real, real], HOST)) == [FAIL]
     synthetic = dict(real, source_id="synthetic-aura")
     assert _levels(preflight.check_lsl([synthetic], HOST)) == [FAIL]

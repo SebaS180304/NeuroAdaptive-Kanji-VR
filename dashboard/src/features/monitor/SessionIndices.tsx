@@ -17,7 +17,7 @@ export type SessionTrace = {
     switch_reason: string | null } | null
   epochs: Epoch[]
 }
-type Key = 'ei' | 'theta'
+export type Key = 'ei' | 'theta'
 
 // Fixed slots per stage (452 px), a 5 px gap where the unit changes: S4|S5, S5|S6, S6|S7 (design-system.md).
 const SLOTS = [
@@ -27,7 +27,7 @@ const SLOTS = [
 ] as const
 const GAP = 5, W = 452, TRIALS = 20
 // an epoch before the first STATE_ENTERED has no state yet: it belongs with S1–S3
-const slotOf = (state: string | null) => {
+export const slotOf = (state: string | null) => {
   const n = Number((state ?? 'S1').slice(1, 2))
   return n <= 3 ? 's13' : n === 4 ? 'S4' : n === 5 ? 'S5' : n === 6 ? 'S6' : n === 7 ? 'S7' : 's89'
 }
@@ -36,7 +36,7 @@ SLOTS.reduce((x, s, k) => { X0[s.id] = x; return x + s.w + (k < SLOTS.length - 1
 const W_OF: Record<string, number> = Object.fromEntries(SLOTS.map((s) => [s.id, s.w]))
 const BLOCK: Record<string, number> = Object.fromEntries(SLOTS.map((s) => [s.id, s.block]))
 const UNIT = ['ln', 'z', 'ln', 'z']
-const trialNo = (id: string | null) => (id ? Number(id.split('-')[1]) || null : null)
+export const trialNo = (id: string | null) => (id ? Number(id.split('-')[1]) || null : null)
 
 /** x of each epoch: S7 by trial (1–20), the others spread by the stage's expected epochs, squeezed if it runs long. */
 function epochX(epochs: Epoch[]): Map<number, number> {
@@ -63,14 +63,29 @@ const REF_CHIP: Record<string, [string, string | null, boolean]> = {   // [chip,
   s13: ['Raw, no reference yet', null, false], S4: ['Raw, S4 baseline', null, false],
   S5: ['z vs S4 eyes open (provisional)', 'No decisions yet', false], S6: ['Building reference (S6)', null, false],
 }
-function referenceChip(slot: string, ref: Snapshot['indices']['reference'], ica: SessionTrace['ica']): [string, string | null, boolean] {
+export function referenceChip(slot: string, ref: Snapshot['indices']['reference'], ica: SessionTrace['ica']): [string, string | null, boolean] {
   if (REF_CHIP[slot]) return REF_CHIP[slot]!
   const name = !ref?.source ? 'Building reference (S6)' : ref.source === 'S6' ? (ica?.identified && ica.switched_to_nosound_at == null
     ? 'z vs S6 (ICA)' : 'z vs S6 (rule 2)') : 'z vs S4 eyes open (fallback)'
   return [name, slot === 's89' ? 'No decisions after S7' : null, true]
 }
 
-function Chip({ children, dashed = false, title }: { children: ReactNode; dashed?: boolean; title?: string }) {
+/** The S7 readout beside an index's name: the last decision window's word and z (D-F6-280). */
+export function Readout({ last, k }: { last: Snapshot['indices']['last']; k: Key }) {
+  if (!last) return null
+  const counted = last.counted !== false
+  const z = k === 'ei' ? last.ei_z : last.theta_z, band = k === 'ei' ? last.ei_band : last.theta_band
+  return (
+    <span className={`flex items-baseline gap-2 ${counted ? '' : 'text-(--color-text-muted)'}`}>
+      <span className="type-caption">After trial {last.trial_id.split('-')[1]?.replace(/^0+/, '')}</span>
+      {counted ? <span className="type-body font-semibold">{band === 'Low' ? '▼ ' : band === 'High' ? '▲ ' : '● '}{band}</span>
+        : <span className="type-body">Not counted</span>}
+      <span className="text-[24px] leading-7 font-medium">{z == null ? '—' : (z < 0 ? `−${Math.abs(z).toFixed(1)}` : `+${z.toFixed(1)}`)}</span>
+    </span>
+  )
+}
+
+export function Chip({ children, dashed = false, title }: { children: ReactNode; dashed?: boolean; title?: string }) {
   return (
     <span title={title} className={`type-caption inline-flex h-[22px] items-center gap-1.5 rounded-full border px-2.5 font-medium border-(--color-border-strong) ${dashed ? 'border-dashed' : ''}`}>
       {children}
@@ -78,8 +93,8 @@ function Chip({ children, dashed = false, title }: { children: ReactNode; dashed
   )
 }
 
-const STROKE = { valid: 'stroke-(--color-accent)', invalid: 'stroke-(--color-quality-error)', grey: 'stroke-(--color-border-strong)' }
-const WIDTH = { valid: 1.25, invalid: 1.75, grey: 1.5 }
+export const STROKE = { valid: 'stroke-(--color-accent)', invalid: 'stroke-(--color-quality-error)', grey: 'stroke-(--color-border-strong)' }
+export const WIDTH = { valid: 1.25, invalid: 1.75, grey: 1.5 }
 
 function Strip({ name, k, epochs, xs, decisions, height, line, ended, readout }: {
   name: string; k: Key; epochs: Epoch[]; xs: Map<number, number>; decisions: Decision[]; height: number
@@ -164,7 +179,7 @@ function Strip({ name, k, epochs, xs, decisions, height, line, ended, readout }:
 const AXIS: [string, string][] = [['s13', 'S1–3'], ['S4', 'S4'], ['S5', 'S5'], ['S6', 'S6'], ['S7', 'S7'], ['s89', 'S8–9']]
 const ORDER = AXIS.map(([id]) => id)
 
-function Legend() {
+export function Legend() {
   const item = (swatch: ReactNode, text: string) => (
     <span className="type-caption inline-flex items-center gap-2">
       <svg width={16} height={10} aria-hidden>{swatch}</svg>{text}</span>)
@@ -191,19 +206,7 @@ export function SessionIndices({ i, s, stage, decisions, ended }: {
     : s.ica!.identified ? { x: X0.S6!, text: `ICA applied, r ${(s.ica!.corr ?? 0).toFixed(2)}`, warn: false }
     : { x: X0.S6!, text: 'ICA not found, rule (2) from here', warn: true }
   const [refName, refLine, solid] = referenceChip(slot, i.reference, s.ica)
-  const readout = (k: Key) => {
-    if (!reached('S7') || !i.last) return null
-    const counted = i.last.counted !== false
-    const z = k === 'ei' ? i.last.ei_z : i.last.theta_z, band = k === 'ei' ? i.last.ei_band : i.last.theta_band
-    return (
-      <span className={`flex items-baseline gap-2 ${counted ? '' : 'text-(--color-text-muted)'}`}>
-        <span className="type-caption">After trial {i.last.trial_id.split('-')[1]?.replace(/^0+/, '')}</span>
-        {counted ? <span className="type-body font-semibold">{band === 'Low' ? '▼ ' : band === 'High' ? '▲ ' : '● '}{band}</span>
-          : <span className="type-body">Not counted</span>}
-        <span className="text-[24px] leading-7 font-medium">{z == null ? '—' : (z < 0 ? `−${Math.abs(z).toFixed(1)}` : `+${z.toFixed(1)}`)}</span>
-      </span>
-    )
-  }
+  const readout = (k: Key) => (reached('S7') ? <Readout last={i.last} k={k} /> : null)
   return (
     <>
       <p className="type-caption mb-2 text-(--color-text-secondary)">For viewing only. Decisions use 3-trial windows from S7.</p>

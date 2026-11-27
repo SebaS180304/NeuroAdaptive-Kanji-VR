@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     # MI (D-F6-277, D-F6-280, D-F6-297 (4)): the monitor's per-epoch indices for the whole session, read by the backend
     # from eeg_epochs. MONITOR_LIVE_INDICES=true in backend/.env, between sessions, then `docker compose up -d backend`.
     monitor_live_indices: bool = False
+    # MI outside S7 (D-F6-308 (3), D-F6-309 (4), D-F6-320): S7 alone in z, a 20 s window in ln outside it. Needs
+    # MONITOR_LIVE_INDICES on. MONITOR_INDICES_WINDOW=true in backend/.env, between sessions, then `up -d backend`.
+    monitor_indices_window: bool = False
     # TR (D-F6-293 (5), D-F6-301 (5)): the monitor's 8-channel traces, written by live.py every 0.25 s to
     # eeg_trace_bins (last 30 s only). EEG_MONITOR_TRACES=true in backend/.env, between sessions, then
     # `docker compose up -d backend`. Display only: it never changes the epoch cut or any rule.

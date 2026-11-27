@@ -150,6 +150,103 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(within(ind).queryByText(/Rule:/)).not.toBeInTheDocument()
   })
 
+  // ---------- MI outside S7 (D-F6-308 (3), D-F6-309 (4), D-F6-320): view "window" from MONITOR_INDICES_WINDOW ----------
+  const ST = { s1: 'S1_WELCOME_ORIENTATION', s4: 'S4_EEG_BASELINE', s5: 'S5_STANDARDIZED_LEARNING',
+    s6: 'S6_GUIDED_PRACTICE_CALIBRATION', s7: 'S7_EXPERIMENTAL_RETRIEVAL', s8: 'S8_IMMEDIATE_ASSESSMENT' }
+  const wep = (i: number, state: string, start: number, ln: number | null, over: object = {}) => ({
+    i, start_ms: start, end_ms: start + 2000, state, trial_id: null, valid: ln != null, grey: false, excluded: null,
+    unit: 'ln', ei: ln, theta: ln, ln_ei: ln, ln_theta: ln, ...over })
+  const windowSnap = (stage: string, elapsed: number, session: object, over: object = {}) => {
+    const base = snapshot()
+    return { ...base, session: { ...base.session, stage, elapsed_ms: elapsed },
+      indices: { ...base.indices, session: { view: 'window', eyes_closed_ms: null, ica: null, ...session } }, ...over }
+  }
+  const showIndices = async (s: object) => {
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(s) })
+    renderApp(`/monitor/${SID}`)
+    return screen.findByRole('region', { name: 'Live indices' })
+  }
+
+  it('MI window outside S7: the last 20 s in ln on a fixed scale, with a stage line and no z', async () => {
+    const s = windowSnap(ST.s5, 225_000, {
+      stages: [{ state: ST.s1, ms: 0 }, { state: ST.s4, ms: 100_000 }, { state: ST.s5, ms: 210_000 }],
+      epochs: [wep(1, ST.s4, 100_000, -1.0), wep(2, ST.s4, 206_000, -1.2),
+        wep(3, ST.s5, 212_000, -1.5, { ln_theta: -2.0 }), wep(4, ST.s5, 214_500, -1.0, { ln_theta: -3.5 })],
+    })
+    const ind = await showIndices(s)
+    const ei = within(ind).getByRole('img', { name: 'Engagement Index, last 20 seconds, log values' })
+    const th = within(ind).getByRole('img', { name: 'Theta (Fz), last 20 seconds, log values' })
+    expect(ei.querySelectorAll('[data-dot]').length).toBe(3)       // the epoch at 100 s is out of the window
+    expect(ei.querySelectorAll('[data-join]').length).toBe(1)      // no join across the S5 line
+    expect(within(ei).getByText('S5')).toBeInTheDocument()
+    const tick = (svg: Element, v: string) => Number(svg.querySelector(`[data-tick="${v}"]`)!.getAttribute('y1'))
+    const cy = (svg: Element, i: number) => Number(svg.querySelector(`[data-dot="${i}"]`)!.getAttribute('cy'))
+    expect(cy(ei, 3)).toBeCloseTo((tick(ei, '-3.0') + tick(ei, '0.0')) / 2)   // −1.5 is the middle of −3.0..0.0
+    expect(cy(th, 4)).toBeCloseTo(tick(th, '-3.5'))                         // fixed scale, not fitted to the data
+    for (const t of ['−3.0', '−1.5', '0.0', '−3.5', '−2.0', '−0.5', '−20 s', '−4', 'Now']) {
+      expect(within(ind).getAllByText(t).length).toBeGreaterThan(0)
+    }
+    expect(within(ind).getByText('Raw, no decisions yet')).toBeInTheDocument()
+    expect(within(ind).getByText('Updates with each epoch, every 2.5 s.')).toBeInTheDocument()
+    expect(within(ind).queryByText('Lead line (−1.5)')).not.toBeInTheDocument()
+    expect(within(ind).queryByText(/EEG counted/)).not.toBeInTheDocument()
+    expect(within(ind).queryByText(/After trial/)).not.toBeInTheDocument()
+  })
+
+  it('MI window: the ICA status line beside the rule chip, in its four forms', async () => {
+    const at = 852_000   // 00:14:12
+    const s6 = { stages: [{ state: ST.s6, ms: 851_000 }], epochs: [wep(1, ST.s6, 860_000, -1.0)] }
+    const line = async (ica: object | null, stage = ST.s6) => {
+      const ind = await showIndices(windowSnap(stage, 870_000, { ...s6, ica }))
+      const text = within(ind).getByTestId('ica-line').textContent
+      document.body.innerHTML = ''
+      return text
+    }
+    expect(await line(null)).toBe('Fitting ICA')
+    expect(await line({ identified: true, corr: 0.79, at_ms: at, switch_ms: null, switch_channel: null,
+      switched_to_nosound_at: null })).toBe('ICA applied at 00:14:12, r 0.79')
+    expect(await line({ identified: false, corr: 0.55, at_ms: at, switch_ms: null, switch_channel: null,
+      switched_to_nosound_at: null })).toBe('ICA not found at 00:14:12, rule (2) from here')
+    expect(await line({ identified: true, corr: 0.8, at_ms: at, switch_ms: 1_180_000, switch_channel: 'Cz',
+      switched_to_nosound_at: 9.5 }, ST.s8)).toBe('Cz excluded at 00:19:40, rule (2) from here')
+    expect(await line({ identified: true, corr: 0.8, at_ms: at, switch_ms: 1_180_000, switch_channel: null,
+      switched_to_nosound_at: 9.5 }, ST.s8)).toBe('Rule (2) from 00:19:40')   // provisional text (D-F6-320 (3) (b))
+  })
+
+  it('MI window: a switch to rule (2) with no time yet still reads as rule (2), as the reference chip (//review)', async () => {
+    const ica = { identified: true, corr: 0.8, at_ms: 852_000, switch_ms: null, switch_channel: 'Cz', switched_to_nosound_at: 9.5 }
+    const ind = await showIndices(windowSnap(ST.s7, 1_307_000, { stages: [{ state: ST.s7, ms: 1_200_000 }], ica, epochs: [] }))
+    expect(within(ind).getByText('Rule: (2) fallback')).toBeInTheDocument()
+    expect(within(ind).getByText('z vs S6 (rule 2)')).toBeInTheDocument()
+    expect(within(ind).getByTestId('ica-line').textContent).toBe('Cz excluded at —, rule (2) from here')
+  })
+
+  it('MI window in S7: stage S7 alone in z against S6, its decision points, and the S8–S9 chip after it', async () => {
+    const s7 = 1_200_000
+    const session = {
+      stages: [{ state: ST.s6, ms: 1_100_000 }, { state: ST.s7, ms: s7 }],
+      ica: { identified: true, corr: 0.8, at_ms: 1_101_000, switch_ms: null, switch_channel: null, switched_to_nosound_at: null },
+      epochs: [wep(1, ST.s6, 1_190_000, -1.0),
+        wep(2, ST.s7, s7 + 5_000, -1.0, { unit: 'z', ei: -0.4, theta: 0.2, trial_id: 'S7-001' }),
+        wep(3, ST.s7, s7 + 7_500, -1.0, { unit: 'z', ei: -1.2, theta: 0.1, trial_id: 'S7-002' })],
+    }
+    const ind = await showIndices(windowSnap(ST.s7, 1_307_000, session))
+    const ei = within(ind).getByRole('img', { name: 'Engagement Index, stage S7, z against S6' })
+    expect(ei.querySelectorAll('[data-epoch]').length).toBe(2)     // no S6 epoch in the S7 view
+    expect(ei.querySelectorAll('[data-point]').length).toBe(2)     // decisions at trials 11 and 9
+    expect(within(ei).getByText('Lead line (−1.5)')).toBeInTheDocument()
+    expect(within(ind).getByText('Trial 1')).toBeInTheDocument()
+    expect(within(ind).getByText('z vs S6 (ICA)')).toBeInTheDocument()
+    expect(within(ind).getByText('EEG counted in 8 of 9')).toBeInTheDocument()
+    expect(within(ind).getAllByText('After trial 11').length).toBe(2)
+    expect(within(ind).getByTestId('ica-line').textContent).toBe('ICA applied at 00:18:21, r 0.80')
+    document.body.innerHTML = ''
+    const after = await showIndices(windowSnap(ST.s8, 1_600_000, { ...session, stages: [...session.stages,
+      { state: ST.s8, ms: 1_590_000 }], epochs: [...session.epochs, wep(9, ST.s8, 1_592_000, -1.1)] }))
+    expect(within(after).getByText('Raw, no decisions after S7')).toBeInTheDocument()
+    expect(within(after).getByRole('img', { name: 'Engagement Index, last 20 seconds, log values' })).toBeInTheDocument()
+  })
+
   it('/monitor follows the session in progress, and waits when there is none', async () => {
     mockApi({ 'GET /api/research/live/current': () => json({ detail: 'no session in progress' }, 404) })
     renderApp('/monitor')

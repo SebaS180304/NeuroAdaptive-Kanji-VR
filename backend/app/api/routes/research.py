@@ -549,7 +549,7 @@ def _live_z(value: float | None, stats: dict | None) -> float | None:
 
 
 _SESSION_EPOCHS = text("""
-SELECT epoch_index, start_ms, end_ms, game_state, trial_id, quality, engagement_index, theta_fz, excluded_channels
+SELECT epoch_index, start_ms, end_ms, lsl_start, game_state, trial_id, quality, engagement_index, theta_fz, excluded_channels
 FROM eeg_epochs WHERE session_id = :s AND start_ms IS NOT NULL ORDER BY epoch_index""")
 
 _SESSION_STAGES = text("""
@@ -563,7 +563,7 @@ FROM session_events WHERE session_id = :s AND event_type = 'BASELINE_STARTED' OR
 
 _LN_STATES = {"S1_WELCOME_ORIENTATION", "S2_VR_TUTORIAL", "S3_SYSTEM_VALIDATION", "S4_EEG_BASELINE",
               "S6_GUIDED_PRACTICE_CALIBRATION"}
-_S4, _S5 = "S4_EEG_BASELINE", "S5_STANDARDIZED_LEARNING"
+_S4, _S5, _S6 = "S4_EEG_BASELINE", "S5_STANDARDIZED_LEARNING", "S6_GUIDED_PRACTICE_CALIBRATION"
 _ICA_KEYS = ("identified", "corr", "reason", "switched_to_nosound_at", "switch_reason")
 
 
@@ -601,7 +601,7 @@ async def _session_trace(db: AsyncSession, session_id: uuid.UUID, eeg: dict | No
         return _live_z(v, s4[key] if e["game_state"] == _S5 else engine[key])
 
     ica = (eeg or {}).get("ica")
-    return {
+    out = {
         "stages": stages,
         "eyes_closed_ms": list(closed) if closed else None,
         "ica": None if ica is None else {k: ica.get(k) for k in _ICA_KEYS},
@@ -611,6 +611,31 @@ async def _session_trace(db: AsyncSession, session_id: uuid.UUID, eeg: dict | No
                     "ei": value(e, "ei", "engagement_index"), "theta": value(e, "theta", "theta_fz")}
                    for e in epochs],
     }
+    if not get_settings().monitor_indices_window:
+        return out
+    # MI outside S7 (D-F6-309 (4)): ln of every epoch for the 20 s window; S7 keeps its z in ei/theta
+    from app.eeg.live import EDGE_S
+
+    def ln(e: dict, col: str) -> float | None:
+        v = e[col]
+        return None if e["quality"] == "POOR" or v is None or v <= 0 else math.log(v)
+
+    for o, e in zip(out["epochs"], epochs):
+        o.update(end_ms=e["end_ms"], ln_ei=ln(e, "engagement_index"), ln_theta=ln(e, "theta_fz"))
+    if out["ica"] is not None:
+        s6 = next((s["ms"] for s in reversed(stages) if s["state"] == _S6), None)
+        switched_lsl = ica.get("switched_to_nosound_at")
+        # the switch is an LSL time (live.py:107); an epoch gives the LSL -> session ms mapping. Not bad_channel_from_ms:
+        # that is the first channel out, maybe before S6 (epochs.bad_summary, //review)
+        anchor = next((e for e in epochs if e["lsl_start"] is not None), None)
+        switch_ms = (None if switched_lsl is None or anchor is None
+                     else int(round(anchor["start_ms"] + (switched_lsl - anchor["lsl_start"]) * 1000)))
+        reason = ica.get("switch_reason") or ""
+        # shortcut: live.py keeps no fit time; it fits once samples reach S6 + EDGE_S, good to ~2 s for the display
+        out["ica"].update(at_ms=None if s6 is None else s6 + int(EDGE_S * 1000), switch_ms=switch_ms,
+                          switch_channel=reason.split(" out after", 1)[0] if " out after" in reason else None)
+    out["view"] = "window"
+    return out
 
 
 @router.get("/sessions/{session_id}/live", response_model=LiveSnapshot)
