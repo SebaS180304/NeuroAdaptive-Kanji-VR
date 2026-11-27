@@ -190,7 +190,12 @@ export function IndicesWindow({ i, s, stage, decisions, ended, now }: {
   // trial 3 (no decision) its last epoch's end. The newest label stays clear of «Now»; older ones give way.
   const ends = new Map<number, number>()
   for (const e of s7epochs) { const n = trialNo(e.trial_id); if (n) ends.set(n, Math.max(ends.get(n) ?? 0, e.end_ms)) }
-  for (const d of decisions) if (d.trial_sequence != null && d.decided_elapsed_ms != null) ends.set(d.trial_sequence, d.decided_elapsed_ms)
+  const decided = new Set<number>()
+  for (const d of decisions) if (d.trial_sequence != null && d.decided_elapsed_ms != null) {
+    ends.set(d.trial_sequence, d.decided_elapsed_ms); decided.add(d.trial_sequence)
+  }
+  const current = Math.max(0, ...ends.keys())
+  for (const n of [...ends.keys()]) if (!decided.has(n) && n === current) ends.delete(n)   // the trial in course has no end yet
   const sx = (ms: number) => ((ms - s7) / Math.max(1, t - s7)) * width
   const trialLabels: [number, number][] = []
   for (const [n, ms] of [...ends].filter(([n]) => n % 2 === 1).sort((a, b) => b[0] - a[0])) {
@@ -215,9 +220,9 @@ export function IndicesWindow({ i, s, stage, decisions, ended, now }: {
         {line && (
           <span title={line.text} aria-label={line.text}   // may be cut with «…» at 1440 (D-F6-328 (2) (a))
             className="type-caption inline-flex min-w-0 items-center gap-1.5 text-(--color-text-secondary)">
-            {line.mark === 'ring' ? <span aria-hidden className="inline-block size-2 rounded-full border border-(--color-text-secondary)" />
-              : line.mark === 'dot' ? <span aria-hidden className="inline-block size-2 rounded-full bg-(--color-accent)" />
-              : <svg aria-hidden width={9} height={8}><path d="M4.5,0L9,8H0z" className="fill-(--color-quality-warn)" /></svg>}
+            {line.mark === 'ring' ? <span aria-hidden className="inline-block size-2 shrink-0 rounded-full border border-(--color-text-secondary)" />
+              : line.mark === 'dot' ? <span aria-hidden className="inline-block size-2 shrink-0 rounded-full bg-(--color-accent)" />
+              : <svg aria-hidden width={9} height={8} className="shrink-0"><path d="M4.5,0L9,8H0z" className="fill-(--color-quality-warn)" /></svg>}
             <span data-testid="ica-line" aria-hidden className="min-w-0 truncate">{line.text}</span>
           </span>
         )}

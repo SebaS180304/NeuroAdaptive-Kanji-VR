@@ -292,14 +292,15 @@ describe('V1.13 live session monitor (M1c)', () => {
   })
 
   it('I3 and I4: "Trial n" sits at the end of trial n, with its decision point; the newest label stays and the oldest give way', async () => {
-    const { s7, session } = s7Session(12)
+    const { s7, session } = s7Session(13)
     const dec = (n: number) => ({ ...snapshot().decisions[0], trial_id: `S7-${String(n).padStart(3, '0')}`, trial_sequence: n,
       decided_elapsed_ms: s7 + n * 5_000, eeg_counted: true, eeg_ei_z: 0.2, eeg_theta_z: 0.1 })
-    const base = windowSnap(ST.s7, s7 + 12 * 5_000 + 1_000, session)
-    const ind = await showIndices({ ...base, decisions: [11, 9, 5, 3].map(dec) })
+    const base = windowSnap(ST.s7, s7 + 13 * 5_000 + 1_000, session)
+    const ind = await showIndices({ ...base, decisions: [11, 9, 5, 3].map(dec) })   // trial 12 in course: its epochs, no decision
     const axis = within(ind).getByLabelText('Trials')
     const labels = Array.from(axis.querySelectorAll('[data-trial]')).map((t) => [t.textContent, Number(t.getAttribute('x'))] as const)
     expect(labels.map(([t]) => t)).toContain('Trial 11')
+    expect(labels.map(([t]) => t)).not.toContain('Trial 13')
     const xs = labels.map(([, x]) => x).sort((a, b) => a - b)
     xs.slice(1).forEach((x, j) => expect(x - xs[j]!).toBeGreaterThanOrEqual(44))
     expect(Math.max(...xs)).toBeLessThanOrEqual(452 - 30 - 18)   // clear of "Now"
