@@ -563,7 +563,7 @@ FROM session_events WHERE session_id = :s AND event_type = 'BASELINE_STARTED' OR
 
 _LN_STATES = {"S1_WELCOME_ORIENTATION", "S2_VR_TUTORIAL", "S3_SYSTEM_VALIDATION", "S4_EEG_BASELINE",
               "S6_GUIDED_PRACTICE_CALIBRATION"}
-_S4, _S5 = "S4_EEG_BASELINE", "S5_STANDARDIZED_LEARNING"
+_S4, _S5, _S6 = "S4_EEG_BASELINE", "S5_STANDARDIZED_LEARNING", "S6_GUIDED_PRACTICE_CALIBRATION"
 _ICA_KEYS = ("identified", "corr", "reason", "switched_to_nosound_at", "switch_reason")
 
 
@@ -601,7 +601,7 @@ async def _session_trace(db: AsyncSession, session_id: uuid.UUID, eeg: dict | No
         return _live_z(v, s4[key] if e["game_state"] == _S5 else engine[key])
 
     ica = (eeg or {}).get("ica")
-    return {
+    out = {
         "stages": stages,
         "eyes_closed_ms": list(closed) if closed else None,
         "ica": None if ica is None else {k: ica.get(k) for k in _ICA_KEYS},
@@ -611,6 +611,27 @@ async def _session_trace(db: AsyncSession, session_id: uuid.UUID, eeg: dict | No
                     "ei": value(e, "ei", "engagement_index"), "theta": value(e, "theta", "theta_fz")}
                    for e in epochs],
     }
+    if not get_settings().monitor_indices_window:
+        return out
+    # MI outside S7 (D-F6-309 (4)): ln of every epoch for the 20 s window; S7 keeps its z in ei/theta
+    from app.eeg.live import EDGE_S
+
+    def ln(e: dict, col: str) -> float | None:
+        v = e[col]
+        return None if e["quality"] == "POOR" or v is None or v <= 0 else math.log(v)
+
+    for o, e in zip(out["epochs"], epochs):
+        o.update(end_ms=e["end_ms"], ln_ei=ln(e, "engagement_index"), ln_theta=ln(e, "theta_fz"))
+    if out["ica"] is not None:
+        s6 = next((s["ms"] for s in reversed(stages) if s["state"] == _S6), None)
+        switched = ica.get("switched_to_nosound_at") is not None
+        # shortcut: live.py keeps no fit time; it fits once samples reach S6 + EDGE_S, good to ~2 s for the display
+        out["ica"].update(at_ms=None if s6 is None else s6 + int(EDGE_S * 1000),
+                          # the switch is a channel out after S6: its session time is the bad channel's (live.py:105)
+                          switch_ms=(eeg or {}).get("bad_channel_from_ms") if switched else None,
+                          switch_channel=(eeg or {}).get("bad_channel") if switched else None)
+    out["view"] = "window"
+    return out
 
 
 @router.get("/sessions/{session_id}/live", response_model=LiveSnapshot)

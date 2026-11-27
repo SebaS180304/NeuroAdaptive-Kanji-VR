@@ -183,6 +183,51 @@ async def test_mi_without_s4_eyes_open_epochs_leaves_s5_without_a_value(client, 
     assert five["unit"] == "z" and five["ei"] is None and s["eyes_closed_ms"] is None
 
 
+# ---------- MI outside S7 (D-F6-308 (3), D-F6-309 (4), D-F6-320): MONITOR_INDICES_WINDOW ----------
+
+@pytest.fixture
+def window_on(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "monitor_indices_window", True)
+
+
+@pytest.mark.asyncio
+async def test_with_the_window_switch_off_mi_is_as_before(client, whole_session, mi_on):
+    s = (await client.get(f"/research/sessions/{whole_session}/live")).json()["indices"]["session"]
+    assert "view" not in s and "at_ms" not in s["ica"]
+    assert all(set(e) == {"i", "start_ms", "state", "trial_id", "valid", "grey", "excluded", "unit", "ei", "theta"}
+               for e in s["epochs"])
+
+
+@pytest.mark.asyncio
+async def test_the_window_switch_alone_adds_nothing_without_mi(client, whole_session, window_on):
+    assert (await client.get(f"/research/sessions/{whole_session}/live")).json()["indices"]["session"] is None
+
+
+@pytest.mark.asyncio
+async def test_the_window_view_gives_ln_everywhere_and_the_ica_time(client, whole_session, mi_on, window_on):
+    s = (await client.get(f"/research/sessions/{whole_session}/live")).json()["indices"]["session"]
+    assert s["view"] == "window"
+    ep = {e["i"]: e for e in s["epochs"]}
+    # S5 and S7: ln of the index, beside the z the S7 view keeps using
+    assert ep[20]["ln_ei"] == pytest.approx(2.0) and ep[20]["ln_theta"] == pytest.approx(1.0) and ep[20]["unit"] == "z"
+    assert ep[0]["ln_ei"] == pytest.approx(1.0) and ep[0]["ei"] == pytest.approx(1.0)
+    assert ep[31]["ln_ei"] is None and ep[31]["ln_theta"] is None      # POOR: no value
+    assert ep[10]["end_ms"] == 110_000
+    assert s["ica"]["at_ms"] == 301_000                                # S6 entry + EDGE_S: when live.py fits it
+    assert s["ica"]["switch_ms"] is None and s["ica"]["switch_channel"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_switch_to_rule_2_after_s6_carries_its_session_time(client, whole_session, mi_on, window_on):
+    await _exec("UPDATE eeg_sessions SET ica = CAST(:m AS jsonb), bad_channel = 'Cz', bad_channel_from_ms = 420000 "
+                "WHERE session_id = :s", s=whole_session, m=json.dumps(
+                    {"identified": True, "corr": 0.8, "switched_to_nosound_at": 1234.5, "switch_reason": "Cz out after S6"}))
+    ica = (await client.get(f"/research/sessions/{whole_session}/live")).json()["indices"]["session"]["ica"]
+    assert ica["switch_ms"] == 420_000 and ica["switch_channel"] == "Cz"
+
+
 @pytest.mark.asyncio
 async def test_the_per_channel_figures_appear_when_live_py_writes_them(client, live_session):   # M1b
     snap = {"channels": [{"label": "Fp1", "l60_uv": 112.0, "rms_uv": 14.0, "over_pct": 0.8, "status": "OK",
