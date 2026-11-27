@@ -7,6 +7,7 @@ import { CONDITION_LABEL, type Condition } from '@/components/ConditionChip'
 import { clock } from '@/lib/format'
 import { ChannelTraces, type ChannelStatus } from './ChannelTraces'
 import { SessionIndices, type SessionTrace } from './SessionIndices'
+import { IndicesWindow, type WindowTrace } from './IndicesWindow'
 
 // V1.13 Live session monitor (design-handoff/monitor, validated D-F6-233; D-F6-231, D-F6-234, D-F6-254, D-F6-265).
 // Second screen, drawn at 1440 x 900 and full width on a wider one (D-F6-301 (6): columns 5 / 6 / 5, heights fixed), no scroll, read-only: nothing here writes or sends a command (M2 is another feature).
@@ -197,9 +198,16 @@ function Index({ name, z, band, points, pick, beforeRef }:
   )
 }
 
-function LiveIndices({ i, heartbeat, stage, decisions }:
-  { i: Snapshot['indices']; heartbeat: number | null | undefined; stage: string | null | undefined; decisions: Decision[] }) {
+function LiveIndices({ i, heartbeat, stage, decisions, now }: { i: Snapshot['indices']; heartbeat: number | null | undefined
+  stage: string | null | undefined; decisions: Decision[]; now: number | null }) {
   const ended = useContext(Ended)
+  if (i.session?.view === 'window') {   // MI outside S7 (MONITOR_INDICES_WINDOW, D-F6-309 (4))
+    return (
+      <Section title="Live indices" updated={noData(heartbeat) ?? (beforeS4(stage) ? 'Indices from the end of S3' : 'Per epoch, live')}>
+        <IndicesWindow i={i} s={i.session as unknown as WindowTrace} stage={stage} decisions={decisions} ended={ended} now={now} />
+      </Section>
+    )
+  }
   if (i.session) {   // MI on (MONITOR_LIVE_INDICES, D-F6-297 (4)): the whole session per epoch
     return (
       <Section title="Live indices" updated={noData(heartbeat) ?? (beforeS4(stage) ? 'Indices from the end of S3' : 'Per epoch, live')}>
@@ -375,7 +383,7 @@ function Monitor({ sessionId, pinned }: { sessionId: string; pinned: boolean }) 
           <System s={data.system} />
         </div>
         <div className="flex min-h-0 flex-col gap-6">
-          <LiveIndices i={data.indices} heartbeat={heartbeat} stage={data.session.stage} decisions={data.decisions} />
+          <LiveIndices i={data.indices} heartbeat={heartbeat} stage={data.session.stage} decisions={data.decisions} now={elapsed} />
           <Decisions list={data.decisions} />
         </div>
         <div className="flex min-h-0 flex-col gap-6">
