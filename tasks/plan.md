@@ -1,6 +1,6 @@
 # Plan de desarrollo · vie 27 nov 2026
 
-**Alineado hasta D-F6-320.** Escrito el vie 27 a las 11:35; **aprobado con notas por D-F6-320** (textos de §7.6 en `Claude outputs/Extracto_UI_Indices_fuera_S7_27nov.md`; paso a la (2) a mitad de sesión, provisional: «Rule (2) from {hh:mm:ss}»; al terminar la prueba, reproductor cerrado y ningún `AURA` falso antes de P04; SY0 en paralelo con un subagente; `TEST2701` en `STATIC`).
+**Alineado hasta D-F6-322.** Escrito el vie 27 a las 11:35; **aprobado con notas por D-F6-320** (textos de §7.6 en `Claude outputs/Extracto_UI_Indices_fuera_S7_27nov.md`; paso a la (2) a mitad de sesión, provisional: «Rule (2) from {hh:mm:ss}»; al terminar la prueba, reproductor cerrado y ningún `AURA` falso antes de P04; SY0 en paralelo con un subagente; `TEST2701` en `STATIC`).
 El plan anterior (semana del 16 al 26 de noviembre) está archivado en `tasks/archive/semana_16nov_plan.md`.
 `tasks/todo.md` no se toca: tiene 123 casillas de otro trabajo. La lista de casillas de hoy está al final de este archivo.
 
