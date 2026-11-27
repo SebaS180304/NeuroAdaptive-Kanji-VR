@@ -218,12 +218,12 @@ export function IndicesWindow({ i, s, stage, decisions, ended, now }: {
               <span aria-hidden className="inline-block size-2 rounded-full bg-(--color-accent)" />Rule: ICA</Chip>)}
         <Chip dashed={!solid}>{refName}</Chip>
         {line && (
-          <span title={line.text} aria-label={line.text}   // may be cut with «…» at 1440 (D-F6-328 (2) (a))
+          <span title={line.text}   // may be cut with «…» at 1440 (D-F6-328 (2) (a)); the DOM keeps the whole text
             className="type-caption inline-flex min-w-0 items-center gap-1.5 text-(--color-text-secondary)">
             {line.mark === 'ring' ? <span aria-hidden className="inline-block size-2 shrink-0 rounded-full border border-(--color-text-secondary)" />
               : line.mark === 'dot' ? <span aria-hidden className="inline-block size-2 shrink-0 rounded-full bg-(--color-accent)" />
               : <svg aria-hidden width={9} height={8} className="shrink-0"><path d="M4.5,0L9,8H0z" className="fill-(--color-quality-warn)" /></svg>}
-            <span data-testid="ica-line" aria-hidden className="min-w-0 truncate">{line.text}</span>
+            <span data-testid="ica-line" className="min-w-0 truncate">{line.text}</span>
           </span>
         )}
       </div>

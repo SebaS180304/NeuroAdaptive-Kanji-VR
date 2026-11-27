@@ -272,7 +272,7 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(ica.textContent).toBe(full)
     expect(ica.className).toContain('truncate')
     expect(ica.closest('[title]')!.getAttribute('title')).toBe(full)
-    expect(ica.closest('[aria-label]')!.getAttribute('aria-label')).toBe(full)
+    expect(ica.closest('[aria-hidden="true"]')).toBeNull()   // read whole by screen readers: «…» only clips the drawing (//review 1)
     document.body.innerHTML = ''
     const { session } = s7Session(4)
     const s7 = await showIndices(windowSnap(ST.s7, 1_221_000, session))
@@ -296,7 +296,7 @@ describe('V1.13 live session monitor (M1c)', () => {
     const dec = (n: number) => ({ ...snapshot().decisions[0], trial_id: `S7-${String(n).padStart(3, '0')}`, trial_sequence: n,
       decided_elapsed_ms: s7 + n * 5_000, eeg_counted: true, eeg_ei_z: 0.2, eeg_theta_z: 0.1 })
     const base = windowSnap(ST.s7, s7 + 13 * 5_000 + 1_000, session)
-    const ind = await showIndices({ ...base, decisions: [11, 9, 5, 3].map(dec) })   // trial 12 in course: its epochs, no decision
+    const ind = await showIndices({ ...base, decisions: [11, 9, 5, 3].map(dec) })   // trial 13 in course: its epochs, no decision
     const axis = within(ind).getByLabelText('Trials')
     const labels = Array.from(axis.querySelectorAll('[data-trial]')).map((t) => [t.textContent, Number(t.getAttribute('x'))] as const)
     expect(labels.map(([t]) => t)).toContain('Trial 11')
@@ -338,6 +338,15 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(rows[1]).not.toHaveTextContent('MEDIUM → LOW')
     expect(rows[2]).toHaveTextContent('LAL changed')                 // a level it does not know: no crash, no guess
     expect(rows[2]).toHaveTextContent('ESL Medium, LAL Medium → Weird')
+  })
+
+  it('D2: a change with no dimension never prints "null" (//review 2)', async () => {
+    const d = { ...snapshot().decisions[1], dimension: null }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot({ decisions: [d] })) })
+    renderApp(`/monitor/${SID}`)
+    const row = within(await screen.findByRole('region', { name: 'Adaptation decisions' })).getAllByRole('listitem')[0]!
+    expect(row).not.toHaveTextContent('null')
+    expect(row).toHaveTextContent('Level down one step')
   })
 
   it('/monitor follows the session in progress, and waits when there is none', async () => {

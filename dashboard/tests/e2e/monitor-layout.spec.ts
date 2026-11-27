@@ -69,11 +69,17 @@ async function open(page: Page, stage: keyof typeof STAGE, w: number, h: number)
   await page.setViewportSize({ width: w, height: h })
   const snap = snapshot(stage)
   await page.route('**/api/research/sessions/*/live/traces*', (r) => r.fulfill({ json: traces(snap.session.elapsed_ms) }))
+  await page.route('**/api/research/sessions/*/live?*', (r) => r.fulfill({ json: snap }))
   await page.route('**/api/research/sessions/*/live', (r) => r.fulfill({ json: snap }))
   await page.route('**/api/research/live/current', (r) => r.fulfill({ json: { session_id: SID, external_code: 'DEMO01' } }))
   await page.goto(`/monitor/${SID}`)
   await page.getByText('Updates with each epoch, every 2.5 s.').waitFor()
-  await page.waitForTimeout(400)
+  // the strips are drawn at the measured width (ResizeObserver): wait until the first strip spans its panel
+  await expect.poll(async () => {
+    const panel = await page.getByRole('region', { name: 'Live indices', exact: true }).boundingBox()
+    const strip = await page.getByRole('region', { name: 'Live indices', exact: true }).getByRole('img').first().boundingBox()
+    return panel && strip ? panel.width - strip.width < 60 : false
+  }).toBe(true)
 }
 
 const box = async (page: Page, name: string) => (await page.getByRole('region', { name, exact: true }).boundingBox())!

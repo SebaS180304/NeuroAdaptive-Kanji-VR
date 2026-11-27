@@ -248,7 +248,7 @@ function decisionLine(d: Decision): string {
   if (d.action === 'NO_CHANGE') return 'No change'
   const a = LEVELS.indexOf(d.from_level ?? ''), b = LEVELS.indexOf(d.to_level ?? '')
   if (a < 0 || b < 0 || a === b) return `${d.dimension ?? 'Level'} changed`   // a level it does not know: no guess
-  return `${d.dimension} ${b > a ? 'up' : 'down'} ${Math.abs(b - a) === 1 ? 'one step' : 'two steps'}`
+  return `${d.dimension ?? 'Level'} ${b > a ? 'up' : 'down'} ${Math.abs(b - a) === 1 ? 'one step' : 'two steps'}`
 }
 
 /** The second line: "ESL Medium, LAL Medium → Low" (the short reason on its left comes with texts A, D-F6-328 (2) (c)). */
