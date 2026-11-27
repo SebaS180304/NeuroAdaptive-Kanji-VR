@@ -152,9 +152,10 @@ function S7Strip({ k, epochs, s7, now, width, kind, decisions, switchLine, reado
 function icaLine(ica: WindowTrace['ica']): { text: string; mark: 'ring' | 'dot' | 'warn' } {
   if (ica == null) return { text: 'Fitting ICA', mark: 'ring' }
   const at = ica.at_ms == null ? '—' : hms(ica.at_ms)
-  if (ica.switch_ms != null) {   // provisional "Rule (2) from" until UI/UX confirms it (D-F6-320 (3) (b))
-    return { text: ica.switch_channel ? `${ica.switch_channel} excluded at ${hms(ica.switch_ms)}, rule (2) from here`
-      : `Rule (2) from ${hms(ica.switch_ms)}`, mark: 'warn' }
+  if (ica.switched_to_nosound_at != null) {   // as referenceChip; provisional "Rule (2) from" (D-F6-320 (3) (b))
+    const when = ica.switch_ms == null ? '—' : hms(ica.switch_ms)
+    return { text: ica.switch_channel ? `${ica.switch_channel} excluded at ${when}, rule (2) from here`
+      : `Rule (2) from ${when}`, mark: 'warn' }
   }
   return ica.identified ? { text: `ICA applied at ${at}, r ${(ica.corr ?? 0).toFixed(2)}`, mark: 'dot' }
     : { text: `ICA not found at ${at}, rule (2) from here`, mark: 'warn' }
@@ -173,7 +174,7 @@ export function IndicesWindow({ i, s, stage, decisions, ended, now }: {
   const t = now ?? Math.max(0, ...s.epochs.map((e) => e.end_ms))
   const inS7 = slot === 'S7'
   const s7 = s.stages.find((x) => x.state === S7)?.ms ?? t
-  const fallback = !!s.ica && (!s.ica.identified || s.ica.switch_ms != null)
+  const fallback = !!s.ica && (!s.ica.identified || s.ica.switched_to_nosound_at != null)
   const kind = (e: WindowEpoch): Kind => {
     const k: Kind = e.grey || (e.state === S6 && s.ica == null) ? 'grey' : !e.valid ? 'invalid' : 'valid'
     return ended && k === 'valid' ? 'grey' : k

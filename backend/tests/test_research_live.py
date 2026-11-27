@@ -220,12 +220,14 @@ async def test_the_window_view_gives_ln_everywhere_and_the_ica_time(client, whol
 
 
 @pytest.mark.asyncio
-async def test_a_switch_to_rule_2_after_s6_carries_its_session_time(client, whole_session, mi_on, window_on):
-    await _exec("UPDATE eeg_sessions SET ica = CAST(:m AS jsonb), bad_channel = 'Cz', bad_channel_from_ms = 420000 "
+async def test_a_switch_to_rule_2_after_s6_carries_its_own_time_and_channel(client, whole_session, mi_on, window_on):
+    # //review: F3 out in S4 (bad_channel_from_ms is the first channel's), Pz out in S7 switches to rule (2)
+    await _exec("UPDATE eeg_sessions SET ica = CAST(:m AS jsonb), bad_channel = 'F3,Pz', bad_channel_from_ms = 150000 "
                 "WHERE session_id = :s", s=whole_session, m=json.dumps(
-                    {"identified": True, "corr": 0.8, "switched_to_nosound_at": 1234.5, "switch_reason": "Cz out after S6"}))
+                    {"identified": True, "corr": 0.8, "switched_to_nosound_at": 420.0, "switch_reason": "Pz out after S6"}))
     ica = (await client.get(f"/research/sessions/{whole_session}/live")).json()["indices"]["session"]["ica"]
-    assert ica["switch_ms"] == 420_000 and ica["switch_channel"] == "Cz"
+    # the fixture's epochs have lsl_start 0 at start_ms = epoch 0's 0 ms: LSL 420 s is session 420 000 ms
+    assert ica["switch_ms"] == 420_000 and ica["switch_channel"] == "Pz"
 
 
 @pytest.mark.asyncio

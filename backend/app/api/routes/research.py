@@ -549,7 +549,7 @@ def _live_z(value: float | None, stats: dict | None) -> float | None:
 
 
 _SESSION_EPOCHS = text("""
-SELECT epoch_index, start_ms, end_ms, game_state, trial_id, quality, engagement_index, theta_fz, excluded_channels
+SELECT epoch_index, start_ms, end_ms, lsl_start, game_state, trial_id, quality, engagement_index, theta_fz, excluded_channels
 FROM eeg_epochs WHERE session_id = :s AND start_ms IS NOT NULL ORDER BY epoch_index""")
 
 _SESSION_STAGES = text("""
@@ -624,12 +624,16 @@ async def _session_trace(db: AsyncSession, session_id: uuid.UUID, eeg: dict | No
         o.update(end_ms=e["end_ms"], ln_ei=ln(e, "engagement_index"), ln_theta=ln(e, "theta_fz"))
     if out["ica"] is not None:
         s6 = next((s["ms"] for s in reversed(stages) if s["state"] == _S6), None)
-        switched = ica.get("switched_to_nosound_at") is not None
+        switched_lsl = ica.get("switched_to_nosound_at")
+        # the switch is an LSL time (live.py:107); an epoch gives the LSL -> session ms mapping. Not bad_channel_from_ms:
+        # that is the first channel out, maybe before S6 (epochs.bad_summary, //review)
+        anchor = next((e for e in epochs if e["lsl_start"] is not None), None)
+        switch_ms = (None if switched_lsl is None or anchor is None
+                     else int(round(anchor["start_ms"] + (switched_lsl - anchor["lsl_start"]) * 1000)))
+        reason = ica.get("switch_reason") or ""
         # shortcut: live.py keeps no fit time; it fits once samples reach S6 + EDGE_S, good to ~2 s for the display
-        out["ica"].update(at_ms=None if s6 is None else s6 + int(EDGE_S * 1000),
-                          # the switch is a channel out after S6: its session time is the bad channel's (live.py:105)
-                          switch_ms=(eeg or {}).get("bad_channel_from_ms") if switched else None,
-                          switch_channel=(eeg or {}).get("bad_channel") if switched else None)
+        out["ica"].update(at_ms=None if s6 is None else s6 + int(EDGE_S * 1000), switch_ms=switch_ms,
+                          switch_channel=reason.split(" out after", 1)[0] if " out after" in reason else None)
     out["view"] = "window"
     return out
 

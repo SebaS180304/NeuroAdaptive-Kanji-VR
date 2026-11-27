@@ -213,6 +213,14 @@ describe('V1.13 live session monitor (M1c)', () => {
       switched_to_nosound_at: 9.5 }, ST.s8)).toBe('Rule (2) from 00:19:40')   // provisional text (D-F6-320 (3) (b))
   })
 
+  it('MI window: a switch to rule (2) with no time yet still reads as rule (2), as the reference chip (//review)', async () => {
+    const ica = { identified: true, corr: 0.8, at_ms: 852_000, switch_ms: null, switch_channel: 'Cz', switched_to_nosound_at: 9.5 }
+    const ind = await showIndices(windowSnap(ST.s7, 1_307_000, { stages: [{ state: ST.s7, ms: 1_200_000 }], ica, epochs: [] }))
+    expect(within(ind).getByText('Rule: (2) fallback')).toBeInTheDocument()
+    expect(within(ind).getByText('z vs S6 (rule 2)')).toBeInTheDocument()
+    expect(within(ind).getByTestId('ica-line').textContent).toBe('Cz excluded at —, rule (2) from here')
+  })
+
   it('MI window in S7: stage S7 alone in z against S6, its decision points, and the S8–S9 chip after it', async () => {
     const s7 = 1_200_000
     const session = {
