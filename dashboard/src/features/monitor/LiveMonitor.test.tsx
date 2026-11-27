@@ -312,6 +312,33 @@ describe('V1.13 live session monitor (M1c)', () => {
     expect(Number(label5!.getAttribute('x'))).toBeCloseTo(cx, 0)                 // the label and the point share the trial's end
   })
 
+  it('D1: the 60 Hz line reads as drawn: mark and word, then "60 Hz, median of 8", with no middle dot', async () => {
+    const q = { channels: [{ label: 'Fp1', l60_uv: 92, rms_uv: 31, over_pct: 1.8, status: 'OK', flat: false, sync_tap: false,
+      mark_60: false }], session_60_uv: 60.4, session_60_status: 'OK', age_s: 1 }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot({ signal_quality: q })) })
+    renderApp(`/monitor/${SID}`)
+    const sq = await screen.findByRole('region', { name: 'Signal quality' })
+    const line = within(sq).getByText(/60 Hz, median of 8:/).closest('p')!
+    expect(line.textContent).not.toContain('·')
+    expect(within(line).getByText('OK')).toBeInTheDocument()
+    expect(within(line).getByText('60 µV')).toBeInTheDocument()
+  })
+
+  it('D2: decisions in words: "LAL down one step" and a second line "ESL Medium, LAL Medium → Low"', async () => {
+    const odd = { ...snapshot().decisions[1], trial_id: 'S7-007', trial_sequence: 7, from_level: 'MEDIUM', to_level: 'WEIRD' }
+    mockApi({ [`GET /api/research/sessions/${SID}/live`]: () => json(snapshot({ decisions: [...snapshot().decisions, odd] })) })
+    renderApp(`/monitor/${SID}`)
+    const dec = await screen.findByRole('region', { name: 'Adaptation decisions' })
+    const rows = within(dec).getAllByRole('listitem')
+    expect(rows[0]).toHaveTextContent('No change')
+    expect(rows[0]).toHaveTextContent('ESL Medium, LAL Low')
+    expect(rows[1]).toHaveTextContent('LAL down one step')
+    expect(rows[1]).toHaveTextContent('ESL Medium, LAL Medium → Low')
+    expect(rows[1]).not.toHaveTextContent('MEDIUM → LOW')
+    expect(rows[2]).toHaveTextContent('LAL changed')                 // a level it does not know: no crash, no guess
+    expect(rows[2]).toHaveTextContent('ESL Medium, LAL Medium → Weird')
+  })
+
   it('/monitor follows the session in progress, and waits when there is none', async () => {
     mockApi({ 'GET /api/research/live/current': () => json({ detail: 'no session in progress' }, 404) })
     renderApp('/monitor')

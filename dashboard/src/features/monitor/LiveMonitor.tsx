@@ -145,7 +145,7 @@ function SignalQuality({ q, heartbeat }: { q: Quality | null; heartbeat: number 
         </tbody>
       </table>
       <p className="type-body mt-3 flex items-center gap-2">
-        <Dot kind={q.session_60_status === 'OK' ? 'ok' : 'warn'} />{q.session_60_status} · 60 Hz, median of 8:{' '}
+        <Dot kind={q.session_60_status === 'OK' ? 'ok' : 'warn'} /><span>{q.session_60_status}</span><span>60 Hz, median of 8:</span>
         <strong>{q.session_60_uv == null ? '—' : `${Math.round(q.session_60_uv)} µV`}</strong>
         <span className="type-caption text-(--color-text-muted)">warning from 800 µV</span>
       </p>
@@ -241,9 +241,21 @@ const STATE_DOT: Record<string, string> = {
 }
 const title = (w: string | null | undefined) => (w ? w.charAt(0) + w.slice(1).toLowerCase() : '—')
 
+const LEVELS = ['LOW', 'MEDIUM', 'HIGH']
+
+/** The action in words, as drawn (design-system.md, Adaptation decisions): "LAL down one step", "No change". */
 function decisionLine(d: Decision): string {
   if (d.action === 'NO_CHANGE') return 'No change'
-  return `${d.dimension ?? ''} ${d.from_level ?? ''} → ${d.to_level ?? ''}`.trim()
+  const a = LEVELS.indexOf(d.from_level ?? ''), b = LEVELS.indexOf(d.to_level ?? '')
+  if (a < 0 || b < 0 || a === b) return `${d.dimension ?? 'Level'} changed`   // a level it does not know: no guess
+  return `${d.dimension} ${b > a ? 'up' : 'down'} ${Math.abs(b - a) === 1 ? 'one step' : 'two steps'}`
+}
+
+/** The second line: "ESL Medium, LAL Medium → Low" (the short reason on its left comes with texts A, D-F6-328 (2) (c)). */
+function levelsLine(d: Decision): string {
+  const part = (dim: 'ESL' | 'LAL', now: string | null | undefined) => (d.action !== 'NO_CHANGE' && d.dimension === dim
+    ? `${dim} ${title(d.from_level)} → ${title(d.to_level)}` : `${dim} ${title(now)}`)
+  return `${part('ESL', d.esl)}, ${part('LAL', d.lal)}`
 }
 
 function Decisions({ list }: { list: Decision[] }) {
@@ -267,7 +279,8 @@ function Decisions({ list }: { list: Decision[] }) {
               {title(d.learner_state)}
               {d.eeg_effect && <span className="font-mono">EEG_{d.eeg_effect}</span>}
             </span>
-            <span className={`type-body text-right ${d.action === 'NO_CHANGE' ? '' : 'font-medium'}`}>{decisionLine(d)}</span>
+            <span className={`type-body text-right ${d.action === 'NO_CHANGE' ? '' : 'font-semibold'}`}>{decisionLine(d)}</span>
+            <span className="type-caption col-span-3 text-right text-(--color-text-muted)">{levelsLine(d)}</span>
           </li>
         ))}
         {list.length === 0 && <li className="type-body text-(--color-text-muted)">No decision yet.</li>}
