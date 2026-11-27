@@ -1,6 +1,6 @@
 # Plan de desarrollo · alto de Events y cosméticas del monitor (D-F6-323 (4)–(5), D-F6-326 (4))
 
-**Alineado hasta D-F6-326.** Escrito el vie 27 nov a las 17:55. **No se construye nada hasta el OK de Sebas.**
+**Alineado hasta D-F6-329.** Escrito el vie 27 nov a las 17:55. **No se construye nada hasta el OK de Sebas.**
 
 **Cuándo:** se construye y se integra **antes de las visitas del lun 30** (P06 a las 10:00), nunca con una sesión en curso.
 
@@ -152,14 +152,14 @@ Cada tarea sigue el mismo ciclo: test que falla → código → Vitest completo 
 
 ## Casillas
 
-- [ ] 0 · OK de Sebas al plan; respuestas de I1 (los «…»), I4 (dónde va el punto) y D2 (con razón o sin ella)
-- [ ] H · alto de la página · Vitest · commit
-- [ ] I1 · mismo alto de franja y fila de chips · Vitest · commit
-- [ ] I2 · línea guía legible · Vitest · commit
-- [ ] I3 · eje Trial · Vitest · commit
-- [ ] I4 · punto de decisión en su ensayo · Vitest · commit
-- [ ] D1 · línea de 60 Hz · Vitest · commit
-- [ ] D2 · decisiones en palabras · Vitest · commit
-- [ ] V · e2e a 1440 y a 1920, comprobación del signo menos, capturas en `design-handoff/monitor/`
-- [ ] RV · //review y arreglos
-- [ ] IN · integración, `dist`, `git status` limpio, sin sesión en curso · antes del lun 30 a las 9:00
+- [x] 0 · OK de Sebas al plan; respuestas de I1 (los «…»), I4 (dónde va el punto) y D2 (con razón o sin ella)
+- [x] H · alto de la página · Vitest · commit
+- [x] I1 · mismo alto de franja y fila de chips · Vitest · commit
+- [x] I2 · línea guía legible · Vitest · commit
+- [x] I3 · eje Trial · Vitest · commit
+- [x] I4 · punto de decisión en su ensayo · Vitest · commit
+- [x] D1 · línea de 60 Hz · Vitest · commit
+- [x] D2 · decisiones en palabras · Vitest · commit
+- [x] V · e2e a 1440 y a 1920, comprobación del signo menos, capturas en `design-handoff/monitor/`
+- [x] RV · //review y arreglos
+- [x] IN · integración, `dist`, `git status` limpio, sin sesión en curso · antes del lun 30 a las 9:00
