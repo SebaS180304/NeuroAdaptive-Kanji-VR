@@ -432,14 +432,14 @@ Diseño web espera la captura, según su Registro del 26 nov a las 20:05. Ese Re
 - [x] PF · (`ae803bd`) FAIL de `preflight` sin AURA, su test · commit · parada
 - [x] MI-P · (`8dd051c`, Vitest 172) página, Vitest, capturas a 1440 y a 1920 · commit · parada
 - [x] RV · (`73952fd`) //review del diff y arreglos
-- [x] IN · (`8a2df2a`, 12:17–12:25) `pg_dump`, integración, pytest y Vitest, `dist`, `up -d`, `printenv` · antes de las 14:30
-- [x] C-1 · (12:27) captura de `/monitor` a 1920 × 1080 con la fixture → `design-handoff/monitor/` · 14:30–14:35
-- [ ] SY1 · conteos de antes, interruptores, `TEST2701`, `baseline` y `live`, monitor
-- [ ] SY4 · corrida de 14,1 min con los paneles anotados
-- [ ] SY2 · comprobación de que nadie decidió: (a)–(d)
-- [ ] SY5 · C2b a 1440 y a 1920; C4 sin `FRAME_HITCH`
-- [ ] C-2 · captura a 1920 × 1080 con la prueba sintética en S7 (si se puede)
-- [ ] SY6 · borrar en una transacción, contar antes y después, archivos · antes de las 16:00
+- [x] IN · (`8a2df2a`, 12:17–12:21) `pg_dump`, integración, pytest y Vitest, `dist`, `up -d`, `printenv` · antes de las 14:30
+- [x] C-1 · (12:22) captura de `/monitor` a 1920 × 1080 con la fixture → `design-handoff/monitor/` · 14:30–14:35
+- [x] SY1 · conteos de antes, interruptores, `TEST2701`, `baseline` y `live`, monitor
+- [x] SY4 · (12:24:30–12:38:57) corrida de 14,1 min con los paneles anotados
+- [x] SY2 · comprobación de que nadie decidió: (a)–(d)
+- [x] SY5 · C2b a 1440 y a 1920; C4 sin `FRAME_HITCH`
+- [x] C-2 · captura a 1920 × 1080 con la prueba sintética en S7 (si se puede)
+- [x] SY6 · (12:46) borrar en una transacción, contar antes y después, archivos · antes de las 16:00
 - [ ] P04 · interruptores, `printenv`, `git status`, kit · antes de las 17:00
 
 **No entra en este plan:**
